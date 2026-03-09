@@ -1,0 +1,138 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 20px;
+}
+
+.modal-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 420px;
+  font-family: var(--font);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-size: var(--fs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.modal-close {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  padding: 1px 6px;
+  line-height: 1.4;
+}
+.modal-close:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.modal-body {
+  padding: 16px 12px;
+}
+
+/* form helpers used inside modals */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modal-label {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.modal-input,
+.modal-select {
+  font-family: var(--font);
+  font-size: var(--fs);
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 3px 8px;
+  outline: none;
+  width: 100%;
+}
+.modal-input:focus,
+.modal-select:focus {
+  outline: 1px solid var(--fg);
+  outline-offset: 1px;
+}
+.modal-select option { background: var(--bg); }
+
+.modal-error {
+  border: 1px solid var(--fg);
+  padding: 4px 8px;
+  font-size: var(--fs-sm);
+  margin-bottom: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-dim);
+}
+
+/* keep btn-primary / btn-ghost as aliases */
+.btn-primary {
+  font-family: var(--font);
+  font-size: var(--fs);
+  background: var(--fg);
+  color: var(--bg);
+  border: 1px solid var(--fg);
+  border-radius: 0;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-ghost {
+  font-family: var(--font);
+  font-size: var(--fs);
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--border-dim);
+  border-radius: 0;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+.btn-ghost:hover { color: var(--fg); border-color: var(--fg); }

@@ -1,0 +1,73 @@
+.wbm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wbm-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.wbm-exercise-block {
+  border: 1px solid var(--border);
+  padding: 8px;
+}
+
+.wbm-exercise-header {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.wbm-exercise-name {
+  flex: 1;
+  font-weight: 700;
+}
+
+.wbm-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.wbm-sets-head {
+  display: grid;
+  grid-template-columns: 28px 1fr 1fr 28px;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 2px;
+}
+
+.wbm-set-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 1fr 28px;
+  gap: 6px;
+  align-items: center;
+}
+
+.wbm-set-num {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-align: center;
+}
+
+.wbm-set-input {
+  width: 100%;
+}
+
+.wbm-add-set {
+  align-self: flex-start;
+}
+
+.wbm-add-exercise {
+  align-self: flex-start;
+  margin-top: 2px;
+}
