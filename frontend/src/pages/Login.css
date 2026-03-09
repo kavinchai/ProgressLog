@@ -1,0 +1,115 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  font-family: var(--font);
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-top-border,
+.login-bottom-border {
+  color: var(--fg);
+  font-size: var(--fs);
+  letter-spacing: 0;
+  user-select: none;
+}
+
+.login-inner {
+  border-left: 1px solid var(--fg);
+  border-right: 1px solid var(--fg);
+  padding: 20px 24px;
+  width: 280px;
+}
+
+.login-title {
+  text-align: center;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.login-divider {
+  text-align: center;
+  font-size: var(--fs);
+  margin-bottom: 20px;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.login-field label {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.login-input {
+  font-family: var(--font);
+  font-size: var(--fs);
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--fg);
+  border-radius: 0;
+  padding: 3px 8px;
+  outline: none;
+  width: 100%;
+}
+.login-input:focus {
+  outline: 1px solid var(--fg);
+  outline-offset: 2px;
+}
+.login-input::placeholder { color: var(--muted); }
+
+.login-btn {
+  font-family: var(--font);
+  font-size: var(--fs);
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--fg);
+  border-radius: 0;
+  padding: 4px 0;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+  transition: background 80ms, color 80ms;
+}
+.login-btn:hover:not(:disabled) {
+  background: var(--fg);
+  color: var(--bg);
+}
+.login-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.login-error {
+  font-size: var(--fs-sm);
+  border: 1px solid var(--fg);
+  padding: 4px 8px;
+}
+
+.login-hint {
+  margin-top: 16px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-align: center;
+}

@@ -1,0 +1,72 @@
+:root {
+  --bg:           #000000;
+  --fg:           #ffffff;
+  --muted:        #666666;
+  --border:       #ffffff;
+  --border-dim:   #333333;
+  --hover-bg:     #ffffff;
+  --hover-fg:     #000000;
+
+  --sidebar-width: 200px;
+
+  --font:   'Courier New', Courier, monospace;
+  --fs:     14px;
+  --fs-sm:  12px;
+  --fs-lg:  18px;
+  --fs-xl:  24px;
+  --fs-2xl: 32px;
+
+  /* legacy aliases kept for old pages still in codebase */
+  --bg-primary:    #000000;
+  --bg-secondary:  #000000;
+  --bg-card:       #000000;
+  --bg-hover:      #111111;
+  --bg-input:      #000000;
+  --color-primary:       #ffffff;
+  --color-primary-light: #cccccc;
+  --color-primary-dark:  #aaaaaa;
+  --color-success:       #ffffff;
+  --color-warning:       #ffffff;
+  --color-danger:        #ffffff;
+  --color-info:          #ffffff;
+  --color-gold:          #ffffff;
+  --text-primary:   #ffffff;
+  --text-secondary: #aaaaaa;
+  --text-muted:     #666666;
+  --text-inverse:   #000000;
+  --border-color:        #ffffff;
+  --border-color-light:  #333333;
+  --border-radius-sm:    0px;
+  --border-radius-md:    0px;
+  --border-radius-lg:    0px;
+  --border-radius-xl:    0px;
+  --border-radius-full:  0px;
+  --spacing-xs:   4px;
+  --spacing-sm:   8px;
+  --spacing-md:   16px;
+  --spacing-lg:   24px;
+  --spacing-xl:   32px;
+  --spacing-2xl:  48px;
+  --spacing-3xl:  64px;
+  --navbar-height: 0px;
+  --font-family: 'Courier New', Courier, monospace;
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
+  --font-size-md:   1rem;
+  --font-size-lg:   1.125rem;
+  --font-size-xl:   1.25rem;
+  --font-size-2xl:  1.5rem;
+  --font-size-3xl:  1.875rem;
+  --font-weight-normal:   400;
+  --font-weight-medium:   400;
+  --font-weight-semibold: 700;
+  --font-weight-bold:     700;
+  --line-height-tight:  1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --transition-fast:   100ms ease;
+  --transition-normal: 150ms ease;
+}

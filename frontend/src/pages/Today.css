@@ -1,0 +1,149 @@
+.today-page {
+  max-width: 640px;
+}
+
+.today-page-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.today-title {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.today-date {
+  font-size: var(--fs-sm);
+}
+
+.today-data-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: var(--fs);
+}
+
+.today-data-label {
+  color: var(--muted);
+  min-width: 100px;
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.today-data-value {
+  color: var(--fg);
+}
+
+.today-session-info {
+  margin-bottom: 12px;
+}
+
+/* ── Exercise cards ── */
+.exercise-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exercise-card {
+  border: 1px solid var(--border);
+}
+
+.exercise-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.exercise-card-name {
+  font-weight: 700;
+  font-size: var(--fs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.exercise-card-sets {
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.exercise-sets-head {
+  display: grid;
+  grid-template-columns: 36px 1fr 1fr;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.exercise-set-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 1fr;
+  gap: 8px;
+  font-size: var(--fs);
+}
+
+.exercise-set-row span:first-child {
+  color: var(--muted);
+}
+
+/* ── Meal cards ── */
+.meal-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.meal-card {
+  border: 1px solid var(--border);
+}
+
+.meal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.meal-card-name {
+  font-weight: 700;
+  font-size: var(--fs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meal-card-body {
+  display: flex;
+  gap: 20px;
+  padding: 6px 10px;
+  font-size: var(--fs);
+}
+
+.nutrition-day-info {
+  margin-bottom: 10px;
+}
+
+.nutrition-totals {
+  display: flex;
+  gap: 20px;
+  padding: 6px 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-dim);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

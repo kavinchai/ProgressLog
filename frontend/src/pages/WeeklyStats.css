@@ -1,0 +1,232 @@
+.weekly-page {
+  max-width: 800px;
+}
+
+.weekly-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.weekly-title {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* Summary grid */
+.weekly-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+.weekly-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-right: 1px solid var(--border-dim);
+}
+.weekly-stat:last-child { border-right: none; }
+
+.weekly-stat-label {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.weekly-stat-value {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+
+/* ASCII table */
+.weekly-table-wrap {
+  overflow-x: auto;
+}
+
+.weekly-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.weekly-table th,
+.weekly-table td {
+  text-align: left;
+  padding: 4px 10px;
+  border: 1px solid var(--border-dim);
+}
+
+.weekly-table th {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+  border-color: var(--border);
+}
+
+.weekly-table td {
+  color: var(--fg);
+}
+
+.weekly-table tr.today-row td {
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+.weekly-table tr:not(.today-row):not(.detail-row) td {
+  color: var(--muted);
+}
+
+.weekly-row:hover td {
+  background: #0d0d0d;
+}
+
+.weekly-table tr.expanded-row td {
+  border-color: var(--border);
+  color: var(--fg);
+}
+
+/* Detail row */
+.detail-row td {
+  padding: 0 !important;
+  border-color: var(--border) !important;
+  border-top: none !important;
+}
+
+.day-detail {
+  padding: 12px 14px;
+  border-top: 1px dashed var(--border-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.day-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.day-detail-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.day-detail-label {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.day-detail-value {
+  font-size: var(--fs);
+  color: var(--fg);
+  padding-left: 2px;
+}
+
+/* Exercises inside day detail */
+.day-exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.day-exercise-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-sm);
+}
+
+.day-exercise-name {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex: 1;
+}
+
+.day-exercise-sets {
+  min-width: 48px;
+}
+
+/* Meals inside day detail */
+.day-meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.day-meal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-sm);
+}
+
+.day-meal-name {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex: 1;
+}
+
+.day-nutrition-total {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Weight bars */
+.weight-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weight-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-sm);
+}
+
+.weight-bar-label {
+  color: var(--muted);
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.weight-bar-track {
+  flex: 1;
+  height: 10px;
+  border: 1px solid var(--border-dim);
+  position: relative;
+}
+
+.weight-bar-fill {
+  height: 100%;
+  background: var(--fg);
+  transition: width 0.3s ease;
+}
+
+.weight-bar-val {
+  color: var(--fg);
+  width: 70px;
+  flex-shrink: 0;
+  text-align: right;
+}
