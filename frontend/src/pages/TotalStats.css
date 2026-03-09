@@ -2,8 +2,3 @@
   max-width: 800px;
   width: 100%;
 }
-
-/* wider label for all-time date format (MM/DD/YY) */
-.total-page .weight-bar-label {
-  width: 64px;
-}

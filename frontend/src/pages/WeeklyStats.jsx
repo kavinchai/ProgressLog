@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../api';
 import useWeightLog from '../hooks/useWeightLog';
 import useNutrition from '../hooks/useNutrition';
@@ -388,31 +389,56 @@ function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW
   );
 }
 
-// ── Weight bars ───────────────────────────────────────────────────────────────
+// ── Weight line chart ─────────────────────────────────────────────────────────
 
-function WeightBars({ days, weights }) {
+function WeightTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="chart-tooltip">
+      <div className="chart-tooltip-label">{label}</div>
+      <div className="chart-tooltip-value">{payload[0].value} lbs</div>
+    </div>
+  );
+}
+
+function WeightLineChart({ days, weights }) {
+  const data = days.map((date, i) => ({ label: shortDate(date), weight: weights[i] }));
   const valid = weights.filter(w => w != null);
   if (!valid.length) return null;
-  const minW  = Math.min(...valid) - 0.5;
-  const maxW  = Math.max(...valid) + 0.5;
-  const range = maxW - minW || 1;
+  const minVal = Math.min(...valid);
+  const maxVal = Math.max(...valid);
+  const pad    = (maxVal - minVal) * 0.15 || 2;
 
   return (
-    <div className="weight-bars">
-      {days.map((date, i) => {
-        const w   = weights[i];
-        const pct = w != null ? ((w - minW) / range) * 100 : 0;
-        return (
-          <div key={date} className="weight-bar-row">
-            <span className="weight-bar-label">{shortDate(date).slice(0, 6)}</span>
-            <div className="weight-bar-track">
-              <div className="weight-bar-fill" style={{ width: w != null ? pct + '%' : '0%' }} />
-            </div>
-            <span className="weight-bar-val">{w != null ? w + ' lbs' : '--'}</span>
-          </div>
-        );
-      })}
-    </div>
+    <ResponsiveContainer width="100%" height={200}>
+      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+        <CartesianGrid strokeDasharray="2 4" stroke="var(--border-dim)" vertical={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
+          axisLine={{ stroke: 'var(--border-dim)' }}
+          tickLine={false}
+        />
+        <YAxis
+          domain={[minVal - pad, maxVal + pad]}
+          tickFormatter={v => v + ' lbs'}
+          tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
+          axisLine={false}
+          tickLine={false}
+          width={64}
+        />
+        <Tooltip content={<WeightTooltip />} />
+        <Line
+          type="linear"
+          dataKey="weight"
+          stroke="var(--fg)"
+          strokeWidth={1.5}
+          dot={{ r: 3, fill: 'var(--fg)', strokeWidth: 0 }}
+          activeDot={{ r: 4, fill: 'var(--fg)', strokeWidth: 0 }}
+          connectNulls={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -538,14 +564,14 @@ export default function WeeklyStats() {
         </div>
       </div>
 
-      {/* Weight bars */}
+      {/* Weight trend */}
       {weights.some(w => w != null) && (
         <div className="section-box">
           <div className="section-header">
             <span className="section-title">Weight Trend</span>
           </div>
           <div className="section-body">
-            <WeightBars days={days} weights={weights} />
+            <WeightLineChart days={days} weights={weights} />
           </div>
         </div>
       )}
