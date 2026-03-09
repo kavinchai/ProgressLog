@@ -54,6 +54,22 @@
   gap: 6px;
 }
 
+.sidebar-darkmode {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  transition: color 80ms;
+}
+
+.sidebar-darkmode:hover {
+  color: var(--fg);
+}
+
 .sidebar-user {
   font-size: var(--fs-sm);
 }
@@ -126,5 +142,13 @@
     display: flex;
     align-items: center;
     font-size: var(--fs-sm);
+  }
+
+  .sidebar-darkmode {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    font-size: var(--fs-sm);
+    padding: 0 8px;
   }
 }
