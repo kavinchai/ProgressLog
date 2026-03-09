@@ -415,7 +415,7 @@ function WeightLineChart({ dates, weights }) {
         />
         <YAxis
           domain={[minVal - pad, maxVal + pad]}
-          tickFormatter={v => v + ' lbs'}
+          tickFormatter={v => parseFloat(v).toFixed(2) + ' lbs'}
           tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
           axisLine={false}
           tickLine={false}
