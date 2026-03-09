@@ -1,11 +1,11 @@
 :root {
-  --bg:           #000000;
-  --fg:           #ffffff;
-  --muted:        #666666;
-  --border:       #ffffff;
-  --border-dim:   #333333;
-  --hover-bg:     #ffffff;
-  --hover-fg:     #000000;
+  --bg:           #ffffff;
+  --fg:           #000000;
+  --muted:        #888888;
+  --border:       #000000;
+  --border-dim:   #cccccc;
+  --hover-bg:     #000000;
+  --hover-fg:     #ffffff;
 
   --sidebar-width: 200px;
 
@@ -17,25 +17,25 @@
   --fs-2xl: 32px;
 
   /* legacy aliases kept for old pages still in codebase */
-  --bg-primary:    #000000;
-  --bg-secondary:  #000000;
-  --bg-card:       #000000;
-  --bg-hover:      #111111;
-  --bg-input:      #000000;
-  --color-primary:       #ffffff;
-  --color-primary-light: #cccccc;
-  --color-primary-dark:  #aaaaaa;
-  --color-success:       #ffffff;
-  --color-warning:       #ffffff;
-  --color-danger:        #ffffff;
-  --color-info:          #ffffff;
-  --color-gold:          #ffffff;
-  --text-primary:   #ffffff;
-  --text-secondary: #aaaaaa;
-  --text-muted:     #666666;
-  --text-inverse:   #000000;
-  --border-color:        #ffffff;
-  --border-color-light:  #333333;
+  --bg-primary:    #ffffff;
+  --bg-secondary:  #ffffff;
+  --bg-card:       #ffffff;
+  --bg-hover:      #eeeeee;
+  --bg-input:      #ffffff;
+  --color-primary:       #000000;
+  --color-primary-light: #333333;
+  --color-primary-dark:  #555555;
+  --color-success:       #000000;
+  --color-warning:       #000000;
+  --color-danger:        #000000;
+  --color-info:          #000000;
+  --color-gold:          #000000;
+  --text-primary:   #000000;
+  --text-secondary: #555555;
+  --text-muted:     #888888;
+  --text-inverse:   #ffffff;
+  --border-color:        #000000;
+  --border-color-light:  #cccccc;
   --border-radius-sm:    0px;
   --border-radius-md:    0px;
   --border-radius-lg:    0px;
@@ -69,4 +69,35 @@
   --shadow-lg: none;
   --transition-fast:   100ms ease;
   --transition-normal: 150ms ease;
+}
+
+/* ── Dark mode ── */
+.dark {
+  --bg:           #000000;
+  --fg:           #ffffff;
+  --muted:        #666666;
+  --border:       #ffffff;
+  --border-dim:   #333333;
+  --hover-bg:     #ffffff;
+  --hover-fg:     #000000;
+
+  --bg-primary:    #000000;
+  --bg-secondary:  #000000;
+  --bg-card:       #000000;
+  --bg-hover:      #111111;
+  --bg-input:      #000000;
+  --color-primary:       #ffffff;
+  --color-primary-light: #cccccc;
+  --color-primary-dark:  #aaaaaa;
+  --color-success:       #ffffff;
+  --color-warning:       #ffffff;
+  --color-danger:        #ffffff;
+  --color-info:          #ffffff;
+  --color-gold:          #ffffff;
+  --text-primary:   #ffffff;
+  --text-secondary: #aaaaaa;
+  --text-muted:     #666666;
+  --text-inverse:   #000000;
+  --border-color:        #ffffff;
+  --border-color-light:  #333333;
 }
