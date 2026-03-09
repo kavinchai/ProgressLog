@@ -6,6 +6,7 @@ import './Sidebar.css';
 const navItems = [
   { to: '/today',  label: 'Today'        },
   { to: '/weekly', label: 'Weekly Stats' },
+  { to: '/total',  label: 'Total Stats'  },
 ];
 
 export default function Sidebar() {

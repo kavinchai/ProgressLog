@@ -4,6 +4,7 @@ import Sidebar from './components/layout/Sidebar';
 import Login from './pages/Login';
 import Today from './pages/Today';
 import WeeklyStats from './pages/WeeklyStats';
+import TotalStats from './pages/TotalStats';
 
 function AppLayout({ children }) {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/"       element={<Navigate to="/today" replace />} />
           <Route path="/today"  element={<Today />} />
           <Route path="/weekly" element={<WeeklyStats />} />
+          <Route path="/total"  element={<TotalStats />} />
           <Route path="*"       element={<Navigate to="/today" replace />} />
         </Routes>
       </AppLayout>
