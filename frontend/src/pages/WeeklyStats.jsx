@@ -13,7 +13,7 @@ import './WeeklyStats.css';
 
 function getLast7Days() {
   const days = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 0; i <= 6; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     days.push(d.toISOString().slice(0, 10));
@@ -571,7 +571,7 @@ export default function WeeklyStats() {
             <span className="section-title">Weight Trend</span>
           </div>
           <div className="section-body">
-            <WeightLineChart days={days} weights={weights} />
+            <WeightLineChart days={[...days].reverse()} weights={[...weights].reverse()} />
           </div>
         </div>
       )}
