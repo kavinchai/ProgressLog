@@ -127,6 +127,12 @@
   margin-top: 6px;
 }
 
+.day-exercise-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .day-exercise-row {
   display: flex;
   align-items: center;
@@ -138,11 +144,13 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  flex: 1;
 }
 
-.day-exercise-sets {
-  min-width: 48px;
+.day-exercise-reps {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  padding-left: 2px;
 }
 
 /* Meals inside day detail */

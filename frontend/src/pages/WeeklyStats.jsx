@@ -326,13 +326,20 @@ function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW
           exerciseGroups.length > 0 ? (
             <div className="day-exercise-list">
               {exerciseGroups.map(g => (
-                <div key={g.name} className="day-exercise-row">
-                  <span className="day-exercise-name">{g.name}</span>
-                  <span className="day-exercise-sets muted">{g.sets.length} sets</span>
-                  <button className="btn btn-sm"
-                    onClick={() => setEditExercise({ sessionId: workoutEntry.id, name: g.name, sets: g.sets })}>
-                    [edit]
-                  </button>
+                <div key={g.name} className="day-exercise-item">
+                  <div className="day-exercise-row">
+                    <span className="day-exercise-name">{g.name}</span>
+                    {g.sets[0]?.weightLbs != null && (
+                      <span className="muted">{parseFloat(g.sets[0].weightLbs)} lbs</span>
+                    )}
+                    <button className="btn btn-sm" style={{ marginLeft: 'auto' }}
+                      onClick={() => setEditExercise({ sessionId: workoutEntry.id, name: g.name, sets: g.sets })}>
+                      [edit]
+                    </button>
+                  </div>
+                  <div className="day-exercise-reps">
+                    {g.sets.map(s => s.reps ?? '--').join('  ')}
+                  </div>
                 </div>
               ))}
             </div>
