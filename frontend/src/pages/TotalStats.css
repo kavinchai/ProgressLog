@@ -2,3 +2,16 @@
   max-width: 800px;
   width: 100%;
 }
+
+.export-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-dim);
+  padding: 8px 14px;
+}
+
+.export-bar-btns {
+  display: flex;
+  gap: 8px;
+}
