@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import * as XLSX from 'xlsx';
 import api from '../api';
 import useWeightLog from '../hooks/useWeightLog';
 import useNutrition from '../hooks/useNutrition';
@@ -516,9 +517,66 @@ export default function TotalStats() {
       <div className="section-box">
         <div className="section-header">
           <span className="section-title">Full Log</span>
-          <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
-            {rows.length} {rows.length === 1 ? 'entry' : 'entries'} · click row to expand
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
+              {rows.length} {rows.length === 1 ? 'entry' : 'entries'} · click row to expand
+            </span>
+            {rows.length > 0 && (
+              <button className="btn btn-sm" onClick={() => {
+                // Sheet 1: Total Stats
+                const statsData = rows.map(r => ({
+                  Date: formatDate(r.date),
+                  Weight: r.weight != null ? r.weight : '',
+                  Calories: r.calories != null ? r.calories : '',
+                  Protein: r.protein != null ? r.protein : '',
+                  Workout: r.workout ?? '',
+                }));
+                const ws1 = XLSX.utils.json_to_sheet(statsData);
+
+                // Sheet 2: Workout Data
+                // Build one row per (date, exercise), with dynamic Set N columns
+                const workoutRows = [];
+                for (const r of rows) {
+                  if (!r.workoutEntry?.exerciseSets?.length) continue;
+                  const groups = groupByExercise(r.workoutEntry.exerciseSets);
+                  for (const g of groups) {
+                    const row = {
+                      Date: formatDate(r.date),
+                      Exercise: g.name,
+                      Weight: g.sets[0]?.weightLbs != null ? parseFloat(g.sets[0].weightLbs) : '',
+                    };
+                    for (const s of g.sets) {
+                      row[`Set ${s.setNumber}`] = s.reps != null ? s.reps : '';
+                    }
+                    workoutRows.push(row);
+                  }
+                }
+
+                // Determine all Set N column headers in order
+                const maxSets = workoutRows.reduce((max, r) => {
+                  const keys = Object.keys(r).filter(k => k.startsWith('Set '));
+                  const nums = keys.map(k => parseInt(k.replace('Set ', '')));
+                  return Math.max(max, ...nums, 0);
+                }, 0);
+                const setHeaders = Array.from({ length: maxSets }, (_, i) => `Set ${i + 1}`);
+
+                // Normalize all rows to have all Set N columns
+                const normalizedWorkoutRows = workoutRows.map(r => {
+                  const row = { Date: r.Date, Exercise: r.Exercise, Weight: r.Weight };
+                  for (const h of setHeaders) row[h] = r[h] ?? '';
+                  return row;
+                });
+
+                const ws2 = XLSX.utils.json_to_sheet(normalizedWorkoutRows.length ? normalizedWorkoutRows : [{ Date: '', Exercise: '', Weight: '' }]);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws1, 'Total Stats');
+                XLSX.utils.book_append_sheet(wb, ws2, 'Workouts');
+                XLSX.writeFile(wb, 'total-stats.xlsx');
+              }}>
+                [export xlsx]
+              </button>
+            )}
+          </div>
         </div>
         <div className="section-body" style={{ padding: 0 }}>
           {rows.length === 0 ? (
