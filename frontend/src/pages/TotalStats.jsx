@@ -252,10 +252,11 @@ function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW
         <div className="day-detail-section-head">
           <span className="day-detail-label">Weight</span>
           <div className="btn-actions">
-            {weightEntry && (
+            {weightEntry ? (
               <button className="btn btn-sm" onClick={() => setModal('weight-edit')}>[edit]</button>
+            ) : (
+              <button className="btn btn-sm" onClick={() => setModal('weight-add')}>[+ add]</button>
             )}
-            <button className="btn btn-sm" onClick={() => setModal('weight-add')}>[+ add]</button>
           </div>
         </div>
         <div className="day-detail-value">
