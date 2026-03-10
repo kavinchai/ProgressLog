@@ -262,10 +262,11 @@ function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW
         <div className="day-detail-section-head">
           <span className="day-detail-label">Weight</span>
           <div className="btn-actions">
-            {weightEntry && (
+            {weightEntry ? (
               <button className="btn btn-sm" onClick={() => setModal('weight-edit')}>[edit]</button>
+            ) : (
+              <button className="btn btn-sm" onClick={() => setModal('weight-add')}>[+ add]</button>
             )}
-            <button className="btn btn-sm" onClick={() => setModal('weight-add')}>[+ add]</button>
           </div>
         </div>
         <div className="day-detail-value">
@@ -428,7 +429,7 @@ function WeightLineChart({ days, weights }) {
         />
         <YAxis
           domain={[minVal - pad, maxVal + pad]}
-          tickFormatter={v => v + ' lbs'}
+          tickFormatter={v => parseFloat(v).toFixed(2) + ' lbs'}
           tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
           axisLine={false}
           tickLine={false}
