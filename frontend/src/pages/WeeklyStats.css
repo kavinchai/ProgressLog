@@ -69,29 +69,14 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-weight: 400;
-  border-color: var(--border);
 }
 
 .weekly-table td {
-  color: var(--fg);
-}
-
-.weekly-table tr.today-row td {
-  color: var(--fg);
-  border-color: var(--border);
-}
-
-.weekly-table tr:not(.today-row):not(.detail-row) td {
   color: var(--muted);
 }
 
 .weekly-row:hover td {
   background: #0d0d0d;
-}
-
-.weekly-table tr.expanded-row td {
-  border-color: var(--border);
-  color: var(--fg);
 }
 
 /* Detail row */
