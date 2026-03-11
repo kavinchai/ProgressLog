@@ -3,9 +3,11 @@ package com.kavin.fitness.service;
 import com.kavin.fitness.dto.ImportRequest;
 import com.kavin.fitness.dto.ImportResultDTO;
 import com.kavin.fitness.model.ExerciseSet;
+import com.kavin.fitness.model.NutritionLog;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WeightLog;
 import com.kavin.fitness.model.WorkoutSession;
+import com.kavin.fitness.repository.NutritionLogRepository;
 import com.kavin.fitness.repository.WeightLogRepository;
 import com.kavin.fitness.repository.WorkoutSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,39 +21,62 @@ import java.util.*;
 @Service
 public class ImportService {
 
-    @Autowired private WeightLogRepository weightLogRepository;
-    @Autowired private WorkoutSessionRepository workoutSessionRepository;
+    @Autowired private WeightLogRepository       weightLogRepository;
+    @Autowired private WorkoutSessionRepository  workoutSessionRepository;
+    @Autowired private NutritionLogRepository    nutritionLogRepository;
 
     @Transactional
     public ImportResultDTO importData(User user, ImportRequest request) {
         int weightImported = 0, weightSkipped = 0;
+        int nutritionImported = 0, nutritionSkipped = 0;
         int workoutsImported = 0, workoutsSkipped = 0;
 
-        // ── Weight ────────────────────────────────────────────────────────────
+        // ── Weight + Nutrition ────────────────────────────────────────────────
         if (request.getTotalStats() != null) {
             for (Map<String, Object> row : request.getTotalStats()) {
                 String dateStr = getString(row, "Date");
-                Object weightObj = row.get("Weight");
-                if (dateStr == null || weightObj == null || weightObj.toString().isBlank()) continue;
-
+                if (dateStr == null) continue;
                 LocalDate date = parseDate(dateStr);
                 if (date == null) continue;
 
-                if (weightLogRepository.existsByUserIdAndLogDate(user.getId(), date)) {
-                    weightSkipped++;
-                } else {
-                    WeightLog log = new WeightLog();
-                    log.setUser(user);
-                    log.setLogDate(date);
-                    log.setWeightLbs(new BigDecimal(weightObj.toString()));
-                    weightLogRepository.save(log);
-                    weightImported++;
+                // Weight
+                Object weightObj = row.get("Weight");
+                if (weightObj != null && !weightObj.toString().isBlank()) {
+                    if (weightLogRepository.existsByUserIdAndLogDate(user.getId(), date)) {
+                        weightSkipped++;
+                    } else {
+                        WeightLog log = new WeightLog();
+                        log.setUser(user);
+                        log.setLogDate(date);
+                        log.setWeightLbs(new BigDecimal(weightObj.toString()));
+                        weightLogRepository.save(log);
+                        weightImported++;
+                    }
+                }
+
+                // Nutrition (calories + protein)
+                Object calObj  = row.get("Calories");
+                Object protObj = row.get("Protein");
+                boolean hasCalories = calObj  != null && !calObj.toString().isBlank();
+                boolean hasProtein  = protObj != null && !protObj.toString().isBlank();
+                if (hasCalories || hasProtein) {
+                    if (nutritionLogRepository.findByUserIdAndLogDate(user.getId(), date).isPresent()) {
+                        nutritionSkipped++;
+                    } else {
+                        NutritionLog nutrition = new NutritionLog();
+                        nutrition.setUser(user);
+                        nutrition.setLogDate(date);
+                        nutrition.setDayType("training"); // default; not stored in export
+                        nutrition.setCalories(hasCalories ? (int) Math.round(Double.parseDouble(calObj.toString())) : null);
+                        nutrition.setProteinGrams(hasProtein ? (int) Math.round(Double.parseDouble(protObj.toString())) : null);
+                        nutritionLogRepository.save(nutrition);
+                        nutritionImported++;
+                    }
                 }
             }
         }
 
         // ── Workouts ──────────────────────────────────────────────────────────
-        // Group workout rows by date
         if (request.getWorkouts() != null) {
             Map<LocalDate, List<Map<String, Object>>> byDate = new LinkedHashMap<>();
             for (Map<String, Object> row : request.getWorkouts()) {
@@ -101,7 +126,7 @@ public class ImportService {
             }
         }
 
-        return new ImportResultDTO(weightImported, weightSkipped, workoutsImported, workoutsSkipped);
+        return new ImportResultDTO(weightImported, weightSkipped, nutritionImported, nutritionSkipped, workoutsImported, workoutsSkipped);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
