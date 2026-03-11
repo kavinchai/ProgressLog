@@ -38,8 +38,10 @@
   transition: color 80ms;
 }
 
-.sidebar-link:hover {
-  color: var(--fg);
+@media (hover: hover) {
+  .sidebar-link:hover {
+    color: var(--fg);
+  }
 }
 
 .sidebar-link.active {
@@ -66,8 +68,10 @@
   transition: color 80ms;
 }
 
-.sidebar-darkmode:hover {
-  color: var(--fg);
+@media (hover: hover) {
+  .sidebar-darkmode:hover {
+    color: var(--fg);
+  }
 }
 
 .sidebar-user {
@@ -86,9 +90,11 @@
   transition: color 80ms;
 }
 
-.sidebar-logout:hover {
-  color: var(--fg);
-  background: transparent;
+@media (hover: hover) {
+  .sidebar-logout:hover {
+    color: var(--fg);
+    background: transparent;
+  }
 }
 
 /* ── Mobile: bottom tab bar ── */
