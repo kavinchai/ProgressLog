@@ -3,7 +3,9 @@
     "allow": [
       "Bash(sed -i 's/import jakarta.persistence.\\\\*;/import com.fasterxml.jackson.annotation.JsonIgnore;\\\\nimport jakarta.persistence.*;/' \"c:\\\\Users\\\\Kavin\\\\Documents\\\\GitHub\\\\WorkoutApp\\\\backend\\\\src\\\\main\\\\java\\\\com\\\\kavin\\\\fitness\\\\model\\\\WeightLog.java\")",
       "Bash(sed -i 's/@ManyToOne\\(fetch = FetchType.LAZY, optional = false\\)\\\\n    @JoinColumn\\(name = \"\"user_id\"\", nullable = false\\)\\\\n    private User user;/@JsonIgnore\\\\n    @ManyToOne\\(fetch = FetchType.LAZY, optional = false\\)\\\\n    @JoinColumn\\(name = \"\"user_id\"\", nullable = false\\)\\\\n    private User user;/' \"c:\\\\Users\\\\Kavin\\\\Documents\\\\GitHub\\\\WorkoutApp\\\\backend\\\\src\\\\main\\\\java\\\\com\\\\kavin\\\\fitness\\\\model\\\\WeightLog.java\")",
-      "Bash(gradle test:*)"
+      "Bash(gradle test:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)"
     ]
   }
 }
