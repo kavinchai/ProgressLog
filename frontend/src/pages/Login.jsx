@@ -5,23 +5,34 @@ import './Login.css';
 
 export default function Login() {
   const login = useAuthStore((state) => state.login);
+  const [mode,     setMode]     = useState('login'); // 'login' | 'signup'
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
+
+  const isSignup = mode === 'signup';
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/login', { username, password });
+      const endpoint = isSignup ? '/auth/register' : '/auth/login';
+      const res = await api.post(endpoint, { username, password });
       login(res.data.token, res.data.username);
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Invalid username or password.');
+      setError(err.response?.data?.message ?? (isSignup ? 'Registration failed.' : 'Invalid username or password.'));
     } finally {
       setLoading(false);
     }
+  }
+
+  function switchMode() {
+    setMode(isSignup ? 'login' : 'signup');
+    setError('');
+    setUsername('');
+    setPassword('');
   }
 
   return (
@@ -34,7 +45,7 @@ export default function Login() {
 
         <div className="login-inner">
           <div className="login-title">| FITTRACK |</div>
-          <div className="login-divider">{'|' + '-'.repeat(26) + '|'}</div>
+          <div className="login-divider">{'|' + '-'.repeat(25) + '|'}</div>
 
           <form className="login-form" onSubmit={handleSubmit}>
             {error && (
@@ -47,7 +58,6 @@ export default function Login() {
                 id="username"
                 type="text"
                 className="login-input"
-                placeholder="kavin"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -61,22 +71,23 @@ export default function Login() {
                 id="password"
                 type="password"
                 className="login-input"
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="current-password"
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
               />
             </div>
 
             <button className="login-btn" type="submit" disabled={loading}>
-              {loading ? '| logging in... |' : '|   Log In   |'}
+              {loading
+                ? (isSignup ? '| signing up... |' : '| logging in... |')
+                : (isSignup ? '|   Sign Up   |' : '|   Log In   |')}
             </button>
           </form>
 
-          <div className="login-hint">
-            default: kavin / password
-          </div>
+          <button className="login-switch-btn" onClick={switchMode}>
+            {isSignup ? 'already have an account? log in' : "don't have an account? sign up"}
+          </button>
         </div>
 
         <div className="login-bottom-border">

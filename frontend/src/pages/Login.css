@@ -107,11 +107,20 @@
   padding: 4px 8px;
 }
 
-.login-hint {
-  margin-top: 16px;
+.login-switch-btn {
+  margin-top: 14px;
+  font-family: var(--font);
   font-size: var(--fs-sm);
+  background: none;
+  border: none;
   color: var(--muted);
+  cursor: pointer;
   text-align: center;
+  width: 100%;
+  padding: 0;
+}
+.login-switch-btn:hover {
+  color: var(--fg);
 }
 
 @media (max-width: 360px) {
