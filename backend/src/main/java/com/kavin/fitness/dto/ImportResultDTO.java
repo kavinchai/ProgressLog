@@ -7,6 +7,8 @@ import lombok.Getter;
 public class ImportResultDTO {
     private int weightImported;
     private int weightSkipped;
+    private int nutritionImported;
+    private int nutritionSkipped;
     private int workoutsImported;
     private int workoutsSkipped;
 }

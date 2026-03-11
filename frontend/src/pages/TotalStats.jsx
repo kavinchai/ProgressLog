@@ -566,12 +566,13 @@ export default function TotalStats() {
       const text = await file.text();
       const payload = JSON.parse(text);
       const res = await api.post('/import', payload);
-      const { weightImported, weightSkipped, workoutsImported, workoutsSkipped } = res.data;
+      const { weightImported, weightSkipped, nutritionImported, nutritionSkipped, workoutsImported, workoutsSkipped } = res.data;
       setImportStatus({
         ok: true,
-        message: `imported: ${weightImported} weight, ${workoutsImported} workouts  |  skipped: ${weightSkipped} weight, ${workoutsSkipped} workouts`,
+        message: `imported: ${weightImported} weight, ${nutritionImported} nutrition, ${workoutsImported} workouts  |  skipped: ${weightSkipped} weight, ${nutritionSkipped} nutrition, ${workoutsSkipped} workouts`,
       });
       refetchW();
+      refetchN();
       refetchWo();
     } catch {
       setImportStatus({ ok: false, message: 'import failed — check file format' });
