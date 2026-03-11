@@ -1,10 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import useAuthStore from './store/authStore';
 import Sidebar from './components/layout/Sidebar';
 import Login from './pages/Login';
 import Today from './pages/Today';
 import WeeklyStats from './pages/WeeklyStats';
 import TotalStats from './pages/TotalStats';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 
 function AppLayout({ children }) {
   return (
@@ -32,6 +39,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AppLayout>
         <Routes>
           <Route path="/"       element={<Navigate to="/today" replace />} />
