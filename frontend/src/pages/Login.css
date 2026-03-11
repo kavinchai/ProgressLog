@@ -11,19 +11,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.login-top-border,
-.login-bottom-border {
-  color: var(--fg);
-  font-size: var(--fs);
-  letter-spacing: 0;
-  user-select: none;
+  border: 1px solid var(--fg);
 }
 
 .login-inner {
-  border-left: 1px solid var(--fg);
-  border-right: 1px solid var(--fg);
   padding: 20px 24px;
   width: 280px;
 }
@@ -130,11 +121,5 @@
 @media (max-width: 360px) {
   .login-inner {
     width: calc(100vw - 32px);
-  }
-
-  .login-top-border,
-  .login-bottom-border {
-    width: calc(100vw - 32px);
-    overflow: hidden;
   }
 }
