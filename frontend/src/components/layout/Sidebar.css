@@ -128,11 +128,11 @@
   .sidebar-footer {
     border-top: none;
     border-left: 1px solid var(--border-dim);
-    padding: 0 8px;
+    padding: 0 10px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 10px;
   }
 
   .sidebar-user { display: none; }
