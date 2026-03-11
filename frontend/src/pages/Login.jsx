@@ -47,12 +47,8 @@ export default function Login() {
 	return (
 		<div className="login-page">
 			<div className="login-card">
-				<div className="login-top-border">{"_".repeat(28)}</div>
-
 				<div className="login-inner">
 					<div className="login-title">| fit track |</div>
-					<div className="login-divider">{"|" + "-".repeat(25) + "|"}</div>
-
 					<form className="login-form" onSubmit={handleSubmit}>
 						{error && <div className="login-error">! {error}</div>}
 
@@ -99,8 +95,6 @@ export default function Login() {
 							: "don't have an account? sign up"}
 					</button>
 				</div>
-
-				<div className="login-bottom-border">{"_".repeat(28)}</div>
 			</div>
 		</div>
 	);
