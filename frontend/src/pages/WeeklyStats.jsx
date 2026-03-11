@@ -435,7 +435,6 @@ function WeightLineChart({ days, weights }) {
           axisLine={false}
           tickLine={false}
           width={48}
-          label={{ value: 'lbs', position: 'insideTopLeft', offset: 4, style: { fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' } }}
         />
         <Tooltip content={<WeightTooltip />} />
         <Line
