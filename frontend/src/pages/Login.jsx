@@ -88,8 +88,8 @@ export default function Login() {
 									? "| signing up... |"
 									: "| logging in... |"
 								: isSignup
-									? "|   sign Up   |"
-									: "|   log In   |"}
+									? "|   sign up   |"
+									: "|   log in   |"}
 						</button>
 					</form>
 
