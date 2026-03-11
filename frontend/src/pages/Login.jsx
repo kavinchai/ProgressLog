@@ -22,9 +22,15 @@ export default function Login() {
 			const res = await api.post(endpoint, { username, password });
 			login(res.data.token, res.data.username);
 		} catch (err) {
+			const status = err.response?.status;
+			const msg = err.response?.data?.message;
 			setError(
-				err.response?.data?.message ??
-					(isSignup ? "Registration failed." : "Invalid username or password."),
+				msg ??
+					(status
+						? `${isSignup ? "Registration" : "Login"} failed (HTTP ${status}).`
+						: isSignup
+							? "Registration failed."
+							: "Invalid username or password."),
 			);
 		} finally {
 			setLoading(false);
