@@ -71,6 +71,16 @@
   --transition-normal: 150ms ease;
 }
 
+/* ── Mobile font scale ── */
+@media (max-width: 640px) {
+  :root {
+    --fs:    13px;
+    --fs-sm: 11px;
+    --fs-lg: 16px;
+    --fs-xl: 20px;
+  }
+}
+
 /* ── Dark mode ── */
 .dark {
   --bg:           #000000;

@@ -128,27 +128,29 @@
   .sidebar-footer {
     border-top: none;
     border-left: 1px solid var(--border-dim);
-    padding: 0 14px;
-    flex-direction: row;
+    padding: 0 8px;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0;
+    gap: 4px;
   }
 
   .sidebar-user { display: none; }
 
   .sidebar-logout {
-    height: 48px;
+    height: auto;
     display: flex;
     align-items: center;
     font-size: var(--fs-sm);
+    white-space: nowrap;
   }
 
   .sidebar-darkmode {
-    height: 48px;
+    height: auto;
     display: flex;
     align-items: center;
     font-size: var(--fs-sm);
-    padding: 0 8px;
+    padding: 0;
+    white-space: nowrap;
   }
 }

@@ -47,6 +47,7 @@
 /* ASCII table */
 .weekly-table-wrap {
   overflow-x: auto;
+  max-width: 100%;
 }
 
 .weekly-table {
