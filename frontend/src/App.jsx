@@ -9,7 +9,9 @@ import TotalStats from './pages/TotalStats';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  useEffect(() => {
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+  }, [pathname]);
   return null;
 }
 
@@ -26,6 +28,10 @@ function AppLayout({ children }) {
 
 export default function App() {
   const token = useAuthStore((state) => state.token);
+
+  useEffect(() => {
+    if (token) requestAnimationFrame(() => window.scrollTo(0, 0));
+  }, [token]);
 
   if (!token) {
     return (
