@@ -92,9 +92,11 @@
   letter-spacing: 0.04em;
   transition: background 80ms, color 80ms;
 }
-.login-btn:hover:not(:disabled) {
-  background: var(--fg);
-  color: var(--bg);
+@media (hover: hover) {
+  .login-btn:hover:not(:disabled) {
+    background: var(--fg);
+    color: var(--bg);
+  }
 }
 .login-btn:disabled {
   opacity: 0.45;
@@ -119,8 +121,10 @@
   width: 100%;
   padding: 0;
 }
-.login-switch-btn:hover {
-  color: var(--fg);
+@media (hover: hover) {
+  .login-switch-btn:hover {
+    color: var(--fg);
+  }
 }
 
 @media (max-width: 360px) {

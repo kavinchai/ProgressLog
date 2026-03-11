@@ -41,9 +41,11 @@
   padding: 1px 6px;
   line-height: 1.4;
 }
-.modal-close:hover {
-  background: var(--fg);
-  color: var(--bg);
+@media (hover: hover) {
+  .modal-close:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
 }
 
 .modal-body {
@@ -122,7 +124,9 @@
   padding: 3px 12px;
   cursor: pointer;
 }
-.btn-primary:hover:not(:disabled) { opacity: 0.85; }
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+}
 .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .btn-ghost {
@@ -135,7 +139,9 @@
   padding: 3px 12px;
   cursor: pointer;
 }
-.btn-ghost:hover { color: var(--fg); border-color: var(--fg); }
+@media (hover: hover) {
+  .btn-ghost:hover { color: var(--fg); border-color: var(--fg); }
+}
 
 @media (max-width: 640px) {
   .modal-overlay {

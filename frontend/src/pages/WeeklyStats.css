@@ -76,8 +76,10 @@
   color: var(--muted);
 }
 
-.weekly-row:hover td {
-  background: #0d0d0d;
+@media (hover: hover) {
+  .weekly-row:hover td {
+    background: #0d0d0d;
+  }
 }
 
 /* Detail row */
