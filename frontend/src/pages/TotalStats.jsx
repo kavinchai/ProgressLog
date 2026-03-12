@@ -448,14 +448,20 @@ function WeightLineChart({ dates, weights }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 25;
+const RANGE_OPTIONS = ['30d', '90d', '1yr', 'all'];
+const RANGE_DAYS    = { '30d': 30, '90d': 90, '1yr': 365, 'all': Infinity };
+
 export default function TotalStats() {
   const { data: weightData,    refetch: refetchW }  = useWeightLog();
   const { data: nutritionData, refetch: refetchN }  = useNutrition();
   const { data: workoutData,   refetch: refetchWo } = useWorkouts();
 
-  const [expandedDay, setExpandedDay] = useState(null);
-  const [importStatus, setImportStatus] = useState(null); // null | { ok, message }
-  const [importing, setImporting]       = useState(false);
+  const [expandedDay,   setExpandedDay]   = useState(null);
+  const [importStatus,  setImportStatus]  = useState(null);
+  const [importing,     setImporting]     = useState(false);
+  const [rangeKey,      setRangeKey]      = useState('90d');
+  const [page,          setPage]          = useState(0);
   const fileInputRef = useRef(null);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -487,9 +493,21 @@ export default function TotalStats() {
   const avgCalories     = avg(rows.map(r => r.calories));
   const avgProtein      = avg(rows.map(r => r.protein));
 
-  // For weight bars show chronological order (oldest first)
-  const weightBarDates   = [...allDates].reverse();
+  // Weight trend chart — filtered by selected range, chronological order
+  const cutoff = RANGE_DAYS[rangeKey] === Infinity
+    ? null
+    : new Date(Date.now() - RANGE_DAYS[rangeKey] * 86400000).toISOString().slice(0, 10);
+  const weightBarDates   = [...allDates].reverse().filter(d => !cutoff || d >= cutoff);
   const weightBarWeights = weightBarDates.map(d => rows.find(r => r.date === d)?.weight ?? null);
+
+  // Pagination
+  const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+  const pageRows   = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  function goToPage(p) {
+    setPage(p);
+    setExpandedDay(null);
+  }
 
   // ── Export helpers ────────────────────────────────────────────────────────
 
@@ -640,7 +658,7 @@ export default function TotalStats() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map(r => (
+                  {pageRows.map(r => (
                     <>
                       <tr
                         key={r.date}
@@ -676,6 +694,15 @@ export default function TotalStats() {
             </div>
           )}
         </div>
+        {totalPages > 1 && (
+          <div className="pagination-bar">
+            <button className="btn btn-sm" onClick={() => goToPage(page - 1)} disabled={page === 0}>[prev]</button>
+            <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
+              {page + 1} / {totalPages}
+            </span>
+            <button className="btn btn-sm" onClick={() => goToPage(page + 1)} disabled={page >= totalPages - 1}>[next]</button>
+          </div>
+        )}
         <div className="export-bar">
           <span className="muted" style={{ fontSize: 'var(--fs-sm)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>export</span>
           <div className="export-bar-btns">
@@ -701,7 +728,17 @@ export default function TotalStats() {
         <div className="section-box">
           <div className="section-header">
             <span className="section-title">Weight Trend</span>
-            <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>oldest → newest</span>
+            <div className="range-selector">
+              {RANGE_OPTIONS.map(r => (
+                <button
+                  key={r}
+                  className={'btn btn-sm' + (rangeKey === r ? ' range-active' : '')}
+                  onClick={() => setRangeKey(r)}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="section-body">
             <WeightLineChart dates={weightBarDates} weights={weightBarWeights} />

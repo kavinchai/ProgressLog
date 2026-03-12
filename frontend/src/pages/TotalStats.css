@@ -15,3 +15,22 @@
   display: flex;
   gap: 8px;
 }
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-top: 1px solid var(--border-dim);
+  padding: 8px 14px;
+}
+
+.range-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.range-active {
+  background: var(--fg);
+  color: var(--bg);
+}
