@@ -467,6 +467,7 @@ export default function TotalStats() {
   const [importing,     setImporting]     = useState(false);
   const [rangeKey,      setRangeKey]      = useState('90d');
   const [logMonth,      setLogMonth]      = useState(null); // null = default to most recent
+  const [picker,        setPicker]        = useState(null); // null | 'month' | 'year'
   const fileInputRef = useRef(null);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -506,12 +507,46 @@ export default function TotalStats() {
   const weightBarWeights = weightBarDates.map(d => rows.find(r => r.date === d)?.weight ?? null);
 
   // Month navigator — all months that have data, sorted oldest→newest
-  const allMonths    = [...new Set(allDates.map(d => d.slice(0, 7)))].sort();
-  const activeMonth  = logMonth ?? allMonths[allMonths.length - 1] ?? today.slice(0, 7);
-  const monthIdx     = allMonths.indexOf(activeMonth);
-  const monthRows    = rows.filter(r => r.date.startsWith(activeMonth));
+  const allMonths      = [...new Set(allDates.map(d => d.slice(0, 7)))].sort();
+  const activeMonth    = logMonth ?? today.slice(0, 7);
+  const monthIdx       = allMonths.indexOf(activeMonth);
 
-  function goMonth(ym) { setLogMonth(ym); setExpandedDay(null); }
+  // All calendar days in the active month up to today, newest first
+  const monthRows = (() => {
+    if (activeMonth > today.slice(0, 7)) return [];
+    const [y, m] = activeMonth.split('-').map(Number);
+    const lastOfMonth = new Date(y, m, 0).toISOString().slice(0, 10);
+    const end = lastOfMonth < today ? lastOfMonth : today;
+    const days = [];
+    for (let d = new Date(`${activeMonth}-01T00:00:00`); d <= new Date(`${end}T00:00:00`); d.setDate(d.getDate() + 1)) {
+      days.push(d.toISOString().slice(0, 10));
+    }
+    return days.reverse().map(date => rows.find(r => r.date === date) ?? {
+      date, weightEntry: null, nutritionEntry: null, workoutEntry: null,
+      weight: null, calories: null, protein: null, workout: null,
+    });
+  })();
+  const [activeYear, activeMonthNum] = activeMonth.split('-');
+  const allYears       = [...new Set(allMonths.map(m => m.slice(0, 4)))].sort();
+  const monthsWithData = new Set(allMonths.filter(m => m.startsWith(activeYear)).map(m => m.slice(5, 7)));
+
+  function goMonth(ym) { setLogMonth(ym); setExpandedDay(null); setPicker(null); }
+
+  function selectMonth(mm) {
+    goMonth(`${activeYear}-${mm}`);
+  }
+
+  function selectYear(y) {
+    const sameMonth = `${y}-${activeMonthNum}`;
+    if (allMonths.includes(sameMonth)) {
+      goMonth(sameMonth);
+    } else {
+      const yearMonths = allMonths.filter(m => m.startsWith(y));
+      goMonth(yearMonths[yearMonths.length - 1]);
+    }
+  }
+
+  function togglePicker(type) { setPicker(p => p === type ? null : type); }
 
   // ── Export helpers ────────────────────────────────────────────────────────
 
@@ -647,11 +682,51 @@ export default function TotalStats() {
           </span>
         </div>
         {allMonths.length > 0 && (
-          <div className="month-nav">
-            <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx - 1])} disabled={monthIdx <= 0}>[prev]</button>
-            <span style={{ fontSize: 'var(--fs-sm)' }}>{monthLabel(activeMonth)}</span>
-            <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx + 1])} disabled={monthIdx >= allMonths.length - 1}>[next]</button>
-          </div>
+          <>
+            <div className="month-nav">
+              <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx - 1])} disabled={monthIdx <= 0}>[prev]</button>
+              <span className="month-nav-label">
+                <button className={'btn btn-sm' + (picker === 'month' ? ' range-active' : '')} onClick={() => togglePicker('month')}>
+                  {MONTH_NAMES[parseInt(activeMonthNum) - 1]}
+                </button>
+                <button className={'btn btn-sm' + (picker === 'year' ? ' range-active' : '')} onClick={() => togglePicker('year')}>
+                  {activeYear}
+                </button>
+              </span>
+              <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx + 1])} disabled={monthIdx >= allMonths.length - 1}>[next]</button>
+            </div>
+            {picker === 'month' && (
+              <div className="month-picker">
+                {Array.from({ length: 12 }, (_, i) => {
+                  const mm = String(i + 1).padStart(2, '0');
+                  const hasData = monthsWithData.has(mm);
+                  return (
+                    <button
+                      key={mm}
+                      className={'btn btn-sm' + (mm === activeMonthNum ? ' range-active' : '')}
+                      onClick={() => selectMonth(mm)}
+                      disabled={!hasData}
+                    >
+                      {MONTH_NAMES[i].slice(0, 3)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {picker === 'year' && (
+              <div className="month-picker">
+                {allYears.map(y => (
+                  <button
+                    key={y}
+                    className={'btn btn-sm' + (y === activeYear ? ' range-active' : '')}
+                    onClick={() => selectYear(y)}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
         <div className="section-body" style={{ padding: 0 }}>
           {rows.length === 0 ? (
