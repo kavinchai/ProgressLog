@@ -26,6 +26,20 @@
   padding: 8px 14px;
 }
 
+.month-nav-label {
+  display: flex;
+  gap: 4px;
+}
+
+.month-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-dim);
+}
+
 .range-selector {
   display: flex;
   gap: 4px;
