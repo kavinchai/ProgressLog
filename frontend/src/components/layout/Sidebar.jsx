@@ -4,9 +4,10 @@ import useAuthStore from '../../store/authStore';
 import './Sidebar.css';
 
 const navItems = [
-  { to: '/today',  label: 'Today'        },
-  { to: '/weekly', label: 'Weekly Stats' },
-  { to: '/total',  label: 'Total Stats'  },
+  { to: '/today',    label: 'Today'        },
+  { to: '/weekly',   label: 'Weekly Stats' },
+  { to: '/total',    label: 'Total Stats'  },
+  { to: '/strength', label: 'Strength'     },
 ];
 
 export default function Sidebar() {

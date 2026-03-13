@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Today from './pages/Today';
 import WeeklyStats from './pages/WeeklyStats';
 import TotalStats from './pages/TotalStats';
+import Strength from './pages/Strength';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -49,10 +50,11 @@ export default function App() {
       <AppLayout>
         <Routes>
           <Route path="/"       element={<Navigate to="/today" replace />} />
-          <Route path="/today"  element={<Today />} />
-          <Route path="/weekly" element={<WeeklyStats />} />
-          <Route path="/total"  element={<TotalStats />} />
-          <Route path="*"       element={<Navigate to="/today" replace />} />
+          <Route path="/today"    element={<Today />} />
+          <Route path="/weekly"   element={<WeeklyStats />} />
+          <Route path="/total"    element={<TotalStats />} />
+          <Route path="/strength" element={<Strength />} />
+          <Route path="*"         element={<Navigate to="/today" replace />} />
         </Routes>
       </AppLayout>
     </BrowserRouter>
