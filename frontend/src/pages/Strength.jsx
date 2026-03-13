@@ -38,10 +38,43 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
+function LiftChart({ data, color }) {
+  const chartData = data.map(d => ({ date: formatDate(d.sessionDate), weight: d.maxWeightLbs }));
+  const vals   = chartData.map(d => d.weight);
+  const minVal = Math.min(...vals);
+  const maxVal = Math.max(...vals);
+  const pad    = (maxVal - minVal) * 0.15 || 5;
+
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -16 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+        <XAxis dataKey="date" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+        <YAxis
+          domain={[minVal - pad, maxVal + pad]}
+          tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
+          axisLine={false} tickLine={false}
+          tickFormatter={v => v + ' lbs'}
+        />
+        <Tooltip content={({ active, payload, label }) =>
+          active && payload?.length ? (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '6px 10px', fontSize: 'var(--font-size-sm)' }}>
+              <div style={{ color: 'var(--text-muted)' }}>{label}</div>
+              <div style={{ color, fontWeight: 600 }}>{payload[0].value} lbs</div>
+            </div>
+          ) : null
+        } />
+        <Line type="monotone" dataKey="weight" stroke={color} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
 export default function Strength() {
   const [progressData, setProgressData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [expandedLift, setExpandedLift] = useState(null);
 
   useEffect(() => {
     api.get('/progress/strength')
@@ -111,19 +144,31 @@ export default function Strength() {
       {/* ── Per-lift detail ── */}
       <div className="strength-sets-card">
         <div className="strength-sets-title">Per-Lift Progression Detail</div>
-        {progressData.map((exercise) => {
-          const first = exercise.data[0];
-          const last  = exercise.data[exercise.data.length - 1];
-          const delta = last && first ? (last.maxWeightLbs - first.maxWeightLbs) : 0;
+        {progressData.map((exercise, i) => {
+          const first    = exercise.data[0];
+          const last     = exercise.data[exercise.data.length - 1];
+          const delta    = last && first ? (last.maxWeightLbs - first.maxWeightLbs) : 0;
+          const color    = CHART_COLORS[i % CHART_COLORS.length];
+          const expanded = expandedLift === exercise.exerciseName;
 
           return (
             <div key={exercise.exerciseName} className="lift-section">
-              <div className="lift-section-header">
+              <div
+                className="lift-section-header"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setExpandedLift(expanded ? null : exercise.exerciseName)}
+              >
                 <span className="lift-name">{exercise.exerciseName}</span>
-                <span className="lift-progress-badge">
-                  {delta >= 0 ? '+' : ''}{delta} lbs total
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span className="lift-progress-badge">{delta >= 0 ? '+' : ''}{delta} lbs total</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>{expanded ? '▲' : '▼'}</span>
                 </span>
               </div>
+              {expanded && exercise.data.length > 1 && (
+                <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                  <LiftChart data={exercise.data} color={color} />
+                </div>
+              )}
               <div className="sets-table-wrapper">
                 <table className="data-table">
                   <thead>
@@ -135,7 +180,7 @@ export default function Strength() {
                     </tr>
                   </thead>
                   <tbody>
-                    {exercise.data.map((session) => (
+                    {[...exercise.data].sort((a, b) => b.maxWeightLbs - a.maxWeightLbs).map((session) => (
                       <tr key={session.sessionDate}>
                         <td>{session.sessionDate}</td>
                         <td>
