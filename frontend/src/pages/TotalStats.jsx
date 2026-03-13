@@ -448,9 +448,14 @@ function WeightLineChart({ dates, weights }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 25;
 const RANGE_OPTIONS = ['30d', '90d', '1yr', 'all'];
 const RANGE_DAYS    = { '30d': 30, '90d': 90, '1yr': 365, 'all': Infinity };
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function monthLabel(ym) {
+  const [y, m] = ym.split('-');
+  return MONTH_NAMES[parseInt(m) - 1] + ' ' + y;
+}
 
 export default function TotalStats() {
   const { data: weightData,    refetch: refetchW }  = useWeightLog();
@@ -461,7 +466,7 @@ export default function TotalStats() {
   const [importStatus,  setImportStatus]  = useState(null);
   const [importing,     setImporting]     = useState(false);
   const [rangeKey,      setRangeKey]      = useState('90d');
-  const [page,          setPage]          = useState(0);
+  const [logMonth,      setLogMonth]      = useState(null); // null = default to most recent
   const fileInputRef = useRef(null);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -500,14 +505,13 @@ export default function TotalStats() {
   const weightBarDates   = [...allDates].reverse().filter(d => !cutoff || d >= cutoff);
   const weightBarWeights = weightBarDates.map(d => rows.find(r => r.date === d)?.weight ?? null);
 
-  // Pagination
-  const totalPages = Math.ceil(rows.length / PAGE_SIZE);
-  const pageRows   = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  // Month navigator — all months that have data, sorted oldest→newest
+  const allMonths    = [...new Set(allDates.map(d => d.slice(0, 7)))].sort();
+  const activeMonth  = logMonth ?? allMonths[allMonths.length - 1] ?? today.slice(0, 7);
+  const monthIdx     = allMonths.indexOf(activeMonth);
+  const monthRows    = rows.filter(r => r.date.startsWith(activeMonth));
 
-  function goToPage(p) {
-    setPage(p);
-    setExpandedDay(null);
-  }
+  function goMonth(ym) { setLogMonth(ym); setExpandedDay(null); }
 
   // ── Export helpers ────────────────────────────────────────────────────────
 
@@ -642,9 +646,18 @@ export default function TotalStats() {
             {rows.length} {rows.length === 1 ? 'entry' : 'entries'} · click row to expand
           </span>
         </div>
+        {allMonths.length > 0 && (
+          <div className="month-nav">
+            <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx - 1])} disabled={monthIdx <= 0}>[prev]</button>
+            <span style={{ fontSize: 'var(--fs-sm)' }}>{monthLabel(activeMonth)}</span>
+            <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx + 1])} disabled={monthIdx >= allMonths.length - 1}>[next]</button>
+          </div>
+        )}
         <div className="section-body" style={{ padding: 0 }}>
           {rows.length === 0 ? (
             <div style={{ padding: '12px 14px' }} className="muted">No data logged yet.</div>
+          ) : monthRows.length === 0 ? (
+            <div style={{ padding: '12px 14px' }} className="muted">No entries for {monthLabel(activeMonth)}.</div>
           ) : (
             <div className="weekly-table-wrap">
               <table className="weekly-table">
@@ -658,7 +671,7 @@ export default function TotalStats() {
                   </tr>
                 </thead>
                 <tbody>
-                  {pageRows.map(r => (
+                  {monthRows.map(r => (
                     <>
                       <tr
                         key={r.date}
@@ -694,15 +707,6 @@ export default function TotalStats() {
             </div>
           )}
         </div>
-        {totalPages > 1 && (
-          <div className="pagination-bar">
-            <button className="btn btn-sm" onClick={() => goToPage(page - 1)} disabled={page === 0}>[prev]</button>
-            <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
-              {page + 1} / {totalPages}
-            </span>
-            <button className="btn btn-sm" onClick={() => goToPage(page + 1)} disabled={page >= totalPages - 1}>[next]</button>
-          </div>
-        )}
         <div className="export-bar">
           <span className="muted" style={{ fontSize: 'var(--fs-sm)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>export</span>
           <div className="export-bar-btns">

@@ -16,12 +16,13 @@
   gap: 8px;
 }
 
-.pagination-bar {
+.month-nav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   border-top: 1px solid var(--border-dim);
+  border-bottom: 1px solid var(--border-dim);
   padding: 8px 14px;
 }
 
