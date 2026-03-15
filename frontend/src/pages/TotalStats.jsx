@@ -13,6 +13,10 @@ import './TotalStats.css';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
+function localDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function formatDate(iso) {
   const [y, m, d] = iso.split('-');
   return parseInt(m) + '/' + parseInt(d) + '/' + y.slice(2);
@@ -470,7 +474,7 @@ export default function TotalStats() {
   const [picker,        setPicker]        = useState(null); // null | 'month' | 'year'
   const fileInputRef = useRef(null);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr(new Date());
 
   // Build union of all dates, sorted newest first
   const allDates = [...new Set([
@@ -502,7 +506,7 @@ export default function TotalStats() {
   // Weight trend chart — filtered by selected range, chronological order
   const cutoff = RANGE_DAYS[rangeKey] === Infinity
     ? null
-    : new Date(Date.now() - RANGE_DAYS[rangeKey] * 86400000).toISOString().slice(0, 10);
+    : localDateStr(new Date(Date.now() - RANGE_DAYS[rangeKey] * 86400000));
   const weightBarDates   = [...allDates].reverse().filter(d => !cutoff || d >= cutoff);
   const weightBarWeights = weightBarDates.map(d => rows.find(r => r.date === d)?.weight ?? null);
 
@@ -515,11 +519,11 @@ export default function TotalStats() {
   const monthRows = (() => {
     if (activeMonth > today.slice(0, 7)) return [];
     const [y, m] = activeMonth.split('-').map(Number);
-    const lastOfMonth = new Date(y, m, 0).toISOString().slice(0, 10);
+    const lastOfMonth = localDateStr(new Date(y, m, 0));
     const end = lastOfMonth < today ? lastOfMonth : today;
     const days = [];
     for (let d = new Date(`${activeMonth}-01T00:00:00`); d <= new Date(`${end}T00:00:00`); d.setDate(d.getDate() + 1)) {
-      days.push(d.toISOString().slice(0, 10));
+      days.push(localDateStr(d));
     }
     return days.reverse().map(date => rows.find(r => r.date === date) ?? {
       date, weightEntry: null, nutritionEntry: null, workoutEntry: null,

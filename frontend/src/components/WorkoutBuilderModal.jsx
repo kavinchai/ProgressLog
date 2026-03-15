@@ -3,7 +3,8 @@ import api from '../api';
 import Modal from './Modal';
 import './WorkoutBuilderModal.css';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const now = new Date();
+const TODAY = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
 function emptySet(num) {
   return { setNumber: num, reps: '', weightLbs: '' };

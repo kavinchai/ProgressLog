@@ -8,7 +8,8 @@ import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
 import './Today.css';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const now = new Date();
+const TODAY = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
 function fmtDate(iso) {
   const [y, m, d] = iso.split('-');

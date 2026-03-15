@@ -15,6 +15,10 @@ const PHASE1_TARGET       = 153.5;
 const PHASE2_TARGET       = 149.5;
 const PHASE2_END_DATE     = '2026-05-20';
 
+function localDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function daysBetween(a, b) {
   return Math.round((new Date(b) - new Date(a)) / 86400000);
 }
@@ -63,8 +67,8 @@ export default function Dashboard() {
   }));
 
   const phase1Pct  = latestWeight ? phaseProgress(parseFloat(latestWeight.weightLbs)) : 0;
-  const daysLeft1  = daysBetween(new Date().toISOString().slice(0, 10), PHASE1_END_DATE);
-  const daysLeft2  = daysBetween(new Date().toISOString().slice(0, 10), PHASE2_END_DATE);
+  const daysLeft1  = daysBetween(localDateStr(new Date()), PHASE1_END_DATE);
+  const daysLeft2  = daysBetween(localDateStr(new Date()), PHASE2_END_DATE);
 
   const currentWeight = latestWeight ? parseFloat(latestWeight.weightLbs) : 0;
   const prevWeight    = weightData.length > 1 ? parseFloat(weightData.at(-2).weightLbs) : currentWeight;
