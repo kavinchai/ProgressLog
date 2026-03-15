@@ -3,11 +3,8 @@ import {
   Tooltip, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts';
 import useNutrition from '../hooks/useNutrition';
+import useUserProfile from '../hooks/useUserProfile';
 import './Nutrition.css';
-
-const CALORIE_TARGET_TRAINING = 2600;
-const CALORIE_TARGET_REST     = 2000;
-const PROTEIN_TARGET          = 180;
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -35,6 +32,11 @@ const BarTooltip = ({ active, payload, label, unit }) => {
 
 export default function Nutrition() {
   const { data, loading, error } = useNutrition();
+  const { goals } = useUserProfile();
+
+  const CALORIE_TARGET_TRAINING = goals.calorieTargetTraining;
+  const CALORIE_TARGET_REST     = goals.calorieTargetRest;
+  const PROTEIN_TARGET          = goals.proteinTarget;
 
   if (loading) return <div className="loading-state">Loading nutrition data…</div>;
   if (error)   return <div className="error-state">Error: {error}</div>;
@@ -79,12 +81,12 @@ export default function Nutrition() {
         <div className="nutrition-summary-card">
           <div className="nutrition-summary-label">Training Days</div>
           <div className="nutrition-summary-value">{trainingDays}</div>
-          <div className="nutrition-summary-sub">target 2600 kcal</div>
+          <div className="nutrition-summary-sub">target {CALORIE_TARGET_TRAINING} kcal</div>
         </div>
         <div className="nutrition-summary-card">
           <div className="nutrition-summary-label">Rest Days</div>
           <div className="nutrition-summary-value">{restDays}</div>
-          <div className="nutrition-summary-sub">target 2000 kcal</div>
+          <div className="nutrition-summary-sub">target {CALORIE_TARGET_REST} kcal</div>
         </div>
       </div>
 
@@ -93,7 +95,7 @@ export default function Nutrition() {
         {/* Calories chart */}
         <div className="nutrition-chart-card">
           <div className="nutrition-chart-title">Daily Calories</div>
-          <div className="nutrition-chart-subtitle">Training target 2600 kcal · Rest target 2000 kcal</div>
+          <div className="nutrition-chart-subtitle">Training target {CALORIE_TARGET_TRAINING} kcal · Rest target {CALORIE_TARGET_REST} kcal</div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={calData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
@@ -119,7 +121,7 @@ export default function Nutrition() {
         {/* Protein chart */}
         <div className="nutrition-chart-card">
           <div className="nutrition-chart-title">Daily Protein</div>
-          <div className="nutrition-chart-subtitle">Target 180 g</div>
+          <div className="nutrition-chart-subtitle">Target {PROTEIN_TARGET} g</div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={protData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
@@ -127,7 +129,7 @@ export default function Nutrition() {
               <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip content={(p) => <BarTooltip {...p} unit="g" />} />
               <ReferenceLine y={PROTEIN_TARGET} stroke="var(--color-success)" strokeDasharray="4 2"
-                label={{ value: '180g', fill: 'var(--color-success)', fontSize: 10, position: 'right' }} />
+                label={{ value: `${PROTEIN_TARGET}g`, fill: 'var(--color-success)', fontSize: 10, position: 'right' }} />
               <Bar dataKey="protein" radius={[4, 4, 0, 0]}>
                 {protData.map((entry, i) => (
                   <Cell

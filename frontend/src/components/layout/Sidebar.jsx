@@ -8,6 +8,7 @@ const navItems = [
   { to: '/weekly',   label: 'Weekly Stats' },
   { to: '/total',    label: 'Total Stats'  },
   { to: '/strength', label: 'Strength'     },
+  { to: '/settings', label: 'Settings'     },
 ];
 
 export default function Sidebar() {

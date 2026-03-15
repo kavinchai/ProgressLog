@@ -1,0 +1,95 @@
+.settings-page {
+  max-width: 480px;
+  width: 100%;
+}
+
+.settings-header {
+  margin-bottom: 32px;
+}
+
+.settings-title {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.settings-sub {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.settings-loading {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-section-label {
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border-dim);
+  padding-bottom: 4px;
+}
+
+.settings-field {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-field label {
+  min-width: 120px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.settings-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-input-row input[type="number"] {
+  width: 100px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--fs);
+  text-align: right;
+}
+
+.settings-unit {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.settings-saved {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.settings-error {
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+}

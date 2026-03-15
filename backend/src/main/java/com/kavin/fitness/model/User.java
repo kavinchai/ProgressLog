@@ -27,4 +27,13 @@ public class User {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "calorie_target_training", nullable = false)
+    private int calorieTargetTraining = 2600;
+
+    @Column(name = "calorie_target_rest", nullable = false)
+    private int calorieTargetRest = 2000;
+
+    @Column(name = "protein_target", nullable = false)
+    private int proteinTarget = 180;
 }

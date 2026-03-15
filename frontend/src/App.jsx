@@ -7,6 +7,7 @@ import Today from './pages/Today';
 import WeeklyStats from './pages/WeeklyStats';
 import TotalStats from './pages/TotalStats';
 import Strength from './pages/Strength';
+import Settings from './pages/Settings';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/weekly"   element={<WeeklyStats />} />
           <Route path="/total"    element={<TotalStats />} />
           <Route path="/strength" element={<Strength />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*"         element={<Navigate to="/today" replace />} />
         </Routes>
       </AppLayout>
