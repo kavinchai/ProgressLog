@@ -11,12 +11,16 @@ import './WeeklyStats.css';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
+function localDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function getLast7Days() {
   const days = [];
   for (let i = 0; i <= 6; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
+    days.push(localDateStr(d));
   }
   return days;
 }
@@ -461,7 +465,7 @@ export default function WeeklyStats() {
   const [expandedDay, setExpandedDay] = useState(null);
 
   const days  = getLast7Days();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr(new Date());
 
   const rows = days.map(date => {
     const w  = weightData.find(x => x.logDate === date);
