@@ -139,12 +139,33 @@
 
 .nutrition-totals {
   display: flex;
-  gap: 20px;
-  padding: 6px 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
   margin-top: 8px;
   border-top: 1px solid var(--border-dim);
+}
+
+.nutrition-totals-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
   font-size: var(--fs-sm);
+}
+
+.nutrition-totals-label {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  min-width: 64px;
+}
+
+.nutrition-goal-remaining {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.nutrition-goal-met {
+  color: var(--fg);
+  font-size: var(--fs-sm);
 }

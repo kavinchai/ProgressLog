@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import api from '../api';
-import useWeightLog from '../hooks/useWeightLog';
-import useNutrition from '../hooks/useNutrition';
-import useWorkouts  from '../hooks/useWorkouts';
+import useWeightLog   from '../hooks/useWeightLog';
+import useNutrition   from '../hooks/useNutrition';
+import useWorkouts    from '../hooks/useWorkouts';
+import useUserProfile from '../hooks/useUserProfile';
 import Modal from '../components/Modal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
@@ -265,6 +266,7 @@ export default function Today() {
   const { data: weightData,    refetch: refetchW }  = useWeightLog();
   const { data: nutritionData, refetch: refetchN }  = useNutrition();
   const { data: workoutData,   refetch: refetchWo } = useWorkouts();
+  const { goals } = useUserProfile();
 
   const [modal,        setModal]        = useState(null);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -400,8 +402,33 @@ export default function Today() {
                     ))}
                   </div>
                   <div className="nutrition-totals">
-                    <span>Total: {todayN.totalCalories ?? 0} kcal</span>
-                    <span>{todayN.totalProtein ?? 0}g protein</span>
+                    {(() => {
+                      const calTarget  = todayN.dayType === 'training'
+                        ? goals.calorieTargetTraining
+                        : goals.calorieTargetRest;
+                      const calEaten   = todayN.totalCalories ?? 0;
+                      const protEaten  = todayN.totalProtein  ?? 0;
+                      const calLeft    = calTarget - calEaten;
+                      const protLeft   = goals.proteinTarget - protEaten;
+                      return (
+                        <>
+                          <div className="nutrition-totals-row">
+                            <span className="nutrition-totals-label">Calories</span>
+                            <span>{calEaten} / {calTarget} kcal</span>
+                            <span className={calLeft <= 0 ? 'nutrition-goal-met' : 'nutrition-goal-remaining'}>
+                              {calLeft <= 0 ? `+${Math.abs(calLeft)} over` : `${calLeft} remaining`}
+                            </span>
+                          </div>
+                          <div className="nutrition-totals-row">
+                            <span className="nutrition-totals-label">Protein</span>
+                            <span>{protEaten} / {goals.proteinTarget} g</span>
+                            <span className={protLeft <= 0 ? 'nutrition-goal-met' : 'nutrition-goal-remaining'}>
+                              {protLeft <= 0 ? `+${Math.abs(protLeft)}g over` : `${protLeft}g remaining`}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </>
               )}
