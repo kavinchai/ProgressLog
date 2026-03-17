@@ -141,11 +141,11 @@ function DayInfoModal({ prefillDate, existing, onClose, onSaved }) {
 // ── Meal modal ────────────────────────────────────────────────────────────────
 
 function MealModal({ logId, existing, onClose, onSaved }) {
-  const [name,   setName]   = useState(existing?.mealName ?? '');
-  const [cal,    setCal]    = useState(existing?.calories ?? '');
-  const [prot,   setProt]   = useState(existing?.proteinGrams ?? '');
-  const [err,    setErr]    = useState('');
-  const [saving, setSaving] = useState(false);
+  const [name,     setName]     = useState(existing?.mealName ?? '');
+  const [calories, setCalories] = useState(existing?.calories ?? '');
+  const [protein,  setProtein]  = useState(existing?.proteinGrams ?? '');
+  const [err,      setErr]      = useState('');
+  const [saving,   setSaving]   = useState(false);
 
   async function submit(e) {
     e.preventDefault();
@@ -154,8 +154,8 @@ function MealModal({ logId, existing, onClose, onSaved }) {
     try {
       const body = {
         mealName: name.trim() || null,
-        calories: parseInt(cal),
-        proteinGrams: parseInt(prot),
+        calories: parseInt(calories),
+        proteinGrams: parseInt(protein),
       };
       if (existing) {
         await api.put(`/nutrition/${logId}/meals/${existing.id}`, body);
@@ -194,12 +194,12 @@ function MealModal({ logId, existing, onClose, onSaved }) {
           <div className="modal-field">
             <label className="modal-label">Calories</label>
             <input className="modal-input" type="number" min="0"
-              value={cal} onChange={e => setCal(e.target.value)} required />
+              value={calories} onChange={e => setCalories(e.target.value)} required />
           </div>
           <div className="modal-field">
             <label className="modal-label">Protein (g)</label>
             <input className="modal-input" type="number" min="0"
-              value={prot} onChange={e => setProt(e.target.value)} required />
+              value={protein} onChange={e => setProtein(e.target.value)} required />
           </div>
         </div>
         <div className="modal-actions">
@@ -462,9 +462,9 @@ function monthLabel(ym) {
 }
 
 export default function TotalStats() {
-  const { data: weightData,    refetch: refetchW }  = useWeightLog();
-  const { data: nutritionData, refetch: refetchN }  = useNutrition();
-  const { data: workoutData,   refetch: refetchWo } = useWorkouts();
+  const { data: weightData,    refetch: refetchWeight }    = useWeightLog();
+  const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
+  const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
 
   const [expandedDay,   setExpandedDay]   = useState(null);
   const [importStatus,  setImportStatus]  = useState(null);
@@ -484,31 +484,33 @@ export default function TotalStats() {
   ])].sort((a, b) => b.localeCompare(a));
 
   const rows = allDates.map(date => {
-    const w  = weightData.find(x => x.logDate === date);
-    const n  = nutritionData.find(x => x.logDate === date);
-    const wo = workoutData.find(x => x.sessionDate === date);
+    const weightEntry    = weightData.find(x => x.logDate === date);
+    const nutritionEntry = nutritionData.find(x => x.logDate === date);
+    const workoutEntry   = workoutData.find(x => x.sessionDate === date);
     return {
       date,
-      weightEntry: w, nutritionEntry: n, workoutEntry: wo,
-      weight:   w  ? parseFloat(w.weightLbs)       : null,
-      calories: n  ? (n.totalCalories ?? null)      : null,
-      protein:  n  ? (n.totalProtein  ?? null)      : null,
-      workout:  wo ? (wo.exerciseSets?.length > 0 ? new Set(wo.exerciseSets.map(s => s.exerciseName)).size + ' exercises' : 'logged') : null,
+      weightEntry, nutritionEntry, workoutEntry,
+      weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)                   : null,
+      calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)               : null,
+      protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)               : null,
+      workout:  workoutEntry   ? (workoutEntry.exerciseSets?.length > 0
+        ? new Set(workoutEntry.exerciseSets.map(s => s.exerciseName)).size + ' exercises'
+        : 'logged') : null,
     };
   });
 
-  const allWeights      = rows.map(r => r.weight);
-  const totalWorkouts   = rows.filter(r => r.workout).length;
-  const avgWeight       = avg(allWeights);
-  const avgCalories     = avg(rows.map(r => r.calories));
-  const avgProtein      = avg(rows.map(r => r.protein));
+  const allWeights    = rows.map(row => row.weight);
+  const totalWorkouts = rows.filter(row => row.workout).length;
+  const avgWeight     = avg(allWeights);
+  const avgCalories   = avg(rows.map(row => row.calories));
+  const avgProtein    = avg(rows.map(row => row.protein));
 
   // Weight trend chart — filtered by selected range, chronological order
   const cutoff = RANGE_DAYS[rangeKey] === Infinity
     ? null
     : localDateStr(new Date(Date.now() - RANGE_DAYS[rangeKey] * 86400000));
   const weightBarDates   = [...allDates].reverse().filter(d => !cutoff || d >= cutoff);
-  const weightBarWeights = weightBarDates.map(d => rows.find(r => r.date === d)?.weight ?? null);
+  const weightBarWeights = weightBarDates.map(d => rows.find(row => row.date === d)?.weight ?? null);
 
   // Month navigator — all months that have data, sorted oldest→newest
   const allMonths      = [...new Set(allDates.map(d => d.slice(0, 7)))].sort();
@@ -525,7 +527,7 @@ export default function TotalStats() {
     for (let d = new Date(`${activeMonth}-01T00:00:00`); d <= new Date(`${end}T00:00:00`); d.setDate(d.getDate() + 1)) {
       days.push(localDateStr(d));
     }
-    return days.reverse().map(date => rows.find(r => r.date === date) ?? {
+    return days.reverse().map(date => rows.find(row => row.date === date) ?? {
       date, weightEntry: null, nutritionEntry: null, workoutEntry: null,
       weight: null, calories: null, protein: null, workout: null,
     });
@@ -555,40 +557,40 @@ export default function TotalStats() {
   // ── Export helpers ────────────────────────────────────────────────────────
 
   function buildExportData() {
-    const statsData = rows.map(r => ({
-      Date: formatDate(r.date),
-      Weight: r.weight != null ? r.weight : '',
-      Calories: r.calories != null ? r.calories : '',
-      Protein: r.protein != null ? r.protein : '',
-      Workout: r.workout ?? '',
+    const statsData = rows.map(row => ({
+      Date: formatDate(row.date),
+      Weight: row.weight != null ? row.weight : '',
+      Calories: row.calories != null ? row.calories : '',
+      Protein: row.protein != null ? row.protein : '',
+      Workout: row.workout ?? '',
     }));
 
     const workoutRows = [];
-    for (const r of rows) {
-      if (!r.workoutEntry?.exerciseSets?.length) continue;
-      const groups = groupByExercise(r.workoutEntry.exerciseSets);
+    for (const row of rows) {
+      if (!row.workoutEntry?.exerciseSets?.length) continue;
+      const groups = groupByExercise(row.workoutEntry.exerciseSets);
       for (const g of groups) {
-        const row = {
-          Date: formatDate(r.date),
+        const exportRow = {
+          Date: formatDate(row.date),
           Exercise: g.name,
           Weight: g.weight,
         };
         for (const s of g.sets) {
-          row[`Set ${s.setNumber}`] = s.reps != null ? s.reps : '';
+          exportRow[`Set ${s.setNumber}`] = s.reps != null ? s.reps : '';
         }
-        workoutRows.push(row);
+        workoutRows.push(exportRow);
       }
     }
 
-    const maxSets = workoutRows.reduce((max, r) => {
-      const nums = Object.keys(r).filter(k => k.startsWith('Set ')).map(k => parseInt(k.replace('Set ', '')));
+    const maxSets = workoutRows.reduce((max, row) => {
+      const nums = Object.keys(row).filter(k => k.startsWith('Set ')).map(k => parseInt(k.replace('Set ', '')));
       return Math.max(max, ...nums, 0);
     }, 0);
     const setHeaders = Array.from({ length: maxSets }, (_, i) => `Set ${i + 1}`);
-    const normalizedWorkoutRows = workoutRows.map(r => {
-      const row = { Date: r.Date, Exercise: r.Exercise, Weight: r.Weight };
-      for (const h of setHeaders) row[h] = r[h] ?? '';
-      return row;
+    const normalizedWorkoutRows = workoutRows.map(row => {
+      const normalized = { Date: row.Date, Exercise: row.Exercise, Weight: row.Weight };
+      for (const h of setHeaders) normalized[h] = row[h] ?? '';
+      return normalized;
     });
 
     return { statsData, normalizedWorkoutRows };
@@ -633,9 +635,9 @@ export default function TotalStats() {
         ok: true,
         message: `imported: ${weightImported} weight, ${nutritionImported} nutrition, ${workoutsImported} workouts  |  skipped: ${weightSkipped} weight, ${nutritionSkipped} nutrition, ${workoutsSkipped} workouts`,
       });
-      refetchW();
-      refetchN();
-      refetchWo();
+      refetchWeight();
+      refetchNutrition();
+      refetchWorkouts();
     } catch {
       setImportStatus({ ok: false, message: 'import failed — check file format' });
     } finally {
@@ -750,31 +752,31 @@ export default function TotalStats() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monthRows.map(r => (
+                  {monthRows.map(row => (
                     <>
                       <tr
-                        key={r.date}
-                        className={'weekly-row' + (r.date === today ? ' today-row' : '') + (expandedDay === r.date ? ' expanded-row' : '')}
-                        onClick={() => setExpandedDay(expandedDay === r.date ? null : r.date)}
+                        key={row.date}
+                        className={'weekly-row' + (row.date === today ? ' today-row' : '') + (expandedDay === row.date ? ' expanded-row' : '')}
+                        onClick={() => setExpandedDay(expandedDay === row.date ? null : row.date)}
                         style={{ cursor: 'pointer' }}
                       >
-                        <td>{formatDate(r.date)}</td>
-                        <td>{r.weight != null ? r.weight + ' lbs' : '--'}</td>
-                        <td>{r.calories != null ? r.calories : '--'}</td>
-                        <td>{r.protein != null ? r.protein + 'g' : '--'}</td>
-                        <td>{r.workout ?? '--'}</td>
+                        <td>{formatDate(row.date)}</td>
+                        <td>{row.weight != null ? row.weight + ' lbs' : '--'}</td>
+                        <td>{row.calories != null ? row.calories : '--'}</td>
+                        <td>{row.protein != null ? row.protein + 'g' : '--'}</td>
+                        <td>{row.workout ?? '--'}</td>
                       </tr>
-                      {expandedDay === r.date && (
-                        <tr key={r.date + '-detail'} className="detail-row">
+                      {expandedDay === row.date && (
+                        <tr key={row.date + '-detail'} className="detail-row">
                           <td colSpan={5}>
                             <DayDetail
-                              date={r.date}
-                              weightEntry={r.weightEntry}
-                              nutritionEntry={r.nutritionEntry}
-                              workoutEntry={r.workoutEntry}
-                              onRefetchW={refetchW}
-                              onRefetchN={refetchN}
-                              onRefetchWo={refetchWo}
+                              date={row.date}
+                              weightEntry={row.weightEntry}
+                              nutritionEntry={row.nutritionEntry}
+                              workoutEntry={row.workoutEntry}
+                              onRefetchW={refetchWeight}
+                              onRefetchN={refetchNutrition}
+                              onRefetchWo={refetchWorkouts}
                             />
                           </td>
                         </tr>

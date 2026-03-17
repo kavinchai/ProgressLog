@@ -5,7 +5,10 @@
       "Bash(sed -i 's/@ManyToOne\\(fetch = FetchType.LAZY, optional = false\\)\\\\n    @JoinColumn\\(name = \"\"user_id\"\", nullable = false\\)\\\\n    private User user;/@JsonIgnore\\\\n    @ManyToOne\\(fetch = FetchType.LAZY, optional = false\\)\\\\n    @JoinColumn\\(name = \"\"user_id\"\", nullable = false\\)\\\\n    private User user;/' \"c:\\\\Users\\\\Kavin\\\\Documents\\\\GitHub\\\\WorkoutApp\\\\backend\\\\src\\\\main\\\\java\\\\com\\\\kavin\\\\fitness\\\\model\\\\WeightLog.java\")",
       "Bash(gradle test:*)",
       "Bash(npm install:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(find c:UsersKavinDocumentsGitHubWorkoutApp -type f -name *.java -o -name *.sql -o -name *.xml -o -name *.properties -o -name *.gradle -o -name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx -o -name *.json -o -name *.md -o -name *.class)",
+      "Bash(find /c/Users/Kavin/Documents/GitHub/WorkoutApp/frontend -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.jsx -o -name *.js -o -name *.json \\\\\\))",
+      "Bash(find /c/Users/Kavin/Documents/GitHub/WorkoutApp/frontend/src -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.jsx -o -name *.js \\\\\\))"
     ]
   }
 }

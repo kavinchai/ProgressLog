@@ -40,25 +40,25 @@ public class ImportService {
                 if (date == null) continue;
 
                 // Weight
-                Object weightObj = row.get("Weight");
-                if (weightObj != null && !weightObj.toString().isBlank()) {
+                Object weightRaw = row.get("Weight");
+                if (weightRaw != null && !weightRaw.toString().isBlank()) {
                     WeightLog log = weightLogRepository.findByUserIdAndLogDate(user.getId(), date)
                             .orElseGet(() -> { WeightLog l = new WeightLog(); l.setUser(user); l.setLogDate(date); return l; });
-                    log.setWeightLbs(new BigDecimal(weightObj.toString()));
+                    log.setWeightLbs(new BigDecimal(weightRaw.toString()));
                     weightLogRepository.save(log);
                     weightImported++;
                 }
 
                 // Nutrition (calories + protein)
-                Object calObj  = row.get("Calories");
-                Object protObj = row.get("Protein");
-                boolean hasCalories = calObj  != null && !calObj.toString().isBlank();
-                boolean hasProtein  = protObj != null && !protObj.toString().isBlank();
+                Object caloriesRaw = row.get("Calories");
+                Object proteinRaw  = row.get("Protein");
+                boolean hasCalories = caloriesRaw != null && !caloriesRaw.toString().isBlank();
+                boolean hasProtein  = proteinRaw  != null && !proteinRaw.toString().isBlank();
                 if (hasCalories || hasProtein) {
                     NutritionLog nutrition = nutritionLogRepository.findByUserIdAndLogDate(user.getId(), date)
                             .orElseGet(() -> { NutritionLog n = new NutritionLog(); n.setUser(user); n.setLogDate(date); n.setDayType("training"); return n; });
-                    if (hasCalories) nutrition.setCalories((int) Math.round(Double.parseDouble(calObj.toString())));
-                    if (hasProtein)  nutrition.setProteinGrams((int) Math.round(Double.parseDouble(protObj.toString())));
+                    if (hasCalories) nutrition.setCalories((int) Math.round(Double.parseDouble(caloriesRaw.toString())));
+                    if (hasProtein)  nutrition.setProteinGrams((int) Math.round(Double.parseDouble(proteinRaw.toString())));
                     nutritionLogRepository.save(nutrition);
                     nutritionImported++;
                 }
@@ -89,26 +89,26 @@ public class ImportService {
                 Map<String, Integer> setOffsets = new HashMap<>();
                 for (Map<String, Object> row : entry.getValue()) {
                     String exerciseName = getString(row, "Exercise");
-                    Object wObj = row.get("Weight");
-                    if (exerciseName == null || wObj == null || wObj.toString().isBlank()) continue;
+                    Object weightRaw = row.get("Weight");
+                    if (exerciseName == null || weightRaw == null || weightRaw.toString().isBlank()) continue;
 
-                    BigDecimal weightLbs = new BigDecimal(wObj.toString());
-                    int offset = setOffsets.getOrDefault(exerciseName, 0);
-                    int localSet = 1;
-                    while (row.containsKey("Set " + localSet)) {
-                        Object repsObj = row.get("Set " + localSet);
+                    BigDecimal weightLbs = new BigDecimal(weightRaw.toString());
+                    int previousSetCount = setOffsets.getOrDefault(exerciseName, 0);
+                    int localSetIndex = 1;
+                    while (row.containsKey("Set " + localSetIndex)) {
+                        Object repsObj = row.get("Set " + localSetIndex);
                         if (repsObj != null && !repsObj.toString().isBlank()) {
-                            ExerciseSet es = new ExerciseSet();
-                            es.setSession(session);
-                            es.setExerciseName(exerciseName);
-                            es.setSetNumber(offset + localSet);
-                            es.setReps(Integer.parseInt(repsObj.toString()));
-                            es.setWeightLbs(weightLbs);
-                            session.getExerciseSets().add(es);
+                            ExerciseSet exerciseSet = new ExerciseSet();
+                            exerciseSet.setSession(session);
+                            exerciseSet.setExerciseName(exerciseName);
+                            exerciseSet.setSetNumber(previousSetCount + localSetIndex);
+                            exerciseSet.setReps(Integer.parseInt(repsObj.toString()));
+                            exerciseSet.setWeightLbs(weightLbs);
+                            session.getExerciseSets().add(exerciseSet);
                         }
-                        localSet++;
+                        localSetIndex++;
                     }
-                    setOffsets.put(exerciseName, offset + localSet - 1);
+                    setOffsets.put(exerciseName, previousSetCount + localSetIndex - 1);
                 }
 
                 workoutSessionRepository.save(session);
@@ -135,7 +135,7 @@ public class ImportService {
     }
 
     private String getString(Map<String, Object> row, String key) {
-        Object v = row.get(key);
-        return (v == null || v.toString().isBlank()) ? null : v.toString();
+        Object value = row.get(key);
+        return (value == null || value.toString().isBlank()) ? null : value.toString();
     }
 }
