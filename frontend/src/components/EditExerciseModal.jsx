@@ -11,8 +11,8 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
     weightLbs:  String(s.weightLbs),
   }));
 
-  const [sets, setSets]   = useState(initialSets);
-  const [err, setErr]     = useState('');
+  const [sets, setSets]     = useState(initialSets);
+  const [err, setErr]       = useState('');
   const [saving, setSaving] = useState(false);
 
   function addSet() {
@@ -22,17 +22,17 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
     ]);
   }
 
-  function removeSet(si) {
+  function removeSet(setIndex) {
     setSets(prev =>
       prev
-        .filter((_, i) => i !== si)
+        .filter((_, i) => i !== setIndex)
         .map((s, i) => ({ ...s, setNumber: i + 1 }))
     );
   }
 
-  function updateSet(si, field, val) {
+  function updateSet(setIndex, field, val) {
     setSets(prev => prev.map((s, i) =>
-      i === si ? { ...s, [field]: val } : s
+      i === setIndex ? { ...s, [field]: val } : s
     ));
   }
 
@@ -81,23 +81,23 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
           <div className="wbm-sets-head">
             <span>Set</span><span>Weight (lbs)</span><span>Reps</span><span></span>
           </div>
-          {sets.map((s, si) => (
-            <div key={si} className="wbm-set-row">
+          {sets.map((s, setIndex) => (
+            <div key={setIndex} className="wbm-set-row">
               <span className="wbm-set-num">{s.setNumber}</span>
               <input
                 className="modal-input wbm-set-input"
                 type="number" step="0.5" min="0"
                 value={s.weightLbs}
-                onChange={e => updateSet(si, 'weightLbs', e.target.value)}
+                onChange={e => updateSet(setIndex, 'weightLbs', e.target.value)}
               />
               <input
                 className="modal-input wbm-set-input"
                 type="number" min="0"
                 value={s.reps}
-                onChange={e => updateSet(si, 'reps', e.target.value)}
+                onChange={e => updateSet(setIndex, 'reps', e.target.value)}
               />
               <button type="button" className="btn btn-sm"
-                onClick={() => removeSet(si)}>[x]</button>
+                onClick={() => removeSet(setIndex)}>[x]</button>
             </div>
           ))}
         </div>

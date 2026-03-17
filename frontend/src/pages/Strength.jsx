@@ -67,8 +67,8 @@ export default function Strength() {
 
   useEffect(() => {
     api.get('/progress/strength')
-      .then((r) => setProgressData(r.data))
-      .catch((e) => setError(e.message))
+      .then((response) => setProgressData(response.data))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 

@@ -151,11 +151,11 @@ function DayInfoModal({ prefillDate, existing, onClose, onSaved }) {
 // ── Meal modal ────────────────────────────────────────────────────────────────
 
 function MealModal({ logId, existing, onClose, onSaved }) {
-  const [name,   setName]   = useState(existing?.mealName ?? '');
-  const [cal,    setCal]    = useState(existing?.calories ?? '');
-  const [prot,   setProt]   = useState(existing?.proteinGrams ?? '');
-  const [err,    setErr]    = useState('');
-  const [saving, setSaving] = useState(false);
+  const [name,     setName]     = useState(existing?.mealName ?? '');
+  const [calories, setCalories] = useState(existing?.calories ?? '');
+  const [protein,  setProtein]  = useState(existing?.proteinGrams ?? '');
+  const [err,      setErr]      = useState('');
+  const [saving,   setSaving]   = useState(false);
 
   async function submit(e) {
     e.preventDefault();
@@ -164,8 +164,8 @@ function MealModal({ logId, existing, onClose, onSaved }) {
     try {
       const body = {
         mealName: name.trim() || null,
-        calories: parseInt(cal),
-        proteinGrams: parseInt(prot),
+        calories: parseInt(calories),
+        proteinGrams: parseInt(protein),
       };
       if (existing) {
         await api.put(`/nutrition/${logId}/meals/${existing.id}`, body);
@@ -204,12 +204,12 @@ function MealModal({ logId, existing, onClose, onSaved }) {
           <div className="modal-field">
             <label className="modal-label">Calories</label>
             <input className="modal-input" type="number" min="0"
-              value={cal} onChange={e => setCal(e.target.value)} required />
+              value={calories} onChange={e => setCalories(e.target.value)} required />
           </div>
           <div className="modal-field">
             <label className="modal-label">Protein (g)</label>
             <input className="modal-input" type="number" min="0"
-              value={prot} onChange={e => setProt(e.target.value)} required />
+              value={protein} onChange={e => setProtein(e.target.value)} required />
           </div>
         </div>
         <div className="modal-actions">
@@ -458,9 +458,9 @@ function WeightLineChart({ days, weights }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function WeeklyStats() {
-  const { data: weightData,    refetch: refetchW }  = useWeightLog();
-  const { data: nutritionData, refetch: refetchN }  = useNutrition();
-  const { data: workoutData,   refetch: refetchWo } = useWorkouts();
+  const { data: weightData,    refetch: refetchWeight }    = useWeightLog();
+  const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
+  const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
 
   const [expandedDay, setExpandedDay] = useState(null);
 
@@ -468,24 +468,26 @@ export default function WeeklyStats() {
   const today = localDateStr(new Date());
 
   const rows = days.map(date => {
-    const w  = weightData.find(x => x.logDate === date);
-    const n  = nutritionData.find(x => x.logDate === date);
-    const wo = workoutData.find(x => x.sessionDate === date);
+    const weightEntry    = weightData.find(x => x.logDate === date);
+    const nutritionEntry = nutritionData.find(x => x.logDate === date);
+    const workoutEntry   = workoutData.find(x => x.sessionDate === date);
     return {
       date,
-      weightEntry: w, nutritionEntry: n, workoutEntry: wo,
-      weight:   w  ? parseFloat(w.weightLbs)       : null,
-      calories: n  ? (n.totalCalories ?? null)      : null,
-      protein:  n  ? (n.totalProtein  ?? null)      : null,
-      workout:  wo ? (wo.exerciseSets?.length > 0 ? new Set(wo.exerciseSets.map(s => s.exerciseName)).size + ' exercises' : 'logged') : null,
+      weightEntry, nutritionEntry, workoutEntry,
+      weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)                   : null,
+      calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)               : null,
+      protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)               : null,
+      workout:  workoutEntry   ? (workoutEntry.exerciseSets?.length > 0
+        ? new Set(workoutEntry.exerciseSets.map(s => s.exerciseName)).size + ' exercises'
+        : 'logged') : null,
     };
   });
 
-  const weights      = rows.map(r => r.weight);
-  const workoutCount = rows.filter(r => r.workout).length;
+  const weights      = rows.map(row => row.weight);
+  const workoutCount = rows.filter(row => row.workout).length;
   const avgWeight    = avg(weights);
-  const avgCalories  = avg(rows.map(r => r.calories));
-  const avgProtein   = avg(rows.map(r => r.protein));
+  const avgCalories  = avg(rows.map(row => row.calories));
+  const avgProtein   = avg(rows.map(row => row.protein));
 
   return (
     <div className="weekly-page">
@@ -540,31 +542,31 @@ export default function WeeklyStats() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map(r => (
+                {rows.map(row => (
                   <>
                     <tr
-                      key={r.date}
-                      className={'weekly-row' + (r.date === today ? ' today-row' : '') + (expandedDay === r.date ? ' expanded-row' : '')}
-                      onClick={() => setExpandedDay(expandedDay === r.date ? null : r.date)}
+                      key={row.date}
+                      className={'weekly-row' + (row.date === today ? ' today-row' : '') + (expandedDay === row.date ? ' expanded-row' : '')}
+                      onClick={() => setExpandedDay(expandedDay === row.date ? null : row.date)}
                       style={{ cursor: 'pointer' }}
                     >
-                      <td>{shortDate(r.date)}</td>
-                      <td>{r.weight != null ? r.weight + ' lbs' : '--'}</td>
-                      <td>{r.calories != null ? r.calories : '--'}</td>
-                      <td>{r.protein != null ? r.protein + 'g' : '--'}</td>
-                      <td>{r.workout ?? '--'}</td>
+                      <td>{shortDate(row.date)}</td>
+                      <td>{row.weight != null ? row.weight + ' lbs' : '--'}</td>
+                      <td>{row.calories != null ? row.calories : '--'}</td>
+                      <td>{row.protein != null ? row.protein + 'g' : '--'}</td>
+                      <td>{row.workout ?? '--'}</td>
                     </tr>
-                    {expandedDay === r.date && (
-                      <tr key={r.date + '-detail'} className="detail-row">
+                    {expandedDay === row.date && (
+                      <tr key={row.date + '-detail'} className="detail-row">
                         <td colSpan={5}>
                           <DayDetail
-                            date={r.date}
-                            weightEntry={r.weightEntry}
-                            nutritionEntry={r.nutritionEntry}
-                            workoutEntry={r.workoutEntry}
-                            onRefetchW={refetchW}
-                            onRefetchN={refetchN}
-                            onRefetchWo={refetchWo}
+                            date={row.date}
+                            weightEntry={row.weightEntry}
+                            nutritionEntry={row.nutritionEntry}
+                            workoutEntry={row.workoutEntry}
+                            onRefetchW={refetchWeight}
+                            onRefetchN={refetchNutrition}
+                            onRefetchWo={refetchWorkouts}
                           />
                         </td>
                       </tr>

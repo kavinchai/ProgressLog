@@ -26,40 +26,40 @@ export default function WorkoutBuilderModal({ prefillDate, onClose, onSaved }) {
     setExercises(prev => [...prev, emptyExercise()]);
   }
 
-  function removeExercise(ei) {
-    setExercises(prev => prev.filter((_, i) => i !== ei));
+  function removeExercise(exerciseIndex) {
+    setExercises(prev => prev.filter((_, i) => i !== exerciseIndex));
   }
 
-  function updateExerciseName(ei, val) {
-    setExercises(prev => prev.map((ex, i) =>
-      i === ei ? { ...ex, exerciseName: val } : ex
+  function updateExerciseName(exerciseIndex, val) {
+    setExercises(prev => prev.map((exercise, i) =>
+      i === exerciseIndex ? { ...exercise, exerciseName: val } : exercise
     ));
   }
 
-  function addSet(ei) {
-    setExercises(prev => prev.map((ex, i) => {
-      if (i !== ei) return ex;
-      return { ...ex, sets: [...ex.sets, emptySet(ex.sets.length + 1)] };
+  function addSet(exerciseIndex) {
+    setExercises(prev => prev.map((exercise, i) => {
+      if (i !== exerciseIndex) return exercise;
+      return { ...exercise, sets: [...exercise.sets, emptySet(exercise.sets.length + 1)] };
     }));
   }
 
-  function removeSet(ei, si) {
-    setExercises(prev => prev.map((ex, i) => {
-      if (i !== ei) return ex;
-      const sets = ex.sets
-        .filter((_, j) => j !== si)
+  function removeSet(exerciseIndex, setIndex) {
+    setExercises(prev => prev.map((exercise, i) => {
+      if (i !== exerciseIndex) return exercise;
+      const sets = exercise.sets
+        .filter((_, j) => j !== setIndex)
         .map((s, j) => ({ ...s, setNumber: j + 1 }));
-      return { ...ex, sets };
+      return { ...exercise, sets };
     }));
   }
 
-  function updateSet(ei, si, field, val) {
-    setExercises(prev => prev.map((ex, i) => {
-      if (i !== ei) return ex;
-      const sets = ex.sets.map((s, j) =>
-        j === si ? { ...s, [field]: val } : s
+  function updateSet(exerciseIndex, setIndex, field, val) {
+    setExercises(prev => prev.map((exercise, i) => {
+      if (i !== exerciseIndex) return exercise;
+      const sets = exercise.sets.map((s, j) =>
+        j === setIndex ? { ...s, [field]: val } : s
       );
-      return { ...ex, sets };
+      return { ...exercise, sets };
     }));
   }
 
@@ -73,10 +73,10 @@ export default function WorkoutBuilderModal({ prefillDate, onClose, onSaved }) {
       const payload = {
         sessionDate: date,
         exercises: exercises
-          .filter(ex => ex.exerciseName.trim())
-          .map(ex => ({
-            exerciseName: ex.exerciseName.trim(),
-            sets: ex.sets.map(s => ({
+          .filter(exercise => exercise.exerciseName.trim())
+          .map(exercise => ({
+            exerciseName: exercise.exerciseName.trim(),
+            sets: exercise.sets.map(s => ({
               setNumber:  s.setNumber,
               reps:       parseInt(s.reps)      || 0,
               weightLbs:  parseFloat(s.weightLbs) || 0,
@@ -108,18 +108,18 @@ export default function WorkoutBuilderModal({ prefillDate, onClose, onSaved }) {
         {/* Exercises */}
         {exercises.length > 0 && (
           <div className="wbm-exercises">
-            {exercises.map((ex, ei) => (
-              <div key={ei} className="wbm-exercise-block">
+            {exercises.map((exercise, exerciseIndex) => (
+              <div key={exerciseIndex} className="wbm-exercise-block">
                 <div className="wbm-exercise-header">
                   <input
                     className="modal-input wbm-exercise-name"
                     type="text"
                     placeholder="Exercise name"
-                    value={ex.exerciseName}
-                    onChange={e => updateExerciseName(ei, e.target.value)}
+                    value={exercise.exerciseName}
+                    onChange={e => updateExerciseName(exerciseIndex, e.target.value)}
                   />
                   <button type="button" className="btn btn-sm"
-                    onClick={() => removeExercise(ei)}>[x]</button>
+                    onClick={() => removeExercise(exerciseIndex)}>[x]</button>
                 </div>
 
                 {/* Sets */}
@@ -127,24 +127,24 @@ export default function WorkoutBuilderModal({ prefillDate, onClose, onSaved }) {
                   <div className="wbm-sets-head">
                     <span>Set</span><span>Weight (lbs)</span><span>Reps</span><span></span>
                   </div>
-                  {ex.sets.map((s, si) => (
-                    <div key={si} className="wbm-set-row">
+                  {exercise.sets.map((s, setIndex) => (
+                    <div key={setIndex} className="wbm-set-row">
                       <span className="wbm-set-num">{s.setNumber}</span>
                       <input className="modal-input wbm-set-input" type="number"
                         step="0.5" min="0" placeholder="0"
                         value={s.weightLbs}
-                        onChange={e => updateSet(ei, si, 'weightLbs', e.target.value)} />
+                        onChange={e => updateSet(exerciseIndex, setIndex, 'weightLbs', e.target.value)} />
                       <input className="modal-input wbm-set-input" type="number"
                         min="0" placeholder="0"
                         value={s.reps}
-                        onChange={e => updateSet(ei, si, 'reps', e.target.value)} />
+                        onChange={e => updateSet(exerciseIndex, setIndex, 'reps', e.target.value)} />
                       <button type="button" className="btn btn-sm"
-                        onClick={() => removeSet(ei, si)}>[x]</button>
+                        onClick={() => removeSet(exerciseIndex, setIndex)}>[x]</button>
                     </div>
                   ))}
                 </div>
                 <button type="button" className="btn btn-sm wbm-add-set"
-                  onClick={() => addSet(ei)}>
+                  onClick={() => addSet(exerciseIndex)}>
                   [+ set]
                 </button>
               </div>

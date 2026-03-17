@@ -35,7 +35,7 @@ public class ProgressService {
         // Show key lifts first, then any others
         List<String> ordered = new ArrayList<>(KEY_LIFTS);
         allExercises.stream()
-                .filter(e -> !ordered.contains(e))
+                .filter(exerciseName -> !ordered.contains(exerciseName))
                 .forEach(ordered::add);
 
         List<StrengthProgressDTO> result = new ArrayList<>();
@@ -47,7 +47,7 @@ public class ProgressService {
             // Group by session date, then by weight descending
             Map<LocalDate, List<ExerciseSet>> byDate = sets.stream()
                     .collect(Collectors.groupingBy(
-                            s -> s.getSession().getSessionDate(),
+                            set -> set.getSession().getSessionDate(),
                             TreeMap::new,
                             Collectors.toList()));
 
@@ -62,7 +62,7 @@ public class ProgressService {
                                     BigDecimal weight = weightEntry.getKey();
                                     List<ExerciseSet> weightSets = weightEntry.getValue();
                                     String repScheme = weightSets.stream()
-                                            .map(s -> String.valueOf(s.getReps()))
+                                            .map(set -> String.valueOf(set.getReps()))
                                             .collect(Collectors.joining("/"));
                                     return new StrengthProgressDTO.SessionData(
                                             date,

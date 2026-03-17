@@ -118,11 +118,11 @@ function DayInfoModal({ existing, date, onClose, onSaved }) {
 // ── Meal modal ────────────────────────────────────────────────────────────────
 
 function MealModal({ logId, existing, onClose, onSaved }) {
-  const [name,   setName]   = useState(existing?.mealName ?? '');
-  const [cal,    setCal]    = useState(existing?.calories ?? '');
-  const [prot,   setProt]   = useState(existing?.proteinGrams ?? '');
-  const [err,    setErr]    = useState('');
-  const [saving, setSaving] = useState(false);
+  const [name,     setName]     = useState(existing?.mealName ?? '');
+  const [calories, setCalories] = useState(existing?.calories ?? '');
+  const [protein,  setProtein]  = useState(existing?.proteinGrams ?? '');
+  const [err,      setErr]      = useState('');
+  const [saving,   setSaving]   = useState(false);
 
   async function submit(e) {
     e.preventDefault();
@@ -131,8 +131,8 @@ function MealModal({ logId, existing, onClose, onSaved }) {
     try {
       const body = {
         mealName: name.trim() || null,
-        calories: parseInt(cal),
-        proteinGrams: parseInt(prot),
+        calories: parseInt(calories),
+        proteinGrams: parseInt(protein),
       };
       if (existing) {
         await api.put(`/nutrition/${logId}/meals/${existing.id}`, body);
@@ -171,12 +171,12 @@ function MealModal({ logId, existing, onClose, onSaved }) {
           <div className="modal-field">
             <label className="modal-label">Calories</label>
             <input className="modal-input" type="number" min="0"
-              value={cal} onChange={e => setCal(e.target.value)} required />
+              value={calories} onChange={e => setCalories(e.target.value)} required />
           </div>
           <div className="modal-field">
             <label className="modal-label">Protein (g)</label>
             <input className="modal-input" type="number" min="0"
-              value={prot} onChange={e => setProt(e.target.value)} required />
+              value={protein} onChange={e => setProtein(e.target.value)} required />
           </div>
         </div>
         <div className="modal-actions">
@@ -266,9 +266,9 @@ function DataRow({ label, value }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Today() {
-  const { data: weightData,    refetch: refetchW }  = useWeightLog();
-  const { data: nutritionData, refetch: refetchN }  = useNutrition();
-  const { data: workoutData,   refetch: refetchWo } = useWorkouts();
+  const { data: weightData,    refetch: refetchWeight }   = useWeightLog();
+  const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
+  const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
   const { goals } = useUserProfile();
 
   const [modal,        setModal]        = useState(null);
@@ -277,26 +277,26 @@ export default function Today() {
   const [editMeal,     setEditMeal]     = useState(null); // meal object or null for new
   const [mealLogId,    setMealLogId]    = useState(null); // resolved log id for meal modal
 
-  const todayW  = weightData.find(w => w.logDate === TODAY);
-  const todayWo = workoutData.find(w => w.sessionDate === TODAY);
-  const todayN  = nutritionData.find(n => n.logDate === TODAY);
+  const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
+  const todayWorkoutEntry   = workoutData.find(w => w.sessionDate === TODAY);
+  const todayNutritionEntry = nutritionData.find(n => n.logDate === TODAY);
 
-  const exerciseGroups = todayWo?.exerciseSets?.length
-    ? groupByExercise(todayWo.exerciseSets)
+  const exerciseGroups = todayWorkoutEntry?.exerciseSets?.length
+    ? groupByExercise(todayWorkoutEntry.exerciseSets)
     : [];
 
-  const meals = todayN?.meals ?? [];
+  const meals = todayNutritionEntry?.meals ?? [];
 
   function closeModal() { setModal(null); setEditingEntry(null); }
 
   // Ensure a day log exists before adding a meal
   async function openAddMeal() {
-    let logId = todayN?.id;
+    let logId = todayNutritionEntry?.id;
     if (!logId) {
       try {
         const res = await api.post('/nutrition', { logDate: TODAY, dayType: 'training', steps: null });
         logId = res.data?.id;
-        refetchN();
+        refetchNutrition();
       } catch { /* ignore */ }
     }
     setMealLogId(logId);
@@ -316,9 +316,9 @@ export default function Today() {
         <div className="section-header">
           <span className="section-title">Weight</span>
           <div className="btn-actions">
-            {todayW && (
+            {todayWeightEntry && (
               <button className="btn btn-sm"
-                onClick={() => { setEditingEntry(todayW); setModal('weight'); }}>
+                onClick={() => { setEditingEntry(todayWeightEntry); setModal('weight'); }}>
                 [edit]
               </button>
             )}
@@ -329,8 +329,8 @@ export default function Today() {
           </div>
         </div>
         <div className="section-body">
-          {todayW
-            ? <DataRow label="Weight" value={todayW.weightLbs + ' lbs'} />
+          {todayWeightEntry
+            ? <DataRow label="Weight" value={todayWeightEntry.weightLbs + ' lbs'} />
             : <span className="muted">No entry for today.</span>}
         </div>
       </div>
@@ -346,7 +346,7 @@ export default function Today() {
           </div>
         </div>
         <div className="section-body">
-          {todayWo ? (
+          {todayWorkoutEntry ? (
             exerciseGroups.length > 0 ? (
               <div className="exercise-cards">
                 {exerciseGroups.map(g => (
@@ -355,7 +355,7 @@ export default function Today() {
                     name={g.name}
                     weight={g.weight}
                     sets={g.sets}
-                    onEdit={() => setEditExercise({ sessionId: todayWo.id, name: g.name, sets: g.sets })}
+                    onEdit={() => setEditExercise({ sessionId: todayWorkoutEntry.id, name: g.name, sets: g.sets })}
                   />
                 ))}
               </div>
@@ -373,9 +373,9 @@ export default function Today() {
         <div className="section-header">
           <span className="section-title">Nutrition</span>
           <div className="btn-actions">
-            {todayN && (
+            {todayNutritionEntry && (
               <button className="btn btn-sm"
-                onClick={() => { setEditingEntry(todayN); setModal('dayinfo'); }}>
+                onClick={() => { setEditingEntry(todayNutritionEntry); setModal('dayinfo'); }}>
                 [edit day info]
               </button>
             )}
@@ -385,12 +385,12 @@ export default function Today() {
           </div>
         </div>
         <div className="section-body">
-          {todayN ? (
+          {todayNutritionEntry ? (
             <>
               <div className="nutrition-day-info">
-                <DataRow label="Day Type" value={todayN.dayType} />
-                {todayN.steps != null && (
-                  <DataRow label="Steps" value={todayN.steps.toLocaleString()} />
+                <DataRow label="Day Type" value={todayNutritionEntry.dayType} />
+                {todayNutritionEntry.steps != null && (
+                  <DataRow label="Steps" value={todayNutritionEntry.steps.toLocaleString()} />
                 )}
               </div>
               {meals.length > 0 && (
@@ -401,19 +401,19 @@ export default function Today() {
                         key={meal.id}
                         meal={meal}
                         index={i}
-                        onEdit={() => { setMealLogId(todayN.id); setEditMeal(meal); setModal('meal'); }}
+                        onEdit={() => { setMealLogId(todayNutritionEntry.id); setEditMeal(meal); setModal('meal'); }}
                       />
                     ))}
                   </div>
                   <div className="nutrition-totals">
                     {(() => {
-                      const calTarget  = todayN.dayType === 'training'
+                      const calTarget = todayNutritionEntry.dayType === 'training'
                         ? goals.calorieTargetTraining
                         : goals.calorieTargetRest;
-                      const calEaten   = todayN.totalCalories ?? 0;
-                      const protEaten  = todayN.totalProtein  ?? 0;
-                      const calLeft    = calTarget - calEaten;
-                      const protLeft   = goals.proteinTarget - protEaten;
+                      const calEaten  = todayNutritionEntry.totalCalories ?? 0;
+                      const protEaten = todayNutritionEntry.totalProtein  ?? 0;
+                      const calLeft   = calTarget - calEaten;
+                      const protLeft  = goals.proteinTarget - protEaten;
                       return (
                         <>
                           <div className="nutrition-totals-row">
@@ -448,13 +448,13 @@ export default function Today() {
 
       {/* Modals */}
       {modal === 'weight' && (
-        <WeightModal existing={editingEntry} onClose={closeModal} onSaved={refetchW} />
+        <WeightModal existing={editingEntry} onClose={closeModal} onSaved={refetchWeight} />
       )}
       {modal === 'workout' && (
         <WorkoutBuilderModal
           prefillDate={TODAY}
           onClose={closeModal}
-          onSaved={refetchWo}
+          onSaved={refetchWorkouts}
         />
       )}
       {modal === 'dayinfo' && (
@@ -462,7 +462,7 @@ export default function Today() {
           existing={editingEntry}
           date={TODAY}
           onClose={closeModal}
-          onSaved={refetchN}
+          onSaved={refetchNutrition}
         />
       )}
       {modal === 'meal' && (
@@ -470,7 +470,7 @@ export default function Today() {
           logId={mealLogId}
           existing={editMeal}
           onClose={() => { setModal(null); setEditMeal(null); setMealLogId(null); }}
-          onSaved={refetchN}
+          onSaved={refetchNutrition}
         />
       )}
       {editExercise && (
@@ -479,7 +479,7 @@ export default function Today() {
           exerciseName={editExercise.name}
           exerciseSets={editExercise.sets}
           onClose={() => setEditExercise(null)}
-          onSaved={refetchWo}
+          onSaved={refetchWorkouts}
         />
       )}
     </div>

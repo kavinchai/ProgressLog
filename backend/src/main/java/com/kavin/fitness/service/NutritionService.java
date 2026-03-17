@@ -59,7 +59,7 @@ public class NutritionService {
     public NutritionLogDTO updateMeal(Long logId, Long mealId, Long userId, MealRequest request) {
         NutritionLog log = resolveLog(logId, userId);
         Meal meal = mealRepository.findById(mealId)
-                .filter(m -> m.getNutritionLog().getId().equals(logId))
+                .filter(existingMeal -> existingMeal.getNutritionLog().getId().equals(logId))
                 .orElseThrow(() -> new IllegalArgumentException("Meal not found"));
         meal.setMealName(request.getMealName());
         meal.setCalories(request.getCalories());
@@ -67,7 +67,7 @@ public class NutritionService {
         mealRepository.save(meal);
         // reload with fresh meals
         return toDTO(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(userId)
-                .stream().filter(l -> l.getId().equals(logId)).findFirst()
+                .stream().filter(nutritionLog -> nutritionLog.getId().equals(logId)).findFirst()
                 .orElse(log));
     }
 
@@ -76,7 +76,7 @@ public class NutritionService {
     public void deleteMeal(Long logId, Long mealId, Long userId) {
         resolveLog(logId, userId);
         Meal meal = mealRepository.findById(mealId)
-                .filter(m -> m.getNutritionLog().getId().equals(logId))
+                .filter(existingMeal -> existingMeal.getNutritionLog().getId().equals(logId))
                 .orElseThrow(() -> new IllegalArgumentException("Meal not found"));
         mealRepository.delete(meal);
     }
@@ -85,27 +85,27 @@ public class NutritionService {
 
     private NutritionLog resolveLog(Long logId, Long userId) {
         return nutritionLogRepository.findById(logId)
-                .filter(l -> l.getUser().getId().equals(userId))
+                .filter(nutritionLog -> nutritionLog.getUser().getId().equals(userId))
                 .orElseThrow(() -> new IllegalArgumentException("Nutrition log not found"));
     }
 
     private NutritionLogDTO toDTO(NutritionLog log) {
         List<NutritionLogDTO.MealDTO> mealDTOs = log.getMeals().stream()
-                .map(m -> new NutritionLogDTO.MealDTO(
-                        m.getId(), m.getMealName(), m.getCalories(), m.getProteinGrams()))
+                .map(meal -> new NutritionLogDTO.MealDTO(
+                        meal.getId(), meal.getMealName(), meal.getCalories(), meal.getProteinGrams()))
                 .collect(Collectors.toList());
 
-        int totalCal  = log.getMeals().stream().mapToInt(Meal::getCalories).sum();
-        int totalProt = log.getMeals().stream().mapToInt(Meal::getProteinGrams).sum();
+        int totalCalories = log.getMeals().stream().mapToInt(Meal::getCalories).sum();
+        int totalProtein  = log.getMeals().stream().mapToInt(Meal::getProteinGrams).sum();
 
         // fallback to legacy columns if no meals yet
         if (mealDTOs.isEmpty()) {
-            totalCal  = log.getCalories()      != null ? log.getCalories()      : 0;
-            totalProt = log.getProteinGrams()   != null ? log.getProteinGrams()  : 0;
+            totalCalories = log.getCalories()    != null ? log.getCalories()    : 0;
+            totalProtein  = log.getProteinGrams() != null ? log.getProteinGrams() : 0;
         }
 
         return new NutritionLogDTO(
                 log.getId(), log.getLogDate(), log.getDayType(),
-                log.getSteps(), totalCal, totalProt, mealDTOs);
+                log.getSteps(), totalCalories, totalProtein, mealDTOs);
     }
 }
