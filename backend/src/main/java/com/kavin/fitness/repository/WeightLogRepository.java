@@ -13,4 +13,6 @@ public interface WeightLogRepository extends JpaRepository<WeightLog, Long> {
     List<WeightLog> findByUserIdOrderByLogDateAsc(Long userId);
 
     boolean existsByUserIdAndLogDate(Long userId, LocalDate logDate);
+
+    java.util.Optional<WeightLog> findByUserIdAndLogDate(Long userId, LocalDate logDate);
 }

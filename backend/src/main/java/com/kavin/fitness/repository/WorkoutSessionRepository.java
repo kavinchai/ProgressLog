@@ -16,6 +16,8 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 
     boolean existsByUserIdAndSessionDate(Long userId, LocalDate sessionDate);
 
+    java.util.Optional<WorkoutSession> findByUserIdAndSessionDate(Long userId, LocalDate sessionDate);
+
     @Query("SELECT DISTINCT s FROM WorkoutSession s " +
            "LEFT JOIN FETCH s.exerciseSets " +
            "WHERE s.user.id = :userId " +
