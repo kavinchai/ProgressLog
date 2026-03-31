@@ -71,6 +71,13 @@ public class NutritionService {
                 .orElse(log));
     }
 
+    /** Delete an entire day log (and its meals via cascade). */
+    @Transactional
+    public void deleteLog(Long logId, Long userId) {
+        NutritionLog log = resolveLog(logId, userId);
+        nutritionLogRepository.delete(log);
+    }
+
     /** Delete a meal. */
     @Transactional
     public void deleteMeal(Long logId, Long mealId, Long userId) {

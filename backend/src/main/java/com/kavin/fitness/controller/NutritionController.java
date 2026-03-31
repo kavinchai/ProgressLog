@@ -38,6 +38,15 @@ public class NutritionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
+    /** Delete an entire day log. */
+    @DeleteMapping("/{logId}")
+    public ResponseEntity<Void> deleteLog(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long logId) {
+        nutritionService.deleteLog(logId, resolveUser(principal).getId());
+        return ResponseEntity.noContent().build();
+    }
+
     /** Add a meal to an existing day log. */
     @PostMapping("/{logId}/meals")
     public ResponseEntity<NutritionLogDTO> addMeal(

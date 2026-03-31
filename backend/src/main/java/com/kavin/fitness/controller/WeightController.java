@@ -28,6 +28,14 @@ public class WeightController {
         return ResponseEntity.ok(weightService.getWeightLog(resolveUser(principal).getId()));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteWeight(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long id) {
+        weightService.delete(id, resolveUser(principal).getId());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping
     public ResponseEntity<WeightLog> logWeight(
             @AuthenticationPrincipal UserDetails principal,

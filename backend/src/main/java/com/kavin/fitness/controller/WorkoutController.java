@@ -43,6 +43,15 @@ public class WorkoutController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
+    /** Delete an entire workout session. */
+    @DeleteMapping("/{sessionId}")
+    public ResponseEntity<Void> deleteSession(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long sessionId) {
+        workoutService.deleteSession(sessionId, resolveUser(principal).getId());
+        return ResponseEntity.noContent().build();
+    }
+
     /** Add or replace all sets for a named exercise in an existing session. */
     @PostMapping("/{sessionId}/exercises")
     public ResponseEntity<WorkoutSessionDTO> upsertExercise(

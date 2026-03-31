@@ -22,6 +22,14 @@ public class WeightService {
     }
 
     @Transactional
+    public void delete(Long id, Long userId) {
+        WeightLog log = weightLogRepository.findById(id)
+                .filter(w -> w.getUser().getId().equals(userId))
+                .orElseThrow(() -> new IllegalArgumentException("Weight log not found"));
+        weightLogRepository.delete(log);
+    }
+
+    @Transactional
     public WeightLog save(User user, WeightLogRequest request) {
         WeightLog log = new WeightLog();
         log.setUser(user);
