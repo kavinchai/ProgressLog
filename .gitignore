@@ -56,3 +56,4 @@ yarn-error.log*
 *.tmp
 *.bak
 coverage/
+.claude/settings.local.json

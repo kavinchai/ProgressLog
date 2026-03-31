@@ -23,6 +23,12 @@ public class WorkoutController {
     @Autowired private WorkoutService workoutService;
     @Autowired private UserRepository userRepository;
 
+    @GetMapping("/exercise-names")
+    public ResponseEntity<List<String>> getExerciseNames(
+            @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(workoutService.getDistinctExerciseNames(resolveUser(principal).getId()));
+    }
+
     @GetMapping
     public ResponseEntity<List<WorkoutSessionDTO>> getWorkouts(
             @AuthenticationPrincipal UserDetails principal) {

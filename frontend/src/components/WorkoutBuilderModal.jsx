@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api';
 import Modal from './Modal';
 import './WorkoutBuilderModal.css';
@@ -15,10 +15,47 @@ function emptyExercise() {
 }
 
 export default function WorkoutBuilderModal({ prefillDate, onClose, onSaved }) {
-  const [date,      setDate]      = useState(prefillDate ?? TODAY);
-  const [exercises, setExercises] = useState([]);
-  const [err,       setErr]       = useState('');
-  const [saving,    setSaving]    = useState(false);
+  const [date,           setDate]           = useState(prefillDate ?? TODAY);
+  const [exercises,      setExercises]      = useState([]);
+  const [err,            setErr]            = useState('');
+  const [saving,         setSaving]         = useState(false);
+  const [knownNames,     setKnownNames]     = useState([]);
+  const [suggestionFor,  setSuggestionFor]  = useState(null);
+  const [highlightedIdx, setHighlightedIdx] = useState(-1);
+
+  useEffect(() => {
+    api.get('/workouts/exercise-names').then(res => setKnownNames(res.data)).catch(() => {});
+  }, []);
+
+  function getFilteredSuggestions(value) {
+    if (!value.trim()) return [];
+    const lower = value.toLowerCase();
+    return knownNames.filter(n => n.toLowerCase().includes(lower)).slice(0, 8);
+  }
+
+  function selectSuggestion(exerciseIndex, name) {
+    updateExerciseName(exerciseIndex, name);
+    setSuggestionFor(null);
+    setHighlightedIdx(-1);
+  }
+
+  function handleNameKeyDown(e, exerciseIndex) {
+    if (suggestionFor !== exerciseIndex) return;
+    const filtered = getFilteredSuggestions(exercises[exerciseIndex].exerciseName);
+    if (filtered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIdx(i => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIdx(i => Math.max(i - 1, -1));
+    } else if (e.key === 'Enter' && highlightedIdx >= 0) {
+      e.preventDefault();
+      selectSuggestion(exerciseIndex, filtered[highlightedIdx]);
+    } else if (e.key === 'Escape') {
+      setSuggestionFor(null);
+    }
+  }
 
   // ── exercise mutations ────────────────────────────────────────────────────
 
@@ -111,13 +148,37 @@ export default function WorkoutBuilderModal({ prefillDate, onClose, onSaved }) {
             {exercises.map((exercise, exerciseIndex) => (
               <div key={exerciseIndex} className="wbm-exercise-block">
                 <div className="wbm-exercise-header">
-                  <input
-                    className="modal-input wbm-exercise-name"
-                    type="text"
-                    placeholder="Exercise name"
-                    value={exercise.exerciseName}
-                    onChange={e => updateExerciseName(exerciseIndex, e.target.value)}
-                  />
+                  <div className="wbm-name-wrapper">
+                    <input
+                      className="modal-input wbm-exercise-name"
+                      type="text"
+                      placeholder="Exercise name"
+                      value={exercise.exerciseName}
+                      onChange={e => {
+                        updateExerciseName(exerciseIndex, e.target.value);
+                        setSuggestionFor(exerciseIndex);
+                        setHighlightedIdx(-1);
+                      }}
+                      onFocus={() => setSuggestionFor(exerciseIndex)}
+                      onBlur={() => setTimeout(() => setSuggestionFor(null), 150)}
+                      onKeyDown={e => handleNameKeyDown(e, exerciseIndex)}
+                      autoComplete="off"
+                    />
+                    {suggestionFor === exerciseIndex &&
+                      getFilteredSuggestions(exercise.exerciseName).length > 0 && (
+                      <ul className="wbm-suggestions">
+                        {getFilteredSuggestions(exercise.exerciseName).map((name, i) => (
+                          <li
+                            key={name}
+                            className={`wbm-suggestion${i === highlightedIdx ? ' wbm-suggestion--active' : ''}`}
+                            onMouseDown={() => selectSuggestion(exerciseIndex, name)}
+                          >
+                            {name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                   <button type="button" className="btn btn-sm"
                     onClick={() => removeExercise(exerciseIndex)}>[x]</button>
                 </div>

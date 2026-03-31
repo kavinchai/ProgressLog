@@ -22,6 +22,11 @@ public class WorkoutService {
     @Autowired private ExerciseSetRepository exerciseSetRepository;
 
     @Transactional(readOnly = true)
+    public List<String> getDistinctExerciseNames(Long userId) {
+        return exerciseSetRepository.findDistinctExerciseNamesByUserId(userId);
+    }
+
+    @Transactional(readOnly = true)
     public List<WorkoutSessionDTO> getWorkoutSessions(Long userId) {
         return workoutSessionRepository
                 .findByUserIdWithSetsOrderByDateAsc(userId)

@@ -71,3 +71,40 @@
   align-self: flex-start;
   margin-top: 2px;
 }
+
+.wbm-name-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.wbm-name-wrapper .wbm-exercise-name {
+  width: 100%;
+}
+
+.wbm-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.wbm-suggestion {
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.wbm-suggestion:hover,
+.wbm-suggestion--active {
+  background: var(--hover-bg);
+  color: var(--hover-fg);
+}
