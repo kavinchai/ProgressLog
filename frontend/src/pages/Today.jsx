@@ -289,6 +289,24 @@ export default function Today() {
 
   function closeModal() { setModal(null); setEditingEntry(null); }
 
+  async function deleteWeight() {
+    if (!todayWeightEntry) return;
+    try { await api.delete(`/weight/${todayWeightEntry.id}`); refetchWeight(); }
+    catch { /* ignore */ }
+  }
+
+  async function deleteNutritionDay() {
+    if (!todayNutritionEntry) return;
+    try { await api.delete(`/nutrition/${todayNutritionEntry.id}`); refetchNutrition(); }
+    catch { /* ignore */ }
+  }
+
+  async function deleteWorkoutSession() {
+    if (!todayWorkoutEntry) return;
+    try { await api.delete(`/workouts/${todayWorkoutEntry.id}`); refetchWorkouts(); }
+    catch { /* ignore */ }
+  }
+
   // Ensure a day log exists before adding a meal
   async function openAddMeal() {
     let logId = todayNutritionEntry?.id;
@@ -317,15 +335,20 @@ export default function Today() {
           <span className="section-title">Weight</span>
           <div className="btn-actions">
             {todayWeightEntry && (
+              <>
+                <button className="btn btn-sm"
+                  onClick={() => { setEditingEntry(todayWeightEntry); setModal('weight'); }}>
+                  [edit]
+                </button>
+                <button className="btn btn-sm" onClick={deleteWeight}>[delete]</button>
+              </>
+            )}
+            {!todayWeightEntry && (
               <button className="btn btn-sm"
-                onClick={() => { setEditingEntry(todayWeightEntry); setModal('weight'); }}>
-                [edit]
+                onClick={() => { setEditingEntry(null); setModal('weight'); }}>
+                [+ add]
               </button>
             )}
-            <button className="btn btn-sm"
-              onClick={() => { setEditingEntry(null); setModal('weight'); }}>
-              [+ add]
-            </button>
           </div>
         </div>
         <div className="section-body">
@@ -340,6 +363,9 @@ export default function Today() {
         <div className="section-header">
           <span className="section-title">Workout</span>
           <div className="btn-actions">
+            {todayWorkoutEntry && (
+              <button className="btn btn-sm" onClick={deleteWorkoutSession}>[delete session]</button>
+            )}
             <button className="btn btn-sm" onClick={() => setModal('workout')}>
               [+ add]
             </button>
@@ -374,10 +400,13 @@ export default function Today() {
           <span className="section-title">Nutrition</span>
           <div className="btn-actions">
             {todayNutritionEntry && (
-              <button className="btn btn-sm"
-                onClick={() => { setEditingEntry(todayNutritionEntry); setModal('dayinfo'); }}>
-                [edit day info]
-              </button>
+              <>
+                <button className="btn btn-sm"
+                  onClick={() => { setEditingEntry(todayNutritionEntry); setModal('dayinfo'); }}>
+                  [edit day info]
+                </button>
+                <button className="btn btn-sm" onClick={deleteNutritionDay}>[delete day]</button>
+              </>
             )}
             <button className="btn btn-sm" onClick={openAddMeal}>
               [+ add meal]
