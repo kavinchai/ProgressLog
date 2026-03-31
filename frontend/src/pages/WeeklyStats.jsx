@@ -244,6 +244,24 @@ function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW
 
   function close() { setModal(null); }
 
+  async function deleteWeight() {
+    if (!weightEntry) return;
+    try { await api.delete(`/weight/${weightEntry.id}`); onRefetchW(); }
+    catch { /* ignore */ }
+  }
+
+  async function deleteNutritionDay() {
+    if (!nutritionEntry) return;
+    try { await api.delete(`/nutrition/${nutritionEntry.id}`); onRefetchN(); }
+    catch { /* ignore */ }
+  }
+
+  async function deleteWorkoutSession() {
+    if (!workoutEntry) return;
+    try { await api.delete(`/workouts/${workoutEntry.id}`); onRefetchWo(); }
+    catch { /* ignore */ }
+  }
+
   async function openAddMeal() {
     let logId = nutritionEntry?.id;
     if (!logId) {
@@ -267,7 +285,10 @@ function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW
           <span className="day-detail-label">Weight</span>
           <div className="btn-actions">
             {weightEntry ? (
-              <button className="btn btn-sm" onClick={() => setModal('weight-edit')}>[edit]</button>
+              <>
+                <button className="btn btn-sm" onClick={() => setModal('weight-edit')}>[edit]</button>
+                <button className="btn btn-sm" onClick={deleteWeight}>[delete]</button>
+              </>
             ) : (
               <button className="btn btn-sm" onClick={() => setModal('weight-add')}>[+ add]</button>
             )}
@@ -284,7 +305,10 @@ function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW
           <span className="day-detail-label">Nutrition</span>
           <div className="btn-actions">
             {nutritionEntry && (
-              <button className="btn btn-sm" onClick={() => setModal('dayinfo')}>[edit day info]</button>
+              <>
+                <button className="btn btn-sm" onClick={() => setModal('dayinfo')}>[edit day info]</button>
+                <button className="btn btn-sm" onClick={deleteNutritionDay}>[delete day]</button>
+              </>
             )}
             <button className="btn btn-sm" onClick={openAddMeal}>[+ add meal]</button>
           </div>
@@ -324,6 +348,9 @@ function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW
         <div className="day-detail-section-head">
           <span className="day-detail-label">Workout</span>
           <div className="btn-actions">
+            {workoutEntry && (
+              <button className="btn btn-sm" onClick={deleteWorkoutSession}>[delete session]</button>
+            )}
             <button className="btn btn-sm" onClick={() => setModal('workout-add')}>[+ add]</button>
           </div>
         </div>

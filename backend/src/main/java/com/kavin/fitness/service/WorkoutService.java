@@ -50,6 +50,13 @@ public class WorkoutService {
         return toDTO(session);
     }
 
+    /** Delete an entire workout session. */
+    @Transactional
+    public void deleteSession(Long sessionId, Long userId) {
+        WorkoutSession session = resolveSession(sessionId, userId);
+        workoutSessionRepository.delete(session);
+    }
+
     /** Replace all sets for the named exercise in this session. */
     @Transactional
     public WorkoutSessionDTO upsertExercise(Long sessionId, Long userId, ExerciseRequest request) {
