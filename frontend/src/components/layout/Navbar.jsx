@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import useTheme from '../../hooks/useTheme';
 import './Navbar.css';
 
 const navItems = [
@@ -15,12 +16,7 @@ export default function Navbar() {
   const location = useLocation();
   const logout = useAuthStore((state) => state.logout);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
-  }, [dark]);
+  const [dark, setDark] = useTheme();
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
