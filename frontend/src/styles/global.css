@@ -27,9 +27,13 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 640px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
   .main-content {
     margin-left: 0;
-    padding: 64px 14px 16px;
+    padding: 16px 14px;
   }
 
   /* Prevent iOS auto-zoom on input focus (triggers below 16px) */
