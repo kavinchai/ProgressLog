@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import useTheme from '../../hooks/useTheme';
 import './Sidebar.css';
 
 const navItems = [
@@ -14,12 +14,7 @@ const navItems = [
 export default function Sidebar() {
   const username = useAuthStore((state) => state.username);
   const logout   = useAuthStore((state) => state.logout);
-  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
-  }, [dark]);
+  const [dark, setDark] = useTheme();
 
   return (
     <aside className="sidebar">

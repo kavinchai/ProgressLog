@@ -5,9 +5,8 @@ import api from '../api';
 import useWeightLog from '../hooks/useWeightLog';
 import useNutrition from '../hooks/useNutrition';
 import useWorkouts  from '../hooks/useWorkouts';
-import Modal from '../components/Modal';
-import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
-import EditExerciseModal   from '../components/EditExerciseModal';
+import DayDetail from '../components/DayDetail';
+import { groupByExercise } from '../utils/workout';
 import './WeeklyStats.css';
 import './TotalStats.css';
 
@@ -26,396 +25,6 @@ function avg(nums) {
   const valid = nums.filter(n => n != null);
   if (!valid.length) return null;
   return (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1);
-}
-
-function groupByExercise(exerciseSets) {
-  const map = {};
-  for (const s of (exerciseSets ?? [])) {
-    const key = `${s.exerciseName}__${s.weightLbs}`;
-    if (!map[key]) map[key] = { name: s.exerciseName, weight: parseFloat(s.weightLbs), sets: [] };
-    map[key].sets.push(s);
-  }
-  return Object.values(map)
-    .sort((a, b) => a.name.localeCompare(b.name) || b.weight - a.weight)
-    .map(g => ({ ...g, sets: g.sets.sort((a, b) => a.setNumber - b.setNumber) }));
-}
-
-// ── Weight modal ──────────────────────────────────────────────────────────────
-
-function WeightModal({ prefillDate, existing, onClose, onSaved }) {
-  const [date,   setDate]   = useState(existing?.logDate ?? prefillDate ?? '');
-  const [weight, setWeight] = useState(existing?.weightLbs ?? '');
-  const [err,    setErr]    = useState('');
-  const [saving, setSaving] = useState(false);
-
-  async function submit(e) {
-    e.preventDefault();
-    setErr('');
-    setSaving(true);
-    try {
-      await api.post('/weight', { logDate: date, weightLbs: parseFloat(weight) });
-      onSaved();
-      onClose();
-    } catch (ex) {
-      setErr(ex.response?.data?.message ?? 'Failed to save.');
-    } finally { setSaving(false); }
-  }
-
-  return (
-    <Modal title={existing ? 'Edit Weight' : 'Log Weight'} onClose={onClose}>
-      <form className="modal-form" onSubmit={submit}>
-        {err && <div className="modal-error">{err}</div>}
-        <div className="modal-field">
-          <label className="modal-label">Date</label>
-          <input className="modal-input" type="date" value={date}
-            onChange={e => setDate(e.target.value)} required />
-        </div>
-        <div className="modal-field">
-          <label className="modal-label">Weight (lbs)</label>
-          <input className="modal-input" type="number" step="0.1" min="0"
-            value={weight} onChange={e => setWeight(e.target.value)} required />
-        </div>
-        <div className="modal-actions">
-          <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-// ── Day info modal ────────────────────────────────────────────────────────────
-
-function DayInfoModal({ prefillDate, existing, onClose, onSaved }) {
-  const [type,  setType]  = useState(existing?.dayType ?? 'training');
-  const [steps, setSteps] = useState(existing?.steps ?? '');
-  const [err,   setErr]   = useState('');
-  const [saving, setSaving] = useState(false);
-
-  async function submit(e) {
-    e.preventDefault();
-    setErr('');
-    setSaving(true);
-    try {
-      await api.post('/nutrition', {
-        logDate: existing?.logDate ?? prefillDate,
-        dayType: type,
-        steps: steps ? parseInt(steps) : null,
-      });
-      onSaved();
-      onClose();
-    } catch (ex) {
-      setErr(ex.response?.data?.message ?? 'Failed to save.');
-    } finally { setSaving(false); }
-  }
-
-  return (
-    <Modal title="Day Info" onClose={onClose}>
-      <form className="modal-form" onSubmit={submit}>
-        {err && <div className="modal-error">{err}</div>}
-        <div className="modal-field">
-          <label className="modal-label">Day Type</label>
-          <select className="modal-input" value={type} onChange={e => setType(e.target.value)}>
-            <option value="training">training</option>
-            <option value="rest">rest</option>
-          </select>
-        </div>
-        <div className="modal-field">
-          <label className="modal-label">Steps</label>
-          <input className="modal-input" type="number" min="0"
-            value={steps} onChange={e => setSteps(e.target.value)} placeholder="optional" />
-        </div>
-        <div className="modal-actions">
-          <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-// ── Meal modal ────────────────────────────────────────────────────────────────
-
-function MealModal({ logId, existing, onClose, onSaved }) {
-  const [name,     setName]     = useState(existing?.mealName ?? '');
-  const [calories, setCalories] = useState(existing?.calories ?? '');
-  const [protein,  setProtein]  = useState(existing?.proteinGrams ?? '');
-  const [err,      setErr]      = useState('');
-  const [saving,   setSaving]   = useState(false);
-
-  async function submit(e) {
-    e.preventDefault();
-    setErr('');
-    setSaving(true);
-    try {
-      const body = {
-        mealName: name.trim() || null,
-        calories: parseInt(calories),
-        proteinGrams: parseInt(protein),
-      };
-      if (existing) {
-        await api.put(`/nutrition/${logId}/meals/${existing.id}`, body);
-      } else {
-        await api.post(`/nutrition/${logId}/meals`, body);
-      }
-      onSaved();
-      onClose();
-    } catch (ex) {
-      setErr(ex.response?.data?.message ?? 'Failed to save.');
-    } finally { setSaving(false); }
-  }
-
-  async function deleteMeal() {
-    if (!existing) return;
-    setSaving(true);
-    try {
-      await api.delete(`/nutrition/${logId}/meals/${existing.id}`);
-      onSaved();
-      onClose();
-    } catch (ex) {
-      setErr(ex.response?.data?.message ?? 'Failed to delete.');
-    } finally { setSaving(false); }
-  }
-
-  return (
-    <Modal title={existing ? 'Edit Meal' : 'Add Meal'} onClose={onClose}>
-      <form className="modal-form" onSubmit={submit}>
-        {err && <div className="modal-error">{err}</div>}
-        <div className="modal-field">
-          <label className="modal-label">Meal Name</label>
-          <input className="modal-input" type="text" placeholder="optional"
-            value={name} onChange={e => setName(e.target.value)} />
-        </div>
-        <div className="modal-form-row">
-          <div className="modal-field">
-            <label className="modal-label">Calories</label>
-            <input className="modal-input" type="number" min="0"
-              value={calories} onChange={e => setCalories(e.target.value)} required />
-          </div>
-          <div className="modal-field">
-            <label className="modal-label">Protein (g)</label>
-            <input className="modal-input" type="number" min="0"
-              value={protein} onChange={e => setProtein(e.target.value)} required />
-          </div>
-        </div>
-        <div className="modal-actions">
-          {existing && (
-            <button type="button" className="btn-ghost" onClick={deleteMeal} disabled={saving}>
-              [delete]
-            </button>
-          )}
-          <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-// ── Day detail panel ──────────────────────────────────────────────────────────
-
-function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo }) {
-  const [modal,        setModal]        = useState(null);
-  const [editMeal,     setEditMeal]     = useState(null);
-  const [mealLogId,    setMealLogId]    = useState(null);
-  const [editExercise, setEditExercise] = useState(null);
-
-  const exerciseGroups = workoutEntry?.exerciseSets?.length
-    ? groupByExercise(workoutEntry.exerciseSets)
-    : [];
-
-  const meals = nutritionEntry?.meals ?? [];
-
-  function close() { setModal(null); }
-
-  async function deleteWeight() {
-    if (!weightEntry) return;
-    try { await api.delete(`/weight/${weightEntry.id}`); onRefetchW(); }
-    catch { /* ignore */ }
-  }
-
-  async function deleteNutritionDay() {
-    if (!nutritionEntry) return;
-    try { await api.delete(`/nutrition/${nutritionEntry.id}`); onRefetchN(); }
-    catch { /* ignore */ }
-  }
-
-  async function deleteWorkoutSession() {
-    if (!workoutEntry) return;
-    try { await api.delete(`/workouts/${workoutEntry.id}`); onRefetchWo(); }
-    catch { /* ignore */ }
-  }
-
-  async function openAddMeal() {
-    let logId = nutritionEntry?.id;
-    if (!logId) {
-      try {
-        const res = await api.post('/nutrition', { logDate: date, dayType: 'training', steps: null });
-        logId = res.data?.id;
-        onRefetchN();
-      } catch { /* ignore */ }
-    }
-    setMealLogId(logId);
-    setEditMeal(null);
-    setModal('meal');
-  }
-
-  return (
-    <div className="day-detail">
-
-      {/* Weight */}
-      <div className="day-detail-section">
-        <div className="day-detail-section-head">
-          <span className="day-detail-label">Weight</span>
-          <div className="btn-actions">
-            {weightEntry ? (
-              <>
-                <button className="btn btn-sm" onClick={() => setModal('weight-edit')}>[edit]</button>
-                <button className="btn btn-sm" onClick={deleteWeight}>[delete]</button>
-              </>
-            ) : (
-              <button className="btn btn-sm" onClick={() => setModal('weight-add')}>[+ add]</button>
-            )}
-          </div>
-        </div>
-        <div className="day-detail-value">
-          {weightEntry ? weightEntry.weightLbs + ' lbs' : <span className="muted">--</span>}
-        </div>
-      </div>
-
-      {/* Nutrition */}
-      <div className="day-detail-section">
-        <div className="day-detail-section-head">
-          <span className="day-detail-label">Nutrition</span>
-          <div className="btn-actions">
-            {nutritionEntry && (
-              <>
-                <button className="btn btn-sm" onClick={() => setModal('dayinfo')}>[edit day info]</button>
-                <button className="btn btn-sm" onClick={deleteNutritionDay}>[delete day]</button>
-              </>
-            )}
-            <button className="btn btn-sm" onClick={openAddMeal}>[+ add meal]</button>
-          </div>
-        </div>
-        {nutritionEntry ? (
-          <div>
-            <div className="day-detail-value">
-              {nutritionEntry.dayType}{nutritionEntry.steps != null ? ' / ' + nutritionEntry.steps.toLocaleString() + ' steps' : ''}
-            </div>
-            {meals.length > 0 && (
-              <>
-                <div className="day-meal-list">
-                  {meals.map((meal, i) => (
-                    <div key={meal.id} className="day-meal-row">
-                      <span className="day-meal-name">{meal.mealName || `Meal ${i + 1}`}</span>
-                      <span className="muted">{meal.calories} kcal / {meal.proteinGrams}g</span>
-                      <button className="btn btn-sm"
-                        onClick={() => { setMealLogId(nutritionEntry.id); setEditMeal(meal); setModal('meal'); }}>
-                        [edit]
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="day-nutrition-total">
-                  Total: {nutritionEntry.totalCalories ?? 0} kcal / {nutritionEntry.totalProtein ?? 0}g protein
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="day-detail-value"><span className="muted">--</span></div>
-        )}
-      </div>
-
-      {/* Workout */}
-      <div className="day-detail-section">
-        <div className="day-detail-section-head">
-          <span className="day-detail-label">Workout</span>
-          <div className="btn-actions">
-            {workoutEntry && (
-              <button className="btn btn-sm" onClick={deleteWorkoutSession}>[delete session]</button>
-            )}
-            <button className="btn btn-sm" onClick={() => setModal('workout-add')}>[+ add]</button>
-          </div>
-        </div>
-        {workoutEntry ? (
-          exerciseGroups.length > 0 ? (
-            <div className="day-exercise-list">
-              {exerciseGroups.map(g => (
-                <div key={`${g.name}-${g.weight}`} className="day-exercise-item">
-                  <div className="day-exercise-row">
-                    <span className="day-exercise-name">{g.name}</span>
-                    {g.weight != null && (
-                      <span className="muted">{g.weight} lbs</span>
-                    )}
-                    <button className="btn btn-sm" style={{ marginLeft: 'auto' }}
-                      onClick={() => setEditExercise({ sessionId: workoutEntry.id, name: g.name, sets: g.sets })}>
-                      [edit]
-                    </button>
-                  </div>
-                  <div className="day-exercise-reps">
-                    {g.sets.map(s => s.reps ?? '--').join('  ')}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="day-detail-value"><span className="muted">session logged</span></div>
-          )
-        ) : (
-          <div className="day-detail-value"><span className="muted">--</span></div>
-        )}
-      </div>
-
-      {/* Modals */}
-      {(modal === 'weight-add' || modal === 'weight-edit') && (
-        <WeightModal
-          prefillDate={date}
-          existing={modal === 'weight-edit' ? weightEntry : null}
-          onClose={close}
-          onSaved={onRefetchW}
-        />
-      )}
-      {modal === 'dayinfo' && (
-        <DayInfoModal
-          prefillDate={date}
-          existing={nutritionEntry}
-          onClose={close}
-          onSaved={onRefetchN}
-        />
-      )}
-      {modal === 'meal' && (
-        <MealModal
-          logId={mealLogId}
-          existing={editMeal}
-          onClose={() => { setModal(null); setEditMeal(null); setMealLogId(null); }}
-          onSaved={onRefetchN}
-        />
-      )}
-      {modal === 'workout-add' && (
-        <WorkoutBuilderModal
-          prefillDate={date}
-          onClose={close}
-          onSaved={onRefetchWo}
-        />
-      )}
-      {editExercise && (
-        <EditExerciseModal
-          sessionId={editExercise.sessionId}
-          exerciseName={editExercise.name}
-          exerciseSets={editExercise.sets}
-          onClose={() => setEditExercise(null)}
-          onSaved={onRefetchWo}
-        />
-      )}
-    </div>
-  );
 }
 
 // ── Weight line chart ─────────────────────────────────────────────────────────
@@ -439,7 +48,6 @@ function WeightLineChart({ dates, weights }) {
   const maxVal = Math.max(...vals);
   const pad    = (maxVal - minVal) * 0.15 || 2;
 
-  // For many data points, only show every Nth x-axis tick
   const tickInterval = data.length > 20 ? Math.floor(data.length / 10) : 0;
   const isMobile = window.innerWidth <= 640;
 
@@ -497,13 +105,12 @@ export default function TotalStats() {
   const [importStatus,  setImportStatus]  = useState(null);
   const [importing,     setImporting]     = useState(false);
   const [rangeKey,      setRangeKey]      = useState('90d');
-  const [logMonth,      setLogMonth]      = useState(null); // null = default to most recent
-  const [picker,        setPicker]        = useState(null); // null | 'month' | 'year'
+  const [logMonth,      setLogMonth]      = useState(null);
+  const [picker,        setPicker]        = useState(null);
   const fileInputRef = useRef(null);
 
   const today = localDateStr(new Date());
 
-  // Build union of all dates, sorted newest first
   const allDates = [...new Set([
     ...weightData.map(x => x.logDate),
     ...nutritionData.map(x => x.logDate),
@@ -517,9 +124,9 @@ export default function TotalStats() {
     return {
       date,
       weightEntry, nutritionEntry, workoutEntry,
-      weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)                   : null,
-      calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)               : null,
-      protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)               : null,
+      weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)       : null,
+      calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)   : null,
+      protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)   : null,
       workout:  workoutEntry   ? (workoutEntry.exerciseSets?.length > 0
         ? new Set(workoutEntry.exerciseSets.map(s => s.exerciseName)).size + ' exercises'
         : 'logged') : null,
@@ -532,19 +139,16 @@ export default function TotalStats() {
   const avgCalories   = avg(rows.map(row => row.calories));
   const avgProtein    = avg(rows.map(row => row.protein));
 
-  // Weight trend chart — filtered by selected range, chronological order
   const cutoff = RANGE_DAYS[rangeKey] === Infinity
     ? null
     : localDateStr(new Date(Date.now() - RANGE_DAYS[rangeKey] * 86400000));
   const weightBarDates   = [...allDates].reverse().filter(d => !cutoff || d >= cutoff);
   const weightBarWeights = weightBarDates.map(d => rows.find(row => row.date === d)?.weight ?? null);
 
-  // Month navigator — all months that have data, sorted oldest→newest
   const allMonths      = [...new Set(allDates.map(d => d.slice(0, 7)))].sort();
   const activeMonth    = logMonth ?? today.slice(0, 7);
   const monthIdx       = allMonths.indexOf(activeMonth);
 
-  // All calendar days in the active month up to today, newest first
   const monthRows = (() => {
     if (activeMonth > today.slice(0, 7)) return [];
     const [y, m] = activeMonth.split('-').map(Number);
@@ -564,11 +168,7 @@ export default function TotalStats() {
   const monthsWithData = new Set(allMonths.filter(m => m.startsWith(activeYear)).map(m => m.slice(5, 7)));
 
   function goMonth(ym) { setLogMonth(ym); setExpandedDay(null); setPicker(null); }
-
-  function selectMonth(mm) {
-    goMonth(`${activeYear}-${mm}`);
-  }
-
+  function selectMonth(mm) { goMonth(`${activeYear}-${mm}`); }
   function selectYear(y) {
     const sameMonth = `${y}-${activeMonthNum}`;
     if (allMonths.includes(sameMonth)) {
@@ -578,7 +178,6 @@ export default function TotalStats() {
       goMonth(yearMonths[yearMonths.length - 1]);
     }
   }
-
   function togglePicker(type) { setPicker(p => p === type ? null : type); }
 
   // ── Export helpers ────────────────────────────────────────────────────────
@@ -597,11 +196,7 @@ export default function TotalStats() {
       if (!row.workoutEntry?.exerciseSets?.length) continue;
       const groups = groupByExercise(row.workoutEntry.exerciseSets);
       for (const g of groups) {
-        const exportRow = {
-          Date: formatDate(row.date),
-          Exercise: g.name,
-          Weight: g.weight,
-        };
+        const exportRow = { Date: formatDate(row.date), Exercise: g.name, Weight: g.weight };
         for (const s of g.sets) {
           exportRow[`Set ${s.setNumber}`] = s.reps != null ? s.reps : '';
         }
@@ -804,6 +399,7 @@ export default function TotalStats() {
                               onRefetchW={refetchWeight}
                               onRefetchN={refetchNutrition}
                               onRefetchWo={refetchWorkouts}
+                              showDelete={false}
                             />
                           </td>
                         </tr>

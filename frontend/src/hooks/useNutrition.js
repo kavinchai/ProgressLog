@@ -1,26 +1,2 @@
-import { useState, useEffect, useCallback } from 'react';
-import api from '../api';
-
-export default function useNutrition() {
-  const [data,    setData]    = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [tick,    setTick]    = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    api.get('/nutrition')
-      .then((res) => { if (!cancelled) setData(res.data); })
-      .catch((err) => { if (!cancelled) setError(err.message ?? 'Failed to load nutrition data'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [tick]);
-
-  const refetch = useCallback(() => setTick((t) => t + 1), []);
-
-  return { data, loading, error, refetch };
-}
+import useFetch from './useFetch';
+export default function useNutrition() { return useFetch('/nutrition'); }
