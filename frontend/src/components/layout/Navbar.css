@@ -1,108 +1,47 @@
+/* Navbar is mobile-only */
 .navbar {
-  position: fixed;
-  top: 0;
-  left: var(--sidebar-width);
-  right: 0;
-  height: var(--navbar-height);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--spacing-xl);
-  z-index: 90;
-  backdrop-filter: blur(8px);
-}
-
-.navbar-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.navbar-page-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
-}
-
-.navbar-right {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.navbar-date {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-}
-
-.navbar-phase-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: 4px var(--spacing-sm);
-  background: rgba(124, 106, 247, 0.15);
-  border: 1px solid rgba(124, 106, 247, 0.3);
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-primary-light);
-}
-
-.navbar-phase-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--color-primary);
-  border-radius: 50%;
-}
-
-/* hamburger — hidden on desktop */
-.navbar-hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-}
-
-.navbar-hamburger span {
-  display: block;
-  width: 18px;
-  height: 2px;
-  background: var(--fg);
-}
-
-/* dropdown + overlay — mobile only */
-.navbar-overlay {
-  display: none;
-}
-
-.navbar-dropdown {
   display: none;
 }
 
 @media (max-width: 640px) {
   .navbar {
+    display: flex;
+    position: fixed;
+    top: 0;
     left: 0;
+    right: 0;
     height: 48px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    align-items: center;
     padding: 0 14px;
+    z-index: 90;
   }
 
-  .navbar-date,
-  .navbar-phase-badge {
-    display: none;
+  .navbar-left {
+    display: flex;
+    align-items: center;
   }
 
   .navbar-hamburger {
     display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .navbar-hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--fg);
   }
 
   .navbar-overlay {
-    display: block;
     position: fixed;
     inset: 0;
     z-index: 110;
@@ -138,7 +77,6 @@
   .navbar-dropdown-footer {
     display: flex;
     flex-direction: column;
-    gap: 0;
   }
 
   .navbar-dropdown-btn {

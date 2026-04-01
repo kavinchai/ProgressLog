@@ -11,14 +11,6 @@ const navItems = [
   { to: '/settings', label: 'Settings'     },
 ];
 
-const PAGE_TITLES = {
-  '/today':    'Today',
-  '/weekly':   'Weekly Stats',
-  '/total':    'Total Stats',
-  '/strength': 'Strength',
-  '/settings': 'Settings',
-};
-
 export default function Navbar() {
   const location = useLocation();
   const logout = useAuthStore((state) => state.logout);
@@ -32,12 +24,6 @@ export default function Navbar() {
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
-  const pageTitle = PAGE_TITLES[location.pathname] ?? 'Fitness Tracker';
-
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-  });
-
   return (
     <header className="navbar">
       <div className="navbar-left">
@@ -46,15 +32,6 @@ export default function Navbar() {
           <span />
           <span />
         </button>
-        <span className="navbar-page-title">{pageTitle}</span>
-      </div>
-
-      <div className="navbar-right">
-        <span className="navbar-date">{today}</span>
-        <div className="navbar-phase-badge">
-          <span className="navbar-phase-dot" />
-          Phase 1 — Lean Bulk
-        </div>
       </div>
 
       {menuOpen && (

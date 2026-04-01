@@ -13,7 +13,8 @@ import Settings from './pages/Settings';
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
-    requestAnimationFrame(() => window.scrollTo(0, 0));
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [pathname]);
   return null;
 }
@@ -34,7 +35,10 @@ export default function App() {
   const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
-    if (token) requestAnimationFrame(() => window.scrollTo(0, 0));
+    if (token) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
   }, [token]);
 
   if (!token) {
