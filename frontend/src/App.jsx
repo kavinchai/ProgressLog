@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useEffect } from 'react';
 import useAuthStore from './store/authStore';
 import Sidebar from './components/layout/Sidebar';
+import Navbar from './components/layout/Navbar';
 import Login from './pages/Login';
 import Today from './pages/Today';
 import WeeklyStats from './pages/WeeklyStats';
@@ -21,6 +22,7 @@ function AppLayout({ children }) {
   return (
     <div className="app-layout">
       <Sidebar />
+      <Navbar />
       <div className="main-content">
         {children}
       </div>

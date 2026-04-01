@@ -26,11 +26,6 @@
   color: var(--text-primary);
 }
 
-.navbar-breadcrumb {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-}
-
 .navbar-right {
   display: flex;
   align-items: center;
@@ -62,13 +57,100 @@
   border-radius: 50%;
 }
 
-@media (max-width: 768px) {
+/* hamburger — hidden on desktop */
+.navbar-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.navbar-hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--fg);
+}
+
+/* dropdown + overlay — mobile only */
+.navbar-overlay {
+  display: none;
+}
+
+.navbar-dropdown {
+  display: none;
+}
+
+@media (max-width: 640px) {
   .navbar {
     left: 0;
-    padding: 0 var(--spacing-md);
+    height: 48px;
+    padding: 0 14px;
   }
 
-  .navbar-date {
+  .navbar-date,
+  .navbar-phase-badge {
     display: none;
+  }
+
+  .navbar-hamburger {
+    display: flex;
+  }
+
+  .navbar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+  }
+
+  .navbar-dropdown {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    z-index: 120;
+  }
+
+  .navbar-dropdown-link {
+    display: block;
+    padding: 12px 14px;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: var(--fs);
+    text-decoration: none;
+    white-space: pre;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .navbar-dropdown-link.active {
+    color: var(--fg);
+  }
+
+  .navbar-dropdown-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .navbar-dropdown-btn {
+    display: block;
+    padding: 12px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-dim);
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: var(--fs);
+    text-align: left;
+    cursor: pointer;
   }
 }
