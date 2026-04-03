@@ -117,12 +117,6 @@ export default function TotalStats() {
     };
   });
 
-  const allWeights    = rows.map(row => row.weight);
-  const totalWorkouts = rows.filter(row => row.workout).length;
-  const avgWeight     = avg(allWeights);
-  const avgCalories   = avg(rows.map(row => row.calories));
-  const avgProtein    = avg(rows.map(row => row.protein));
-
   const cutoff = RANGE_DAYS[rangeKey] === Infinity
     ? null
     : localDateStr(new Date(Date.now() - RANGE_DAYS[rangeKey] * 86400000));
@@ -147,6 +141,11 @@ export default function TotalStats() {
       weight: null, calories: null, protein: null, workout: null,
     });
   })();
+  const avgWeight     = avg(monthRows.map(row => row.weight));
+  const avgCalories   = avg(monthRows.map(row => row.calories));
+  const avgProtein    = avg(monthRows.map(row => row.protein));
+  const totalWorkouts = monthRows.filter(row => row.workout).length;
+
   const [activeYear, activeMonthNum] = activeMonth.split('-');
   const allYears       = [...new Set(allMonths.map(m => m.slice(0, 4)))].sort();
   const monthsWithData = new Set(allMonths.filter(m => m.startsWith(activeYear)).map(m => m.slice(5, 7)));
@@ -262,6 +261,7 @@ export default function TotalStats() {
       <div className="section-box" style={{ marginBottom: 24 }}>
         <div className="section-header">
           <span className="section-title">Summary</span>
+          <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>{monthLabel(activeMonth)}</span>
         </div>
         <div className="section-body">
           <div className="weekly-summary-grid">
