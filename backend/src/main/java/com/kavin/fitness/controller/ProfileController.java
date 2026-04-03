@@ -53,6 +53,31 @@ public class ProfileController {
         return ResponseEntity.ok(dto);
     }
 
+    @GetMapping("/email")
+    public ResponseEntity<Map<String, String>> getEmail(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return ResponseEntity.ok(Map.of("email", user.getEmail() != null ? user.getEmail() : ""));
+    }
+
+    @PutMapping("/email")
+    public ResponseEntity<?> updateEmail(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody Map<String, String> body) {
+
+        String email = body.get("email");
+        if (email == null || email.isBlank() || !email.contains("@")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid email address."));
+        }
+
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setEmail(email.trim());
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("email", user.getEmail()));
+    }
+
     @PostMapping("/verify-password")
     public ResponseEntity<?> verifyPassword(
             @AuthenticationPrincipal UserDetails userDetails,

@@ -14,10 +14,16 @@ export default function Settings() {
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState(null);
-  const [credForm, setCredForm] = useState({ newUsername: '', newPassword: '' });
+  const [credForm, setCredForm] = useState({ newUsername: '', newPassword: '', email: '' });
   const [credSaving, setCredSaving] = useState(false);
   const [credSaved, setCredSaved] = useState(false);
   const [credError, setCredError] = useState(null);
+
+  useEffect(() => {
+    api.get('/profile/email')
+      .then((res) => setCredForm((f) => ({ ...f, email: res.data.email })))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!loading) {
@@ -76,25 +82,36 @@ export default function Settings() {
     e.preventDefault();
     setCredSaved(false);
     setCredError(null);
-    if (!credForm.newUsername.trim() && !credForm.newPassword) {
-      setCredError('Enter a new username, new password, or both.');
+    if (!credForm.newUsername.trim() && !credForm.newPassword && !credForm.email.trim()) {
+      setCredError('Enter a new username, password, or email.');
       return;
     }
     setCredSaving(true);
     try {
-      const res = await api.put('/profile/credentials', {
-        currentPassword,
-        newUsername: credForm.newUsername.trim() || undefined,
-        newPassword: credForm.newPassword || undefined,
-      });
-      login(res.data.token, res.data.username);
+      const promises = [];
+
+      if (credForm.newUsername.trim() || credForm.newPassword) {
+        promises.push(
+          api.put('/profile/credentials', {
+            currentPassword,
+            newUsername: credForm.newUsername.trim() || undefined,
+            newPassword: credForm.newPassword || undefined,
+          }).then((res) => login(res.data.token, res.data.username))
+        );
+      }
+
+      if (credForm.email.trim()) {
+        promises.push(api.put('/profile/email', { email: credForm.email.trim() }));
+      }
+
+      await Promise.all(promises);
       setCurrentPassword('');
       setPasswordVerified(false);
-      setCredForm({ newUsername: '', newPassword: '' });
+      setCredForm((f) => ({ newUsername: '', newPassword: '', email: f.email }));
       setCredSaved(true);
       setTimeout(() => setCredSaved(false), 3000);
     } catch (err) {
-      const msg = err.response?.data?.message ?? 'Failed to update credentials.';
+      const msg = err.response?.data?.message ?? 'Failed to update account.';
       setCredError(msg);
     } finally {
       setCredSaving(false);
@@ -205,6 +222,20 @@ export default function Settings() {
           </form>
         ) : (
           <form onSubmit={handleCredSubmit} style={{ display: 'contents' }}>
+            <div className="settings-field">
+              <label htmlFor="email">New Email</label>
+              <div className="settings-input-row">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={credForm.email}
+                  onChange={handleCredChange}
+                />
+              </div>
+            </div>
+
             <div className="settings-field">
               <label htmlFor="newUsername">New Username</label>
               <div className="settings-input-row">

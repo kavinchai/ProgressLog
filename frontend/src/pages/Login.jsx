@@ -8,6 +8,7 @@ export default function Login() {
 	const [mode, setMode] = useState("login"); // 'login' | 'signup'
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
+	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 
@@ -19,7 +20,8 @@ export default function Login() {
 		setLoading(true);
 		try {
 			const endpoint = isSignup ? "/auth/register" : "/auth/login";
-			const res = await api.post(endpoint, { username, password });
+			const body = isSignup ? { username, password, email } : { username, password };
+			const res = await api.post(endpoint, body);
 			login(res.data.token, res.data.username);
 		} catch (err) {
 			const status = err.response?.status;
@@ -42,6 +44,7 @@ export default function Login() {
 		setError("");
 		setUsername("");
 		setPassword("");
+		setEmail("");
 	}
 
 	return (
@@ -64,6 +67,21 @@ export default function Login() {
 								autoComplete="username"
 							/>
 						</div>
+
+						{isSignup && (
+							<div className="login-field">
+								<label htmlFor="email">email:</label>
+								<input
+									id="email"
+									type="email"
+									className="login-input"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									required
+									autoComplete="email"
+								/>
+							</div>
+						)}
 
 						<div className="login-field">
 							<label htmlFor="password">password:</label>
