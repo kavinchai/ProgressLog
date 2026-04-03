@@ -123,7 +123,7 @@ export default function Strength() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[...exercise.data].sort((a, b) => b.maxWeightLbs - a.maxWeightLbs).map((session) => (
+                    {[...exercise.data].sort((a, b) => b.maxWeightLbs - a.maxWeightLbs || b.sessionDate.localeCompare(a.sessionDate)).map((session) => (
                       <tr key={`${session.sessionDate}-${session.maxWeightLbs}`}>
                         <td>{session.sessionDate}</td>
                         <td>
