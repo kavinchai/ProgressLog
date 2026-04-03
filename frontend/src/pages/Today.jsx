@@ -120,6 +120,19 @@ export default function Today() {
     catch { /* ignore */ }
   }
 
+  async function toggleDayType() {
+    const current = todayNutritionEntry?.dayType ?? 'training';
+    const next    = current === 'training' ? 'rest' : 'training';
+    try {
+      await api.post('/nutrition', {
+        logDate: TODAY,
+        dayType: next,
+        steps: todayNutritionEntry?.steps ?? null,
+      });
+      refetchNutrition();
+    } catch { /* ignore */ }
+  }
+
   async function deleteWorkoutSession() {
     if (!todayWorkoutEntry) return;
     try { await api.delete(`/workouts/${todayWorkoutEntry.id}`); refetchWorkouts(); }
@@ -146,6 +159,9 @@ export default function Today() {
       <div className="today-page-header">
         <span className="today-title">TODAY</span>
         <span className="today-date muted">{fmtDate(TODAY)}</span>
+        <button className="today-day-type-toggle" onClick={toggleDayType}>
+          {todayNutritionEntry?.dayType ?? 'training'}
+        </button>
       </div>
 
       {/* WEIGHT */}
