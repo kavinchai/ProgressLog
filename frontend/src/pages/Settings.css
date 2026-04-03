@@ -71,7 +71,8 @@
 }
 
 .settings-input-row input[type="text"],
-.settings-input-row input[type="password"] {
+.settings-input-row input[type="password"],
+.settings-input-row input[type="email"] {
   width: 200px;
   padding: 6px 8px;
   border: 1px solid var(--border);
