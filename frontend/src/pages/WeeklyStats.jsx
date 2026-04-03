@@ -4,13 +4,10 @@ import useWeightLog from '../hooks/useWeightLog';
 import useNutrition from '../hooks/useNutrition';
 import useWorkouts  from '../hooks/useWorkouts';
 import DayDetail from '../components/DayDetail';
+import { localDateStr, shortDate, avg } from '../utils/date';
 import './WeeklyStats.css';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-
-function localDateStr(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
 
 function getLast7Days() {
   const days = [];
@@ -20,19 +17,6 @@ function getLast7Days() {
     days.push(localDateStr(d));
   }
   return days;
-}
-
-function shortDate(iso) {
-  const [, m, d] = iso.split('-');
-  const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const day = names[new Date(iso + 'T12:00:00').getDay()];
-  return day + ' ' + parseInt(m) + '/' + parseInt(d);
-}
-
-function avg(nums) {
-  const valid = nums.filter(n => n != null);
-  if (!valid.length) return null;
-  return (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1);
 }
 
 // ── Weight line chart ─────────────────────────────────────────────────────────

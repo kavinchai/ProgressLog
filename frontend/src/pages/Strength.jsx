@@ -4,13 +4,8 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts';
 import api from '../api';
+import { formatDate } from '../utils/date';
 import './Strength.css';
-
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const [, m, d] = dateStr.split('-');
-  return `${parseInt(m)}/${parseInt(d)}`;
-}
 
 const CHART_COLORS = [
   'var(--color-primary)',

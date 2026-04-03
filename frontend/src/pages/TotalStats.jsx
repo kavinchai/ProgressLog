@@ -7,25 +7,9 @@ import useNutrition from '../hooks/useNutrition';
 import useWorkouts  from '../hooks/useWorkouts';
 import DayDetail from '../components/DayDetail';
 import { groupByExercise } from '../utils/workout';
+import { localDateStr, formatDateShort as formatDate, avg } from '../utils/date';
 import './WeeklyStats.css';
 import './TotalStats.css';
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-function localDateStr(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function formatDate(iso) {
-  const [y, m, d] = iso.split('-');
-  return parseInt(m) + '/' + parseInt(d) + '/' + y.slice(2);
-}
-
-function avg(nums) {
-  const valid = nums.filter(n => n != null);
-  if (!valid.length) return null;
-  return (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1);
-}
 
 // ── Weight line chart ─────────────────────────────────────────────────────────
 

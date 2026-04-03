@@ -4,13 +4,8 @@ import {
 } from 'recharts';
 import useNutrition from '../hooks/useNutrition';
 import useUserProfile from '../hooks/useUserProfile';
+import { formatDate } from '../utils/date';
 import './Nutrition.css';
-
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const [, m, d] = dateStr.split('-');
-  return `${parseInt(m)}/${parseInt(d)}`;
-}
 
 const BarTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;

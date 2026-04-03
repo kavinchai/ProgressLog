@@ -10,15 +10,10 @@ import MealModal           from '../components/MealModal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
 import { groupByExercise } from '../utils/workout';
+import { localDateStr, formatDateFull as fmtDate } from '../utils/date';
 import './Today.css';
 
-const now = new Date();
-const TODAY = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-function fmtDate(iso) {
-  const [y, m, d] = iso.split('-');
-  return parseInt(m) + '/' + parseInt(d) + '/' + y;
-}
+const TODAY = localDateStr(new Date());
 
 // ── Meal card ─────────────────────────────────────────────────────────────────
 

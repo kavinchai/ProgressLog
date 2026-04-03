@@ -5,6 +5,7 @@ import {
 import useWeightLog from '../hooks/useWeightLog';
 import useNutrition from '../hooks/useNutrition';
 import useWorkouts  from '../hooks/useWorkouts';
+import { localDateStr, formatDate } from '../utils/date';
 import './Dashboard.css';
 
 // Phase config
@@ -15,10 +16,6 @@ const PHASE1_TARGET       = 153.5;
 const PHASE2_TARGET       = 149.5;
 const PHASE2_END_DATE     = '2026-05-20';
 
-function localDateStr(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
 function daysBetween(a, b) {
   return Math.round((new Date(b) - new Date(a)) / 86400000);
 }
@@ -28,11 +25,6 @@ function phaseProgress(currentWeight) {
   return Math.min(100, Math.max(0, pct));
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const [, m, d] = dateStr.split('-');
-  return `${parseInt(m)}/${parseInt(d)}`;
-}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
