@@ -70,6 +70,21 @@
   text-align: right;
 }
 
+.settings-input-row input[type="text"],
+.settings-input-row input[type="password"] {
+  width: 200px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--fs);
+}
+
+.settings-credentials {
+  margin-top: 8px;
+}
+
 .settings-unit {
   font-size: var(--fs-sm);
   color: var(--muted);
