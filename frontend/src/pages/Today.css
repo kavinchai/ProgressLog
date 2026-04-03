@@ -169,3 +169,35 @@
   color: var(--fg);
   font-size: var(--fs-sm);
 }
+
+.today-template-picker {
+  position: relative;
+}
+
+.today-template-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  min-width: 160px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.today-template-item {
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.today-template-item:hover {
+  background: var(--hover-bg);
+  color: var(--hover-fg);
+}

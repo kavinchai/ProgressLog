@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import api from '../api';
 import useWeightLog   from '../hooks/useWeightLog';
 import useNutrition   from '../hooks/useNutrition';
 import useWorkouts    from '../hooks/useWorkouts';
 import useUserProfile from '../hooks/useUserProfile';
+import useTemplates   from '../hooks/useTemplates';
 import WeightModal         from '../components/WeightModal';
 import DayInfoModal        from '../components/DayInfoModal';
 import MealModal           from '../components/MealModal';
@@ -78,12 +79,16 @@ export default function Today() {
   const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
   const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
   const { goals } = useUserProfile();
+  const { data: templates } = useTemplates();
 
-  const [modal,        setModal]        = useState(null);
-  const [editingEntry, setEditingEntry] = useState(null);
-  const [editExercise, setEditExercise] = useState(null);
-  const [editMeal,     setEditMeal]     = useState(null); // meal object or null for new
-  const [mealLogId,    setMealLogId]    = useState(null); // resolved log id for meal modal
+  const [modal,           setModal]           = useState(null);
+  const [editingEntry,    setEditingEntry]     = useState(null);
+  const [editExercise,    setEditExercise]     = useState(null);
+  const [editMeal,        setEditMeal]         = useState(null);
+  const [mealLogId,       setMealLogId]        = useState(null);
+  const [prefillExercises,setPrefillExercises] = useState(null);
+  const [templateMenuOpen,setTemplateMenuOpen] = useState(false);
+  const templateBtnRef = useRef(null);
 
   const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
   const todayWorkoutEntry   = workoutData.find(w => w.sessionDate === TODAY);
@@ -95,7 +100,13 @@ export default function Today() {
 
   const meals = todayNutritionEntry?.meals ?? [];
 
-  function closeModal() { setModal(null); setEditingEntry(null); }
+  function closeModal() { setModal(null); setEditingEntry(null); setPrefillExercises(null); }
+
+  function openFromTemplate(template) {
+    setPrefillExercises(template.exercises);
+    setTemplateMenuOpen(false);
+    setModal('workout');
+  }
 
   async function deleteWeight() {
     if (!todayWeightEntry) return;
@@ -174,9 +185,34 @@ export default function Today() {
             {todayWorkoutEntry && (
               <button className="btn btn-sm" onClick={deleteWorkoutSession}>[delete session]</button>
             )}
-            <button className="btn btn-sm" onClick={() => setModal('workout')}>
+            <button className="btn btn-sm" onClick={() => { setPrefillExercises(null); setModal('workout'); }}>
               [+ add]
             </button>
+            {(templates ?? []).length > 0 && (
+              <div className="today-template-picker">
+                <button
+                  ref={templateBtnRef}
+                  className="btn btn-sm"
+                  onClick={() => setTemplateMenuOpen(o => !o)}
+                  onBlur={() => setTimeout(() => setTemplateMenuOpen(false), 150)}
+                >
+                  [from template]
+                </button>
+                {templateMenuOpen && (
+                  <ul className="today-template-menu">
+                    {(templates ?? []).map(t => (
+                      <li
+                        key={t.id}
+                        className="today-template-item"
+                        onMouseDown={() => openFromTemplate(t)}
+                      >
+                        {t.name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div className="section-body">
@@ -290,6 +326,7 @@ export default function Today() {
       {modal === 'workout' && (
         <WorkoutBuilderModal
           prefillDate={TODAY}
+          prefillExercises={prefillExercises}
           onClose={closeModal}
           onSaved={refetchWorkouts}
         />
