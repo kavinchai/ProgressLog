@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import api from '../api';
 import useTemplates from '../hooks/useTemplates';
 import TemplateBuilderModal from '../components/TemplateBuilderModal';
@@ -15,6 +15,9 @@ export default function Templates() {
   const [editTemplate,  setEditTemplate]  = useState(null);
   const [useTemplate,   setUseTemplate]   = useState(null);
   const [deleting,      setDeleting]      = useState(null);
+  const [importing,     setImporting]     = useState(false);
+  const [importError,   setImportError]   = useState('');
+  const fileInputRef = useRef(null);
 
   async function handleDelete(template) {
     setDeleting(template.id);
@@ -23,6 +26,39 @@ export default function Templates() {
       refetch();
     } finally {
       setDeleting(null);
+    }
+  }
+
+  function handleExport() {
+    const list = templates ?? [];
+    // Strip server-assigned ids so the file is clean for re-import
+    const exportData = list.map(({ name, exercises }) => ({ name, exercises }));
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'workout-templates.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleImportFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setImportError('');
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed)) throw new Error('File must contain a JSON array of templates.');
+      await api.post('/templates/import', parsed);
+      refetch();
+    } catch (err) {
+      setImportError(err.response?.data?.message ?? err.message ?? 'Import failed.');
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -35,8 +71,22 @@ export default function Templates() {
           <h1 className="templates-title">Templates</h1>
           <p className="templates-sub">Saved workout templates you can load when logging</p>
         </div>
-        <button className="btn" onClick={() => setShowNew(true)}>[+ new template]</button>
+        <div className="templates-header-actions">
+          <button className="btn btn-sm" onClick={() => setShowNew(true)}>[+ new]</button>
+          <button className="btn btn-sm" onClick={handleExport} disabled={list.length === 0}>[export]</button>
+          <button className="btn btn-sm" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            {importing ? '[importing…]' : '[import]'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={handleImportFile}
+          />
+        </div>
       </div>
+      {importError && <p className="templates-error">{importError}</p>}
 
       {loading && <p className="templates-empty">Loading…</p>}
 

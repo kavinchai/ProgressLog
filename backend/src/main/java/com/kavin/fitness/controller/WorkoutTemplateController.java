@@ -46,6 +46,14 @@ public class WorkoutTemplateController {
         return ResponseEntity.ok(updated);
     }
 
+    @PostMapping("/import")
+    public ResponseEntity<List<WorkoutTemplateDTO>> importTemplates(
+            @AuthenticationPrincipal UserDetails principal,
+            @Valid @RequestBody List<WorkoutTemplateRequest> requests) {
+        List<WorkoutTemplateDTO> imported = templateService.importAll(resolveUser(principal), requests);
+        return ResponseEntity.status(HttpStatus.CREATED).body(imported);
+    }
+
     @DeleteMapping("/{templateId}")
     public ResponseEntity<Void> deleteTemplate(
             @AuthenticationPrincipal UserDetails principal,

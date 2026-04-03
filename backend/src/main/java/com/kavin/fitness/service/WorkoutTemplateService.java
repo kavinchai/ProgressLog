@@ -50,6 +50,13 @@ public class WorkoutTemplateService {
         templateRepository.delete(template);
     }
 
+    @Transactional
+    public List<WorkoutTemplateDTO> importAll(User user, List<WorkoutTemplateRequest> requests) {
+        return requests.stream()
+                .map(r -> create(user, r))
+                .collect(Collectors.toList());
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private void addExercises(WorkoutTemplate template, List<ExerciseRequest> exerciseRequests) {

@@ -8,7 +8,22 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+.templates-header-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: flex-start;
+}
+
+.templates-error {
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+  margin-bottom: 16px;
 }
 
 .templates-title {
