@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
 import useUserProfile from '../hooks/useUserProfile';
+import useAuthStore from '../store/authStore';
+import api from '../api';
 import './Settings.css';
 
 export default function Settings() {
   const { goals, loading, saving, error, saveGoals } = useUserProfile();
   const [form, setForm] = useState({ calorieTargetTraining: '', calorieTargetRest: '', proteinTarget: '' });
   const [saved, setSaved] = useState(false);
+
+  const login = useAuthStore((s) => s.login);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [passwordVerified, setPasswordVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState(null);
+  const [credForm, setCredForm] = useState({ newUsername: '', newPassword: '' });
+  const [credSaving, setCredSaving] = useState(false);
+  const [credSaved, setCredSaved] = useState(false);
+  const [credError, setCredError] = useState(null);
 
   useEffect(() => {
     if (!loading) {
@@ -37,6 +49,56 @@ export default function Settings() {
     const { name, value } = e.target;
     setSaved(false);
     setForm((f) => ({ ...f, [name]: value }));
+  }
+
+  function handleCredChange(e) {
+    const { name, value } = e.target;
+    setCredSaved(false);
+    setCredError(null);
+    setCredForm((f) => ({ ...f, [name]: value }));
+  }
+
+  async function handleVerify(e) {
+    e.preventDefault();
+    setVerifyError(null);
+    setVerifying(true);
+    try {
+      await api.post('/profile/verify-password', { password: currentPassword });
+      setPasswordVerified(true);
+    } catch (err) {
+      setVerifyError(err.response?.data?.message ?? 'Incorrect password.');
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function handleCredSubmit(e) {
+    e.preventDefault();
+    setCredSaved(false);
+    setCredError(null);
+    if (!credForm.newUsername.trim() && !credForm.newPassword) {
+      setCredError('Enter a new username, new password, or both.');
+      return;
+    }
+    setCredSaving(true);
+    try {
+      const res = await api.put('/profile/credentials', {
+        currentPassword,
+        newUsername: credForm.newUsername.trim() || undefined,
+        newPassword: credForm.newPassword || undefined,
+      });
+      login(res.data.token, res.data.username);
+      setCurrentPassword('');
+      setPasswordVerified(false);
+      setCredForm({ newUsername: '', newPassword: '' });
+      setCredSaved(true);
+      setTimeout(() => setCredSaved(false), 3000);
+    } catch (err) {
+      const msg = err.response?.data?.message ?? 'Failed to update credentials.';
+      setCredError(msg);
+    } finally {
+      setCredSaving(false);
+    }
   }
 
   return (
@@ -112,6 +174,76 @@ export default function Settings() {
           </div>
         </form>
       )}
+
+      <div className="settings-form settings-credentials">
+        <div className="settings-section-label" style={{ marginTop: 32 }}>Account</div>
+
+        {!passwordVerified ? (
+          <form onSubmit={handleVerify} style={{ display: 'contents' }}>
+            <div className="settings-field">
+              <label htmlFor="currentPassword">Current Password</label>
+              <div className="settings-input-row">
+                <input
+                  id="currentPassword"
+                  name="currentPassword"
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => { setCurrentPassword(e.target.value); setVerifyError(null); }}
+                  required
+                />
+              </div>
+            </div>
+
+            {verifyError && <p className="settings-error">{verifyError}</p>}
+
+            <div className="settings-actions">
+              <button className="btn" type="submit" disabled={verifying}>
+                {verifying ? '[verifying…]' : '[verify]'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleCredSubmit} style={{ display: 'contents' }}>
+            <div className="settings-field">
+              <label htmlFor="newUsername">New Username</label>
+              <div className="settings-input-row">
+                <input
+                  id="newUsername"
+                  name="newUsername"
+                  type="text"
+                  autoComplete="username"
+                  value={credForm.newUsername}
+                  onChange={handleCredChange}
+                />
+              </div>
+            </div>
+
+            <div className="settings-field">
+              <label htmlFor="newPassword">New Password</label>
+              <div className="settings-input-row">
+                <input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  value={credForm.newPassword}
+                  onChange={handleCredChange}
+                />
+              </div>
+            </div>
+
+            {credError && <p className="settings-error">{credError}</p>}
+
+            <div className="settings-actions">
+              <button className="btn" type="submit" disabled={credSaving}>
+                {credSaving ? '[saving…]' : '[save account]'}
+              </button>
+              {credSaved && <span className="settings-saved">saved.</span>}
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
