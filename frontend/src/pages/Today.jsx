@@ -5,6 +5,7 @@ import useNutrition   from '../hooks/useNutrition';
 import useWorkouts    from '../hooks/useWorkouts';
 import useUserProfile from '../hooks/useUserProfile';
 import useTemplates   from '../hooks/useTemplates';
+import usePRs         from '../hooks/usePRs';
 import WeightModal         from '../components/WeightModal';
 import DayInfoModal        from '../components/DayInfoModal';
 import MealModal           from '../components/MealModal';
@@ -35,13 +36,14 @@ function MealCard({ meal, index, onEdit }) {
 
 // ── Exercise cards ────────────────────────────────────────────────────────────
 
-function ExerciseCard({ name, weight, sets, onEdit }) {
+function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
   return (
     <div className="exercise-card">
       <div className="exercise-card-header">
         <span className="exercise-card-name">
           {name}
           <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--font-size-sm)' }}>{weight} lbs</span>
+          {isPR && <span className="pr-badge">PR</span>}
         </span>
         <button className="btn btn-sm" onClick={onEdit}>[edit]</button>
       </div>
@@ -80,8 +82,10 @@ export default function Today() {
   const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
   const { goals } = useUserProfile();
   const { data: templates } = useTemplates();
+  const { data: prsData, refetch: refetchPRs } = usePRs();
 
   const [modal,           setModal]           = useState(null);
+  const [showPRHistory,   setShowPRHistory]    = useState(false);
   const [editingEntry,    setEditingEntry]     = useState(null);
   const [editExercise,    setEditExercise]     = useState(null);
   const [editMeal,        setEditMeal]         = useState(null);
@@ -97,6 +101,19 @@ export default function Today() {
   const exerciseGroups = todayWorkoutEntry?.exerciseSets?.length
     ? groupByExercise(todayWorkoutEntry.exerciseSets)
     : [];
+
+  // exerciseName -> all-time max weight (number)
+  const prMap = Object.fromEntries(
+    (prsData ?? []).map(pr => [pr.exerciseName, parseFloat(pr.maxWeightLbs)])
+  );
+
+  // exerciseName -> max weight in today's session
+  const todayMaxByExercise = {};
+  for (const g of exerciseGroups) {
+    if (todayMaxByExercise[g.name] == null || g.weight > todayMaxByExercise[g.name]) {
+      todayMaxByExercise[g.name] = g.weight;
+    }
+  }
 
   const meals = todayNutritionEntry?.meals ?? [];
 
@@ -235,21 +252,48 @@ export default function Today() {
           {todayWorkoutEntry ? (
             exerciseGroups.length > 0 ? (
               <div className="exercise-cards">
-                {exerciseGroups.map(g => (
-                  <ExerciseCard
-                    key={`${g.name}-${g.weight}`}
-                    name={g.name}
-                    weight={g.weight}
-                    sets={g.sets}
-                    onEdit={() => setEditExercise({ sessionId: todayWorkoutEntry.id, name: g.name, sets: g.sets })}
-                  />
-                ))}
+                {exerciseGroups.map(g => {
+                  const isPR = g.weight === todayMaxByExercise[g.name] && g.weight >= (prMap[g.name] ?? g.weight);
+                  return (
+                    <ExerciseCard
+                      key={`${g.name}-${g.weight}`}
+                      name={g.name}
+                      weight={g.weight}
+                      sets={g.sets}
+                      isPR={isPR}
+                      onEdit={() => setEditExercise({ sessionId: todayWorkoutEntry.id, name: g.name, sets: g.sets })}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <span className="muted">Session logged. No exercises yet.</span>
             )
           ) : (
             <span className="muted">No entry for today.</span>
+          )}
+          {(prsData ?? []).length > 0 && (
+            <div className="pr-history">
+              <button className="pr-history-toggle" onClick={() => setShowPRHistory(v => !v)}>
+                {showPRHistory ? '▾' : '▸'} Personal Records
+              </button>
+              {showPRHistory && (
+                <table className="pr-history-table">
+                  <thead>
+                    <tr><th>Exercise</th><th>Weight</th><th>Date</th></tr>
+                  </thead>
+                  <tbody>
+                    {(prsData ?? []).map(pr => (
+                      <tr key={pr.exerciseName}>
+                        <td>{pr.exerciseName}</td>
+                        <td>{parseFloat(pr.maxWeightLbs)} lbs</td>
+                        <td className="muted">{pr.achievedDate}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -344,7 +388,7 @@ export default function Today() {
           prefillDate={TODAY}
           prefillExercises={prefillExercises}
           onClose={closeModal}
-          onSaved={refetchWorkouts}
+          onSaved={() => { refetchWorkouts(); refetchPRs(); }}
         />
       )}
       {modal === 'dayinfo' && (

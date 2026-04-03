@@ -1,6 +1,7 @@
 package com.kavin.fitness.service;
 
 import com.kavin.fitness.dto.MilestoneDTO;
+import com.kavin.fitness.dto.PREntryDTO;
 import com.kavin.fitness.dto.StrengthProgressDTO;
 import com.kavin.fitness.model.ExerciseSet;
 import com.kavin.fitness.repository.ExerciseSetRepository;
@@ -76,6 +77,20 @@ public class ProgressService {
             result.add(new StrengthProgressDTO(name, sessionDataList));
         }
         return result;
+    }
+
+    public List<PREntryDTO> getPRs(Long userId) {
+        List<Object[]> rows = exerciseSetRepository.findMaxWeightPerExercise(userId);
+        return rows.stream()
+                .map(row -> {
+                    String name         = (String)     row[0];
+                    java.math.BigDecimal maxWeight = (java.math.BigDecimal) row[1];
+                    java.time.LocalDate date = exerciseSetRepository
+                            .findFirstDateForMaxWeight(userId, name, maxWeight);
+                    return new PREntryDTO(name, maxWeight, date);
+                })
+                .sorted(java.util.Comparator.comparing(PREntryDTO::getExerciseName))
+                .collect(java.util.stream.Collectors.toList());
     }
 
     public List<MilestoneDTO> getMilestones(Long userId) {

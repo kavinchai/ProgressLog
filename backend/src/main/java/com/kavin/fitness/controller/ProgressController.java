@@ -1,6 +1,7 @@
 package com.kavin.fitness.controller;
 
 import com.kavin.fitness.dto.MilestoneDTO;
+import com.kavin.fitness.dto.PREntryDTO;
 import com.kavin.fitness.dto.StrengthProgressDTO;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
@@ -29,6 +30,14 @@ public class ProgressController {
 
         User user = resolveUser(principal);
         return ResponseEntity.ok(progressService.getStrengthProgress(user.getId()));
+    }
+
+    @GetMapping("/prs")
+    public ResponseEntity<List<PREntryDTO>> getPRs(
+            @AuthenticationPrincipal UserDetails principal) {
+
+        User user = resolveUser(principal);
+        return ResponseEntity.ok(progressService.getPRs(user.getId()));
     }
 
     @GetMapping("/milestones")
