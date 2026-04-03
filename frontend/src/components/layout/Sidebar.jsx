@@ -4,11 +4,12 @@ import useTheme from '../../hooks/useTheme';
 import './Sidebar.css';
 
 const navItems = [
-  { to: '/today',    label: 'Today'        },
-  { to: '/weekly',   label: 'Weekly Stats' },
-  { to: '/total',    label: 'Total Stats'  },
-  { to: '/strength', label: 'Strength'     },
-  { to: '/settings', label: 'Settings'     },
+  { to: '/today',     label: 'Today'        },
+  { to: '/weekly',    label: 'Weekly Stats' },
+  { to: '/total',     label: 'Total Stats'  },
+  { to: '/strength',  label: 'Strength'     },
+  { to: '/templates', label: 'Templates'    },
+  { to: '/settings',  label: 'Settings'     },
 ];
 
 export default function Sidebar() {

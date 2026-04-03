@@ -3,9 +3,6 @@ import api from '../api';
 import Modal from './Modal';
 import './WorkoutBuilderModal.css';
 
-const now = new Date();
-const TODAY = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
 function emptySet(num) {
   return { setNumber: num, reps: '', weightLbs: '' };
 }
@@ -14,8 +11,8 @@ function emptyExercise() {
   return { exerciseName: '', sets: [emptySet(1)] };
 }
 
-function templateExercisesToForm(templateExercises) {
-  return (templateExercises ?? []).map(ex => ({
+function templateToFormExercises(template) {
+  return (template.exercises ?? []).map(ex => ({
     exerciseName: ex.exerciseName,
     sets: (ex.sets ?? []).map(s => ({
       setNumber:  s.setNumber,
@@ -25,28 +22,22 @@ function templateExercisesToForm(templateExercises) {
   }));
 }
 
-export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onClose, onSaved }) {
-  const [date,           setDate]           = useState(prefillDate ?? TODAY);
-  const [exercises,      setExercises]      = useState(
-    prefillExercises ? templateExercisesToForm(prefillExercises) : []
+export default function TemplateBuilderModal({ template, onClose, onSaved }) {
+  const isEdit = Boolean(template);
+
+  const [name,          setName]          = useState(template?.name ?? '');
+  const [exercises,     setExercises]     = useState(
+    isEdit ? templateToFormExercises(template) : []
   );
-  const [templates,      setTemplates]      = useState([]);
-  const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
-  const [err,            setErr]            = useState('');
-  const [saving,         setSaving]         = useState(false);
-  const [knownNames,     setKnownNames]     = useState([]);
-  const [suggestionFor,  setSuggestionFor]  = useState(null);
-  const [highlightedIdx, setHighlightedIdx] = useState(-1);
+  const [err,           setErr]           = useState('');
+  const [saving,        setSaving]        = useState(false);
+  const [knownNames,    setKnownNames]    = useState([]);
+  const [suggestionFor, setSuggestionFor] = useState(null);
+  const [highlightedIdx,setHighlightedIdx]= useState(-1);
 
   useEffect(() => {
     api.get('/workouts/exercise-names').then(res => setKnownNames(res.data)).catch(() => {});
-    api.get('/templates').then(res => setTemplates(res.data)).catch(() => {});
   }, []);
-
-  function loadTemplate(template) {
-    setExercises(templateExercisesToForm(template.exercises));
-    setTemplateMenuOpen(false);
-  }
 
   function getFilteredSuggestions(value) {
     if (!value.trim()) return [];
@@ -89,35 +80,35 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
   }
 
   function updateExerciseName(exerciseIndex, val) {
-    setExercises(prev => prev.map((exercise, i) =>
-      i === exerciseIndex ? { ...exercise, exerciseName: val } : exercise
+    setExercises(prev => prev.map((ex, i) =>
+      i === exerciseIndex ? { ...ex, exerciseName: val } : ex
     ));
   }
 
   function addSet(exerciseIndex) {
-    setExercises(prev => prev.map((exercise, i) => {
-      if (i !== exerciseIndex) return exercise;
-      return { ...exercise, sets: [...exercise.sets, emptySet(exercise.sets.length + 1)] };
+    setExercises(prev => prev.map((ex, i) => {
+      if (i !== exerciseIndex) return ex;
+      return { ...ex, sets: [...ex.sets, emptySet(ex.sets.length + 1)] };
     }));
   }
 
   function removeSet(exerciseIndex, setIndex) {
-    setExercises(prev => prev.map((exercise, i) => {
-      if (i !== exerciseIndex) return exercise;
-      const sets = exercise.sets
+    setExercises(prev => prev.map((ex, i) => {
+      if (i !== exerciseIndex) return ex;
+      const sets = ex.sets
         .filter((_, j) => j !== setIndex)
         .map((s, j) => ({ ...s, setNumber: j + 1 }));
-      return { ...exercise, sets };
+      return { ...ex, sets };
     }));
   }
 
   function updateSet(exerciseIndex, setIndex, field, val) {
-    setExercises(prev => prev.map((exercise, i) => {
-      if (i !== exerciseIndex) return exercise;
-      const sets = exercise.sets.map((s, j) =>
+    setExercises(prev => prev.map((ex, i) => {
+      if (i !== exerciseIndex) return ex;
+      const sets = ex.sets.map((s, j) =>
         j === setIndex ? { ...s, [field]: val } : s
       );
-      return { ...exercise, sets };
+      return { ...ex, sets };
     }));
   }
 
@@ -129,19 +120,23 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
     setSaving(true);
     try {
       const payload = {
-        sessionDate: date,
+        name: name.trim(),
         exercises: exercises
-          .filter(exercise => exercise.exerciseName.trim())
-          .map(exercise => ({
-            exerciseName: exercise.exerciseName.trim(),
-            sets: exercise.sets.map(s => ({
+          .filter(ex => ex.exerciseName.trim())
+          .map(ex => ({
+            exerciseName: ex.exerciseName.trim(),
+            sets: ex.sets.map(s => ({
               setNumber:  s.setNumber,
-              reps:       parseInt(s.reps)      || 0,
+              reps:       parseInt(s.reps)       || 0,
               weightLbs:  parseFloat(s.weightLbs) || 0,
             })),
           })),
       };
-      await api.post('/workouts', payload);
+      if (isEdit) {
+        await api.put(`/templates/${template.id}`, payload);
+      } else {
+        await api.post('/templates', payload);
+      }
       onSaved();
       onClose();
     } catch (ex) {
@@ -152,50 +147,25 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
   }
 
   return (
-    <Modal title="Log Workout" onClose={onClose}>
+    <Modal title={isEdit ? 'Edit Template' : 'New Template'} onClose={onClose}>
       <form className="wbm-form" onSubmit={submit}>
         {err && <div className="modal-error">{err}</div>}
 
-        {/* Session fields */}
         <div className="modal-field">
-          <label className="modal-label">Date</label>
-          <input className="modal-input" type="date" value={date}
-            onChange={e => setDate(e.target.value)} required />
+          <label className="modal-label">Template Name</label>
+          <input
+            className="modal-input"
+            type="text"
+            placeholder="e.g. Push Day"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            required
+          />
         </div>
 
-        {/* Load from template */}
-        {templates.length > 0 && (
-          <div className="wbm-template-row">
-            <div className="wbm-name-wrapper" style={{ flex: 'unset' }}>
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={() => setTemplateMenuOpen(o => !o)}
-                onBlur={() => setTimeout(() => setTemplateMenuOpen(false), 150)}
-              >
-                [load template]
-              </button>
-              {templateMenuOpen && (
-                <ul className="wbm-suggestions wbm-template-list">
-                  {templates.map(t => (
-                    <li
-                      key={t.id}
-                      className="wbm-suggestion"
-                      onMouseDown={() => loadTemplate(t)}
-                    >
-                      {t.name}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Exercises */}
         {exercises.length > 0 && (
           <div className="wbm-exercises">
-            {exercises.map((exercise, exerciseIndex) => (
+            {exercises.map((ex, exerciseIndex) => (
               <div key={exerciseIndex} className="wbm-exercise-block">
                 <div className="wbm-exercise-header">
                   <div className="wbm-name-wrapper">
@@ -203,7 +173,7 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
                       className="modal-input wbm-exercise-name"
                       type="text"
                       placeholder="Exercise name"
-                      value={exercise.exerciseName}
+                      value={ex.exerciseName}
                       onChange={e => {
                         updateExerciseName(exerciseIndex, e.target.value);
                         setSuggestionFor(exerciseIndex);
@@ -215,15 +185,15 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
                       autoComplete="off"
                     />
                     {suggestionFor === exerciseIndex &&
-                      getFilteredSuggestions(exercise.exerciseName).length > 0 && (
+                      getFilteredSuggestions(ex.exerciseName).length > 0 && (
                       <ul className="wbm-suggestions">
-                        {getFilteredSuggestions(exercise.exerciseName).map((name, i) => (
+                        {getFilteredSuggestions(ex.exerciseName).map((nm, i) => (
                           <li
-                            key={name}
+                            key={nm}
                             className={`wbm-suggestion${i === highlightedIdx ? ' wbm-suggestion--active' : ''}`}
-                            onMouseDown={() => selectSuggestion(exerciseIndex, name)}
+                            onMouseDown={() => selectSuggestion(exerciseIndex, nm)}
                           >
-                            {name}
+                            {nm}
                           </li>
                         ))}
                       </ul>
@@ -233,12 +203,11 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
                     onClick={() => removeExercise(exerciseIndex)}>[x]</button>
                 </div>
 
-                {/* Sets */}
                 <div className="wbm-sets">
                   <div className="wbm-sets-head">
                     <span>Set</span><span>Weight (lbs)</span><span>Reps</span><span></span>
                   </div>
-                  {exercise.sets.map((s, setIndex) => (
+                  {ex.sets.map((s, setIndex) => (
                     <div key={setIndex} className="wbm-set-row">
                       <span className="wbm-set-num">{s.setNumber}</span>
                       <input className="modal-input wbm-set-input" type="number"
@@ -263,8 +232,7 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
           </div>
         )}
 
-        <button type="button" className="btn btn-sm wbm-add-exercise"
-          onClick={addExercise}>
+        <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addExercise}>
           [+ add exercise]
         </button>
 

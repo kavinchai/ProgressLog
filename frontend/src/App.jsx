@@ -8,6 +8,7 @@ import Today from './pages/Today';
 import WeeklyStats from './pages/WeeklyStats';
 import TotalStats from './pages/TotalStats';
 import Strength from './pages/Strength';
+import Templates from './pages/Templates';
 import Settings from './pages/Settings';
 
 function ScrollToTop() {
@@ -57,11 +58,12 @@ export default function App() {
       <AppLayout>
         <Routes>
           <Route path="/"       element={<Navigate to="/today" replace />} />
-          <Route path="/today"    element={<Today />} />
-          <Route path="/weekly"   element={<WeeklyStats />} />
-          <Route path="/total"    element={<TotalStats />} />
-          <Route path="/strength" element={<Strength />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/today"     element={<Today />} />
+          <Route path="/weekly"    element={<WeeklyStats />} />
+          <Route path="/total"     element={<TotalStats />} />
+          <Route path="/strength"  element={<Strength />} />
+          <Route path="/templates" element={<Templates />} />
+          <Route path="/settings"  element={<Settings />} />
           <Route path="*"         element={<Navigate to="/today" replace />} />
         </Routes>
       </AppLayout>

@@ -108,3 +108,14 @@
   background: var(--hover-bg);
   color: var(--hover-fg);
 }
+
+.wbm-template-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.wbm-template-list {
+  min-width: 160px;
+}
