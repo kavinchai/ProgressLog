@@ -35,6 +35,6 @@ public class WorkoutSession {
     @Column(name = "completion_pct")
     private Integer completionPct;
 
-    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<ExerciseSet> exerciseSets = new ArrayList<>();
 }
