@@ -1,0 +1,78 @@
+name: Daily Weight to Google Calendar
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # 5am UTC = midnight US Eastern (EST); 1am during EDT
+  workflow_dispatch:      # allows manual trigger for testing
+
+jobs:
+  post-weight:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install psycopg2-binary google-api-python-client google-auth
+
+      - name: Post weight to Google Calendar
+        env:
+          RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_CALENDAR_ID: ${{ secrets.KAVIN_WEIGHT_GOOGLE_CALENDAR_ID }}
+        run: |
+          python - <<'EOF'
+          import os
+          import json
+          import psycopg2
+          from datetime import date, timedelta
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+
+          yesterday = date.today() - timedelta(days=1)
+
+          # Query Railway Postgres for yesterday's weight
+          conn = psycopg2.connect(os.environ['RAILWAY_DATABASE_URL'])
+          cur = conn.cursor()
+          cur.execute("""
+              SELECT wl.weight_lbs
+              FROM weight_log wl
+              JOIN users u ON u.id = wl.user_id
+              WHERE u.username = '***REDACTED_USER***'
+                AND wl.log_date = %s
+          """, (yesterday,))
+          row = cur.fetchone()
+          cur.close()
+          conn.close()
+
+          if row is None:
+              print(f"No weight entry found for ***REDACTED_USER*** on {yesterday}, skipping.")
+              exit(0)
+
+          weight = float(row[0])
+          print(f"Found weight: {weight} lbs on {yesterday}")
+
+          # Authenticate with Google Calendar
+          sa_info = json.loads(os.environ['GOOGLE_SERVICE_ACCOUNT_JSON'])
+          creds = service_account.Credentials.from_service_account_info(
+              sa_info,
+              scopes=['https://www.googleapis.com/auth/calendar']
+          )
+          service = build('calendar', 'v3', credentials=creds)
+
+          # Create all-day event
+          event = {
+              'summary': f'Weight: {weight} lbs',
+              'start': {'date': str(yesterday)},
+              'end':   {'date': str(yesterday)},
+          }
+
+          created = service.events().insert(
+              calendarId=os.environ['GOOGLE_CALENDAR_ID'],
+              body=event
+          ).execute()
+          print(f"Event created: {created.get('htmlLink')}")
+          EOF
