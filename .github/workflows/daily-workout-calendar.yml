@@ -1,0 +1,86 @@
+name: Daily Workout to Google Calendar
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # 5am UTC = midnight US Eastern (EST); 1am during EDT
+  workflow_dispatch:      # allows manual trigger for testing
+
+jobs:
+  post-workout:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install psycopg2-binary google-api-python-client google-auth
+
+      - name: Post workout to Google Calendar
+        env:
+          RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_CALENDAR_ID: ${{ secrets.KAVIN_WORKOUT_GOOGLE_CALENDAR_ID }}
+        run: |
+          python - <<'EOF'
+          import os
+          import json
+          import psycopg2
+          from datetime import date, timedelta
+          from urllib.parse import urlparse
+          from google.oauth2 import service_account
+          from googleapiclient.discovery import build
+
+          yesterday = date.today() - timedelta(days=1)
+
+          # Query Railway Postgres for yesterday's workout sessions
+          url = urlparse(os.environ['RAILWAY_DATABASE_URL'])
+          conn = psycopg2.connect(
+              host=url.hostname,
+              port=url.port,
+              database=url.path.lstrip('/'),
+              user=url.username,
+              password=url.password,
+              sslmode='require'
+          )
+          cur = conn.cursor()
+          cur.execute("""
+              SELECT ws.session_name, ws.completion_pct
+              FROM workout_session ws
+              JOIN users u ON u.id = ws.user_id
+              WHERE u.username = '***REDACTED_USER***'
+                AND ws.session_date = %s
+              ORDER BY ws.id
+          """, (yesterday,))
+          rows = cur.fetchall()
+          cur.close()
+          conn.close()
+
+          if not rows:
+              print(f"No workout session found for ***REDACTED_USER*** on {yesterday}, skipping.")
+              exit(0)
+
+          # Authenticate with Google Calendar
+          sa_info = json.loads(os.environ['GOOGLE_SERVICE_ACCOUNT_JSON'])
+          creds = service_account.Credentials.from_service_account_info(
+              sa_info,
+              scopes=['https://www.googleapis.com/auth/calendar']
+          )
+          service = build('calendar', 'v3', credentials=creds)
+
+          # Create one all-day event per session
+          for session_name, completion_pct in rows:
+              summary = f'{session_name} — {completion_pct}%'
+              event = {
+                  'summary': summary,
+                  'start': {'date': str(yesterday)},
+                  'end':   {'date': str(yesterday)},
+              }
+              created = service.events().insert(
+                  calendarId=os.environ['GOOGLE_CALENDAR_ID'],
+                  body=event
+              ).execute()
+              print(f"Event created: {summary} → {created.get('htmlLink')}")
+          EOF
