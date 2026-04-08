@@ -9,6 +9,10 @@ on:
         description: 'Backfill all historical weight data'
         type: boolean
         default: false
+      target_date:
+        description: 'Date to sync (YYYY-MM-DD). Defaults to yesterday if not set.'
+        type: string
+        default: ''
 
 jobs:
   post-weight:
@@ -29,6 +33,7 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_CALENDAR_ID: ${{ secrets.KAVIN_WEIGHT_GOOGLE_CALENDAR_ID }}
           BACKFILL: ${{ inputs.backfill || 'false' }}
+          TARGET_DATE: ${{ inputs.target_date || '' }}
         run: |
           python - <<'EOF'
           import os
@@ -40,10 +45,18 @@ jobs:
           from googleapiclient.discovery import build
 
           backfill = os.environ['BACKFILL'].lower() == 'true'
-          yesterday = date.today() - timedelta(days=1)
+          target_date_str = os.environ['TARGET_DATE'].strip()
 
-          # Query Railway Postgres
+          if target_date_str:
+              target_date = date.fromisoformat(target_date_str)
+          else:
+              target_date = date.today() - timedelta(days=1)
+
+          print(f"[config] backfill={backfill}, target_date={target_date}, today={date.today()}")
+
+          # Connect to Railway Postgres
           url = urlparse(os.environ['RAILWAY_DATABASE_URL'])
+          print(f"[db] connecting to {url.hostname}:{url.port}/{url.path.lstrip('/')}")
           conn = psycopg2.connect(
               host=url.hostname,
               port=url.port,
@@ -54,7 +67,18 @@ jobs:
           )
           cur = conn.cursor()
 
+          # Verify user exists
+          cur.execute("SELECT id, username FROM users WHERE username = '***REDACTED_USER***'")
+          user = cur.fetchone()
+          if not user:
+              print("[error] No user found with username '***REDACTED_USER***' — check your username in the DB.")
+              cur.close()
+              conn.close()
+              exit(1)
+          print(f"[db] found user: id={user[0]}, username={user[1]}")
+
           if backfill:
+              print("[db] running backfill query for all weight entries...")
               cur.execute("""
                   SELECT wl.log_date, wl.weight_lbs
                   FROM weight_log wl
@@ -63,15 +87,19 @@ jobs:
                   ORDER BY wl.log_date
               """)
           else:
+              print(f"[db] querying weight for date: {target_date}")
               cur.execute("""
                   SELECT wl.log_date, wl.weight_lbs
                   FROM weight_log wl
                   JOIN users u ON u.id = wl.user_id
                   WHERE u.username = '***REDACTED_USER***'
                     AND wl.log_date = %s
-              """, (yesterday,))
+              """, (target_date,))
 
           rows = cur.fetchall()
+          print(f"[db] rows returned: {len(rows)}")
+          for r in rows:
+              print(f"  → {r}")
           cur.close()
           conn.close()
 
@@ -104,7 +132,7 @@ jobs:
 
           for log_date, weight_lbs in rows:
               if event_exists(log_date):
-                  print(f"Event already exists for {log_date}, skipping.")
+                  print(f"[skip] event already exists for {log_date}")
                   continue
               weight = float(weight_lbs)
               event = {
@@ -116,5 +144,5 @@ jobs:
                   calendarId=calendar_id,
                   body=event
               ).execute()
-              print(f"Event created: Weight: {weight} lbs on {log_date} → {created.get('htmlLink')}")
+              print(f"[created] Weight: {weight} lbs on {log_date} → {created.get('htmlLink')}")
           EOF
