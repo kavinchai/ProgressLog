@@ -80,22 +80,24 @@ jobs:
           if backfill:
               print("[db] running backfill query for all sessions...")
               cur.execute("""
-                  SELECT ws.session_date, ws.session_name, ws.completion_pct
+                  SELECT ws.session_date,
+                         COALESCE(ws.session_name, 'Workout') AS session_name,
+                         COALESCE(ws.completion_pct, 0) AS completion_pct
                   FROM workout_session ws
                   JOIN users u ON u.id = ws.user_id
                   WHERE u.username = '***REDACTED_USER***'
-                    AND ws.session_name IS NOT NULL
                   ORDER BY ws.session_date, ws.id
               """)
           else:
               print(f"[db] querying sessions for date: {target_date}")
               cur.execute("""
-                  SELECT ws.session_date, ws.session_name, ws.completion_pct
+                  SELECT ws.session_date,
+                         COALESCE(ws.session_name, 'Workout') AS session_name,
+                         COALESCE(ws.completion_pct, 0) AS completion_pct
                   FROM workout_session ws
                   JOIN users u ON u.id = ws.user_id
                   WHERE u.username = '***REDACTED_USER***'
                     AND ws.session_date = %s
-                    AND ws.session_name IS NOT NULL
                   ORDER BY ws.id
               """, (target_date,))
 
