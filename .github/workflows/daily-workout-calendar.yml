@@ -70,6 +70,7 @@ jobs:
                   JOIN users u ON u.id = ws.user_id
                   WHERE u.username = '***REDACTED_USER***'
                     AND ws.session_date = %s
+                    AND ws.session_name IS NOT NULL
                   ORDER BY ws.id
               """, (yesterday,))
 
