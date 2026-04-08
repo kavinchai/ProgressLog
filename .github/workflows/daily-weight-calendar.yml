@@ -29,13 +29,22 @@ jobs:
           import json
           import psycopg2
           from datetime import date, timedelta
+          from urllib.parse import urlparse
           from google.oauth2 import service_account
           from googleapiclient.discovery import build
 
           yesterday = date.today() - timedelta(days=1)
 
           # Query Railway Postgres for yesterday's weight
-          conn = psycopg2.connect(os.environ['RAILWAY_DATABASE_URL'])
+          url = urlparse(os.environ['RAILWAY_DATABASE_URL'])
+          conn = psycopg2.connect(
+              host=url.hostname,
+              port=url.port,
+              database=url.path.lstrip('/'),
+              user=url.username,
+              password=url.password,
+              sslmode='require'
+          )
           cur = conn.cursor()
           cur.execute("""
               SELECT wl.weight_lbs
