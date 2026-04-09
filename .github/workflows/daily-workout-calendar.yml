@@ -81,8 +81,7 @@ jobs:
               print("[db] running backfill query for all sessions...")
               cur.execute("""
                   SELECT ws.session_date,
-                         COALESCE(ws.session_name, 'Workout') AS session_name,
-                         COALESCE(ws.completion_pct, 0) AS completion_pct
+                         COALESCE(ws.session_name, 'Workout') AS session_name
                   FROM workout_session ws
                   JOIN users u ON u.id = ws.user_id
                   WHERE u.username = '***REDACTED_USER***'
@@ -92,8 +91,7 @@ jobs:
               print(f"[db] querying sessions for date: {target_date}")
               cur.execute("""
                   SELECT ws.session_date,
-                         COALESCE(ws.session_name, 'Workout') AS session_name,
-                         COALESCE(ws.completion_pct, 0) AS completion_pct
+                         COALESCE(ws.session_name, 'Workout') AS session_name
                   FROM workout_session ws
                   JOIN users u ON u.id = ws.user_id
                   WHERE u.username = '***REDACTED_USER***'
@@ -135,13 +133,12 @@ jobs:
                   for e in result.get('items', [])
               )
 
-          for session_date, session_name, completion_pct in rows:
+          for session_date, session_name in rows:
               if event_exists(session_date, session_name):
                   print(f"[skip] event already exists: {session_name} on {session_date}")
                   continue
-              summary = f'{session_name} — {completion_pct}%'
               event = {
-                  'summary': summary,
+                  'summary': session_name,
                   'start': {'date': str(session_date)},
                   'end':   {'date': str(session_date)},
               }
@@ -149,5 +146,5 @@ jobs:
                   calendarId=calendar_id,
                   body=event
               ).execute()
-              print(f"[created] {summary} on {session_date} → {created.get('htmlLink')}")
+              print(f"[created] {session_name} on {session_date} → {created.get('htmlLink')}")
           EOF
