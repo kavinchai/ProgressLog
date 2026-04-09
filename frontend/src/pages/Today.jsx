@@ -88,6 +88,8 @@ export default function Today() {
   const [showPRHistory,   setShowPRHistory]    = useState(false);
   const [editingEntry,    setEditingEntry]     = useState(null);
   const [editExercise,    setEditExercise]     = useState(null);
+  const [renamingSession, setRenamingSession]  = useState(false);
+  const [renameValue,     setRenameValue]      = useState('');
   const [editMeal,        setEditMeal]         = useState(null);
   const [mealLogId,       setMealLogId]        = useState(null);
   const [prefillExercises,setPrefillExercises] = useState(null);
@@ -156,6 +158,15 @@ export default function Today() {
     catch { /* ignore */ }
   }
 
+  async function submitRename() {
+    if (!todayWorkoutEntry) return;
+    try {
+      await api.patch(`/workouts/${todayWorkoutEntry.id}/name`, { sessionName: renameValue.trim() || null });
+      refetchWorkouts();
+    } catch { /* ignore */ }
+    setRenamingSession(false);
+  }
+
   // Ensure a day log exists before adding a meal
   async function openAddMeal() {
     let logId = todayNutritionEntry?.id;
@@ -213,8 +224,34 @@ export default function Today() {
       {/* WORKOUT */}
       <div className="section-box">
         <div className="section-header">
-          <span className="section-title">Workout</span>
+          <span className="section-title">
+            Workout
+            {todayWorkoutEntry?.sessionName && (
+              <span className="muted" style={{ fontWeight: 400, marginLeft: 8, fontSize: 'var(--font-size-sm)' }}>
+                {todayWorkoutEntry.sessionName}
+              </span>
+            )}
+          </span>
           <div className="btn-actions">
+            {todayWorkoutEntry && !renamingSession && (
+              <button className="btn btn-sm" onClick={() => { setRenameValue(todayWorkoutEntry.sessionName ?? ''); setRenamingSession(true); }}>[rename]</button>
+            )}
+            {renamingSession && (
+              <>
+                <input
+                  className="modal-input"
+                  style={{ width: 140, padding: '2px 6px' }}
+                  type="text"
+                  placeholder="Session name"
+                  value={renameValue}
+                  onChange={e => setRenameValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') setRenamingSession(false); }}
+                  autoFocus
+                />
+                <button className="btn btn-sm" onClick={submitRename}>[save]</button>
+                <button className="btn btn-sm" onClick={() => setRenamingSession(false)}>[x]</button>
+              </>
+            )}
             {todayWorkoutEntry && (
               <button className="btn btn-sm" onClick={deleteWorkoutSession}>[delete session]</button>
             )}

@@ -38,6 +38,7 @@ public class WorkoutService {
         WorkoutSession session = new WorkoutSession();
         session.setUser(user);
         session.setSessionDate(request.getSessionDate());
+        session.setSessionName(request.getSessionName());
         session = workoutSessionRepository.save(session);
 
         if (request.getExercises() != null) {
@@ -47,6 +48,15 @@ public class WorkoutService {
             session = workoutSessionRepository.save(session);
         }
 
+        return toDTO(session);
+    }
+
+    /** Rename an existing workout session. */
+    @Transactional
+    public WorkoutSessionDTO renameSession(Long sessionId, Long userId, String sessionName) {
+        WorkoutSession session = resolveSession(sessionId, userId);
+        session.setSessionName(sessionName);
+        session = workoutSessionRepository.save(session);
         return toDTO(session);
     }
 
@@ -106,6 +116,6 @@ public class WorkoutService {
                         exerciseSet.getId(), exerciseSet.getExerciseName(), exerciseSet.getSetNumber(),
                         exerciseSet.getReps(), exerciseSet.getWeightLbs(), exerciseSet.getCompleted()))
                 .collect(Collectors.toList());
-        return new WorkoutSessionDTO(session.getId(), session.getSessionDate(), sets);
+        return new WorkoutSessionDTO(session.getId(), session.getSessionDate(), session.getSessionName(), sets);
     }
 }

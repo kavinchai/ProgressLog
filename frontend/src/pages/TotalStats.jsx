@@ -111,9 +111,11 @@ export default function TotalStats() {
       weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)       : null,
       calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)   : null,
       protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)   : null,
-      workout:  workoutEntry   ? (workoutEntry.exerciseSets?.length > 0
-        ? new Set(workoutEntry.exerciseSets.map(s => s.exerciseName)).size + ' exercises'
-        : 'logged') : null,
+      workout:  workoutEntry   ? (workoutEntry.sessionName
+        ? workoutEntry.sessionName
+        : workoutEntry.exerciseSets?.length > 0
+          ? new Set(workoutEntry.exerciseSets.map(s => s.exerciseName)).size + ' exercises'
+          : 'logged') : null,
     };
   });
 

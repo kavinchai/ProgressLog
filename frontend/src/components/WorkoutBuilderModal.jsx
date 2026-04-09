@@ -27,6 +27,7 @@ function templateExercisesToForm(templateExercises) {
 
 export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onClose, onSaved }) {
   const [date,           setDate]           = useState(prefillDate ?? TODAY);
+  const [sessionName,    setSessionName]    = useState('');
   const [exercises,      setExercises]      = useState(
     prefillExercises ? templateExercisesToForm(prefillExercises) : []
   );
@@ -130,6 +131,7 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
     try {
       const payload = {
         sessionDate: date,
+        sessionName: sessionName.trim() || null,
         exercises: exercises
           .filter(exercise => exercise.exerciseName.trim())
           .map(exercise => ({
@@ -161,6 +163,12 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
           <label className="modal-label">Date</label>
           <input className="modal-input" type="date" value={date}
             onChange={e => setDate(e.target.value)} required />
+        </div>
+
+        <div className="modal-field">
+          <label className="modal-label">Session Name</label>
+          <input className="modal-input" type="text" placeholder="e.g. Push, Pull, Legs"
+            value={sessionName} onChange={e => setSessionName(e.target.value)} />
         </div>
 
         {/* Load from template */}

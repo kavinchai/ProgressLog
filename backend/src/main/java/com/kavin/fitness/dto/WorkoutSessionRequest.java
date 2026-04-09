@@ -15,6 +15,8 @@ public class WorkoutSessionRequest {
     @NotNull
     private LocalDate sessionDate;
 
+    private String sessionName;
+
     @Valid
     private List<ExerciseRequest> exercises;
 }
