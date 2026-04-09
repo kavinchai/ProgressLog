@@ -14,6 +14,7 @@ public class WorkoutSessionDTO {
 
     private Long         id;
     private LocalDate    sessionDate;
+    private String       sessionName;
     private List<SetDTO> exerciseSets;
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor

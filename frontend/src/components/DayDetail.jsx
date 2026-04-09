@@ -8,10 +8,12 @@ import EditExerciseModal from './EditExerciseModal';
 import { groupByExercise } from '../utils/workout';
 
 export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo, showDelete = true }) {
-  const [modal,        setModal]        = useState(null);
-  const [editMeal,     setEditMeal]     = useState(null);
-  const [mealLogId,    setMealLogId]    = useState(null);
-  const [editExercise, setEditExercise] = useState(null);
+  const [modal,           setModal]           = useState(null);
+  const [editMeal,        setEditMeal]        = useState(null);
+  const [mealLogId,       setMealLogId]       = useState(null);
+  const [editExercise,    setEditExercise]    = useState(null);
+  const [renamingSession, setRenamingSession] = useState(false);
+  const [renameValue,     setRenameValue]     = useState('');
 
   const exerciseGroups = workoutEntry?.exerciseSets?.length
     ? groupByExercise(workoutEntry.exerciseSets)
@@ -37,6 +39,15 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
     if (!workoutEntry) return;
     try { await api.delete(`/workouts/${workoutEntry.id}`); onRefetchWo(); }
     catch { /* ignore */ }
+  }
+
+  async function submitRename() {
+    if (!workoutEntry) return;
+    try {
+      await api.patch(`/workouts/${workoutEntry.id}/name`, { sessionName: renameValue.trim() || null });
+      onRefetchWo();
+    } catch { /* ignore */ }
+    setRenamingSession(false);
   }
 
   async function openAddMeal() {
@@ -123,8 +134,34 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
       {/* Workout */}
       <div className="day-detail-section">
         <div className="day-detail-section-head">
-          <span className="day-detail-label">Workout</span>
+          <span className="day-detail-label">
+            Workout
+            {workoutEntry?.sessionName && (
+              <span className="muted" style={{ fontWeight: 400, marginLeft: 8, fontSize: '0.85em' }}>
+                {workoutEntry.sessionName}
+              </span>
+            )}
+          </span>
           <div className="btn-actions">
+            {workoutEntry && !renamingSession && (
+              <button className="btn btn-sm" onClick={() => { setRenameValue(workoutEntry.sessionName ?? ''); setRenamingSession(true); }}>[rename]</button>
+            )}
+            {renamingSession && (
+              <>
+                <input
+                  className="modal-input"
+                  style={{ width: 120, padding: '2px 6px' }}
+                  type="text"
+                  placeholder="Session name"
+                  value={renameValue}
+                  onChange={e => setRenameValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') setRenamingSession(false); }}
+                  autoFocus
+                />
+                <button className="btn btn-sm" onClick={submitRename}>[save]</button>
+                <button className="btn btn-sm" onClick={() => setRenamingSession(false)}>[x]</button>
+              </>
+            )}
             {showDelete && workoutEntry && (
               <button className="btn btn-sm" onClick={deleteWorkoutSession}>[delete session]</button>
             )}

@@ -43,6 +43,17 @@ public class WorkoutController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
+    /** Rename an existing workout session. */
+    @PatchMapping("/{sessionId}/name")
+    public ResponseEntity<WorkoutSessionDTO> renameSession(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long sessionId,
+            @RequestBody java.util.Map<String, String> body) {
+        WorkoutSessionDTO dto = workoutService.renameSession(
+                sessionId, resolveUser(principal).getId(), body.get("sessionName"));
+        return ResponseEntity.ok(dto);
+    }
+
     /** Delete an entire workout session. */
     @DeleteMapping("/{sessionId}")
     public ResponseEntity<Void> deleteSession(
