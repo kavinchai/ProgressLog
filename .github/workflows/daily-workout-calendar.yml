@@ -32,6 +32,7 @@ jobs:
           RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_CALENDAR_ID: ${{ secrets.KAVIN_WORKOUT_GOOGLE_CALENDAR_ID }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
           BACKFILL: ${{ inputs.backfill || 'false' }}
           TARGET_DATE: ${{ inputs.target_date || '' }}
         run: |
@@ -68,10 +69,11 @@ jobs:
           cur = conn.cursor()
 
           # Verify user exists
-          cur.execute("SELECT id, username FROM users WHERE username = '***REDACTED_USER***'")
+          db_username = os.environ['DB_USERNAME']
+          cur.execute("SELECT id, username FROM users WHERE username = %s", (db_username,))
           user = cur.fetchone()
           if not user:
-              print("[error] No user found with username '***REDACTED_USER***' — check your username in the DB.")
+              print(f"[error] No user found with username '{db_username}' — check DB_USERNAME secret.")
               cur.close()
               conn.close()
               exit(1)
@@ -90,9 +92,9 @@ jobs:
                   FROM workout_session ws
                   JOIN users u ON u.id = ws.user_id
                   LEFT JOIN exercise_set es ON es.session_id = ws.id
-                  WHERE u.username = '***REDACTED_USER***'
+                  WHERE u.username = %s
                   ORDER BY ws.session_date, ws.id, es.exercise_name, es.set_number
-              """)
+              """, (db_username,))
           else:
               print(f"[db] querying sessions for date: {target_date}")
               cur.execute("""
@@ -106,10 +108,10 @@ jobs:
                   FROM workout_session ws
                   JOIN users u ON u.id = ws.user_id
                   LEFT JOIN exercise_set es ON es.session_id = ws.id
-                  WHERE u.username = '***REDACTED_USER***'
+                  WHERE u.username = %s
                     AND ws.session_date = %s
                   ORDER BY ws.id, es.exercise_name, es.set_number
-              """, (target_date,))
+              """, (db_username, target_date))
 
           rows = cur.fetchall()
           print(f"[db] rows returned: {len(rows)}")

@@ -22,9 +22,10 @@ frontend/.vite/
 frontend/.cache/
 
 # ── Backend (Gradle / JVM) ──────────────────────────
-backend/src/main/resources/application-local.properties
+**/application-local.properties
 backend/.gradle/
 backend/build/
+backend/bin/
 backend/out/
 *.class
 *.jar
