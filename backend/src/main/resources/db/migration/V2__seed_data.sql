@@ -1,6 +1,6 @@
 -- ============================================================
 --  V2 — Seed data
---  Default credentials have been removed for security
+--  Default credentials: username=kavin  password=password
 --  Hash below is BCrypt(10) for "password".
 --  Regenerate with: new BCryptPasswordEncoder().encode("yourpassword")
 -- ============================================================
@@ -10,7 +10,7 @@
 --  excluded from this migration. Adjust these entries as needed.
 
 INSERT INTO users (username, password, email) VALUES
-    ('kavin', '***REDACTED_BCRYPT_HASH***', 'kavin@example.com');
+    ('kavin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'kavin@example.com');
 
 -- ── Weight log ────────────────────────────────────────────────────────────
 INSERT INTO weight_log (user_id, log_date, weight_lbs) VALUES
