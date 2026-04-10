@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitTrack - Data Flow Diagram</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 40px;
+      font-size: 0.95rem;
+    }
+
+    /* ── DIAGRAM CANVAS ── */
+    .diagram {
+      position: relative;
+      max-width: 1200px;
+      margin: 0 auto 60px;
+      min-height: 820px;
+    }
+
+    /* SVG arrows layer */
+    .diagram svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .diagram svg line, .diagram svg path {
+      stroke-width: 2;
+      fill: none;
+    }
+    .diagram svg marker path { fill: #64748b; }
+
+    /* ── NODES ── */
+    .node {
+      position: absolute;
+      border-radius: 14px;
+      padding: 18px 22px;
+      z-index: 1;
+      min-width: 180px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.35);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .node:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    }
+    .node h3 {
+      font-size: 1rem;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .node .tech {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .node .tech code {
+      background: rgba(255,255,255,.08);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+
+    /* Color themes per layer */
+    .node.frontend {
+      background: linear-gradient(135deg, #1e3a5f, #1e293b);
+      border: 1.5px solid #38bdf8;
+    }
+    .node.backend {
+      background: linear-gradient(135deg, #2d1b4e, #1e293b);
+      border: 1.5px solid #a78bfa;
+    }
+    .node.database {
+      background: linear-gradient(135deg, #1b3d2f, #1e293b);
+      border: 1.5px solid #4ade80;
+    }
+    .node.external {
+      background: linear-gradient(135deg, #4a2c1a, #1e293b);
+      border: 1.5px solid #fb923c;
+    }
+    .node.auth {
+      background: linear-gradient(135deg, #3b1a1a, #1e293b);
+      border: 1.5px solid #f87171;
+    }
+    .node.ci {
+      background: linear-gradient(135deg, #1a3b3b, #1e293b);
+      border: 1.5px solid #2dd4bf;
+    }
+
+    /* ── ARROW LABELS ── */
+    .arrow-label {
+      position: absolute;
+      z-index: 2;
+      font-size: 0.68rem;
+      color: #cbd5e1;
+      background: #1e293b;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 50px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+    }
+    .legend-dot {
+      width: 14px; height: 14px;
+      border-radius: 4px;
+    }
+
+    /* ── DETAILS SECTIONS ── */
+    .details {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .details h2 {
+      font-size: 1.4rem;
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #334155;
+    }
+    .details h2 .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #334155;
+      font-size: 0.85rem;
+      margin-right: 10px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 18px;
+      margin-top: 12px;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card h4 {
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      color: #f1f5f9;
+    }
+    .card p, .card li {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.65;
+    }
+    .card ul { padding-left: 18px; }
+    .card code {
+      background: rgba(255,255,255,.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: #e2e8f0;
+    }
+    .filepath {
+      color: #38bdf8;
+      font-size: 0.75rem;
+      display: block;
+      margin-top: 6px;
+      font-family: monospace;
+    }
+
+    pre {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.78rem;
+      overflow-x: auto;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-top: 10px;
+    }
+    pre .kw { color: #c084fc; }
+    pre .str { color: #4ade80; }
+    pre .cmt { color: #64748b; }
+    pre .fn { color: #38bdf8; }
+
+    /* ── FLOW SEQUENCE ── */
+    .sequence {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 20px 0;
+    }
+    .seq-step {
+      display: flex;
+      align-items: stretch;
+      gap: 16px;
+    }
+    .seq-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 32px;
+      flex-shrink: 0;
+    }
+    .seq-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .seq-connector {
+      width: 2px;
+      flex: 1;
+      min-height: 16px;
+    }
+    .seq-content {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 12px 16px;
+      flex: 1;
+      margin-bottom: 8px;
+    }
+    .seq-content h4 { font-size: 0.88rem; margin-bottom: 4px; }
+    .seq-content p { font-size: 0.78rem; color: #94a3b8; }
+
+    .schema-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.8rem;
+    }
+    .schema-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .schema-table td {
+      padding: 8px 12px;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+    }
+    .schema-table tr:hover td { background: rgba(255,255,255,.03); }
+  </style>
+</head>
+<body>
+
+  <h1>FitTrack Data Flow Diagram</h1>
+  <p class="subtitle">Complete architecture &amp; data flow for the Workout Tracking App</p>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div> Frontend (React)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div> Auth Layer</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Backend (Spring Boot)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> Database (PostgreSQL)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div> External Services</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2dd4bf"></div> CI / Cron Jobs</div>
+  </div>
+
+  <!-- ═══════════ VISUAL DIAGRAM ═══════════ -->
+  <div class="diagram">
+    <!-- SVG arrows -->
+    <svg viewBox="0 0 1200 820" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+        </marker>
+        <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="#38bdf8"/>
+        </marker>
+        <marker id="arrowPurple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="#a78bfa"/>
+        </marker>
+        <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="#4ade80"/>
+        </marker>
+        <marker id="arrowOrange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="#fb923c"/>
+        </marker>
+        <marker id="arrowTeal" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="#2dd4bf"/>
+        </marker>
+      </defs>
+
+      <!-- Browser → Zustand Store -->
+      <line x1="190" y1="95" x2="430" y2="65" stroke="#38bdf8" stroke-dasharray="6,4" marker-end="url(#arrowBlue)"/>
+
+      <!-- Zustand → Axios -->
+      <line x1="600" y1="80" x2="770" y2="65" stroke="#38bdf8" stroke-dasharray="6,4" marker-end="url(#arrowBlue)"/>
+
+      <!-- Browser → Axios (direct) -->
+      <path d="M190,110 Q480,170 770,75" stroke="#38bdf8" marker-end="url(#arrowBlue)" opacity=".4"/>
+
+      <!-- Axios → JWT Filter -->
+      <line x1="870" y1="95" x2="870" y2="215" stroke="#f87171" marker-end="url(#arrowGray)"/>
+
+      <!-- JWT Filter → Spring Security -->
+      <line x1="780" y1="280" x2="580" y2="280" stroke="#f87171" stroke-dasharray="6,4" marker-end="url(#arrowGray)"/>
+
+      <!-- Spring Security → Controllers -->
+      <line x1="480" y1="320" x2="330" y2="405" stroke="#a78bfa" marker-end="url(#arrowPurple)"/>
+
+      <!-- Controllers → Services -->
+      <line x1="330" y1="510" x2="590" y2="520" stroke="#a78bfa" marker-end="url(#arrowPurple)"/>
+
+      <!-- Services → Repositories -->
+      <line x1="750" y1="545" x2="890" y2="540" stroke="#a78bfa" marker-end="url(#arrowPurple)"/>
+
+      <!-- Repositories → PostgreSQL -->
+      <line x1="1000" y1="575" x2="1000" y2="670" stroke="#4ade80" marker-end="url(#arrowGreen)"/>
+
+      <!-- GitHub Actions → PostgreSQL (direct) -->
+      <path d="M190,720 Q500,760 920,720" stroke="#2dd4bf" stroke-dasharray="6,4" marker-end="url(#arrowTeal)"/>
+
+      <!-- GitHub Actions → Google Calendar -->
+      <line x1="190" y1="670" x2="190" y2="540" stroke="#fb923c" stroke-dasharray="6,4" marker-end="url(#arrowOrange)"/>
+
+      <!-- PostgreSQL → Flyway label area -->
+      <line x1="920" y1="730" x2="690" y2="760" stroke="#4ade80" stroke-dasharray="4,4" opacity=".4"/>
+    </svg>
+
+    <!-- ── NODES ── -->
+
+    <!-- 1. Browser / React Pages -->
+    <div class="node frontend" style="top:60px; left:20px; width:190px;">
+      <h3>&#127760; React UI</h3>
+      <div class="tech">
+        Pages: <code>Today</code> <code>Stats</code> <code>Strength</code> <code>Templates</code> <code>Settings</code><br>
+        Charts: <code>Recharts</code><br>
+        Router: <code>React Router v6</code>
+      </div>
+    </div>
+
+    <!-- 2. Zustand Auth Store -->
+    <div class="node frontend" style="top:30px; left:420px; width:190px;">
+      <h3>&#128218; Zustand Store</h3>
+      <div class="tech">
+        State: <code>token</code> <code>username</code><br>
+        Actions: <code>login()</code> <code>logout()</code><br>
+        Persists JWT in memory
+      </div>
+    </div>
+
+    <!-- 3. Axios Instance -->
+    <div class="node frontend" style="top:30px; left:760px; width:200px;">
+      <h3>&#128257; Axios Client</h3>
+      <div class="tech">
+        Base: <code>/api</code> (proxy to :8080)<br>
+        Interceptor: injects <code>Bearer</code> token<br>
+        On <code>401</code> &rarr; auto logout
+      </div>
+    </div>
+
+    <!-- 4. JWT Filter -->
+    <div class="node auth" style="top:215px; left:780px; width:210px;">
+      <h3>&#128274; JWT Filter</h3>
+      <div class="tech">
+        Extracts <code>Authorization</code> header<br>
+        Validates via <code>JwtUtil</code> (HMAC-SHA)<br>
+        Sets <code>SecurityContext</code><br>
+        24h token expiry
+      </div>
+    </div>
+
+    <!-- 5. Spring Security -->
+    <div class="node auth" style="top:230px; left:400px; width:200px;">
+      <h3>&#128737;&#65039; Spring Security</h3>
+      <div class="tech">
+        <code>/api/auth/**</code> &rarr; public<br>
+        All other <code>/api/**</code> &rarr; authenticated<br>
+        Stateless session, CORS open
+      </div>
+    </div>
+
+    <!-- 6. REST Controllers -->
+    <div class="node backend" style="top:390px; left:120px; width:240px;">
+      <h3>&#128421;&#65039; REST Controllers</h3>
+      <div class="tech">
+        <code>AuthController</code> &mdash; login/register<br>
+        <code>WorkoutController</code> &mdash; sessions/sets<br>
+        <code>NutritionController</code> &mdash; meals/logs<br>
+        <code>WeightController</code> &mdash; daily weight<br>
+        <code>ProgressController</code> &mdash; PRs/strength<br>
+        <code>TemplateController</code> &mdash; templates<br>
+        <code>ProfileController</code> &mdash; goals/email
+      </div>
+    </div>
+
+    <!-- 7. Services -->
+    <div class="node backend" style="top:480px; left:560px; width:210px;">
+      <h3>&#9881;&#65039; Service Layer</h3>
+      <div class="tech">
+        Business logic &amp; validation<br>
+        DTO &harr; Entity mapping<br>
+        Computed fields (PRs, totals)<br>
+        <code>@Transactional</code> boundaries
+      </div>
+    </div>
+
+    <!-- 8. JPA Repositories -->
+    <div class="node backend" style="top:490px; left:880px; width:200px;">
+      <h3>&#128451;&#65039; JPA Repositories</h3>
+      <div class="tech">
+        Spring Data interfaces<br>
+        Custom <code>@Query</code> (JPQL)<br>
+        Eager fetch via <code>JOIN FETCH</code><br>
+        Auto-generated SQL
+      </div>
+    </div>
+
+    <!-- 9. PostgreSQL -->
+    <div class="node database" style="top:660px; left:840px; width:230px;">
+      <h3>&#128024; PostgreSQL 15</h3>
+      <div class="tech">
+        Tables: <code>users</code> <code>workout_session</code> <code>exercise_set</code> <code>nutrition_log</code> <code>meal</code> <code>weight_log</code> <code>workout_template</code> <code>template_exercise</code><br>
+        Migrations: <code>Flyway V1-V6</code>
+      </div>
+    </div>
+
+    <!-- 10. GitHub Actions -->
+    <div class="node ci" style="top:660px; left:30px; width:220px;">
+      <h3>&#9881;&#65039; GitHub Actions</h3>
+      <div class="tech">
+        <code>deploy.yml</code> &mdash; CI tests<br>
+        <code>daily-weight-calendar.yml</code><br>
+        <code>daily-workout-calendar.yml</code><br>
+        Cron: 5am UTC daily
+      </div>
+    </div>
+
+    <!-- 11. Google Calendar -->
+    <div class="node external" style="top:460px; left:20px; width:200px;">
+      <h3>&#128197; Google Calendar</h3>
+      <div class="tech">
+        Service Account auth<br>
+        Creates events from workouts<br>
+        Duplicate detection built-in
+      </div>
+    </div>
+
+    <!-- 12. Flyway -->
+    <div class="node database" style="top:750px; left:560px; width:190px;">
+      <h3>&#128295; Flyway Migrations</h3>
+      <div class="tech">
+        Runs on backend startup<br>
+        <code>V1</code> init &rarr; <code>V6</code> templates<br>
+        Versioned SQL scripts
+      </div>
+    </div>
+
+    <!-- ── ARROW LABELS ── -->
+    <div class="arrow-label" style="top:75px; left:285px;">stores JWT</div>
+    <div class="arrow-label" style="top:50px; left:645px;">reads token</div>
+    <div class="arrow-label" style="top:145px; left:470px;">HTTP requests</div>
+    <div class="arrow-label" style="top:165px; left:830px;">every request</div>
+    <div class="arrow-label" style="top:270px; left:660px;">validates &rarr; sets principal</div>
+    <div class="arrow-label" style="top:365px; left:315px;">authorized request</div>
+    <div class="arrow-label" style="top:505px; left:430px;">calls service</div>
+    <div class="arrow-label" style="top:520px; left:790px;">queries</div>
+    <div class="arrow-label" style="top:630px; left:950px;">SQL via JDBC</div>
+    <div class="arrow-label" style="top:755px; left:380px;">direct DB query (psycopg2)</div>
+    <div class="arrow-label" style="top:575px; left:40px;">Calendar API v3</div>
+  </div>
+
+  <!-- ═══════════ TECHNICAL DETAILS ═══════════ -->
+  <div class="details">
+
+    <h2><span class="num">1</span> Frontend &mdash; How Users Interact</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h4>Tech Stack</h4>
+        <ul>
+          <li><strong>React 18</strong> with <strong>Vite 5</strong> for fast HMR and bundling</li>
+          <li><strong>React Router v6</strong> for client-side navigation between pages</li>
+          <li><strong>Zustand</strong> for global state (just the JWT token &amp; username)</li>
+          <li><strong>Axios</strong> with request interceptor to auto-attach <code>Authorization: Bearer &lt;token&gt;</code></li>
+          <li><strong>Recharts</strong> for line/bar charts (weight trends, calorie tracking, strength progress)</li>
+        </ul>
+        <span class="filepath">frontend/src/main.jsx &rarr; App.jsx</span>
+      </div>
+      <div class="card">
+        <h4>Data Fetching Pattern</h4>
+        <p>Every page uses a <strong>custom hook</strong> that wraps a generic <code>useFetch(endpoint)</code> hook. This hook calls <code>api.get(endpoint)</code> on mount and returns <code>{ data, loading, error, refetch }</code>.</p>
+        <pre><span class="cmt">// hooks/useFetch.js (simplified)</span>
+<span class="kw">const</span> [data, setData] = <span class="fn">useState</span>(<span class="kw">null</span>);
+<span class="fn">useEffect</span>(() =&gt; {
+  api.<span class="fn">get</span>(<span class="str">endpoint</span>)
+    .then(res =&gt; <span class="fn">setData</span>(res.data))
+    .catch(err =&gt; <span class="fn">setError</span>(err));
+}, [endpoint]);</pre>
+        <span class="filepath">frontend/src/hooks/useFetch.js</span>
+      </div>
+      <div class="card">
+        <h4>API Proxy (Dev vs Prod)</h4>
+        <p><strong>Development:</strong> Vite proxies <code>/api</code> to <code>http://localhost:8080</code> so the browser talks to the same origin.</p>
+        <p><strong>Production:</strong> Nginx serves the static build and reverse-proxies <code>/api</code> requests to the Spring Boot container.</p>
+        <span class="filepath">frontend/vite.config.js, frontend/Dockerfile</span>
+      </div>
+      <div class="card">
+        <h4>Zustand Auth Store</h4>
+        <p>Minimal store with two fields: <code>token</code> and <code>username</code>. The <code>login()</code> action saves both; <code>logout()</code> clears them. In <code>App.jsx</code>, if <code>token</code> is null the user sees the login page; otherwise, protected routes render.</p>
+        <span class="filepath">frontend/src/store/authStore.js</span>
+      </div>
+    </div>
+
+    <h2><span class="num">2</span> Authentication &mdash; End to End</h2>
+    <div class="sequence">
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#38bdf8"></div><div class="seq-connector" style="background:#38bdf8"></div></div>
+        <div class="seq-content">
+          <h4>1. User submits credentials</h4>
+          <p><code>Login.jsx</code> sends <code>POST /api/auth/login</code> (or <code>/register</code>) with <code>{ username, password }</code> via Axios.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#a78bfa"></div><div class="seq-connector" style="background:#a78bfa"></div></div>
+        <div class="seq-content">
+          <h4>2. AuthController validates</h4>
+          <p>Spring&rsquo;s <code>AuthenticationManager</code> invokes <code>UserDetailsServiceImpl</code> which loads the user from PostgreSQL. Password is compared against the <strong>BCrypt hash</strong> stored in the <code>users</code> table.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#a78bfa"></div><div class="seq-connector" style="background:#a78bfa"></div></div>
+        <div class="seq-content">
+          <h4>3. JWT generated</h4>
+          <p><code>JwtUtil.generateToken(username)</code> creates an <strong>HMAC-SHA</strong> signed JWT with 24h expiry. The token&rsquo;s <em>subject</em> is the username. Secret comes from <code>JWT_SECRET</code> env var.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#38bdf8"></div><div class="seq-connector" style="background:#38bdf8"></div></div>
+        <div class="seq-content">
+          <h4>4. Token stored in Zustand</h4>
+          <p>Frontend receives <code>{ token, username }</code>, calls <code>useAuthStore.login(token, username)</code>. All subsequent Axios requests auto-attach <code>Authorization: Bearer &lt;token&gt;</code> via the request interceptor.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#f87171"></div><div class="seq-connector" style="background:#f87171"></div></div>
+        <div class="seq-content">
+          <h4>5. JwtFilter on every request</h4>
+          <p>Before hitting any controller, <code>JwtFilter</code> extracts the token, validates signature + expiry, loads <code>UserDetails</code>, and populates <code>SecurityContext</code>. If invalid &rarr; 401 &rarr; Axios interceptor calls <code>logout()</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <h2><span class="num">3</span> Backend &mdash; Layered Architecture</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h4>Controller Layer</h4>
+        <p>7 REST controllers under <code>/api/*</code>. Each injects the authenticated user via <code>@AuthenticationPrincipal UserDetails</code>, ensuring users only access their own data. Request bodies are validated with <code>@Valid</code>.</p>
+        <span class="filepath">backend/src/.../controller/</span>
+      </div>
+      <div class="card">
+        <h4>Service Layer</h4>
+        <p>Business logic lives here. Examples: calculating personal records by comparing all historical sets, computing nutrition totals by summing meals, mapping entities to DTOs. Services are <code>@Transactional</code> so a failed multi-table write rolls back atomically.</p>
+        <span class="filepath">backend/src/.../service/</span>
+      </div>
+      <div class="card">
+        <h4>Repository Layer (Spring Data JPA)</h4>
+        <p>Interfaces extending <code>JpaRepository</code>. Spring auto-generates SQL from method names (e.g., <code>findByUserIdOrderByLogDateAsc</code>). Complex queries use <code>@Query</code> with JPQL and <code>JOIN FETCH</code> to avoid N+1 problems.</p>
+        <pre><span class="cmt">// WorkoutSessionRepository.java</span>
+<span class="kw">@Query</span>(<span class="str">"SELECT ws FROM WorkoutSession ws "</span> +
+  <span class="str">"LEFT JOIN FETCH ws.exerciseSets "</span> +
+  <span class="str">"WHERE ws.user.id = :userId "</span> +
+  <span class="str">"ORDER BY ws.sessionDate ASC"</span>)</pre>
+        <span class="filepath">backend/src/.../repository/</span>
+      </div>
+      <div class="card">
+        <h4>DTO Pattern</h4>
+        <p>Controllers never expose JPA entities directly. Instead, services map to <strong>DTOs</strong> (Data Transfer Objects) like <code>WorkoutSessionDTO</code>, <code>NutritionLogDTO</code>. This decouples the API contract from the database schema and prevents circular references during JSON serialization.</p>
+        <span class="filepath">backend/src/.../dto/</span>
+      </div>
+    </div>
+
+    <h2><span class="num">4</span> Database &mdash; Schema &amp; Relationships</h2>
+    <div class="card">
+      <h4>Entity Relationship Overview</h4>
+      <table class="schema-table">
+        <thead>
+          <tr><th>Table</th><th>Key Columns</th><th>Relationships</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>users</code></td><td>id, username, password, email, calorie targets, protein target</td><td>Parent of all user-scoped tables</td></tr>
+          <tr><td><code>workout_session</code></td><td>id, user_id, session_date, session_name</td><td>belongs to <code>users</code>, has many <code>exercise_set</code></td></tr>
+          <tr><td><code>exercise_set</code></td><td>id, session_id, exercise_name, set_number, reps, weight_lbs</td><td>belongs to <code>workout_session</code></td></tr>
+          <tr><td><code>nutrition_log</code></td><td>id, user_id, log_date, day_type, steps</td><td>belongs to <code>users</code>, has many <code>meal</code></td></tr>
+          <tr><td><code>meal</code></td><td>id, nutrition_log_id, meal_name, calories, protein_grams</td><td>belongs to <code>nutrition_log</code></td></tr>
+          <tr><td><code>weight_log</code></td><td>id, user_id, log_date, weight_lbs</td><td>belongs to <code>users</code>, unique per day</td></tr>
+          <tr><td><code>workout_template</code></td><td>id, user_id, template_name</td><td>belongs to <code>users</code>, has many <code>template_exercise</code></td></tr>
+          <tr><td><code>template_exercise</code></td><td>id, template_id, exercise_name, set_count, default_reps/weight</td><td>belongs to <code>workout_template</code></td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:12px; font-size:0.82rem; color:#94a3b8;"><strong>Flyway</strong> manages schema evolution. Migrations <code>V1</code> through <code>V6</code> run automatically on Spring Boot startup, ensuring the DB schema matches the code version.</p>
+      <span class="filepath">backend/src/main/resources/db/migration/V1__init.sql &ndash; V6__workout_templates.sql</span>
+    </div>
+
+    <h2><span class="num">5</span> External Integrations</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h4>Google Calendar Sync (GitHub Actions)</h4>
+        <p>Two <strong>cron-triggered</strong> GitHub Actions run daily at 5am UTC. Python scripts connect <em>directly to PostgreSQL</em> (bypassing the API) using <code>psycopg2</code>, query the day's workouts/weight, and create Google Calendar events via the <strong>Calendar API v3</strong> with a service account.</p>
+        <ul>
+          <li><code>RAILWAY_DATABASE_URL</code> &mdash; Postgres connection string (from Railway hosting)</li>
+          <li><code>GOOGLE_SERVICE_ACCOUNT_JSON</code> &mdash; GCP service account credentials</li>
+          <li><code>GOOGLE_CALENDAR_ID</code> &mdash; target calendar</li>
+        </ul>
+        <span class="filepath">.github/workflows/daily-workout-calendar.yml</span>
+      </div>
+      <div class="card">
+        <h4>CI/CD Pipeline</h4>
+        <p><code>deploy.yml</code> runs on every push/PR to <code>main</code>:</p>
+        <ul>
+          <li><strong>Frontend tests</strong> &mdash; Node 20, <code>npm test</code></li>
+          <li><strong>Backend tests</strong> &mdash; JDK 21, <code>gradle test</code></li>
+          <li>Test reports uploaded as artifacts</li>
+        </ul>
+        <span class="filepath">.github/workflows/deploy.yml</span>
+      </div>
+    </div>
+
+    <h2><span class="num">6</span> Deployment &mdash; Docker Compose</h2>
+    <div class="card">
+      <h4>Container Architecture</h4>
+      <pre><span class="cmt">┌─────────────────────────────────────────────────────────┐</span>
+<span class="cmt">│                    Docker Compose                        │</span>
+<span class="cmt">│                                                         │</span>
+<span class="cmt">│  ┌──────────┐    ┌──────────────┐    ┌──────────────┐   │</span>
+<span class="cmt">│  │ Frontend  │    │   Backend    │    │  PostgreSQL  │   │</span>
+<span class="cmt">│  │ (Nginx)   │───▶│ (Spring Boot)│───▶│     15       │   │</span>
+<span class="cmt">│  │ :5173→80  │    │    :8080     │    │    :5432     │   │</span>
+<span class="cmt">│  └──────────┘    └──────────────┘    └──────────────┘   │</span>
+<span class="cmt">│                                       ┌──────────────┐ │</span>
+<span class="cmt">│                                       │   pgAdmin 4  │ │</span>
+<span class="cmt">│                                       │    :5050     │ │</span>
+<span class="cmt">│                                       └──────────────┘ │</span>
+<span class="cmt">└─────────────────────────────────────────────────────────┘</span></pre>
+      <ul style="margin-top:12px; font-size:0.82rem; color:#94a3b8;">
+        <li><strong>Frontend Dockerfile:</strong> Multi-stage &mdash; Node 20 builds the React app, Nginx 1.25 serves static files &amp; proxies <code>/api</code></li>
+        <li><strong>Backend Dockerfile:</strong> Multi-stage &mdash; Gradle 8.6 builds the fat JAR, Eclipse Temurin JRE 21 runs it</li>
+        <li><strong>PostgreSQL:</strong> Official image with health checks; backend waits for healthy DB before starting</li>
+        <li><strong>pgAdmin:</strong> Web GUI for database inspection at port 5050</li>
+      </ul>
+      <span class="filepath">docker-compose.yml</span>
+    </div>
+
+    <h2><span class="num">7</span> Putting It All Together &mdash; Example: Logging a Workout</h2>
+    <div class="sequence">
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#38bdf8"></div><div class="seq-connector" style="background:#38bdf8"></div></div>
+        <div class="seq-content">
+          <h4>User clicks &ldquo;Save Workout&rdquo; on Today page</h4>
+          <p>The <code>WorkoutBuilderModal</code> component collects exercises, sets, reps, and weight. It calls <code>api.post('/workouts', payload)</code>. The Axios interceptor attaches the JWT.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#f87171"></div><div class="seq-connector" style="background:#f87171"></div></div>
+        <div class="seq-content">
+          <h4>JwtFilter authenticates the request</h4>
+          <p>Token is extracted, validated (HMAC-SHA signature + expiry check), user is loaded into <code>SecurityContext</code>.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#a78bfa"></div><div class="seq-connector" style="background:#a78bfa"></div></div>
+        <div class="seq-content">
+          <h4>WorkoutController receives the request</h4>
+          <p><code>@PostMapping</code> method receives the <code>WorkoutSessionRequest</code> DTO. The authenticated user is injected via <code>@AuthenticationPrincipal</code>.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#a78bfa"></div><div class="seq-connector" style="background:#a78bfa"></div></div>
+        <div class="seq-content">
+          <h4>WorkoutService processes the data</h4>
+          <p>Creates a <code>WorkoutSession</code> entity, iterates over exercises and sets, creates <code>ExerciseSet</code> entities. Saves via JPA cascade.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#4ade80"></div><div class="seq-connector" style="background:#4ade80"></div></div>
+        <div class="seq-content">
+          <h4>PostgreSQL persists the data</h4>
+          <p><code>INSERT INTO workout_session</code> + <code>INSERT INTO exercise_set</code> (one row per set). Both within a single transaction.</p>
+        </div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-line"><div class="seq-dot" style="background:#38bdf8"></div><div class="seq-connector" style="background:transparent"></div></div>
+        <div class="seq-content">
+          <h4>Frontend re-fetches and re-renders</h4>
+          <p>After the POST succeeds, <code>refetch()</code> triggers <code>GET /api/workouts</code>. The hook updates state, React re-renders the workout list with the new entry.</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="text-align:center; color:#64748b; margin-top:48px; font-size:0.8rem;">
+      FitTrack Data Flow Diagram &mdash; Generated 2026-04-10
+    </p>
+  </div>
+
+</body>
+</html>
