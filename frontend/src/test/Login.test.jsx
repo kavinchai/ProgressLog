@@ -16,11 +16,18 @@ beforeEach(() => {
   useAuthStore.setState({ token: null, username: null });
 });
 
-describe('Login', () => {
+// ── Login mode ────────────────────────────────────────────────────────────────
+
+describe('Login — login mode', () => {
   it('renders username and password fields', () => {
     render(<Login />);
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  });
+
+  it('does NOT render an email field in login mode', () => {
+    render(<Login />);
+    expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
   });
 
   it('renders a Log In button', () => {
@@ -42,6 +49,20 @@ describe('Login', () => {
     });
   });
 
+  it('calls /auth/login endpoint on submit', async () => {
+    api.post.mockResolvedValue({ data: { token: 'tok', username: 'alice' } });
+
+    render(<Login />);
+    await userEvent.type(screen.getByLabelText(/username/i), 'alice');
+    await userEvent.type(screen.getByLabelText(/password/i), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith(
+      '/auth/login',
+      { username: 'alice', password: 'secret' }
+    ));
+  });
+
   it('shows error message on failed login', async () => {
     api.post.mockRejectedValue({ response: { data: { message: 'Bad credentials' } } });
 
@@ -52,6 +73,19 @@ describe('Login', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/bad credentials/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows HTTP status error message when no message in response', async () => {
+    api.post.mockRejectedValue({ response: { status: 500 } });
+
+    render(<Login />);
+    await userEvent.type(screen.getByLabelText(/username/i), 'alice');
+    await userEvent.type(screen.getByLabelText(/password/i), 'pass');
+    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/HTTP 500/i)).toBeInTheDocument();
     });
   });
 
@@ -66,5 +100,109 @@ describe('Login', () => {
     await waitFor(() => {
       expect(screen.getByText(/invalid username or password/i)).toBeInTheDocument();
     });
+  });
+});
+
+// ── Signup mode ───────────────────────────────────────────────────────────────
+
+describe('Login — signup mode', () => {
+  async function switchToSignup() {
+    render(<Login />);
+    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+  }
+
+  it('clicking "sign up" link shows the email field', async () => {
+    await switchToSignup();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+  });
+
+  it('renders a Sign Up submit button in signup mode', async () => {
+    await switchToSignup();
+    // The submit button changes to sign up — verify by its type=submit role
+    expect(screen.getByRole('button', { name: /^\|.*sign up.*\|$/i })).toBeInTheDocument();
+  });
+
+  it('successful signup calls /auth/register with email and stores token', async () => {
+    api.post.mockResolvedValue({ data: { token: 'signup-tok', username: 'bob' } });
+
+    await switchToSignup();
+    await userEvent.type(screen.getByLabelText(/username/i), 'bob');
+    await userEvent.type(screen.getByLabelText(/email/i), 'bob@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'pass123');
+    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith('/auth/register', {
+        username: 'bob',
+        password: 'pass123',
+        email: 'bob@example.com',
+      });
+      expect(useAuthStore.getState().token).toBe('signup-tok');
+      expect(useAuthStore.getState().username).toBe('bob');
+    });
+  });
+
+  it('failed signup shows the server error message', async () => {
+    api.post.mockRejectedValue({ response: { data: { message: 'Username already taken' } } });
+
+    await switchToSignup();
+    await userEvent.type(screen.getByLabelText(/username/i), 'bob');
+    await userEvent.type(screen.getByLabelText(/email/i), 'bob@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'pass123');
+    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/username already taken/i)).toBeInTheDocument();
+    });
+  });
+
+  it('failed signup with HTTP status shows registration error', async () => {
+    api.post.mockRejectedValue({ response: { status: 409 } });
+
+    await switchToSignup();
+    await userEvent.type(screen.getByLabelText(/username/i), 'bob');
+    await userEvent.type(screen.getByLabelText(/email/i), 'bob@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'pass');
+    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/registration failed.*HTTP 409/i)).toBeInTheDocument();
+    });
+  });
+
+  it('failed signup with no response shows fallback error', async () => {
+    api.post.mockRejectedValue({});
+
+    await switchToSignup();
+    await userEvent.type(screen.getByLabelText(/username/i), 'bob');
+    await userEvent.type(screen.getByLabelText(/email/i), 'bob@test.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'pass');
+    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/registration failed/i)).toBeInTheDocument();
+    });
+  });
+
+  it('switching back to login mode removes email field', async () => {
+    await switchToSignup();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /already have an account/i }));
+    expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
+  });
+
+  it('switching mode clears existing error', async () => {
+    api.post.mockRejectedValue({ response: { data: { message: 'Bad credentials' } } });
+
+    render(<Login />);
+    await userEvent.type(screen.getByLabelText(/username/i), 'alice');
+    await userEvent.type(screen.getByLabelText(/password/i), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await waitFor(() => expect(screen.getByText(/bad credentials/i)).toBeInTheDocument());
+
+    // Switch to signup — error should be gone
+    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    expect(screen.queryByText(/bad credentials/i)).not.toBeInTheDocument();
   });
 });
