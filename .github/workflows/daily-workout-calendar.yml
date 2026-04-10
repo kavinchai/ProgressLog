@@ -80,35 +80,71 @@ jobs:
           if backfill:
               print("[db] running backfill query for all sessions...")
               cur.execute("""
-                  SELECT ws.session_date,
-                         COALESCE(ws.session_name, 'Workout') AS session_name
+                  SELECT ws.id,
+                         ws.session_date,
+                         COALESCE(ws.session_name, 'Workout') AS session_name,
+                         es.exercise_name,
+                         es.set_number,
+                         es.reps,
+                         es.weight_lbs
                   FROM workout_session ws
                   JOIN users u ON u.id = ws.user_id
+                  LEFT JOIN exercise_set es ON es.session_id = ws.id
                   WHERE u.username = '***REDACTED_USER***'
-                  ORDER BY ws.session_date, ws.id
+                  ORDER BY ws.session_date, ws.id, es.exercise_name, es.set_number
               """)
           else:
               print(f"[db] querying sessions for date: {target_date}")
               cur.execute("""
-                  SELECT ws.session_date,
-                         COALESCE(ws.session_name, 'Workout') AS session_name
+                  SELECT ws.id,
+                         ws.session_date,
+                         COALESCE(ws.session_name, 'Workout') AS session_name,
+                         es.exercise_name,
+                         es.set_number,
+                         es.reps,
+                         es.weight_lbs
                   FROM workout_session ws
                   JOIN users u ON u.id = ws.user_id
+                  LEFT JOIN exercise_set es ON es.session_id = ws.id
                   WHERE u.username = '***REDACTED_USER***'
                     AND ws.session_date = %s
-                  ORDER BY ws.id
+                  ORDER BY ws.id, es.exercise_name, es.set_number
               """, (target_date,))
 
           rows = cur.fetchall()
           print(f"[db] rows returned: {len(rows)}")
-          for r in rows:
-              print(f"  → {r}")
           cur.close()
           conn.close()
 
           if not rows:
               print("No workout sessions found, skipping.")
               exit(0)
+
+          # Group rows into sessions: {session_id: {date, name, exercises: {name: [sets]}}}
+          from collections import OrderedDict
+          sessions = OrderedDict()
+          for session_id, session_date, session_name, exercise_name, set_number, reps, weight_lbs in rows:
+              if session_id not in sessions:
+                  sessions[session_id] = {
+                      'date': session_date,
+                      'name': session_name,
+                      'exercises': OrderedDict(),
+                  }
+              if exercise_name is not None:
+                  exs = sessions[session_id]['exercises']
+                  if exercise_name not in exs:
+                      exs[exercise_name] = []
+                  exs[exercise_name].append((set_number, reps, float(weight_lbs)))
+
+          def build_description(exercises):
+              if not exercises:
+                  return ''
+              lines = []
+              for ex_name, sets in exercises.items():
+                  lines.append(ex_name)
+                  for set_number, reps, weight in sets:
+                      lines.append(f'  Set {set_number}: {weight:g} lbs × {reps}')
+              return '\n'.join(lines)
 
           # Authenticate with Google Calendar
           sa_info = json.loads(os.environ['GOOGLE_SERVICE_ACCOUNT_JSON'])
@@ -133,12 +169,16 @@ jobs:
                   for e in result.get('items', [])
               )
 
-          for session_date, session_name in rows:
+          for session_id, session in sessions.items():
+              session_date = session['date']
+              session_name = session['name']
               if event_exists(session_date, session_name):
                   print(f"[skip] event already exists: {session_name} on {session_date}")
                   continue
+              description = build_description(session['exercises'])
               event = {
                   'summary': session_name,
+                  'description': description,
                   'start': {'date': str(session_date)},
                   'end':   {'date': str(session_date)},
               }
@@ -147,4 +187,6 @@ jobs:
                   body=event
               ).execute()
               print(f"[created] {session_name} on {session_date} → {created.get('htmlLink')}")
+              if description:
+                  print(description)
           EOF
