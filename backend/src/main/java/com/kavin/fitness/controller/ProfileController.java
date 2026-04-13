@@ -8,8 +8,8 @@ import com.kavin.fitness.repository.UserRepository;
 import com.kavin.fitness.security.JwtUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,8 +27,7 @@ public class ProfileController {
 
     @GetMapping("/goals")
     public ResponseEntity<UserGoalsDTO> getGoals(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = resolveUser(userDetails);
 
         return ResponseEntity.ok(new UserGoalsDTO(
                 user.getCalorieTargetTraining(),
@@ -42,8 +41,7 @@ public class ProfileController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UserGoalsDTO dto) {
 
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = resolveUser(userDetails);
 
         user.setCalorieTargetTraining(dto.getCalorieTargetTraining());
         user.setCalorieTargetRest(dto.getCalorieTargetRest());
@@ -55,23 +53,21 @@ public class ProfileController {
 
     @GetMapping("/email")
     public ResponseEntity<Map<String, String>> getEmail(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = resolveUser(userDetails);
         return ResponseEntity.ok(Map.of("email", user.getEmail() != null ? user.getEmail() : ""));
     }
 
     @PutMapping("/email")
-    public ResponseEntity<?> updateEmail(
+    public ResponseEntity<Map<String, String>> updateEmail(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody Map<String, String> body) {
 
         String email = body.get("email");
         if (email == null || email.isBlank() || !email.contains("@")) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Invalid email address."));
+            throw new IllegalArgumentException("Invalid email address.");
         }
 
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = resolveUser(userDetails);
 
         user.setEmail(email.trim());
         userRepository.save(user);
@@ -79,39 +75,34 @@ public class ProfileController {
     }
 
     @PostMapping("/verify-password")
-    public ResponseEntity<?> verifyPassword(
+    public ResponseEntity<Void> verifyPassword(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody Map<String, String> body) {
 
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = resolveUser(userDetails);
 
         if (!passwordEncoder.matches(body.get("password"), user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Incorrect password."));
+            throw new BadCredentialsException("Incorrect password.");
         }
 
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/credentials")
-    public ResponseEntity<?> updateCredentials(
+    public ResponseEntity<CredentialsUpdateResponse> updateCredentials(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UpdateCredentialsRequest dto) {
 
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = resolveUser(userDetails);
 
         if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Current password is incorrect."));
+            throw new BadCredentialsException("Current password is incorrect.");
         }
 
         String newUsername = dto.getNewUsername();
         if (newUsername != null && !newUsername.isBlank() && !newUsername.equals(user.getUsername())) {
             if (userRepository.existsByUsername(newUsername)) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(Map.of("message", "Username already taken."));
+                throw new IllegalArgumentException("Username already taken.");
             }
             user.setUsername(newUsername);
         }
@@ -124,5 +115,10 @@ public class ProfileController {
 
         String token = jwtUtil.generateToken(user.getUsername());
         return ResponseEntity.ok(new CredentialsUpdateResponse(token, user.getUsername()));
+    }
+
+    private User resolveUser(UserDetails principal) {
+        return userRepository.findByUsername(principal.getUsername())
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
     }
 }

@@ -39,10 +39,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(java.util.Map.of("message", "Username already taken."));
+            throw new IllegalArgumentException("Username already taken.");
         }
 
         User user = new User();

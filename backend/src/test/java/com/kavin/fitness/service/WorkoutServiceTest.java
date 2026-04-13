@@ -8,6 +8,7 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WorkoutSession;
 import com.kavin.fitness.repository.ExerciseSetRepository;
 import com.kavin.fitness.repository.WorkoutSessionRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -171,7 +172,7 @@ class WorkoutServiceTest {
         req.setExerciseName("X");
         req.setSets(List.of());
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(EntityNotFoundException.class,
                 () -> workoutService.upsertExercise(99L, 1L, req));
     }
 
@@ -185,7 +186,7 @@ class WorkoutServiceTest {
         req.setSets(List.of());
 
         // user id 999 does not own this session (owner id is 1)
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(EntityNotFoundException.class,
                 () -> workoutService.upsertExercise(7L, 999L, req));
     }
 

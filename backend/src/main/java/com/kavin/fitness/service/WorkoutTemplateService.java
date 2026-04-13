@@ -7,6 +7,7 @@ import com.kavin.fitness.model.TemplateExercise;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WorkoutTemplate;
 import com.kavin.fitness.repository.WorkoutTemplateRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,7 +78,7 @@ public class WorkoutTemplateService {
     private WorkoutTemplate resolveTemplate(Long templateId, Long userId) {
         return templateRepository.findById(templateId)
                 .filter(t -> t.getUser().getId().equals(userId))
-                .orElseThrow(() -> new IllegalArgumentException("Template not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Template not found"));
     }
 
     private WorkoutTemplateDTO toDTO(WorkoutTemplate template) {

@@ -8,6 +8,7 @@ import com.kavin.fitness.model.NutritionLog;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.MealRepository;
 import com.kavin.fitness.repository.NutritionLogRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,7 +61,7 @@ public class NutritionService {
         NutritionLog log = resolveLog(logId, userId);
         Meal meal = mealRepository.findById(mealId)
                 .filter(existingMeal -> existingMeal.getNutritionLog().getId().equals(logId))
-                .orElseThrow(() -> new IllegalArgumentException("Meal not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Meal not found"));
         meal.setMealName(request.getMealName());
         meal.setCalories(request.getCalories());
         meal.setProteinGrams(request.getProteinGrams());
@@ -84,7 +85,7 @@ public class NutritionService {
         resolveLog(logId, userId);
         Meal meal = mealRepository.findById(mealId)
                 .filter(existingMeal -> existingMeal.getNutritionLog().getId().equals(logId))
-                .orElseThrow(() -> new IllegalArgumentException("Meal not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Meal not found"));
         mealRepository.delete(meal);
     }
 
@@ -93,7 +94,7 @@ public class NutritionService {
     private NutritionLog resolveLog(Long logId, Long userId) {
         return nutritionLogRepository.findById(logId)
                 .filter(nutritionLog -> nutritionLog.getUser().getId().equals(userId))
-                .orElseThrow(() -> new IllegalArgumentException("Nutrition log not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Nutrition log not found"));
     }
 
     private NutritionLogDTO toDTO(NutritionLog log) {

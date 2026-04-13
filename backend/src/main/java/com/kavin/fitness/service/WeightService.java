@@ -4,6 +4,7 @@ import com.kavin.fitness.dto.WeightLogRequest;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WeightLog;
 import com.kavin.fitness.repository.WeightLogRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +26,7 @@ public class WeightService {
     public void delete(Long id, Long userId) {
         WeightLog log = weightLogRepository.findById(id)
                 .filter(w -> w.getUser().getId().equals(userId))
-                .orElseThrow(() -> new IllegalArgumentException("Weight log not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Weight log not found"));
         weightLogRepository.delete(log);
     }
 

@@ -10,7 +10,9 @@
       "Bash(find /c/Users/Kavin/Documents/GitHub/WorkoutApp/frontend -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.jsx -o -name *.js -o -name *.json \\\\\\))",
       "Bash(find /c/Users/Kavin/Documents/GitHub/WorkoutApp/frontend/src -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.jsx -o -name *.js \\\\\\))",
       "Bash(xargs basename:*)",
-      "Bash(grep -r \"GET.*exercise\\\\|POST.*exercise\" c:/Users/Kavin/Documents/GitHub/WorkoutApp/backend/src --include=*.java)"
+      "Bash(grep -r \"GET.*exercise\\\\|POST.*exercise\" c:/Users/Kavin/Documents/GitHub/WorkoutApp/backend/src --include=*.java)",
+      "Bash(./gradlew test:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

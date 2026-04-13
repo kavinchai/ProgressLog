@@ -8,6 +8,7 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WorkoutSession;
 import com.kavin.fitness.repository.ExerciseSetRepository;
 import com.kavin.fitness.repository.WorkoutSessionRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -107,7 +108,7 @@ public class WorkoutService {
     private WorkoutSession resolveSession(Long sessionId, Long userId) {
         return workoutSessionRepository.findById(sessionId)
                 .filter(session -> session.getUser().getId().equals(userId))
-                .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Session not found"));
     }
 
     private WorkoutSessionDTO toDTO(WorkoutSession session) {

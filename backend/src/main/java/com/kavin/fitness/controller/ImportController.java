@@ -22,9 +22,12 @@ public class ImportController {
     public ResponseEntity<ImportResultDTO> importData(
             @AuthenticationPrincipal UserDetails principal,
             @RequestBody ImportRequest request) {
-        User user = userRepository.findByUsername(principal.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-        ImportResultDTO result = importService.importData(user, request);
+        ImportResultDTO result = importService.importData(resolveUser(principal), request);
         return ResponseEntity.ok(result);
+    }
+
+    private User resolveUser(UserDetails principal) {
+        return userRepository.findByUsername(principal.getUsername())
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
     }
 }
