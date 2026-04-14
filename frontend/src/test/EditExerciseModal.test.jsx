@@ -79,12 +79,12 @@ describe('EditExerciseModal', () => {
         onSaved={onSaved}
       />
     );
-    const removeButtons = screen.getAllByRole('button', { name: /\[x\]/i });
+    const removeButtons = screen.getAllByRole('button', { name: /×/ });
     expect(removeButtons).toHaveLength(2);
 
     await userEvent.click(screen.getByRole('button', { name: /\+ set/i }));
 
-    expect(screen.getAllByRole('button', { name: /\[x\]/i })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: /×/ })).toHaveLength(3);
   });
 
   it('[x] button removes a set and renumbers remaining sets', async () => {
@@ -97,11 +97,11 @@ describe('EditExerciseModal', () => {
         onSaved={onSaved}
       />
     );
-    const removeButtons = screen.getAllByRole('button', { name: /\[x\]/i });
+    const removeButtons = screen.getAllByRole('button', { name: /×/ });
     await userEvent.click(removeButtons[0]); // remove set 1
 
     // Only set #1 should remain (renumbered from set #2)
-    expect(screen.getAllByRole('button', { name: /\[x\]/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /×/ })).toHaveLength(1);
   });
 
   it('Cancel button calls onClose', async () => {

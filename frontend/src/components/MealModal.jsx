@@ -66,8 +66,8 @@ export default function MealModal({ logId, existing, onClose, onSaved }) {
         </div>
         <div className="modal-actions">
           {existing && (
-            <button type="button" className="btn-ghost" onClick={deleteMeal} disabled={saving}>
-              [delete]
+            <button type="button" className="btn btn-sm btn-danger" onClick={deleteMeal} disabled={saving}>
+              Delete
             </button>
           )}
           <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>

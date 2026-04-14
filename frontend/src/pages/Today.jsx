@@ -24,7 +24,7 @@ function MealCard({ meal, index, onEdit }) {
     <div className="meal-card">
       <div className="meal-card-header">
         <span className="meal-card-name">{meal.mealName || `Meal ${index + 1}`}</span>
-        <button className="btn btn-sm" onClick={onEdit}>[edit]</button>
+        <button className="btn btn-sm" onClick={onEdit}>Edit</button>
       </div>
       <div className="meal-card-body">
         <span>{meal.calories} kcal</span>
@@ -42,10 +42,10 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
       <div className="exercise-card-header">
         <span className="exercise-card-name">
           {name}
-          <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--font-size-sm)' }}>{weight} lbs</span>
+          <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)' }}>{weight} lbs</span>
           {isPR && <span className="pr-badge">PR</span>}
         </span>
-        <button className="btn btn-sm" onClick={onEdit}>[edit]</button>
+        <button className="btn btn-sm" onClick={onEdit}>Edit</button>
       </div>
       <div className="exercise-card-sets">
         <div className="exercise-sets-head">
@@ -104,12 +104,10 @@ export default function Today() {
     ? groupByExercise(todayWorkoutEntry.exerciseSets)
     : [];
 
-  // exerciseName -> all-time max weight (number)
   const prMap = Object.fromEntries(
     (prsData ?? []).map(pr => [pr.exerciseName, parseFloat(pr.maxWeightLbs)])
   );
 
-  // exerciseName -> max weight in today's session
   const todayMaxByExercise = {};
   for (const g of exerciseGroups) {
     if (todayMaxByExercise[g.name] == null || g.weight > todayMaxByExercise[g.name]) {
@@ -167,7 +165,6 @@ export default function Today() {
     setRenamingSession(false);
   }
 
-  // Ensure a day log exists before adding a meal
   async function openAddMeal() {
     let logId = todayNutritionEntry?.id;
     if (!logId) {
@@ -185,7 +182,7 @@ export default function Today() {
   return (
     <div className="today-page">
       <div className="today-page-header">
-        <span className="today-title">TODAY</span>
+        <span className="today-title">Today</span>
         <span className="today-date muted">{fmtDate(TODAY)}</span>
         <button className="today-day-type-toggle" onClick={toggleDayType}>
           {todayNutritionEntry?.dayType ?? 'training'}
@@ -201,15 +198,15 @@ export default function Today() {
               <>
                 <button className="btn btn-sm"
                   onClick={() => { setEditingEntry(todayWeightEntry); setModal('weight'); }}>
-                  [edit]
+                  Edit
                 </button>
-                <button className="btn btn-sm" onClick={deleteWeight}>[delete]</button>
+                <button className="btn btn-sm btn-danger" onClick={deleteWeight}>Delete</button>
               </>
             )}
             {!todayWeightEntry && (
-              <button className="btn btn-sm"
+              <button className="btn btn-sm btn-primary"
                 onClick={() => { setEditingEntry(null); setModal('weight'); }}>
-                [+ add]
+                + Add
               </button>
             )}
           </div>
@@ -227,20 +224,20 @@ export default function Today() {
           <span className="section-title">
             Workout
             {todayWorkoutEntry?.sessionName && (
-              <span className="muted" style={{ fontWeight: 400, marginLeft: 8, fontSize: 'var(--font-size-sm)' }}>
+              <span className="muted" style={{ fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)', textTransform: 'none' }}>
                 {todayWorkoutEntry.sessionName}
               </span>
             )}
           </span>
           <div className="btn-actions">
             {todayWorkoutEntry && !renamingSession && (
-              <button className="btn btn-sm" onClick={() => { setRenameValue(todayWorkoutEntry.sessionName ?? ''); setRenamingSession(true); }}>[rename]</button>
+              <button className="btn btn-sm" onClick={() => { setRenameValue(todayWorkoutEntry.sessionName ?? ''); setRenamingSession(true); }}>Rename</button>
             )}
             {renamingSession && (
               <>
                 <input
                   className="modal-input"
-                  style={{ width: 140, padding: '2px 6px' }}
+                  style={{ width: 140, padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}
                   type="text"
                   placeholder="Session name"
                   value={renameValue}
@@ -248,15 +245,15 @@ export default function Today() {
                   onKeyDown={e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') setRenamingSession(false); }}
                   autoFocus
                 />
-                <button className="btn btn-sm" onClick={submitRename}>[save]</button>
-                <button className="btn btn-sm" onClick={() => setRenamingSession(false)}>[x]</button>
+                <button className="btn btn-sm btn-primary" onClick={submitRename}>Save</button>
+                <button className="btn btn-sm" onClick={() => setRenamingSession(false)}>&times;</button>
               </>
             )}
             {todayWorkoutEntry && (
-              <button className="btn btn-sm" onClick={deleteWorkoutSession}>[delete session]</button>
+              <button className="btn btn-sm btn-danger" onClick={deleteWorkoutSession}>Delete</button>
             )}
-            <button className="btn btn-sm" onClick={() => { setPrefillExercises(null); setModal('workout'); }}>
-              [+ add]
+            <button className="btn btn-sm btn-primary" onClick={() => { setPrefillExercises(null); setModal('workout'); }}>
+              + Add
             </button>
             {(templates ?? []).length > 0 && (
               <div className="today-template-picker">
@@ -266,7 +263,7 @@ export default function Today() {
                   onClick={() => setTemplateMenuOpen(o => !o)}
                   onBlur={() => setTimeout(() => setTemplateMenuOpen(false), 150)}
                 >
-                  [from template]
+                  Template
                 </button>
                 {templateMenuOpen && (
                   <ul className="today-template-menu">
@@ -344,13 +341,13 @@ export default function Today() {
               <>
                 <button className="btn btn-sm"
                   onClick={() => { setEditingEntry(todayNutritionEntry); setModal('dayinfo'); }}>
-                  [edit day info]
+                  Edit Day
                 </button>
-                <button className="btn btn-sm" onClick={deleteNutritionDay}>[delete day]</button>
+                <button className="btn btn-sm btn-danger" onClick={deleteNutritionDay}>Delete</button>
               </>
             )}
-            <button className="btn btn-sm" onClick={openAddMeal}>
-              [+ add meal]
+            <button className="btn btn-sm btn-primary" onClick={openAddMeal}>
+              + Add Meal
             </button>
           </div>
         </div>

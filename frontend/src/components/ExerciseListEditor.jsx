@@ -152,7 +152,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                   )}
                 </div>
                 <button type="button" className="btn btn-sm"
-                  onClick={() => removeExercise(exerciseIndex)}>[x]</button>
+                  onClick={() => removeExercise(exerciseIndex)}>&times;</button>
               </div>
 
               <div className="wbm-sets">
@@ -171,13 +171,13 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                       value={s.reps}
                       onChange={e => updateSet(exerciseIndex, setIndex, 'reps', e.target.value)} />
                     <button type="button" className="btn btn-sm"
-                      onClick={() => removeSet(exerciseIndex, setIndex)}>[x]</button>
+                      onClick={() => removeSet(exerciseIndex, setIndex)}>&times;</button>
                   </div>
                 ))}
               </div>
               <button type="button" className="btn btn-sm wbm-add-set"
                 onClick={() => addSet(exerciseIndex)}>
-                [+ set]
+                + Set
               </button>
             </div>
           ))}
@@ -185,7 +185,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
       )}
 
       <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addExercise}>
-        [+ add exercise]
+        + Add Exercise
       </button>
     </>
   );

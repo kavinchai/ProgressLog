@@ -58,10 +58,10 @@ function WeightLineChart({ dates, weights }) {
         <Line
           type="linear"
           dataKey="weight"
-          stroke="var(--fg)"
+          stroke="var(--accent)"
           strokeWidth={1.5}
-          dot={{ r: 3, fill: 'var(--fg)', strokeWidth: 0 }}
-          activeDot={{ r: 4, fill: 'var(--fg)', strokeWidth: 0 }}
+          dot={{ r: 3, fill: 'var(--accent)', strokeWidth: 0 }}
+          activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }}
           connectNulls={false}
         />
       </LineChart>
@@ -216,7 +216,7 @@ export default function TotalStats() {
   function handleExportJson() {
     const { statsData, normalizedWorkoutRows } = buildExportData();
     const json = JSON.stringify({ totalStats: statsData, workouts: normalizedWorkoutRows }, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob(JSON, { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -298,7 +298,7 @@ export default function TotalStats() {
         {allMonths.length > 0 && (
           <>
             <div className="month-nav">
-              <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx - 1])} disabled={monthIdx <= 0}>[prev]</button>
+              <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx - 1])} disabled={monthIdx <= 0}>&larr; Prev</button>
               <span className="month-nav-label">
                 <button className={'btn btn-sm' + (picker === 'month' ? ' range-active' : '')} onClick={() => togglePicker('month')}>
                   {MONTH_NAMES[parseInt(activeMonthNum) - 1]}
@@ -307,7 +307,7 @@ export default function TotalStats() {
                   {activeYear}
                 </button>
               </span>
-              <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx + 1])} disabled={monthIdx >= allMonths.length - 1}>[next]</button>
+              <button className="btn btn-sm" onClick={() => goMonth(allMonths[monthIdx + 1])} disabled={monthIdx >= allMonths.length - 1}>Next &rarr;</button>
             </div>
             {picker === 'month' && (
               <div className="month-picker">
@@ -401,11 +401,11 @@ export default function TotalStats() {
           <span className="muted" style={{ fontSize: 'var(--fs-sm)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>export</span>
           <div className="export-bar-btns">
             {rows.length > 0 && <>
-              <button className="btn btn-sm" onClick={handleExportXlsx}>[xlsx]</button>
-              <button className="btn btn-sm" onClick={handleExportJson}>[json]</button>
+              <button className="btn btn-sm" onClick={handleExportXlsx}>XLSX</button>
+              <button className="btn btn-sm" onClick={handleExportJson}>JSON</button>
             </>}
             <button className="btn btn-sm" disabled={importing} onClick={() => fileInputRef.current?.click()}>
-              {importing ? '[importing...]' : '[import json]'}
+              {importing ? 'Importing...' : 'Import'}
             </button>
             <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportJson} />
           </div>

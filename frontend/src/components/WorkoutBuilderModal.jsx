@@ -73,7 +73,7 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
                 onClick={() => setTemplateMenuOpen(o => !o)}
                 onBlur={() => setTimeout(() => setTemplateMenuOpen(false), 150)}
               >
-                [load template]
+                Load Template
               </button>
               {templateMenuOpen && (
                 <ul className="wbm-suggestions wbm-template-list">

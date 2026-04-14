@@ -30,6 +30,10 @@ export default function Navbar() {
         </button>
       </div>
 
+      <span className="navbar-brand">FitTrack</span>
+
+      <div style={{ width: 36 }} />
+
       {menuOpen && (
         <>
           <div className="navbar-overlay" onClick={() => setMenuOpen(false)} />
@@ -40,15 +44,15 @@ export default function Navbar() {
                 to={to}
                 className={({ isActive }) => 'navbar-dropdown-link' + (isActive ? ' active' : '')}
               >
-                {({ isActive }) => <span>{isActive ? '> ' : '  '}{label}</span>}
+                {label}
               </NavLink>
             ))}
             <div className="navbar-dropdown-footer">
               <button className="navbar-dropdown-btn" onClick={() => setDark(d => !d)}>
-                {dark ? '[light mode]' : '[dark mode]'}
+                {dark ? 'Light Mode' : 'Dark Mode'}
               </button>
               <button className="navbar-dropdown-btn" onClick={logout}>
-                [logout]
+                Log out
               </button>
             </div>
           </nav>
