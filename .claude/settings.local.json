@@ -13,7 +13,21 @@
       "Bash(grep -r \"GET.*exercise\\\\|POST.*exercise\" c:/Users/Kavin/Documents/GitHub/WorkoutApp/backend/src --include=*.java)",
       "Bash(./gradlew test:*)",
       "Bash(npx vitest:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(gradle compileTestJava --no-daemon)",
+      "Bash(docker info:*)",
+      "Bash(docker version:*)",
+      "Bash(echo \"DOCKER_HOST=$DOCKER_HOST\")",
+      "Read(///./pipe//**)",
+      "Read(//c/Users/Kavin/**)",
+      "Bash(docker context:*)",
+      "Bash(docker exec:*)",
+      "Bash(grep \"but was\" build/reports/tests/test/classes/com.kavin.fitness.integration.*.html)",
+      "Bash(where gradle:*)",
+      "Bash(gradle --version)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Kavin"
     ]
   }
 }
