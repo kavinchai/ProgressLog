@@ -30,9 +30,9 @@ describe('Login — login mode', () => {
     expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
   });
 
-  it('renders a Log In button', () => {
+  it('renders a Sign In button', () => {
     render(<Login />);
-    expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
   it('calls login and stores token on success', async () => {
@@ -41,7 +41,7 @@ describe('Login — login mode', () => {
     render(<Login />);
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'secret');
-    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
       expect(useAuthStore.getState().token).toBe('jwt-abc');
@@ -55,7 +55,7 @@ describe('Login — login mode', () => {
     render(<Login />);
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'secret');
-    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => expect(api.post).toHaveBeenCalledWith(
       '/auth/login',
@@ -69,7 +69,7 @@ describe('Login — login mode', () => {
     render(<Login />);
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'wrong');
-    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/bad credentials/i)).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('Login — login mode', () => {
     render(<Login />);
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'pass');
-    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/HTTP 500/i)).toBeInTheDocument();
@@ -95,7 +95,7 @@ describe('Login — login mode', () => {
     render(<Login />);
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'pass');
-    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/invalid username or password/i)).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe('Login — login mode', () => {
 describe('Login — signup mode', () => {
   async function switchToSignup() {
     render(<Login />);
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole('button', { name: /don't have an account/i }));
   }
 
   it('clicking "sign up" link shows the email field', async () => {
@@ -116,10 +116,9 @@ describe('Login — signup mode', () => {
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
   });
 
-  it('renders a Sign Up submit button in signup mode', async () => {
+  it('renders a Create Account submit button in signup mode', async () => {
     await switchToSignup();
-    // The submit button changes to sign up — verify by its type=submit role
-    expect(screen.getByRole('button', { name: /^\|.*sign up.*\|$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });
 
   it('successful signup calls /auth/register with email and stores token', async () => {
@@ -129,7 +128,7 @@ describe('Login — signup mode', () => {
     await userEvent.type(screen.getByLabelText(/username/i), 'bob');
     await userEvent.type(screen.getByLabelText(/email/i), 'bob@example.com');
     await userEvent.type(screen.getByLabelText(/password/i), 'pass123');
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith('/auth/register', {
@@ -149,7 +148,7 @@ describe('Login — signup mode', () => {
     await userEvent.type(screen.getByLabelText(/username/i), 'bob');
     await userEvent.type(screen.getByLabelText(/email/i), 'bob@example.com');
     await userEvent.type(screen.getByLabelText(/password/i), 'pass123');
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/username already taken/i)).toBeInTheDocument();
@@ -163,7 +162,7 @@ describe('Login — signup mode', () => {
     await userEvent.type(screen.getByLabelText(/username/i), 'bob');
     await userEvent.type(screen.getByLabelText(/email/i), 'bob@example.com');
     await userEvent.type(screen.getByLabelText(/password/i), 'pass');
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/registration failed.*HTTP 409/i)).toBeInTheDocument();
@@ -177,7 +176,7 @@ describe('Login — signup mode', () => {
     await userEvent.type(screen.getByLabelText(/username/i), 'bob');
     await userEvent.type(screen.getByLabelText(/email/i), 'bob@test.com');
     await userEvent.type(screen.getByLabelText(/password/i), 'pass');
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/registration failed/i)).toBeInTheDocument();
@@ -188,7 +187,7 @@ describe('Login — signup mode', () => {
     await switchToSignup();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /already have an account/i }));
+    await userEvent.click(screen.getByRole('button', { name: /already have an account.*sign in/i }));
     expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
   });
 
@@ -198,11 +197,11 @@ describe('Login — signup mode', () => {
     render(<Login />);
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'wrong');
-    await userEvent.click(screen.getByRole('button', { name: /log in/i }));
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => expect(screen.getByText(/bad credentials/i)).toBeInTheDocument());
 
     // Switch to signup — error should be gone
-    await userEvent.click(screen.getByRole('button', { name: /sign up/i }));
+    await userEvent.click(screen.getByRole('button', { name: /don't have an account/i }));
     expect(screen.queryByText(/bad credentials/i)).not.toBeInTheDocument();
   });
 });

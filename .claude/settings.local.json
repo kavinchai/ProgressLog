@@ -24,7 +24,11 @@
       "Bash(docker exec:*)",
       "Bash(grep \"but was\" build/reports/tests/test/classes/com.kavin.fitness.integration.*.html)",
       "Bash(where gradle:*)",
-      "Bash(gradle --version)"
+      "Bash(gradle --version)",
+      "Bash(npm run:*)",
+      "Bash(./mvnw test:*)",
+      "Bash(ls c:/Users/Kavin/Documents/GitHub/WorkoutApp/backend/gradlew*)",
+      "Bash(ls c:/Users/Kavin/Documents/GitHub/WorkoutApp/backend/*.gradle*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Kavin"

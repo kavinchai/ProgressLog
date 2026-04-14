@@ -184,10 +184,10 @@ export default function Settings() {
           {error && <p className="settings-error">{error}</p>}
 
           <div className="settings-actions">
-            <button className="btn" type="submit" disabled={saving}>
-              {saving ? '[saving…]' : '[save goals]'}
+            <button className="btn btn-primary" type="submit" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Goals'}
             </button>
-            {saved && <span className="settings-saved">saved.</span>}
+            {saved && <span className="settings-saved">Saved!</span>}
           </div>
         </form>
       )}
@@ -215,8 +215,8 @@ export default function Settings() {
             {verifyError && <p className="settings-error">{verifyError}</p>}
 
             <div className="settings-actions">
-              <button className="btn" type="submit" disabled={verifying}>
-                {verifying ? '[verifying…]' : '[verify]'}
+              <button className="btn btn-primary" type="submit" disabled={verifying}>
+                {verifying ? 'Verifying...' : 'Verify'}
               </button>
             </div>
           </form>
@@ -267,10 +267,10 @@ export default function Settings() {
             {credError && <p className="settings-error">{credError}</p>}
 
             <div className="settings-actions">
-              <button className="btn" type="submit" disabled={credSaving}>
-                {credSaving ? '[saving…]' : '[save account]'}
+              <button className="btn btn-primary" type="submit" disabled={credSaving}>
+                {credSaving ? 'Saving...' : 'Save Account'}
               </button>
-              {credSaved && <span className="settings-saved">saved.</span>}
+              {credSaved && <span className="settings-saved">Saved!</span>}
             </div>
           </form>
         )}

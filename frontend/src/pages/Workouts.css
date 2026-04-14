@@ -1,74 +1,78 @@
 .workouts-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--space-xl);
 }
 
 .workouts-header h1 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
 }
 
 .workouts-header p {
-  color: var(--text-secondary);
-  margin-top: var(--spacing-xs);
-  font-size: var(--font-size-sm);
+  color: var(--muted);
+  margin-top: var(--space-xs);
+  font-size: var(--fs-sm);
 }
 
 .workouts-summary-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
 }
 
 .workouts-summary-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-xs);
 }
 
 .workouts-summary-label {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--space-xs);
 }
 
 .workouts-summary-value {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--fg);
 }
 
 .workouts-summary-sub {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  color: var(--muted);
   margin-top: 2px;
 }
 
 .workouts-log-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-xs);
 }
 
 .workouts-log-title {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-lg);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--fg);
+  margin-bottom: var(--space-lg);
 }
 
 .session-row {
   display: grid;
   grid-template-columns: 100px 1fr 60px 120px;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid var(--border-color-light);
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-dim);
 }
 
 .session-row:last-child {
@@ -76,20 +80,20 @@
 }
 
 .session-date {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  color: var(--muted);
   white-space: nowrap;
 }
 
 .session-name {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--fg);
 }
 
 .session-pct-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   text-align: right;
 }
 
@@ -102,14 +106,14 @@
 .session-progress-bar {
   width: 100%;
   height: 6px;
-  background: var(--bg-hover);
-  border-radius: var(--border-radius-full);
+  background: var(--hover-bg);
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 
 .session-progress-fill {
   height: 100%;
-  border-radius: var(--border-radius-full);
+  border-radius: var(--radius-full);
   transition: width 0.4s ease;
 }
 
@@ -122,5 +126,25 @@
   }
   .session-progress-wrap {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .workouts-summary-row {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+  }
+  .workouts-summary-card {
+    padding: var(--space-sm);
+  }
+  .session-row {
+    grid-template-columns: 1fr auto;
+    gap: var(--space-sm);
+  }
+  .session-date {
+    display: none;
+  }
+  .workouts-log-card {
+    padding: var(--space-md);
   }
 }

@@ -74,11 +74,11 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
           <div className="btn-actions">
             {weightEntry ? (
               <>
-                <button className="btn btn-sm" onClick={() => setModal('weight-edit')}>[edit]</button>
-                {showDelete && <button className="btn btn-sm" onClick={deleteWeight}>[delete]</button>}
+                <button className="btn btn-sm" onClick={() => setModal('weight-edit')}>Edit</button>
+                {showDelete && <button className="btn btn-sm btn-danger" onClick={deleteWeight}>Delete</button>}
               </>
             ) : (
-              <button className="btn btn-sm" onClick={() => setModal('weight-add')}>[+ add]</button>
+              <button className="btn btn-sm btn-primary" onClick={() => setModal('weight-add')}>+ Add</button>
             )}
           </div>
         </div>
@@ -94,11 +94,11 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
           <div className="btn-actions">
             {nutritionEntry && (
               <>
-                <button className="btn btn-sm" onClick={() => setModal('dayinfo')}>[edit day info]</button>
-                {showDelete && <button className="btn btn-sm" onClick={deleteNutritionDay}>[delete day]</button>}
+                <button className="btn btn-sm" onClick={() => setModal('dayinfo')}>Edit Day</button>
+                {showDelete && <button className="btn btn-sm btn-danger" onClick={deleteNutritionDay}>Delete</button>}
               </>
             )}
-            <button className="btn btn-sm" onClick={openAddMeal}>[+ add meal]</button>
+            <button className="btn btn-sm btn-primary" onClick={openAddMeal}>+ Meal</button>
           </div>
         </div>
         {nutritionEntry ? (
@@ -115,7 +115,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
                       <span className="muted">{meal.calories} kcal / {meal.proteinGrams}g</span>
                       <button className="btn btn-sm"
                         onClick={() => { setMealLogId(nutritionEntry.id); setEditMeal(meal); setModal('meal'); }}>
-                        [edit]
+                        Edit
                       </button>
                     </div>
                   ))}
@@ -144,7 +144,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
           </span>
           <div className="btn-actions">
             {workoutEntry && !renamingSession && (
-              <button className="btn btn-sm" onClick={() => { setRenameValue(workoutEntry.sessionName ?? ''); setRenamingSession(true); }}>[rename]</button>
+              <button className="btn btn-sm" onClick={() => { setRenameValue(workoutEntry.sessionName ?? ''); setRenamingSession(true); }}>Rename</button>
             )}
             {renamingSession && (
               <>
@@ -158,14 +158,14 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
                   onKeyDown={e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') setRenamingSession(false); }}
                   autoFocus
                 />
-                <button className="btn btn-sm" onClick={submitRename}>[save]</button>
-                <button className="btn btn-sm" onClick={() => setRenamingSession(false)}>[x]</button>
+                <button className="btn btn-sm btn-primary" onClick={submitRename}>Save</button>
+                <button className="btn btn-sm" onClick={() => setRenamingSession(false)}>&times;</button>
               </>
             )}
             {showDelete && workoutEntry && (
-              <button className="btn btn-sm" onClick={deleteWorkoutSession}>[delete session]</button>
+              <button className="btn btn-sm btn-danger" onClick={deleteWorkoutSession}>Delete</button>
             )}
-            <button className="btn btn-sm" onClick={() => setModal('workout-add')}>[+ add]</button>
+            <button className="btn btn-sm btn-primary" onClick={() => setModal('workout-add')}>+ Add</button>
           </div>
         </div>
         {workoutEntry ? (
@@ -180,7 +180,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
                     )}
                     <button className="btn btn-sm" style={{ marginLeft: 'auto' }}
                       onClick={() => setEditExercise({ sessionId: workoutEntry.id, name: g.name, sets: g.sets })}>
-                      [edit]
+                      Edit
                     </button>
                   </div>
                   <div className="day-exercise-reps">

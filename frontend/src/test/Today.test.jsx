@@ -145,19 +145,19 @@ describe('Today — empty states', () => {
     expect(empties).toHaveLength(3);
   });
 
-  it('shows [+ add] buttons for weight and workout when nothing logged', () => {
+  it('shows + Add buttons for weight and workout when nothing logged', () => {
     setup();
     render(<Today />);
-    // Two "[+ add]" buttons: weight section and workout section
-    const addBtns = screen.getAllByRole('button', { name: '[+ add]' });
+    // Two "+ Add" buttons: weight section and workout section
+    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
     expect(addBtns.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('does NOT show [edit] or [delete] weight buttons when no weight entry', () => {
+  it('does NOT show Edit or Delete weight buttons when no weight entry', () => {
     setup();
     render(<Today />);
-    expect(screen.queryByRole('button', { name: /\[edit\]/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /\[delete\]/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Edit$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Delete$/i })).not.toBeInTheDocument();
   });
 
   it('shows "No entry for today" in workout section when no workout logged', () => {
@@ -184,18 +184,18 @@ describe('Today — weight display', () => {
     expect(screen.getByText('185 lbs')).toBeInTheDocument();
   });
 
-  it('shows [edit] and [delete] buttons when a weight entry exists', () => {
+  it('shows Edit and Delete buttons when a weight entry exists', () => {
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    expect(screen.getByRole('button', { name: /\[edit\]/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /\[delete\]/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Edit$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Delete$/i })).toBeInTheDocument();
   });
 
-  it('does NOT show [+ add] in weight section when weight already logged today', () => {
+  it('does NOT show + Add in weight section when weight already logged today', () => {
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    // Weight section's [+ add] is gone; only workout section still has one
-    const addBtns = screen.getAllByRole('button', { name: '[+ add]' });
+    // Weight section's + Add is gone; only workout section still has one
+    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
     expect(addBtns).toHaveLength(1); // workout section only
   });
 
@@ -247,11 +247,11 @@ describe('Today — workout display', () => {
     expect(screen.getByText(/session logged/i)).toBeInTheDocument();
   });
 
-  it('shows [edit] button for each exercise', () => {
+  it('shows Edit button for each exercise', () => {
     setup({ workouts: [WORKOUT_ENTRY] });
     render(<Today />);
-    // Two distinct exercises → two [edit] buttons
-    const editButtons = screen.getAllByRole('button', { name: /\[edit\]/i });
+    // Two distinct exercises → two Edit buttons
+    const editButtons = screen.getAllByRole('button', { name: /^Edit$/i });
     expect(editButtons.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -341,37 +341,37 @@ describe('Today — nutrition display', () => {
 // ── OPENS: clicking add/edit buttons opens the right modal ────────────────────
 
 describe('Today — opening modals', () => {
-  it('[+ add] weight button opens WeightModal', async () => {
+  it('+ Add weight button opens WeightModal', async () => {
     setup();
     render(<Today />);
-    // First [+ add] button is in the weight section (weight section comes before workout)
-    const addBtns = screen.getAllByRole('button', { name: '[+ add]' });
+    // First + Add button is in the weight section (weight section comes before workout)
+    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
     await userEvent.click(addBtns[0]);
     expect(screen.getByTestId('weight-modal')).toBeInTheDocument();
   });
 
-  it('[edit] weight button opens WeightModal with the existing entry', async () => {
+  it('Edit weight button opens WeightModal with the existing entry', async () => {
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    await userEvent.click(screen.getByRole('button', { name: /\[edit\]/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^Edit$/i }));
     const modal = screen.getByTestId('weight-modal');
     expect(modal).toBeInTheDocument();
     expect(modal.dataset.existingId).toBe('1');
   });
 
-  it('[+ add] workout button opens WorkoutBuilderModal', async () => {
-    // With a weight entry logged, only the workout section's [+ add] remains
+  it('+ Add workout button opens WorkoutBuilderModal', async () => {
+    // With a weight entry logged, only the workout section's + Add remains
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    await userEvent.click(screen.getByRole('button', { name: '[+ add]' }));
+    await userEvent.click(screen.getByRole('button', { name: /^\+ Add$/i }));
     expect(screen.getByTestId('workout-modal')).toBeInTheDocument();
   });
 
-  it('exercise [edit] button opens EditExerciseModal with correct exercise name', async () => {
+  it('exercise Edit button opens EditExerciseModal with correct exercise name', async () => {
     setup({ workouts: [WORKOUT_ENTRY] });
     render(<Today />);
-    // Click the [edit] button next to "Bench Press"
-    const editButtons = screen.getAllByRole('button', { name: /\[edit\]/i });
+    // Click the Edit button next to "Bench Press"
+    const editButtons = screen.getAllByRole('button', { name: /^Edit$/i });
     await userEvent.click(editButtons[0]);
     const modal = screen.getByTestId('edit-exercise-modal');
     expect(modal).toBeInTheDocument();
@@ -379,16 +379,16 @@ describe('Today — opening modals', () => {
     expect(modal.dataset.session).toBe('10');
   });
 
-  it('[edit day info] opens DayInfoModal with the existing nutrition entry', async () => {
+  it('Edit Day opens DayInfoModal with the existing nutrition entry', async () => {
     setup({ nutrition: [NUTRITION_ENTRY] });
     render(<Today />);
-    await userEvent.click(screen.getByRole('button', { name: /edit day info/i }));
+    await userEvent.click(screen.getByRole('button', { name: /edit day/i }));
     const modal = screen.getByTestId('dayinfo-modal');
     expect(modal).toBeInTheDocument();
     expect(modal.dataset.existingId).toBe('5');
   });
 
-  it('[+ add meal] opens MealModal when a nutrition log already exists', async () => {
+  it('+ Add Meal opens MealModal when a nutrition log already exists', async () => {
     setup({ nutrition: [NUTRITION_ENTRY] });
     render(<Today />);
     await userEvent.click(screen.getByRole('button', { name: /\+ add meal/i }));
@@ -397,7 +397,7 @@ describe('Today — opening modals', () => {
     expect(modal.dataset.logId).toBe('5');
   });
 
-  it('[+ add meal] creates a nutrition day log first when none exists', async () => {
+  it('+ Add Meal creates a nutrition day log first when none exists', async () => {
     api.post.mockResolvedValue({ data: { id: 99 } });
     setup();
     render(<Today />);
@@ -409,10 +409,10 @@ describe('Today — opening modals', () => {
     expect(screen.getByTestId('meal-modal').dataset.logId).toBe('99');
   });
 
-  it('meal [edit] button opens MealModal with the meal pre-filled', async () => {
+  it('meal Edit button opens MealModal with the meal pre-filled', async () => {
     setup({ nutrition: [NUTRITION_ENTRY] });
     render(<Today />);
-    const editButtons = screen.getAllByRole('button', { name: /\[edit\]/i });
+    const editButtons = screen.getAllByRole('button', { name: /^Edit$/i });
     // Exercise edit buttons come before meal edit buttons; get the last two (meals)
     const mealEditBtn = editButtons[editButtons.length - 1];
     await userEvent.click(mealEditBtn);
@@ -424,8 +424,8 @@ describe('Today — opening modals', () => {
   it('closing a modal removes it from the page', async () => {
     setup();
     render(<Today />);
-    // Click the first [+ add] (weight section) to open WeightModal
-    const addBtns = screen.getAllByRole('button', { name: '[+ add]' });
+    // Click the first + Add (weight section) to open WeightModal
+    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
     await userEvent.click(addBtns[0]);
     expect(screen.getByTestId('weight-modal')).toBeInTheDocument();
 
@@ -437,12 +437,12 @@ describe('Today — opening modals', () => {
 // ── ACTION: delete and rename call the API and trigger refetch ────────────────
 
 describe('Today — delete actions', () => {
-  it('[delete] weight calls DELETE /weight/{id} and refetches weight', async () => {
+  it('Delete weight calls DELETE /weight/{id} and refetches weight', async () => {
     api.delete.mockResolvedValue({});
     const { refetchWeight } = setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
 
-    await userEvent.click(screen.getByRole('button', { name: /\[delete\]/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^Delete$/i }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/weight/1');
@@ -450,12 +450,14 @@ describe('Today — delete actions', () => {
     });
   });
 
-  it('[delete session] calls DELETE /workouts/{id} and refetches workouts', async () => {
+  it('Delete session calls DELETE /workouts/{id} and refetches workouts', async () => {
     api.delete.mockResolvedValue({});
     const { refetchWorkouts } = setup({ workouts: [WORKOUT_ENTRY] });
     render(<Today />);
 
-    await userEvent.click(screen.getByRole('button', { name: /delete session/i }));
+    // The workout section has a Delete button for the session
+    const deleteBtns = screen.getAllByRole('button', { name: /^Delete$/i });
+    await userEvent.click(deleteBtns[0]);
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/workouts/10');
@@ -463,12 +465,14 @@ describe('Today — delete actions', () => {
     });
   });
 
-  it('[delete day] calls DELETE /nutrition/{id} and refetches nutrition', async () => {
+  it('Delete day calls DELETE /nutrition/{id} and refetches nutrition', async () => {
     api.delete.mockResolvedValue({});
     const { refetchNutrition } = setup({ nutrition: [NUTRITION_ENTRY] });
     render(<Today />);
 
-    await userEvent.click(screen.getByRole('button', { name: /delete day/i }));
+    // The nutrition section has a Delete button
+    const deleteBtns = screen.getAllByRole('button', { name: /^Delete$/i });
+    await userEvent.click(deleteBtns[0]);
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/nutrition/5');
@@ -496,23 +500,23 @@ describe('Today — delete actions', () => {
 // ── ACTION: rename session ────────────────────────────────────────────────────
 
 describe('Today — rename workout session', () => {
-  it('[rename] button shows a text input and save/cancel', async () => {
+  it('Rename button shows a text input and save/cancel', async () => {
     setup({ workouts: [WORKOUT_ENTRY] });
     render(<Today />);
     await userEvent.click(screen.getByRole('button', { name: /rename/i }));
     expect(screen.getByPlaceholderText(/session name/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /\[save\]/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Save$/i })).toBeInTheDocument();
   });
 
-  it('[x] cancel button hides the rename input', async () => {
+  it('× cancel button hides the rename input', async () => {
     setup({ workouts: [WORKOUT_ENTRY] });
     render(<Today />);
     await userEvent.click(screen.getByRole('button', { name: /rename/i }));
-    await userEvent.click(screen.getByRole('button', { name: /\[x\]/i }));
+    await userEvent.click(screen.getByRole('button', { name: /×/ }));
     expect(screen.queryByPlaceholderText(/session name/i)).not.toBeInTheDocument();
   });
 
-  it('[save] calls PATCH /workouts/{id}/name with the new name', async () => {
+  it('Save calls PATCH /workouts/{id}/name with the new name', async () => {
     api.patch.mockResolvedValue({});
     const { refetchWorkouts } = setup({ workouts: [WORKOUT_ENTRY] });
     render(<Today />);
@@ -521,7 +525,7 @@ describe('Today — rename workout session', () => {
     const input = screen.getByPlaceholderText(/session name/i);
     await userEvent.clear(input);
     await userEvent.type(input, 'Chest Day');
-    await userEvent.click(screen.getByRole('button', { name: /\[save\]/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^Save$/i }));
 
     await waitFor(() => {
       expect(api.patch).toHaveBeenCalledWith('/workouts/10/name', { sessionName: 'Chest Day' });

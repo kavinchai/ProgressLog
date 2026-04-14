@@ -19,7 +19,7 @@ describe('Modal', () => {
   it('calls onClose when the X button is clicked', async () => {
     const onClose = vi.fn();
     render(<Modal title="Title" onClose={onClose}><p>content</p></Modal>);
-    await userEvent.click(screen.getByRole('button', { name: /x/i }));
+    await userEvent.click(screen.getByRole('button', { name: /close/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

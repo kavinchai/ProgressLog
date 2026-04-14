@@ -62,10 +62,10 @@ function WeightLineChart({ days, weights }) {
         <Line
           type="linear"
           dataKey="weight"
-          stroke="var(--fg)"
+          stroke="var(--accent)"
           strokeWidth={1.5}
-          dot={{ r: 3, fill: 'var(--fg)', strokeWidth: 0 }}
-          activeDot={{ r: 4, fill: 'var(--fg)', strokeWidth: 0 }}
+          dot={{ r: 3, fill: 'var(--accent)', strokeWidth: 0 }}
+          activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }}
           connectNulls={false}
         />
       </LineChart>
