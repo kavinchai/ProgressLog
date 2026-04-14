@@ -1,5 +1,5 @@
 .templates-page {
-  max-width: 640px;
+  max-width: 680px;
   width: 100%;
 }
 
@@ -8,28 +8,30 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
 }
 
 .templates-header-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
   align-items: flex-start;
 }
 
 .templates-error {
   font-size: var(--fs-sm);
-  color: var(--fg);
-  border-left: 2px solid var(--border);
-  padding-left: 8px;
-  margin-bottom: 16px;
+  color: var(--danger);
+  background: var(--danger-light);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-bottom: var(--space-md);
 }
 
 .templates-title {
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
   margin-bottom: 4px;
 }
 
@@ -41,12 +43,14 @@
 .templates-empty {
   font-size: var(--fs-sm);
   color: var(--muted);
+  padding: var(--space-lg);
+  text-align: center;
 }
 
 .templates-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .template-card {
@@ -54,8 +58,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-xs);
+  transition: box-shadow var(--transition-fast);
+}
+
+.template-card:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 .template-card-body {
@@ -66,7 +78,7 @@
 }
 
 .template-card-name {
-  font-weight: 700;
+  font-weight: var(--fw-semibold);
   font-size: var(--fs);
 }
 
@@ -82,4 +94,30 @@
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .templates-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .templates-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .template-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .template-card-exercises {
+    white-space: normal;
+  }
+
+  .template-card-actions {
+    justify-content: flex-end;
+  }
 }

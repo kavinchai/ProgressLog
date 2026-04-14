@@ -121,7 +121,7 @@ describe('Templates page — delete', () => {
     const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
     await userEvent.click(deleteButtons[0]);
 
-    expect(screen.getByText('[…]')).toBeInTheDocument();
+    expect(screen.getByText('...')).toBeInTheDocument();
     resolveDelete({});
   });
 });

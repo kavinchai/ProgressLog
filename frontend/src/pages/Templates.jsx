@@ -72,10 +72,10 @@ export default function Templates() {
           <p className="templates-sub">Saved workout templates you can load when logging</p>
         </div>
         <div className="templates-header-actions">
-          <button className="btn btn-sm" onClick={() => setShowNew(true)}>[+ new]</button>
-          <button className="btn btn-sm" onClick={handleExport} disabled={list.length === 0}>[export]</button>
+          <button className="btn btn-sm btn-primary" onClick={() => setShowNew(true)}>+ New</button>
+          <button className="btn btn-sm" onClick={handleExport} disabled={list.length === 0}>Export</button>
           <button className="btn btn-sm" onClick={() => fileInputRef.current?.click()} disabled={importing}>
-            {importing ? '[importing…]' : '[import]'}
+            {importing ? 'Importing...' : 'Import'}
           </button>
           <input
             ref={fileInputRef}
@@ -109,14 +109,14 @@ export default function Templates() {
                 </span>
               </div>
               <div className="template-card-actions">
-                <button className="btn btn-sm" onClick={() => setUseTemplate(t)}>[use]</button>
-                <button className="btn btn-sm" onClick={() => setEditTemplate(t)}>[edit]</button>
+                <button className="btn btn-sm btn-primary" onClick={() => setUseTemplate(t)}>Use</button>
+                <button className="btn btn-sm" onClick={() => setEditTemplate(t)}>Edit</button>
                 <button
-                  className="btn btn-sm"
+                  className="btn btn-sm btn-danger"
                   onClick={() => handleDelete(t)}
                   disabled={deleting === t.id}
                 >
-                  {deleting === t.id ? '[…]' : '[delete]'}
+                  {deleting === t.id ? '...' : 'Delete'}
                 </button>
               </div>
             </div>

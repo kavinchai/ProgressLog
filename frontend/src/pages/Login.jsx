@@ -5,7 +5,7 @@ import "./Login.css";
 
 export default function Login() {
 	const login = useAuthStore((state) => state.login);
-	const [mode, setMode] = useState("login"); // 'login' | 'signup'
+	const [mode, setMode] = useState("login");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [email, setEmail] = useState("");
@@ -51,16 +51,20 @@ export default function Login() {
 		<div className="login-page">
 			<div className="login-card">
 				<div className="login-inner">
-					<div className="login-title">| fit track |</div>
+					<div className="login-title">FitTrack</div>
+					<div className="login-divider">
+						{isSignup ? "Create your account" : "Welcome back"}
+					</div>
 					<form className="login-form" onSubmit={handleSubmit}>
-						{error && <div className="login-error">! {error}</div>}
+						{error && <div className="login-error">{error}</div>}
 
 						<div className="login-field">
-							<label htmlFor="username">username:</label>
+							<label htmlFor="username">Username</label>
 							<input
 								id="username"
 								type="text"
 								className="login-input"
+								placeholder="Enter your username"
 								value={username}
 								onChange={(e) => setUsername(e.target.value)}
 								required
@@ -70,11 +74,12 @@ export default function Login() {
 
 						{isSignup && (
 							<div className="login-field">
-								<label htmlFor="email">email:</label>
+								<label htmlFor="email">Email</label>
 								<input
 									id="email"
 									type="email"
 									className="login-input"
+									placeholder="you@example.com"
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									required
@@ -84,11 +89,12 @@ export default function Login() {
 						)}
 
 						<div className="login-field">
-							<label htmlFor="password">password:</label>
+							<label htmlFor="password">Password</label>
 							<input
 								id="password"
 								type="password"
 								className="login-input"
+								placeholder="Enter your password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 								required
@@ -99,18 +105,18 @@ export default function Login() {
 						<button className="login-btn" type="submit" disabled={loading}>
 							{loading
 								? isSignup
-									? "| signing up... |"
-									: "| logging in... |"
+									? "Creating account..."
+									: "Signing in..."
 								: isSignup
-									? "|   sign up   |"
-									: "|   log in   |"}
+									? "Create Account"
+									: "Sign In"}
 						</button>
 					</form>
 
 					<button className="login-switch-btn" onClick={switchMode}>
 						{isSignup
-							? "already have an account? log in"
-							: "don't have an account? sign up"}
+							? "Already have an account? Sign in"
+							: "Don't have an account? Sign up"}
 					</button>
 				</div>
 			</div>

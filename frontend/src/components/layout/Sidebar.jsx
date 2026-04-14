@@ -4,12 +4,12 @@ import useTheme from '../../hooks/useTheme';
 import './Sidebar.css';
 
 const navItems = [
-  { to: '/today',     label: 'Today'        },
-  { to: '/weekly',    label: 'Weekly Stats' },
-  { to: '/total',     label: 'Total Stats'  },
-  { to: '/strength',  label: 'Strength'     },
-  { to: '/templates', label: 'Templates'    },
-  { to: '/settings',  label: 'Settings'     },
+  { to: '/today',     label: 'Today',        icon: '~' },
+  { to: '/weekly',    label: 'Weekly Stats',  icon: '~' },
+  { to: '/total',     label: 'Total Stats',   icon: '~' },
+  { to: '/strength',  label: 'Strength',      icon: '~' },
+  { to: '/templates', label: 'Templates',     icon: '~' },
+  { to: '/settings',  label: 'Settings',      icon: '~' },
 ];
 
 export default function Sidebar() {
@@ -20,7 +20,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <span>[ FITTRACK ]</span>
+        FitTrack
       </div>
 
       <nav className="sidebar-nav">
@@ -30,22 +30,20 @@ export default function Sidebar() {
             to={to}
             className={({ isActive }) => 'sidebar-link' + (isActive ? ' active' : '')}
           >
-            {({ isActive }) => (
-              <span>{isActive ? '> ' : '  '}{label}</span>
-            )}
+            {label}
           </NavLink>
         ))}
       </nav>
 
       <div className="sidebar-footer">
         <button className="sidebar-darkmode" onClick={() => setDark((d) => !d)}>
-          {dark ? '[light mode]' : '[dark mode]'}
+          {dark ? 'Light Mode' : 'Dark Mode'}
         </button>
         <div className="sidebar-user">
           <span className="muted">{username ?? 'user'}</span>
         </div>
-        <button className="btn btn-sm sidebar-logout" onClick={logout}>
-          [logout]
+        <button className="sidebar-logout" onClick={logout}>
+          Log out
         </button>
       </div>
     </aside>

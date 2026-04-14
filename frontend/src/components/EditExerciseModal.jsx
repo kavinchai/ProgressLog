@@ -97,19 +97,19 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
                 onChange={e => updateSet(setIndex, 'reps', e.target.value)}
               />
               <button type="button" className="btn btn-sm"
-                onClick={() => removeSet(setIndex)}>[x]</button>
+                onClick={() => removeSet(setIndex)}>&times;</button>
             </div>
           ))}
         </div>
 
         <button type="button" className="btn btn-sm wbm-add-set" onClick={addSet}>
-          [+ set]
+          + Set
         </button>
 
         <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
-          <button type="button" className="btn btn-sm" onClick={deleteExercise}
-            disabled={saving} style={{ color: 'var(--muted)' }}>
-            [delete exercise]
+          <button type="button" className="btn btn-sm btn-danger" onClick={deleteExercise}
+            disabled={saving}>
+            Delete Exercise
           </button>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>

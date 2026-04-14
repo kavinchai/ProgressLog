@@ -79,7 +79,7 @@ describe('Settings — goals form', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /save goals/i }));
 
-    await waitFor(() => expect(screen.getByText(/saved\./i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/saved!/i)).toBeInTheDocument());
   });
 
   it('shows hook error when saveGoals rejects', async () => {

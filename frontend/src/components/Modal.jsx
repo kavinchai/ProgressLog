@@ -12,8 +12,8 @@ export default function Modal({ title, onClose, children }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">[ {title} ]</span>
-          <button className="modal-close btn btn-sm" onClick={onClose}>X</button>
+          <span className="modal-title">{title}</span>
+          <button className="modal-close" onClick={onClose} aria-label="Close">&times;</button>
         </div>
         <div className="modal-body">
           {children}

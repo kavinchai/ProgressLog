@@ -70,7 +70,7 @@ describe('WorkoutBuilderModal — exercise management', () => {
     expect(screen.getByPlaceholderText(/exercise name/i)).toBeInTheDocument();
 
     // Two [x] buttons exist: exercise-level [x] (index 0) and set-level [x] (index 1)
-    const xButtons = screen.getAllByRole('button', { name: /\[x\]/i });
+    const xButtons = screen.getAllByRole('button', { name: /×/ });
     await userEvent.click(xButtons[0]); // exercise [x]
     expect(screen.queryByPlaceholderText(/exercise name/i)).not.toBeInTheDocument();
   });
@@ -80,12 +80,12 @@ describe('WorkoutBuilderModal — exercise management', () => {
     await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
 
     // 1 exercise [x] + 1 set [x] = 2 total
-    expect(screen.getAllByRole('button', { name: /\[x\]/i })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /×/ })).toHaveLength(2);
 
     await userEvent.click(screen.getByRole('button', { name: /\+ set/i }));
 
     // 1 exercise [x] + 2 set [x] = 3 total
-    expect(screen.getAllByRole('button', { name: /\[x\]/i })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: /×/ })).toHaveLength(3);
   });
 
   it('removing a set leaves the remaining sets renumbered from 1', async () => {
@@ -94,11 +94,11 @@ describe('WorkoutBuilderModal — exercise management', () => {
     await userEvent.click(screen.getByRole('button', { name: /\+ set/i })); // now 2 sets
 
     // Remove set 1 (the first set [x], which is index 1 after exercise [x])
-    const xButtons = screen.getAllByRole('button', { name: /\[x\]/i });
+    const xButtons = screen.getAllByRole('button', { name: /×/ });
     await userEvent.click(xButtons[1]); // remove set 1
 
     // Only one set remains, and it should be numbered 1
-    expect(screen.getAllByRole('button', { name: /\[x\]/i })).toHaveLength(2); // exercise + 1 set
+    expect(screen.getAllByRole('button', { name: /×/ })).toHaveLength(2); // exercise + 1 set
     expect(screen.getByText('1')).toBeInTheDocument(); // set number label
   });
 });

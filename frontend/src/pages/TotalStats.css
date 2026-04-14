@@ -1,5 +1,5 @@
 .total-page {
-  max-width: 800px;
+  max-width: 860px;
   width: 100%;
 }
 
@@ -8,7 +8,8 @@
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid var(--border-dim);
-  padding: 8px 14px;
+  padding: 10px 16px;
+  background: var(--bg);
 }
 
 .export-bar-btns {
@@ -23,21 +24,23 @@
   gap: 12px;
   border-top: 1px solid var(--border-dim);
   border-bottom: 1px solid var(--border-dim);
-  padding: 8px 14px;
+  padding: 10px 16px;
+  background: var(--bg);
 }
 
 .month-nav-label {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .month-picker {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--border-dim);
+  background: var(--bg);
 }
 
 .range-selector {
@@ -46,6 +49,33 @@
 }
 
 .range-active {
-  background: var(--fg);
-  color: var(--bg);
+  background: var(--accent) !important;
+  color: var(--accent-fg) !important;
+  border-color: var(--accent) !important;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .export-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .export-bar-btns {
+    flex-wrap: wrap;
+  }
+
+  .month-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .month-picker {
+    gap: 4px;
+    padding: 8px 12px;
+  }
+
+  .range-selector {
+    flex-wrap: wrap;
+  }
 }
