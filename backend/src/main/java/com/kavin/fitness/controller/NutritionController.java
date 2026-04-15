@@ -3,8 +3,6 @@ package com.kavin.fitness.controller;
 import com.kavin.fitness.dto.MealRequest;
 import com.kavin.fitness.dto.NutritionLogDTO;
 import com.kavin.fitness.dto.NutritionLogRequest;
-import com.kavin.fitness.model.User;
-import com.kavin.fitness.repository.UserRepository;
 import com.kavin.fitness.service.NutritionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +19,12 @@ import java.util.List;
 public class NutritionController {
 
     @Autowired private NutritionService nutritionService;
-    @Autowired private UserRepository   userRepository;
+    @Autowired private UserResolver     userResolver;
 
     @GetMapping
     public ResponseEntity<List<NutritionLogDTO>> getNutritionLog(
             @AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(nutritionService.getNutritionLog(resolveUser(principal).getId()));
+        return ResponseEntity.ok(nutritionService.getNutritionLog(userResolver.resolve(principal).getId()));
     }
 
     /** Create or update the day log (dayType + steps). */
@@ -34,7 +32,7 @@ public class NutritionController {
     public ResponseEntity<NutritionLogDTO> upsertLog(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody NutritionLogRequest request) {
-        NutritionLogDTO dto = nutritionService.upsertLog(resolveUser(principal), request);
+        NutritionLogDTO dto = nutritionService.upsertLog(userResolver.resolve(principal), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
@@ -43,7 +41,7 @@ public class NutritionController {
     public ResponseEntity<Void> deleteLog(
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long logId) {
-        nutritionService.deleteLog(logId, resolveUser(principal).getId());
+        nutritionService.deleteLog(logId, userResolver.resolve(principal).getId());
         return ResponseEntity.noContent().build();
     }
 
@@ -54,7 +52,7 @@ public class NutritionController {
             @PathVariable Long logId,
             @Valid @RequestBody MealRequest request) {
         NutritionLogDTO dto = nutritionService.addMeal(
-                logId, resolveUser(principal).getId(), request);
+                logId, userResolver.resolve(principal).getId(), request);
         return ResponseEntity.ok(dto);
     }
 
@@ -66,7 +64,7 @@ public class NutritionController {
             @PathVariable Long mealId,
             @Valid @RequestBody MealRequest request) {
         NutritionLogDTO dto = nutritionService.updateMeal(
-                logId, mealId, resolveUser(principal).getId(), request);
+                logId, mealId, userResolver.resolve(principal).getId(), request);
         return ResponseEntity.ok(dto);
     }
 
@@ -76,12 +74,8 @@ public class NutritionController {
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long logId,
             @PathVariable Long mealId) {
-        nutritionService.deleteMeal(logId, mealId, resolveUser(principal).getId());
+        nutritionService.deleteMeal(logId, mealId, userResolver.resolve(principal).getId());
         return ResponseEntity.noContent().build();
     }
 
-    private User resolveUser(UserDetails principal) {
-        return userRepository.findByUsername(principal.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-    }
 }

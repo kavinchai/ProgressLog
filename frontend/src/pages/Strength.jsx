@@ -5,15 +5,8 @@ import {
 } from 'recharts';
 import api from '../api';
 import { formatDate } from '../utils/date';
+import { CHART_COLORS } from '../utils/constants';
 import './Strength.css';
-
-const CHART_COLORS = [
-  'var(--color-primary)',
-  'var(--color-success)',
-  'var(--color-warning)',
-  'var(--color-info)',
-  'var(--color-gold)',
-];
 
 
 function LiftChart({ data, color }) {

@@ -2,8 +2,8 @@ package com.kavin.fitness.controller;
 
 import com.kavin.fitness.dto.WorkoutTemplateDTO;
 import com.kavin.fitness.dto.WorkoutTemplateRequest;
-import com.kavin.fitness.model.User;
-import com.kavin.fitness.repository.UserRepository;
+
+
 import com.kavin.fitness.service.WorkoutTemplateService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,19 +20,19 @@ import java.util.List;
 public class WorkoutTemplateController {
 
     @Autowired private WorkoutTemplateService templateService;
-    @Autowired private UserRepository userRepository;
+    @Autowired private UserResolver userResolver;
 
     @GetMapping
     public ResponseEntity<List<WorkoutTemplateDTO>> getTemplates(
             @AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(templateService.getTemplates(resolveUser(principal).getId()));
+        return ResponseEntity.ok(templateService.getTemplates(userResolver.resolve(principal).getId()));
     }
 
     @PostMapping
     public ResponseEntity<WorkoutTemplateDTO> createTemplate(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody WorkoutTemplateRequest request) {
-        WorkoutTemplateDTO created = templateService.create(resolveUser(principal), request);
+        WorkoutTemplateDTO created = templateService.create(userResolver.resolve(principal), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -42,7 +42,7 @@ public class WorkoutTemplateController {
             @PathVariable Long templateId,
             @Valid @RequestBody WorkoutTemplateRequest request) {
         WorkoutTemplateDTO updated = templateService.update(
-                templateId, resolveUser(principal).getId(), request);
+                templateId, userResolver.resolve(principal).getId(), request);
         return ResponseEntity.ok(updated);
     }
 
@@ -50,7 +50,7 @@ public class WorkoutTemplateController {
     public ResponseEntity<List<WorkoutTemplateDTO>> importTemplates(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody List<WorkoutTemplateRequest> requests) {
-        List<WorkoutTemplateDTO> imported = templateService.importAll(resolveUser(principal), requests);
+        List<WorkoutTemplateDTO> imported = templateService.importAll(userResolver.resolve(principal), requests);
         return ResponseEntity.status(HttpStatus.CREATED).body(imported);
     }
 
@@ -58,12 +58,8 @@ public class WorkoutTemplateController {
     public ResponseEntity<Void> deleteTemplate(
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long templateId) {
-        templateService.delete(templateId, resolveUser(principal).getId());
+        templateService.delete(templateId, userResolver.resolve(principal).getId());
         return ResponseEntity.noContent().build();
     }
 
-    private User resolveUser(UserDetails principal) {
-        return userRepository.findByUsername(principal.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-    }
 }

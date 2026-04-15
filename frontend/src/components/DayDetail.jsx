@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import api from '../api';
+import { useDayActions } from '../hooks/useDayActions';
 import WeightModal from './WeightModal';
 import DayInfoModal from './DayInfoModal';
 import MealModal from './MealModal';
@@ -8,12 +8,15 @@ import EditExerciseModal from './EditExerciseModal';
 import { groupByExercise } from '../utils/workout';
 
 export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo, showDelete = true }) {
-  const [modal,           setModal]           = useState(null);
-  const [editMeal,        setEditMeal]        = useState(null);
-  const [mealLogId,       setMealLogId]       = useState(null);
-  const [editExercise,    setEditExercise]    = useState(null);
-  const [renamingSession, setRenamingSession] = useState(false);
-  const [renameValue,     setRenameValue]     = useState('');
+  const [modal,        setModal]        = useState(null);
+  const [editMeal,     setEditMeal]     = useState(null);
+  const [mealLogId,    setMealLogId]    = useState(null);
+  const [editExercise, setEditExercise] = useState(null);
+
+  const {
+    renamingSession, setRenamingSession, renameValue, setRenameValue,
+    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, getOrCreateNutritionLogId,
+  } = useDayActions({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo });
 
   const exerciseGroups = workoutEntry?.exerciseSets?.length
     ? groupByExercise(workoutEntry.exerciseSets)
@@ -23,42 +26,8 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
 
   function close() { setModal(null); }
 
-  async function deleteWeight() {
-    if (!weightEntry) return;
-    try { await api.delete(`/weight/${weightEntry.id}`); onRefetchW(); }
-    catch { /* ignore */ }
-  }
-
-  async function deleteNutritionDay() {
-    if (!nutritionEntry) return;
-    try { await api.delete(`/nutrition/${nutritionEntry.id}`); onRefetchN(); }
-    catch { /* ignore */ }
-  }
-
-  async function deleteWorkoutSession() {
-    if (!workoutEntry) return;
-    try { await api.delete(`/workouts/${workoutEntry.id}`); onRefetchWo(); }
-    catch { /* ignore */ }
-  }
-
-  async function submitRename() {
-    if (!workoutEntry) return;
-    try {
-      await api.patch(`/workouts/${workoutEntry.id}/name`, { sessionName: renameValue.trim() || null });
-      onRefetchWo();
-    } catch { /* ignore */ }
-    setRenamingSession(false);
-  }
-
   async function openAddMeal() {
-    let logId = nutritionEntry?.id;
-    if (!logId) {
-      try {
-        const res = await api.post('/nutrition', { logDate: date, dayType: 'training', steps: null });
-        logId = res.data?.id;
-        onRefetchN();
-      } catch { /* ignore */ }
-    }
+    const logId = await getOrCreateNutritionLogId();
     setMealLogId(logId);
     setEditMeal(null);
     setModal('meal');

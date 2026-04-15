@@ -1,73 +1,16 @@
 import { useState, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 import api from '../api';
 import useWeightLog from '../hooks/useWeightLog';
 import useNutrition from '../hooks/useNutrition';
 import useWorkouts  from '../hooks/useWorkouts';
 import DayDetail from '../components/DayDetail';
+import WeightLineChart from '../components/WeightLineChart';
 import { groupByExercise } from '../utils/workout';
 import { localDateStr, formatDateShort as formatDate, avg } from '../utils/date';
+import { buildDayRows } from '../utils/stats';
 import './WeeklyStats.css';
 import './TotalStats.css';
-
-// ── Weight line chart ─────────────────────────────────────────────────────────
-
-function WeightTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="chart-tooltip">
-      <div className="chart-tooltip-label">{label}</div>
-      <div className="chart-tooltip-value">{payload[0].value} lbs</div>
-    </div>
-  );
-}
-
-function WeightLineChart({ dates, weights }) {
-  const data = dates.map((date, i) => ({ label: formatDate(date), weight: weights[i] }))
-    .filter(d => d.weight != null);
-  if (!data.length) return null;
-  const vals   = data.map(d => d.weight);
-  const minVal = Math.min(...vals);
-  const maxVal = Math.max(...vals);
-  const pad    = (maxVal - minVal) * 0.15 || 2;
-
-  const tickInterval = data.length > 20 ? Math.floor(data.length / 10) : 0;
-  const isMobile = window.innerWidth <= 640;
-
-  return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-        <CartesianGrid strokeDasharray="2 4" stroke="var(--border-dim)" vertical={false} />
-        <XAxis
-          dataKey="label"
-          interval={tickInterval}
-          tick={isMobile ? false : { fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
-          axisLine={{ stroke: 'var(--border-dim)' }}
-          tickLine={false}
-        />
-        <YAxis
-          domain={[minVal - pad, maxVal + pad]}
-          tickFormatter={v => parseFloat(v).toFixed(2)}
-          tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
-          axisLine={false}
-          tickLine={false}
-          width={48}
-        />
-        <Tooltip content={<WeightTooltip />} />
-        <Line
-          type="linear"
-          dataKey="weight"
-          stroke="var(--accent)"
-          strokeWidth={1.5}
-          dot={{ r: 3, fill: 'var(--accent)', strokeWidth: 0 }}
-          activeDot={{ r: 4, fill: 'var(--accent)', strokeWidth: 0 }}
-          connectNulls={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -101,23 +44,7 @@ export default function TotalStats() {
     ...workoutData.map(x => x.sessionDate),
   ])].sort((a, b) => b.localeCompare(a));
 
-  const rows = allDates.map(date => {
-    const weightEntry    = weightData.find(x => x.logDate === date);
-    const nutritionEntry = nutritionData.find(x => x.logDate === date);
-    const workoutEntry   = workoutData.find(x => x.sessionDate === date);
-    return {
-      date,
-      weightEntry, nutritionEntry, workoutEntry,
-      weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)       : null,
-      calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)   : null,
-      protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)   : null,
-      workout:  workoutEntry   ? (workoutEntry.sessionName
-        ? workoutEntry.sessionName
-        : workoutEntry.exerciseSets?.length > 0
-          ? new Set(workoutEntry.exerciseSets.map(s => s.exerciseName)).size + ' exercises'
-          : 'logged') : null,
-    };
-  });
+  const rows = buildDayRows(allDates, weightData, nutritionData, workoutData);
 
   const cutoff = RANGE_DAYS[rangeKey] === Infinity
     ? null
@@ -435,7 +362,7 @@ export default function TotalStats() {
             </div>
           </div>
           <div className="section-body">
-            <WeightLineChart dates={weightBarDates} weights={weightBarWeights} />
+            <WeightLineChart data={weightBarDates.map((date, i) => ({ label: formatDate(date), weight: weightBarWeights[i] }))} height={220} />
           </div>
         </div>
       )}

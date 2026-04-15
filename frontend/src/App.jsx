@@ -35,13 +35,6 @@ function AppLayout({ children }) {
 export default function App() {
   const token = useAuthStore((state) => state.token);
 
-  useEffect(() => {
-    if (token) {
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    }
-  }, [token]);
-
   if (!token) {
     return (
       <BrowserRouter>
