@@ -21,13 +21,14 @@ import java.util.Map;
 @RequestMapping("/api/profile")
 public class ProfileController {
 
-    @Autowired private UserRepository userRepository;
+    @Autowired private UserRepository  userRepository;
     @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private JwtUtil jwtUtil;
+    @Autowired private JwtUtil         jwtUtil;
+    @Autowired private UserResolver    userResolver;
 
     @GetMapping("/goals")
     public ResponseEntity<UserGoalsDTO> getGoals(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails);
+        User user = userResolver.resolve(userDetails);
 
         return ResponseEntity.ok(new UserGoalsDTO(
                 user.getCalorieTargetTraining(),
@@ -41,7 +42,7 @@ public class ProfileController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UserGoalsDTO dto) {
 
-        User user = resolveUser(userDetails);
+        User user = userResolver.resolve(userDetails);
 
         user.setCalorieTargetTraining(dto.getCalorieTargetTraining());
         user.setCalorieTargetRest(dto.getCalorieTargetRest());
@@ -53,7 +54,7 @@ public class ProfileController {
 
     @GetMapping("/email")
     public ResponseEntity<Map<String, String>> getEmail(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails);
+        User user = userResolver.resolve(userDetails);
         return ResponseEntity.ok(Map.of("email", user.getEmail() != null ? user.getEmail() : ""));
     }
 
@@ -67,7 +68,7 @@ public class ProfileController {
             throw new IllegalArgumentException("Invalid email address.");
         }
 
-        User user = resolveUser(userDetails);
+        User user = userResolver.resolve(userDetails);
 
         user.setEmail(email.trim());
         userRepository.save(user);
@@ -79,7 +80,7 @@ public class ProfileController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody Map<String, String> body) {
 
-        User user = resolveUser(userDetails);
+        User user = userResolver.resolve(userDetails);
 
         if (!passwordEncoder.matches(body.get("password"), user.getPassword())) {
             throw new BadCredentialsException("Incorrect password.");
@@ -93,7 +94,7 @@ public class ProfileController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UpdateCredentialsRequest dto) {
 
-        User user = resolveUser(userDetails);
+        User user = userResolver.resolve(userDetails);
 
         if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
             throw new BadCredentialsException("Current password is incorrect.");
@@ -117,8 +118,4 @@ public class ProfileController {
         return ResponseEntity.ok(new CredentialsUpdateResponse(token, user.getUsername()));
     }
 
-    private User resolveUser(UserDetails principal) {
-        return userRepository.findByUsername(principal.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-    }
 }

@@ -6,6 +6,7 @@ import useWorkouts    from '../hooks/useWorkouts';
 import useUserProfile from '../hooks/useUserProfile';
 import useTemplates   from '../hooks/useTemplates';
 import usePRs         from '../hooks/usePRs';
+import { useDayActions } from '../hooks/useDayActions';
 import WeightModal         from '../components/WeightModal';
 import DayInfoModal        from '../components/DayInfoModal';
 import MealModal           from '../components/MealModal';
@@ -88,8 +89,6 @@ export default function Today() {
   const [showPRHistory,   setShowPRHistory]    = useState(false);
   const [editingEntry,    setEditingEntry]     = useState(null);
   const [editExercise,    setEditExercise]     = useState(null);
-  const [renamingSession, setRenamingSession]  = useState(false);
-  const [renameValue,     setRenameValue]      = useState('');
   const [editMeal,        setEditMeal]         = useState(null);
   const [mealLogId,       setMealLogId]        = useState(null);
   const [prefillExercises,setPrefillExercises] = useState(null);
@@ -99,6 +98,19 @@ export default function Today() {
   const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
   const todayWorkoutEntry   = workoutData.find(w => w.sessionDate === TODAY);
   const todayNutritionEntry = nutritionData.find(n => n.logDate === TODAY);
+
+  const {
+    renamingSession, setRenamingSession, renameValue, setRenameValue,
+    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, getOrCreateNutritionLogId,
+  } = useDayActions({
+    date: TODAY,
+    weightEntry:    todayWeightEntry,
+    nutritionEntry: todayNutritionEntry,
+    workoutEntry:   todayWorkoutEntry,
+    onRefetchW:     refetchWeight,
+    onRefetchN:     refetchNutrition,
+    onRefetchWo:    refetchWorkouts,
+  });
 
   const exerciseGroups = todayWorkoutEntry?.exerciseSets?.length
     ? groupByExercise(todayWorkoutEntry.exerciseSets)
@@ -125,18 +137,6 @@ export default function Today() {
     setModal('workout');
   }
 
-  async function deleteWeight() {
-    if (!todayWeightEntry) return;
-    try { await api.delete(`/weight/${todayWeightEntry.id}`); refetchWeight(); }
-    catch { /* ignore */ }
-  }
-
-  async function deleteNutritionDay() {
-    if (!todayNutritionEntry) return;
-    try { await api.delete(`/nutrition/${todayNutritionEntry.id}`); refetchNutrition(); }
-    catch { /* ignore */ }
-  }
-
   async function toggleDayType() {
     const current = todayNutritionEntry?.dayType ?? 'training';
     const next    = current === 'training' ? 'rest' : 'training';
@@ -150,30 +150,8 @@ export default function Today() {
     } catch { /* ignore */ }
   }
 
-  async function deleteWorkoutSession() {
-    if (!todayWorkoutEntry) return;
-    try { await api.delete(`/workouts/${todayWorkoutEntry.id}`); refetchWorkouts(); }
-    catch { /* ignore */ }
-  }
-
-  async function submitRename() {
-    if (!todayWorkoutEntry) return;
-    try {
-      await api.patch(`/workouts/${todayWorkoutEntry.id}/name`, { sessionName: renameValue.trim() || null });
-      refetchWorkouts();
-    } catch { /* ignore */ }
-    setRenamingSession(false);
-  }
-
   async function openAddMeal() {
-    let logId = todayNutritionEntry?.id;
-    if (!logId) {
-      try {
-        const res = await api.post('/nutrition', { logDate: TODAY, dayType: 'training', steps: null });
-        logId = res.data?.id;
-        refetchNutrition();
-      } catch { /* ignore */ }
-    }
+    const logId = await getOrCreateNutritionLogId();
     setMealLogId(logId);
     setEditMeal(null);
     setModal('meal');

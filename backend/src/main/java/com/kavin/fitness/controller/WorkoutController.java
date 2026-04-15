@@ -3,8 +3,6 @@ package com.kavin.fitness.controller;
 import com.kavin.fitness.dto.ExerciseRequest;
 import com.kavin.fitness.dto.WorkoutSessionDTO;
 import com.kavin.fitness.dto.WorkoutSessionRequest;
-import com.kavin.fitness.model.User;
-import com.kavin.fitness.repository.UserRepository;
 import com.kavin.fitness.service.WorkoutService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,25 +19,25 @@ import java.util.List;
 public class WorkoutController {
 
     @Autowired private WorkoutService workoutService;
-    @Autowired private UserRepository userRepository;
+    @Autowired private UserResolver userResolver;
 
     @GetMapping("/exercise-names")
     public ResponseEntity<List<String>> getExerciseNames(
             @AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(workoutService.getDistinctExerciseNames(resolveUser(principal).getId()));
+        return ResponseEntity.ok(workoutService.getDistinctExerciseNames(userResolver.resolve(principal).getId()));
     }
 
     @GetMapping
     public ResponseEntity<List<WorkoutSessionDTO>> getWorkouts(
             @AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(workoutService.getWorkoutSessions(resolveUser(principal).getId()));
+        return ResponseEntity.ok(workoutService.getWorkoutSessions(userResolver.resolve(principal).getId()));
     }
 
     @PostMapping
     public ResponseEntity<WorkoutSessionDTO> logWorkout(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody WorkoutSessionRequest request) {
-        WorkoutSessionDTO saved = workoutService.save(resolveUser(principal), request);
+        WorkoutSessionDTO saved = workoutService.save(userResolver.resolve(principal), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -50,7 +48,7 @@ public class WorkoutController {
             @PathVariable Long sessionId,
             @RequestBody java.util.Map<String, String> body) {
         WorkoutSessionDTO dto = workoutService.renameSession(
-                sessionId, resolveUser(principal).getId(), body.get("sessionName"));
+                sessionId, userResolver.resolve(principal).getId(), body.get("sessionName"));
         return ResponseEntity.ok(dto);
     }
 
@@ -59,7 +57,7 @@ public class WorkoutController {
     public ResponseEntity<Void> deleteSession(
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long sessionId) {
-        workoutService.deleteSession(sessionId, resolveUser(principal).getId());
+        workoutService.deleteSession(sessionId, userResolver.resolve(principal).getId());
         return ResponseEntity.noContent().build();
     }
 
@@ -70,7 +68,7 @@ public class WorkoutController {
             @PathVariable Long sessionId,
             @Valid @RequestBody ExerciseRequest request) {
         WorkoutSessionDTO dto = workoutService.upsertExercise(
-                sessionId, resolveUser(principal).getId(), request);
+                sessionId, userResolver.resolve(principal).getId(), request);
         return ResponseEntity.ok(dto);
     }
 
@@ -80,12 +78,8 @@ public class WorkoutController {
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long sessionId,
             @RequestParam String name) {
-        workoutService.deleteExercise(sessionId, resolveUser(principal).getId(), name);
+        workoutService.deleteExercise(sessionId, userResolver.resolve(principal).getId(), name);
         return ResponseEntity.noContent().build();
     }
 
-    private User resolveUser(UserDetails principal) {
-        return userRepository.findByUsername(principal.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-    }
 }

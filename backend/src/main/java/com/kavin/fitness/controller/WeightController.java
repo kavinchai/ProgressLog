@@ -1,9 +1,9 @@
 package com.kavin.fitness.controller;
 
 import com.kavin.fitness.dto.WeightLogRequest;
-import com.kavin.fitness.model.User;
+
 import com.kavin.fitness.model.WeightLog;
-import com.kavin.fitness.repository.UserRepository;
+
 import com.kavin.fitness.service.WeightService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,19 +20,19 @@ import java.util.List;
 public class WeightController {
 
     @Autowired private WeightService weightService;
-    @Autowired private UserRepository userRepository;
+    @Autowired private UserResolver userResolver;
 
     @GetMapping
     public ResponseEntity<List<WeightLog>> getWeightLog(
             @AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(weightService.getWeightLog(resolveUser(principal).getId()));
+        return ResponseEntity.ok(weightService.getWeightLog(userResolver.resolve(principal).getId()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteWeight(
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long id) {
-        weightService.delete(id, resolveUser(principal).getId());
+        weightService.delete(id, userResolver.resolve(principal).getId());
         return ResponseEntity.noContent().build();
     }
 
@@ -40,12 +40,8 @@ public class WeightController {
     public ResponseEntity<WeightLog> logWeight(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody WeightLogRequest request) {
-        WeightLog saved = weightService.save(resolveUser(principal), request);
+        WeightLog saved = weightService.save(userResolver.resolve(principal), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    private User resolveUser(UserDetails principal) {
-        return userRepository.findByUsername(principal.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-    }
 }
