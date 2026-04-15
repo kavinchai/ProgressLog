@@ -28,7 +28,10 @@
       "Bash(npm run:*)",
       "Bash(./mvnw test:*)",
       "Bash(ls c:/Users/Kavin/Documents/GitHub/WorkoutApp/backend/gradlew*)",
-      "Bash(ls c:/Users/Kavin/Documents/GitHub/WorkoutApp/backend/*.gradle*)"
+      "Bash(ls c:/Users/Kavin/Documents/GitHub/WorkoutApp/backend/*.gradle*)",
+      "Bash(node server.js)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(timeout 5 bash -c 'FITTRACK_API_TOKEN=test node server.js &:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Kavin"
