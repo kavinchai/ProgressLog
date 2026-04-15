@@ -265,6 +265,20 @@ function createMcpServer() {
 // ── Express + Streamable HTTP transport ─────────────────────────────────────
 
 const app = express();
+app.use(express.json());
+
+// CORS — required for Claude.ai to connect from the browser
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, mcp-session-id');
+  res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
 
 // Store sessions (each has its own MCP server + transport)
 const sessions = {};
