@@ -8,11 +8,11 @@ import { randomUUID } from 'node:crypto';
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const API_BASE = process.env.FITTRACK_API_URL ?? 'http://localhost:8080/api';
-const API_TOKEN = process.env.FITTRACK_API_TOKEN; // JWT for the kavinchai account
+const API_KEY = process.env.FITTRACK_API_KEY; // Non-expiring API key for the kavinchai account
 const PORT = parseInt(process.env.PORT ?? '3100', 10);
 
-if (!API_TOKEN) {
-  console.error('FITTRACK_API_TOKEN is required. Get a JWT by logging in: POST /api/auth/login');
+if (!API_KEY) {
+  console.error('FITTRACK_API_KEY is required. Generate one: POST /api/auth/api-key (with Bearer token)');
   process.exit(1);
 }
 
@@ -22,7 +22,7 @@ async function api(method, path, body) {
   const opts = {
     method,
     headers: {
-      'Authorization': `Bearer ${API_TOKEN}`,
+      'X-API-Key': API_KEY,
       'Content-Type': 'application/json',
     },
   };

@@ -36,4 +36,7 @@ public class User {
 
     @Column(name = "protein_target", nullable = false)
     private int proteinTarget = 180;
+
+    @Column(name = "api_key", unique = true, length = 64)
+    private String apiKey;
 }
