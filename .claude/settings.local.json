@@ -35,7 +35,17 @@
       "Bash(wc -l /Users/kavinchai/Documents/GitHub/WorkoutApp/backend/src/main/java/com/kavin/fitness/controller/*.java)",
       "Bash(grep -n \"private User resolveUser\\\\|private.*resolveUser\" /Users/kavinchai/Documents/GitHub/WorkoutApp/backend/src/main/java/com/kavin/fitness/controller/*.java)",
       "Bash(grep -n \"import.*css\\\\|import.*CSS\" /Users/kavinchai/Documents/GitHub/WorkoutApp/frontend/src/pages/*.jsx)",
-      "Bash(find /Users/kavinchai/Documents/GitHub/WorkoutApp/backend/src/main/java/com/kavin/fitness/service -name \"*.java\" -exec wc -l {} +)"
+      "Bash(find /Users/kavinchai/Documents/GitHub/WorkoutApp/backend/src/main/java/com/kavin/fitness/service -name \"*.java\" -exec wc -l {} +)",
+      "Bash(./gradlew compileJava)",
+      "Bash(ls gradlew* build.gradle*)",
+      "Bash(ls *.gradle*)",
+      "Bash(ls backend/gradlew*)",
+      "Bash(ls gradlew*)",
+      "Bash(gradle compileJava)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(timeout 6 bash -c ':*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Kavin"
