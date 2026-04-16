@@ -1,9 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import express from 'express';
 import { z } from 'zod';
-import { randomUUID } from 'node:crypto';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -281,40 +279,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// Store transports by session ID
-const transports = {};
+// Stateless mode — each POST gets a fresh server+transport.
+// Our tools are pure API proxies with no session state, so this is
+// simpler and survives redeploys without losing sessions.
 
 app.post('/mcp', async (req, res) => {
   try {
-    const sessionId = req.headers['mcp-session-id'];
-    console.log(`POST /mcp sessionId=${sessionId || '(none)'} body=${JSON.stringify(req.body)?.substring(0, 200)}`);
-
-    if (sessionId && transports[sessionId]) {
-      await transports[sessionId].handleRequest(req, res, req.body);
-      return;
-    }
-
-    // For new connections, always try to create a server+transport.
-    // The SDK's handleRequest will validate whether it's a proper init request.
-    const mcp = createMcpServer();
+    const server = createMcpServer();
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-      onsessioninitialized: (sid) => {
-        console.log(`Session initialized: ${sid}`);
-        transports[sid] = transport;
-      },
+      sessionIdGenerator: undefined, // stateless
     });
 
-    transport.onclose = () => {
-      const sid = transport.sessionId;
-      if (sid && transports[sid]) {
-        console.log(`Session closed: ${sid}`);
-        delete transports[sid];
-      }
-    };
-
-    await mcp.connect(transport);
+    await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
+
+    res.on('close', () => {
+      transport.close();
+      server.close();
+    });
   } catch (error) {
     console.error('Error handling MCP POST:', error);
     if (!res.headersSent) {
@@ -327,23 +309,20 @@ app.post('/mcp', async (req, res) => {
   }
 });
 
-app.get('/mcp', async (req, res) => {
-  const sessionId = req.headers['mcp-session-id'];
-  console.log(`GET /mcp sessionId=${sessionId || '(none)'} activeSessions=${Object.keys(transports).join(',') || '(none)'}`);
-  if (!sessionId || !transports[sessionId]) {
-    res.status(400).send('Invalid or missing session ID');
-    return;
-  }
-  await transports[sessionId].handleRequest(req, res);
+app.get('/mcp', (req, res) => {
+  res.status(405).json({
+    jsonrpc: '2.0',
+    error: { code: -32000, message: 'Method not allowed. Use POST.' },
+    id: null,
+  });
 });
 
-app.delete('/mcp', async (req, res) => {
-  const sessionId = req.headers['mcp-session-id'];
-  if (!sessionId || !transports[sessionId]) {
-    res.status(400).send('Invalid or missing session ID');
-    return;
-  }
-  await transports[sessionId].handleRequest(req, res);
+app.delete('/mcp', (req, res) => {
+  res.status(405).json({
+    jsonrpc: '2.0',
+    error: { code: -32000, message: 'Method not allowed.' },
+    id: null,
+  });
 });
 
 // Health check
