@@ -287,41 +287,34 @@ const transports = {};
 app.post('/mcp', async (req, res) => {
   try {
     const sessionId = req.headers['mcp-session-id'];
+    console.log(`POST /mcp sessionId=${sessionId || '(none)'} body=${JSON.stringify(req.body)?.substring(0, 200)}`);
 
     if (sessionId && transports[sessionId]) {
-      // Existing session — reuse transport
       await transports[sessionId].handleRequest(req, res, req.body);
       return;
     }
 
-    if (!sessionId && isInitializeRequest(req.body)) {
-      // New initialization — create server + transport
-      const mcp = createMcpServer();
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
-        onsessioninitialized: (sid) => {
-          transports[sid] = transport;
-        },
-      });
-
-      transport.onclose = () => {
-        const sid = transport.sessionId;
-        if (sid && transports[sid]) {
-          delete transports[sid];
-        }
-      };
-
-      await mcp.connect(transport);
-      await transport.handleRequest(req, res, req.body);
-      return;
-    }
-
-    // Not an init request and no valid session
-    res.status(400).json({
-      jsonrpc: '2.0',
-      error: { code: -32000, message: 'Bad Request: No valid session ID provided' },
-      id: null,
+    // For new connections, always try to create a server+transport.
+    // The SDK's handleRequest will validate whether it's a proper init request.
+    const mcp = createMcpServer();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (sid) => {
+        console.log(`Session initialized: ${sid}`);
+        transports[sid] = transport;
+      },
     });
+
+    transport.onclose = () => {
+      const sid = transport.sessionId;
+      if (sid && transports[sid]) {
+        console.log(`Session closed: ${sid}`);
+        delete transports[sid];
+      }
+    };
+
+    await mcp.connect(transport);
+    await transport.handleRequest(req, res, req.body);
   } catch (error) {
     console.error('Error handling MCP POST:', error);
     if (!res.headersSent) {
@@ -336,6 +329,7 @@ app.post('/mcp', async (req, res) => {
 
 app.get('/mcp', async (req, res) => {
   const sessionId = req.headers['mcp-session-id'];
+  console.log(`GET /mcp sessionId=${sessionId || '(none)'} activeSessions=${Object.keys(transports).join(',') || '(none)'}`);
   if (!sessionId || !transports[sessionId]) {
     res.status(400).send('Invalid or missing session ID');
     return;
