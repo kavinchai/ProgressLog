@@ -13,9 +13,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -53,5 +58,21 @@ public class AuthController {
         String token = jwtUtil.generateToken(user.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new LoginResponse(token, user.getUsername()));
+    }
+
+    @PostMapping("/api-key")
+    public ResponseEntity<Map<String, String>> generateApiKey(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        byte[] bytes = new byte[32];
+        new SecureRandom().nextBytes(bytes);
+        String apiKey = "ftk_" + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+
+        user.setApiKey(apiKey);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("apiKey", apiKey));
     }
 }
