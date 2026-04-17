@@ -49,13 +49,13 @@ describe('WorkoutBuilderModal — exercise management', () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
     expect(screen.queryByPlaceholderText(/exercise name/i)).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
     expect(screen.getByPlaceholderText(/exercise name/i)).toBeInTheDocument();
   });
 
   it('each new exercise starts with one empty set row', async () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
 
     // One weight input and one reps input — both empty
     const placeholders = screen.getAllByPlaceholderText('0');
@@ -66,7 +66,7 @@ describe('WorkoutBuilderModal — exercise management', () => {
 
   it('[x] next to exercise removes the entire exercise block', async () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
     expect(screen.getByPlaceholderText(/exercise name/i)).toBeInTheDocument();
 
     // Two [x] buttons exist: exercise-level [x] (index 0) and set-level [x] (index 1)
@@ -77,7 +77,7 @@ describe('WorkoutBuilderModal — exercise management', () => {
 
   it('[+ set] adds a second set row to an exercise', async () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
 
     // 1 exercise [x] + 1 set [x] = 2 total
     expect(screen.getAllByRole('button', { name: /×/ })).toHaveLength(2);
@@ -90,7 +90,7 @@ describe('WorkoutBuilderModal — exercise management', () => {
 
   it('removing a set leaves the remaining sets renumbered from 1', async () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
     await userEvent.click(screen.getByRole('button', { name: /\+ set/i })); // now 2 sets
 
     // Remove set 1 (the first set [x], which is index 1 after exercise [x])
@@ -106,7 +106,7 @@ describe('WorkoutBuilderModal — exercise management', () => {
 describe('WorkoutBuilderModal — autocomplete suggestions', () => {
   it('shows suggestions matching the typed exercise name', async () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
 
     // Wait for exercise names to load, then type a partial name
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('/workouts/exercise-names'));
@@ -118,7 +118,7 @@ describe('WorkoutBuilderModal — autocomplete suggestions', () => {
 
   it('clicking a suggestion fills the exercise name field', async () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
 
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('/workouts/exercise-names'));
     await userEvent.type(screen.getByPlaceholderText(/exercise name/i), 'Sq');
@@ -131,7 +131,7 @@ describe('WorkoutBuilderModal — autocomplete suggestions', () => {
 
   it('suggestions disappear after selecting one', async () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
 
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('/workouts/exercise-names'));
     await userEvent.type(screen.getByPlaceholderText(/exercise name/i), 'Sq');
@@ -145,7 +145,7 @@ describe('WorkoutBuilderModal — autocomplete suggestions', () => {
 
   it('shows no suggestions when input is empty', async () => {
     render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
 
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('/workouts/exercise-names'));
     // Focus the input without typing
@@ -202,7 +202,7 @@ describe('WorkoutBuilderModal — form submission', () => {
     render(<WorkoutBuilderModal prefillDate="2026-01-05" onClose={onClose} onSaved={onSaved} />);
     await userEvent.type(screen.getByPlaceholderText(/push, pull, legs/i), 'Push');
 
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
     await userEvent.type(screen.getByPlaceholderText(/exercise name/i), 'Bench Press');
 
     const inputs = screen.getAllByPlaceholderText('0');
@@ -229,7 +229,7 @@ describe('WorkoutBuilderModal — form submission', () => {
     render(<WorkoutBuilderModal prefillDate="2026-01-05" onClose={onClose} onSaved={onSaved} />);
 
     // Add first exercise
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
     const exerciseInputs = screen.getAllByPlaceholderText(/exercise name/i);
     await userEvent.type(exerciseInputs[0], 'Bench Press');
     let inputs = screen.getAllByPlaceholderText('0');
@@ -237,7 +237,7 @@ describe('WorkoutBuilderModal — form submission', () => {
     await userEvent.type(inputs[1], '8');
 
     // Add second exercise
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
     const exerciseInputs2 = screen.getAllByPlaceholderText(/exercise name/i);
     await userEvent.type(exerciseInputs2[1], 'Squat');
     inputs = screen.getAllByPlaceholderText('0');
@@ -269,7 +269,7 @@ describe('WorkoutBuilderModal — form submission', () => {
 
     render(<WorkoutBuilderModal prefillDate="2026-01-05" onClose={onClose} onSaved={onSaved} />);
 
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
     await userEvent.type(screen.getByPlaceholderText(/exercise name/i), 'Deadlift');
 
     // Set 1
@@ -317,7 +317,7 @@ describe('WorkoutBuilderModal — form submission', () => {
     api.post.mockResolvedValue({});
 
     render(<WorkoutBuilderModal prefillDate="2026-01-05" onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /add exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /\+ exercise/i }));
     // Leave exercise name empty and submit
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
