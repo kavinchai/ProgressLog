@@ -25,5 +25,7 @@ public class WorkoutSessionDTO {
         private Integer    reps;
         private BigDecimal weightLbs;
         private Boolean    completed;
+        private BigDecimal distanceMiles;
+        private Integer    durationSeconds;
     }
 }

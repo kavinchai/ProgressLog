@@ -105,6 +105,12 @@
   color: var(--muted);
 }
 
+/* Cardio variant: 4 columns (Set | Distance | Time | Pace) */
+.exercise-sets-head--cardio,
+.exercise-set-row--cardio {
+  grid-template-columns: 36px 1fr 1fr 1fr;
+}
+
 /* ── Meal cards ── */
 .meal-cards {
   display: flex;

@@ -56,6 +56,13 @@
   align-items: center;
 }
 
+/* Cardio variant: Distance | Min | Sec */
+.wbm-set-row--cardio,
+.wbm-sets--cardio .wbm-sets-head,
+.wbm-sets-head--cardio {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .wbm-set-num {
   font-size: var(--fs-sm);
   color: var(--muted);

@@ -32,5 +32,13 @@ public class ExerciseRequest {
 
         @NotNull @DecimalMin("0.0")
         private BigDecimal weightLbs;
+
+        /** Cardio: distance in miles (optional). */
+        @DecimalMin("0.0")
+        private BigDecimal distanceMiles;
+
+        /** Cardio: duration in seconds (optional). */
+        @Min(0)
+        private Integer durationSeconds;
     }
 }
