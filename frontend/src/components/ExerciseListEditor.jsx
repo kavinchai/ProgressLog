@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
-import { isCardioExercise } from '../utils/workout';
+import { hasCardioData } from '../utils/workout';
 
 export function emptySet(num) {
   return { setNumber: num, reps: '', weightLbs: '', distanceMiles: '', durationMinutes: '', durationSeconds: '' };
 }
 
 export function emptyExercise() {
-  return { exerciseName: '', sets: [emptySet(1)] };
+  return { exerciseName: '', cardio: false, sets: [emptySet(1)] };
 }
 
 export function exercisesToForm(exercises) {
   return (exercises ?? []).map(ex => ({
     exerciseName: ex.exerciseName,
+    cardio: hasCardioData(ex.sets),
     sets: (ex.sets ?? []).map(s => ({
       setNumber:     s.setNumber,
       reps:          String(s.reps),
@@ -28,7 +29,7 @@ export function exercisesToPayload(exercises) {
   return exercises
     .filter(ex => ex.exerciseName.trim())
     .map(ex => {
-      const cardio = isCardioExercise(ex.exerciseName);
+      const cardio = ex.cardio;
       return {
         exerciseName: ex.exerciseName.trim(),
         sets: ex.sets.map(s => {
@@ -96,6 +97,10 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 
   function addExercise() {
     onChange([...exercises, emptyExercise()]);
+  }
+
+  function addRun() {
+    onChange([...exercises, { exerciseName: 'Run', cardio: true, sets: [emptySet(1)] }]);
   }
 
   function removeExercise(exerciseIndex) {
@@ -171,8 +176,8 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                   onClick={() => removeExercise(exerciseIndex)}>&times;</button>
               </div>
 
-              <div className={`wbm-sets${isCardioExercise(ex.exerciseName) ? ' wbm-sets--cardio' : ''}`}>
-                {isCardioExercise(ex.exerciseName) ? (
+              <div className={`wbm-sets${ex.cardio ? ' wbm-sets--cardio' : ''}`}>
+                {ex.cardio ? (
                   <>
                     <div className="wbm-sets-head wbm-sets-head--cardio">
                       <span>Distance (mi)</span><span>Min</span><span>Sec</span>
@@ -217,7 +222,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                   </>
                 )}
               </div>
-              {!isCardioExercise(ex.exerciseName) && (
+              {!ex.cardio && (
                 <button type="button" className="btn btn-sm wbm-add-set"
                   onClick={() => addSet(exerciseIndex)}>
                   + Set
@@ -228,9 +233,14 @@ export default function ExerciseListEditor({ exercises, onChange }) {
         </div>
       )}
 
-      <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addExercise}>
-        + Add Exercise
-      </button>
+      <div className="wbm-add-buttons">
+        <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addExercise}>
+          + Exercise
+        </button>
+        <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addRun}>
+          + Run
+        </button>
+      </div>
     </>
   );
 }
