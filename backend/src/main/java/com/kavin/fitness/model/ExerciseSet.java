@@ -34,4 +34,12 @@ public class ExerciseSet {
 
     @Column(nullable = false)
     private Boolean completed = true;
+
+    /** Cardio: distance in miles (nullable — only set for cardio exercises). */
+    @Column(name = "distance_miles", precision = 6, scale = 2)
+    private BigDecimal distanceMiles;
+
+    /** Cardio: duration in seconds (nullable — only set for cardio exercises). */
+    @Column(name = "duration_seconds")
+    private Integer durationSeconds;
 }

@@ -101,6 +101,8 @@ public class WorkoutService {
             exerciseSet.setSetNumber(setRequest.getSetNumber());
             exerciseSet.setReps(setRequest.getReps());
             exerciseSet.setWeightLbs(setRequest.getWeightLbs());
+            exerciseSet.setDistanceMiles(setRequest.getDistanceMiles());
+            exerciseSet.setDurationSeconds(setRequest.getDurationSeconds());
             session.getExerciseSets().add(exerciseSet);
         }
     }
@@ -115,7 +117,8 @@ public class WorkoutService {
         List<WorkoutSessionDTO.SetDTO> sets = session.getExerciseSets().stream()
                 .map(exerciseSet -> new WorkoutSessionDTO.SetDTO(
                         exerciseSet.getId(), exerciseSet.getExerciseName(), exerciseSet.getSetNumber(),
-                        exerciseSet.getReps(), exerciseSet.getWeightLbs(), exerciseSet.getCompleted()))
+                        exerciseSet.getReps(), exerciseSet.getWeightLbs(), exerciseSet.getCompleted(),
+                        exerciseSet.getDistanceMiles(), exerciseSet.getDurationSeconds()))
                 .collect(Collectors.toList());
         return new WorkoutSessionDTO(session.getId(), session.getSessionDate(), session.getSessionName(), sets);
     }

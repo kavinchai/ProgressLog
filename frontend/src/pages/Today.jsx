@@ -12,7 +12,7 @@ import DayInfoModal        from '../components/DayInfoModal';
 import MealModal           from '../components/MealModal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
-import { groupByExercise } from '../utils/workout';
+import { groupByExercise, isCardioExercise, formatDuration, calcPace } from '../utils/workout';
 import { localDateStr, formatDateFull as fmtDate } from '../utils/date';
 import './Today.css';
 
@@ -38,27 +38,49 @@ function MealCard({ meal, index, onEdit }) {
 // ── Exercise cards ────────────────────────────────────────────────────────────
 
 function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
+  const cardio = isCardioExercise(name);
+
   return (
     <div className="exercise-card">
       <div className="exercise-card-header">
         <span className="exercise-card-name">
           {name}
-          <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)' }}>{weight} lbs</span>
+          {!cardio && (
+            <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)' }}>{weight} lbs</span>
+          )}
           {isPR && <span className="pr-badge">PR</span>}
         </span>
         <button className="btn btn-sm" onClick={onEdit}>Edit</button>
       </div>
       <div className="exercise-card-sets">
-        <div className="exercise-sets-head">
-          <span>Set</span><span>Weight</span><span>Reps</span>
-        </div>
-        {sets.map(s => (
-          <div key={s.id} className="exercise-set-row">
-            <span>{s.setNumber}</span>
-            <span>{s.weightLbs} lbs</span>
-            <span>{s.reps}</span>
-          </div>
-        ))}
+        {cardio ? (
+          <>
+            <div className="exercise-sets-head exercise-sets-head--cardio">
+              <span>Set</span><span>Distance</span><span>Time</span><span>Pace</span>
+            </div>
+            {sets.map(s => (
+              <div key={s.id} className="exercise-set-row exercise-set-row--cardio">
+                <span>{s.setNumber}</span>
+                <span>{s.distanceMiles != null ? `${s.distanceMiles} mi` : '--'}</span>
+                <span>{formatDuration(s.durationSeconds)}</span>
+                <span>{calcPace(s.distanceMiles, s.durationSeconds) ?? '--'}</span>
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            <div className="exercise-sets-head">
+              <span>Set</span><span>Weight</span><span>Reps</span>
+            </div>
+            {sets.map(s => (
+              <div key={s.id} className="exercise-set-row">
+                <span>{s.setNumber}</span>
+                <span>{s.weightLbs} lbs</span>
+                <span>{s.reps}</span>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
