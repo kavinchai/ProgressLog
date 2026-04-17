@@ -1,7 +1,6 @@
-const CARDIO_PATTERNS = /^(run|running|jog|jogging|sprint|sprinting|walk|walking|hike|hiking)$/i;
-
-export function isCardioExercise(name) {
-  return CARDIO_PATTERNS.test((name ?? '').trim());
+/** Detect cardio from backend data — true if any set has distance or duration fields. */
+export function hasCardioData(sets) {
+  return (sets ?? []).some(s => s.distanceMiles != null || s.durationSeconds != null);
 }
 
 /** Format seconds into "Xm Ys" or "Xh Ym Zs". */

@@ -78,9 +78,14 @@
   align-self: flex-start;
 }
 
+.wbm-add-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .wbm-add-exercise {
   align-self: flex-start;
-  margin-top: 4px;
 }
 
 .wbm-name-wrapper {
