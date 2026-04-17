@@ -12,7 +12,7 @@ import DayInfoModal        from '../components/DayInfoModal';
 import MealModal           from '../components/MealModal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
-import { groupByExercise, isCardioExercise, formatDuration, calcPace } from '../utils/workout';
+import { groupByExercise, hasCardioData, formatDuration, calcPace } from '../utils/workout';
 import { localDateStr, formatDateFull as fmtDate } from '../utils/date';
 import './Today.css';
 
@@ -38,7 +38,7 @@ function MealCard({ meal, index, onEdit }) {
 // ── Exercise cards ────────────────────────────────────────────────────────────
 
 function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
-  const cardio = isCardioExercise(name);
+  const cardio = hasCardioData(sets);
 
   return (
     <div className="exercise-card">
