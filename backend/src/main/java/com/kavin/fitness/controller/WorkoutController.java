@@ -72,6 +72,17 @@ public class WorkoutController {
         return ResponseEntity.ok(dto);
     }
 
+    /** Replace the entire workout session (name + all exercises). */
+    @PutMapping("/{sessionId}")
+    public ResponseEntity<WorkoutSessionDTO> updateSession(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long sessionId,
+            @Valid @RequestBody WorkoutSessionRequest request) {
+        WorkoutSessionDTO dto = workoutService.updateSession(
+                sessionId, userResolver.resolve(principal).getId(), request);
+        return ResponseEntity.ok(dto);
+    }
+
     /** Delete all sets for a named exercise in an existing session. */
     @DeleteMapping("/{sessionId}/exercises")
     public ResponseEntity<Void> deleteExercise(
