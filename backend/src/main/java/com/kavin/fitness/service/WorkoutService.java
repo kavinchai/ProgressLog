@@ -82,6 +82,23 @@ public class WorkoutService {
         return toDTO(session);
     }
 
+    /** Replace the entire workout session (name + all exercises). */
+    @Transactional
+    public WorkoutSessionDTO updateSession(Long sessionId, Long userId, WorkoutSessionRequest request) {
+        WorkoutSession session = resolveSession(sessionId, userId);
+        session.setSessionName(request.getSessionName());
+        session.getExerciseSets().clear();
+        workoutSessionRepository.flush();
+
+        if (request.getExercises() != null) {
+            for (ExerciseRequest exerciseRequest : request.getExercises()) {
+                addSetsForExercise(session, exerciseRequest);
+            }
+        }
+        session = workoutSessionRepository.save(session);
+        return toDTO(session);
+    }
+
     /** Delete all sets for the named exercise in this session. */
     @Transactional
     public void deleteExercise(Long sessionId, Long userId, String exerciseName) {

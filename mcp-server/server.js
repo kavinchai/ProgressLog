@@ -104,6 +104,81 @@ function createMcpServer() {
     },
   );
 
+  // ── Tool: edit_workout ─────────────────────────────────────────────────────
+
+  mcp.tool(
+    'edit_workout',
+    'Edit/update an existing workout session — replace its exercises and sets entirely, or rename it. Use get_today_summary first to find the session ID. Call this when the user wants to change, update, or fix a logged workout.',
+    {
+      sessionId: z.number().int().positive().describe('The workout session ID to update (get this from get_today_summary)'),
+      sessionName: z.string().optional().describe('New name for the session'),
+      exercises: z.array(z.object({
+        exerciseName: z.string().describe('Name of the exercise'),
+        sets: z.array(z.object({
+          setNumber: z.number().int().positive().describe('Set number starting from 1'),
+          reps: z.number().int().min(0).describe('Number of reps'),
+          weightLbs: z.number().min(0).describe('Weight in pounds'),
+          distanceMiles: z.number().min(0).optional().describe('Distance in miles (for cardio)'),
+          durationSeconds: z.number().int().min(0).optional().describe('Duration in seconds (for cardio)'),
+        })).describe('Array of sets for this exercise'),
+      })).describe('Complete list of exercises — replaces all existing exercises'),
+    },
+    async ({ sessionId, sessionName, exercises }) => {
+      const result = await api('PUT', `/workouts/${sessionId}`, {
+        sessionDate: todayStr(),
+        sessionName: sessionName ?? null,
+        exercises,
+      });
+
+      const summary = (result.exerciseSets ?? []).reduce((acc, s) => {
+        if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
+        acc[s.exerciseName].push(s);
+        return acc;
+      }, {});
+      const lines = Object.entries(summary).map(([name, sets]) => {
+        const desc = sets.map(s => `${s.reps}@${s.weightLbs}lbs`).join(', ');
+        return `• ${name}: ${desc}`;
+      });
+
+      return {
+        content: [{ type: 'text', text: `Updated workout${result.sessionName ? ` "${result.sessionName}"` : ''} (ID: ${result.id}):\n${lines.join('\n')}` }],
+      };
+    },
+  );
+
+  // ── Tool: delete_workout ──────────────────────────────────────────────────
+
+  mcp.tool(
+    'delete_workout',
+    'Delete an entire workout session. Use get_today_summary first to find the session ID.',
+    {
+      sessionId: z.number().int().positive().describe('The workout session ID to delete'),
+    },
+    async ({ sessionId }) => {
+      await api('DELETE', `/workouts/${sessionId}`);
+      return {
+        content: [{ type: 'text', text: `Deleted workout session ${sessionId}.` }],
+      };
+    },
+  );
+
+  // ── Tool: delete_exercise ─────────────────────────────────────────────────
+
+  mcp.tool(
+    'delete_exercise',
+    'Delete a specific exercise from an existing workout session (keeps other exercises). Use get_today_summary first to find the session ID.',
+    {
+      sessionId: z.number().int().positive().describe('The workout session ID'),
+      exerciseName: z.string().describe('Name of the exercise to remove'),
+    },
+    async ({ sessionId, exerciseName }) => {
+      await api('DELETE', `/workouts/${sessionId}/exercises?name=${encodeURIComponent(exerciseName)}`);
+      return {
+        content: [{ type: 'text', text: `Removed "${exerciseName}" from session ${sessionId}.` }],
+      };
+    },
+  );
+
   // ── Tool: log_meal ────────────────────────────────────────────────────────
 
   mcp.tool(
@@ -197,7 +272,7 @@ function createMcpServer() {
       }
 
       if (workout) {
-        parts.push(`\n🏋️ Workout${workout.sessionName ? ` (${workout.sessionName})` : ''}:`);
+        parts.push(`\n🏋️ Workout${workout.sessionName ? ` (${workout.sessionName})` : ''} [session ID: ${workout.id}]:`);
         if (workout.exerciseSets?.length > 0) {
           const grouped = {};
           for (const s of workout.exerciseSets) {
