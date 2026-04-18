@@ -3,7 +3,7 @@ import api from '../api';
 import { hasCardioData } from '../utils/workout';
 
 export function emptySet(num) {
-  return { setNumber: num, reps: '', weightLbs: '', distanceMiles: '', durationMinutes: '', durationSeconds: '' };
+  return { setNumber: num, reps: '', weightLbs: '', durationHours: '', durationMinutes: '', durationSeconds: '' };
 }
 
 export function emptyExercise() {
@@ -18,8 +18,8 @@ export function exercisesToForm(exercises) {
       setNumber:     s.setNumber,
       reps:          String(s.reps),
       weightLbs:     String(s.weightLbs),
-      distanceMiles: s.distanceMiles != null ? String(s.distanceMiles) : '',
-      durationMinutes: s.durationSeconds != null ? String(Math.floor(s.durationSeconds / 60)) : '',
+      durationHours:   s.durationSeconds != null ? String(Math.floor(s.durationSeconds / 3600)) : '',
+      durationMinutes: s.durationSeconds != null ? String(Math.floor((s.durationSeconds % 3600) / 60)) : '',
       durationSeconds: s.durationSeconds != null ? String(s.durationSeconds % 60) : '',
     })),
   }));
@@ -39,10 +39,10 @@ export function exercisesToPayload(exercises) {
             weightLbs:  parseFloat(s.weightLbs) || 0,
           };
           if (cardio) {
-            const mins = parseInt(s.durationMinutes) || 0;
-            const secs = parseInt(s.durationSeconds) || 0;
-            base.distanceMiles  = parseFloat(s.distanceMiles) || null;
-            base.durationSeconds = (mins * 60 + secs) || null;
+            const hours = parseInt(s.durationHours) || 0;
+            const mins  = parseInt(s.durationMinutes) || 0;
+            const secs  = parseInt(s.durationSeconds) || 0;
+            base.durationSeconds = (hours * 3600 + mins * 60 + secs) || null;
           }
           return base;
         }),
@@ -99,8 +99,14 @@ export default function ExerciseListEditor({ exercises, onChange }) {
     onChange([...exercises, emptyExercise()]);
   }
 
-  function addRun() {
-    onChange([...exercises, { exerciseName: 'Run', cardio: true, sets: [emptySet(1)] }]);
+  function addTimed() {
+    onChange([...exercises, { exerciseName: '', cardio: true, sets: [emptySet(1)] }]);
+  }
+
+  function toggleType(exerciseIndex) {
+    onChange(exercises.map((ex, i) =>
+      i === exerciseIndex ? { ...ex, cardio: !ex.cardio } : ex
+    ));
   }
 
   function removeExercise(exerciseIndex) {
@@ -172,6 +178,13 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                     </ul>
                   )}
                 </div>
+                <button
+                  type="button"
+                  className={`btn btn-sm wbm-type-toggle${ex.cardio ? ' wbm-type-toggle--timed' : ''}`}
+                  onClick={() => toggleType(exerciseIndex)}
+                >
+                  {ex.cardio ? 'Timed' : 'Lifting'}
+                </button>
                 <button type="button" className="btn btn-sm"
                   onClick={() => removeExercise(exerciseIndex)}>&times;</button>
               </div>
@@ -180,16 +193,16 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                 {ex.cardio ? (
                   <>
                     <div className="wbm-sets-head wbm-sets-head--cardio">
-                      <span>Distance (mi)</span><span>Min</span><span>Sec</span>
+                      <span>Hr</span><span>Min</span><span>Sec</span>
                     </div>
                     {ex.sets.slice(0, 1).map((s, setIndex) => (
                       <div key={setIndex} className="wbm-set-row wbm-set-row--cardio">
                         <input className="modal-input wbm-set-input" type="number"
-                          step="0.01" min="0" placeholder="0"
-                          value={s.distanceMiles}
-                          onChange={e => updateSet(exerciseIndex, setIndex, 'distanceMiles', e.target.value)} />
-                        <input className="modal-input wbm-set-input" type="number"
                           min="0" placeholder="0"
+                          value={s.durationHours}
+                          onChange={e => updateSet(exerciseIndex, setIndex, 'durationHours', e.target.value)} />
+                        <input className="modal-input wbm-set-input" type="number"
+                          min="0" max="59" placeholder="0"
                           value={s.durationMinutes}
                           onChange={e => updateSet(exerciseIndex, setIndex, 'durationMinutes', e.target.value)} />
                         <input className="modal-input wbm-set-input" type="number"
@@ -237,8 +250,8 @@ export default function ExerciseListEditor({ exercises, onChange }) {
         <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addExercise}>
           + Exercise
         </button>
-        <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addRun}>
-          + Run
+        <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addTimed}>
+          + Timed
         </button>
       </div>
     </>
