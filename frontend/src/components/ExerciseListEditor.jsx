@@ -1,25 +1,33 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
-import { hasCardioData } from '../utils/workout';
 
 export function emptySet(num) {
-  return { setNumber: num, reps: '', weightLbs: '', distanceMiles: '', durationMinutes: '', durationSeconds: '' };
+  return { setNumber: num, reps: '', weightLbs: '', distanceMiles: '', durationHours: '', durationMinutes: '', durationSeconds: '' };
 }
 
 export function emptyExercise() {
-  return { exerciseName: '', cardio: false, sets: [emptySet(1)] };
+  return { exerciseName: '', type: 'lifting', sets: [emptySet(1)] };
+}
+
+function detectType(sets) {
+  const hasDist = (sets ?? []).some(s => s.distanceMiles != null);
+  const hasDur  = (sets ?? []).some(s => s.durationSeconds != null);
+  if (hasDist) return 'run';
+  if (hasDur)  return 'timed';
+  return 'lifting';
 }
 
 export function exercisesToForm(exercises) {
   return (exercises ?? []).map(ex => ({
     exerciseName: ex.exerciseName,
-    cardio: hasCardioData(ex.sets),
+    type: detectType(ex.sets),
     sets: (ex.sets ?? []).map(s => ({
-      setNumber:     s.setNumber,
-      reps:          String(s.reps),
-      weightLbs:     String(s.weightLbs),
-      distanceMiles: s.distanceMiles != null ? String(s.distanceMiles) : '',
-      durationMinutes: s.durationSeconds != null ? String(Math.floor(s.durationSeconds / 60)) : '',
+      setNumber:       s.setNumber,
+      reps:            String(s.reps),
+      weightLbs:       String(s.weightLbs),
+      distanceMiles:   s.distanceMiles != null ? String(s.distanceMiles) : '',
+      durationHours:   s.durationSeconds != null ? String(Math.floor(s.durationSeconds / 3600)) : '',
+      durationMinutes: s.durationSeconds != null ? String(Math.floor((s.durationSeconds % 3600) / 60)) : '',
       durationSeconds: s.durationSeconds != null ? String(s.durationSeconds % 60) : '',
     })),
   }));
@@ -28,26 +36,24 @@ export function exercisesToForm(exercises) {
 export function exercisesToPayload(exercises) {
   return exercises
     .filter(ex => ex.exerciseName.trim())
-    .map(ex => {
-      const cardio = ex.cardio;
-      return {
-        exerciseName: ex.exerciseName.trim(),
-        sets: ex.sets.map(s => {
-          const base = {
-            setNumber:  s.setNumber,
-            reps:       parseInt(s.reps) || 0,
-            weightLbs:  parseFloat(s.weightLbs) || 0,
-          };
-          if (cardio) {
-            const mins = parseInt(s.durationMinutes) || 0;
-            const secs = parseInt(s.durationSeconds) || 0;
-            base.distanceMiles  = parseFloat(s.distanceMiles) || null;
-            base.durationSeconds = (mins * 60 + secs) || null;
-          }
-          return base;
-        }),
-      };
-    });
+    .map(ex => ({
+      exerciseName: ex.exerciseName.trim(),
+      sets: ex.sets.map(s => {
+        const base = { setNumber: s.setNumber, reps: parseInt(s.reps) || 0, weightLbs: parseFloat(s.weightLbs) || 0 };
+        if (ex.type === 'run') {
+          const mins = parseInt(s.durationMinutes) || 0;
+          const secs = parseInt(s.durationSeconds) || 0;
+          base.distanceMiles   = parseFloat(s.distanceMiles) || null;
+          base.durationSeconds = (mins * 60 + secs) || null;
+        } else if (ex.type === 'timed') {
+          const hours = parseInt(s.durationHours) || 0;
+          const mins  = parseInt(s.durationMinutes) || 0;
+          const secs  = parseInt(s.durationSeconds) || 0;
+          base.durationSeconds = (hours * 3600 + mins * 60 + secs) || null;
+        }
+        return base;
+      }),
+    }));
 }
 
 export default function ExerciseListEditor({ exercises, onChange }) {
@@ -100,7 +106,19 @@ export default function ExerciseListEditor({ exercises, onChange }) {
   }
 
   function addRun() {
-    onChange([...exercises, { exerciseName: 'Run', cardio: true, sets: [emptySet(1)] }]);
+    onChange([...exercises, { exerciseName: 'Run', type: 'run', sets: [emptySet(1)] }]);
+  }
+
+  function addTimed() {
+    onChange([...exercises, { exerciseName: '', type: 'timed', sets: [emptySet(1)] }]);
+  }
+
+  function toggleType(exerciseIndex) {
+    onChange(exercises.map((ex, i) => {
+      if (i !== exerciseIndex) return ex;
+      const next = ex.type === 'lifting' ? 'timed' : 'lifting';
+      return { ...ex, type: next };
+    }));
   }
 
   function removeExercise(exerciseIndex) {
@@ -172,12 +190,21 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                     </ul>
                   )}
                 </div>
+                {ex.type !== 'run' && (
+                  <button
+                    type="button"
+                    className={`btn btn-sm wbm-type-toggle${ex.type === 'timed' ? ' wbm-type-toggle--timed' : ''}`}
+                    onClick={() => toggleType(exerciseIndex)}
+                  >
+                    {ex.type === 'timed' ? 'Timed' : 'Lifting'}
+                  </button>
+                )}
                 <button type="button" className="btn btn-sm"
                   onClick={() => removeExercise(exerciseIndex)}>&times;</button>
               </div>
 
-              <div className={`wbm-sets${ex.cardio ? ' wbm-sets--cardio' : ''}`}>
-                {ex.cardio ? (
+              <div className={`wbm-sets${ex.type !== 'lifting' ? ' wbm-sets--cardio' : ''}`}>
+                {ex.type === 'run' ? (
                   <>
                     <div className="wbm-sets-head wbm-sets-head--cardio">
                       <span>Distance (mi)</span><span>Min</span><span>Sec</span>
@@ -190,6 +217,28 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                           onChange={e => updateSet(exerciseIndex, setIndex, 'distanceMiles', e.target.value)} />
                         <input className="modal-input wbm-set-input" type="number"
                           min="0" placeholder="0"
+                          value={s.durationMinutes}
+                          onChange={e => updateSet(exerciseIndex, setIndex, 'durationMinutes', e.target.value)} />
+                        <input className="modal-input wbm-set-input" type="number"
+                          min="0" max="59" placeholder="0"
+                          value={s.durationSeconds}
+                          onChange={e => updateSet(exerciseIndex, setIndex, 'durationSeconds', e.target.value)} />
+                      </div>
+                    ))}
+                  </>
+                ) : ex.type === 'timed' ? (
+                  <>
+                    <div className="wbm-sets-head wbm-sets-head--cardio">
+                      <span>Hr</span><span>Min</span><span>Sec</span>
+                    </div>
+                    {ex.sets.slice(0, 1).map((s, setIndex) => (
+                      <div key={setIndex} className="wbm-set-row wbm-set-row--cardio">
+                        <input className="modal-input wbm-set-input" type="number"
+                          min="0" placeholder="0"
+                          value={s.durationHours}
+                          onChange={e => updateSet(exerciseIndex, setIndex, 'durationHours', e.target.value)} />
+                        <input className="modal-input wbm-set-input" type="number"
+                          min="0" max="59" placeholder="0"
                           value={s.durationMinutes}
                           onChange={e => updateSet(exerciseIndex, setIndex, 'durationMinutes', e.target.value)} />
                         <input className="modal-input wbm-set-input" type="number"
@@ -222,7 +271,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                   </>
                 )}
               </div>
-              {!ex.cardio && (
+              {ex.type === 'lifting' && (
                 <button type="button" className="btn btn-sm wbm-add-set"
                   onClick={() => addSet(exerciseIndex)}>
                   + Set
@@ -239,6 +288,9 @@ export default function ExerciseListEditor({ exercises, onChange }) {
         </button>
         <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addRun}>
           + Run
+        </button>
+        <button type="button" className="btn btn-sm wbm-add-exercise" onClick={addTimed}>
+          + Timed
         </button>
       </div>
     </>
