@@ -147,28 +147,67 @@ Examples:
 
   mcp.tool(
     'log_cardio',
-    `Log a run or timed activity. Use this instead of log_workout for:
-- Running: provide activityName "Run", distanceMiles, and durationSeconds
-- Timed activities (Muay Thai, boxing, yoga, cycling, etc.): provide activityName and durationSeconds only
-This tool always logs a single activity block with no reps or weight.
+    `Log a distance-based cardio activity (running, cycling, rowing, etc.) where both distance and duration are known.
+Do NOT use this for activities with no distance (use log_activity instead).
 Examples:
   "1.53 mile run in 14 mins" → activityName: "Run", distanceMiles: 1.53, durationSeconds: 840
-  "1 hour Muay Thai" → activityName: "Muay Thai", durationSeconds: 3600`,
+  "10 mile bike ride in 45 mins" → activityName: "Cycling", distanceMiles: 10, durationSeconds: 2700`,
     {
-      activityName: z.string().describe('Name of the activity, e.g. "Run", "Muay Thai", "Yoga", "Boxing", "Cycling"'),
-      durationSeconds: z.number().int().min(1).describe('Total duration of the activity in seconds'),
-      distanceMiles: z.number().min(0).optional().describe('Distance in miles (running/cycling only — omit for non-distance activities)'),
-      sessionName: z.string().optional().describe('Optional label for the session, e.g. "Morning Run". Defaults to activityName + distance if applicable.'),
+      activityName: z.string().describe('Name of the activity, e.g. "Run", "Cycling", "Rowing"'),
+      distanceMiles: z.number().min(0).describe('Distance covered in miles'),
+      durationSeconds: z.number().int().min(1).describe('Total duration in seconds'),
+      sessionName: z.string().optional().describe('Optional session label. Defaults to "activityName distanceMiles mi".'),
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
     },
-    async ({ activityName, durationSeconds, distanceMiles, sessionName, date }) => {
-      const defaultSessionName = distanceMiles != null
-        ? `${activityName} ${distanceMiles} mi`
-        : activityName;
-
+    async ({ activityName, distanceMiles, durationSeconds, sessionName, date }) => {
       const payload = {
         sessionDate: date ?? todayStr(),
-        sessionName: sessionName ?? defaultSessionName,
+        sessionName: sessionName ?? `${activityName} ${distanceMiles} mi`,
+        exercises: [
+          {
+            exerciseName: activityName,
+            sets: [
+              {
+                setNumber: 1,
+                reps: 0,
+                weightLbs: 0,
+                distanceMiles,
+                durationSeconds,
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = await api('POST', '/workouts', payload);
+
+      return {
+        content: [{ type: 'text', text: `Logged ${activityName}: ${distanceMiles} mi in ${formatDuration(durationSeconds)} on ${result.sessionDate}` }],
+      };
+    },
+  );
+
+  // ── Tool: log_activity ────────────────────────────────────────────────────
+
+  mcp.tool(
+    'log_activity',
+    `Log a general timed activity with no distance component — martial arts, yoga, sports, classes, etc.
+Use this for anything that is not a lift (use log_workout) and not distance-based cardio (use log_cardio).
+Only duration is recorded; reps and weight are not applicable.
+Examples:
+  "1 hour Muay Thai" → activityName: "Muay Thai", durationSeconds: 3600
+  "45 min yoga" → activityName: "Yoga", durationSeconds: 2700
+  "30 min boxing" → activityName: "Boxing", durationSeconds: 1800`,
+    {
+      activityName: z.string().describe('Name of the activity, e.g. "Muay Thai", "Yoga", "Boxing", "Basketball", "Soccer"'),
+      durationSeconds: z.number().int().min(1).describe('Total duration of the activity in seconds'),
+      sessionName: z.string().optional().describe('Optional session label. Defaults to activityName.'),
+      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
+    },
+    async ({ activityName, durationSeconds, sessionName, date }) => {
+      const payload = {
+        sessionDate: date ?? todayStr(),
+        sessionName: sessionName ?? activityName,
         exercises: [
           {
             exerciseName: activityName,
@@ -178,7 +217,6 @@ Examples:
                 reps: 0,
                 weightLbs: 0,
                 durationSeconds,
-                ...(distanceMiles != null && { distanceMiles }),
               },
             ],
           },
@@ -187,13 +225,8 @@ Examples:
 
       const result = await api('POST', '/workouts', payload);
 
-      const parts = [];
-      if (distanceMiles != null) parts.push(`${distanceMiles} mi`);
-      parts.push(formatDuration(durationSeconds));
-      const desc = parts.join(' in ');
-
       return {
-        content: [{ type: 'text', text: `Logged ${activityName}: ${desc} on ${result.sessionDate}` }],
+        content: [{ type: 'text', text: `Logged ${activityName}: ${formatDuration(durationSeconds)} on ${result.sessionDate}` }],
       };
     },
   );
