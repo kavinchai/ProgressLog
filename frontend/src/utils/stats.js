@@ -1,10 +1,18 @@
 // Merge multiple workout sessions for the same day into one combined entry.
+// Each set gets a _sessionId so edits/deletes target the correct session.
 export function mergeWorkoutSessions(sessions) {
   if (!sessions.length) return null;
-  if (sessions.length === 1) return sessions[0];
+  if (sessions.length === 1) {
+    return {
+      ...sessions[0],
+      exerciseSets: (sessions[0].exerciseSets ?? []).map(s => ({ ...s, _sessionId: sessions[0].id })),
+    };
+  }
   return {
     ...sessions[0],
-    exerciseSets: sessions.flatMap(s => s.exerciseSets ?? []),
+    exerciseSets: sessions.flatMap(s =>
+      (s.exerciseSets ?? []).map(set => ({ ...set, _sessionId: s.id }))
+    ),
   };
 }
 

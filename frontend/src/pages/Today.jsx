@@ -296,7 +296,7 @@ export default function Today() {
                       weight={g.weight}
                       sets={g.sets}
                       isPR={isPR}
-                      onEdit={() => setEditExercise({ sessionId: todayWorkoutEntry.id, name: g.name, sets: g.sets })}
+                      onEdit={() => setEditExercise({ sessionId: g.sets[0]._sessionId ?? todayWorkoutEntry.id, name: g.name, sets: g.sets })}
                     />
                   );
                 })}

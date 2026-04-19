@@ -148,7 +148,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
                       <span className="muted">{g.weight} lbs</span>
                     )}
                     <button className="btn btn-sm" style={{ marginLeft: 'auto' }}
-                      onClick={() => setEditExercise({ sessionId: workoutEntry.id, name: g.name, sets: g.sets })}>
+                      onClick={() => setEditExercise({ sessionId: g.sets[0]._sessionId ?? workoutEntry.id, name: g.name, sets: g.sets })}>
                       Edit
                     </button>
                   </div>
