@@ -79,7 +79,7 @@ public class ImportService {
             for (Map.Entry<LocalDate, List<Map<String, Object>>> entry : byDate.entrySet()) {
                 LocalDate date = entry.getKey();
                 workoutSessionRepository.findByUserIdAndSessionDate(user.getId(), date)
-                        .ifPresent(workoutSessionRepository::delete);
+                        .forEach(workoutSessionRepository::delete);
 
                 WorkoutSession session = new WorkoutSession();
                 session.setUser(user);
