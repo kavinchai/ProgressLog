@@ -112,26 +112,22 @@ function createMcpServer() {
 
   mcp.tool(
     'log_workout',
-    `Log a workout session. ALWAYS add the activity as an entry in the exercises array — never use sessionName as a substitute.
-- Strength/lifting: add an exercise with reps and weightLbs per set
-- Running: add an exercise named "Run" with distanceMiles and durationSeconds (setNumber: 1, omit reps/weight)
-- Timed activities (Muay Thai, boxing, yoga, etc.): add an exercise named after the activity with durationSeconds only (setNumber: 1, omit reps/weight/distance)
+    `Log a strength/lifting workout session. Use ONLY for exercises with reps and weight (e.g. Bench Press, Squat, Deadlift).
+Do NOT use this for runs, cardio, or timed activities — use log_cardio or log_activity instead.
 Examples:
-  "5 mile run in 35 mins" → exercises: [{ exerciseName: "Run", sets: [{ setNumber: 1, distanceMiles: 5, durationSeconds: 2100 }] }]
-  "1 hour Muay Thai" → exercises: [{ exerciseName: "Muay Thai", sets: [{ setNumber: 1, durationSeconds: 3600 }] }]`,
+  "5x5 bench press at 135 lbs" → exercises: [{ exerciseName: "Bench Press", sets: [{setNumber:1,reps:5,weightLbs:135}, ...] }]
+  "3 sets of 10 squats at 185 lbs" → exercises: [{ exerciseName: "Squat", sets: [{setNumber:1,reps:10,weightLbs:185}, ...] }]`,
     {
-      sessionName: z.string().optional().describe('Optional label for the whole session, e.g. "Push Day", "Pull Day", "Legs". Do NOT use this for the activity name — add it as an exercise instead.'),
+      sessionName: z.string().optional().describe('Optional label for the session, e.g. "Push Day", "Pull Day", "Legs".'),
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
       exercises: z.array(z.object({
-        exerciseName: z.string().describe('Name of the exercise or activity, e.g. "Bench Press", "Run", "Muay Thai"'),
+        exerciseName: z.string().describe('Name of the strength exercise, e.g. "Bench Press", "Squat", "Deadlift"'),
         sets: z.array(z.object({
-          setNumber: z.number().int().positive().describe('Set number starting from 1. Use 1 for cardio/timed activities.'),
-          reps: z.number().int().min(0).optional().describe('Reps performed (strength only — omit for cardio/timed)'),
-          weightLbs: z.number().min(0).optional().describe('Weight in pounds (strength only — omit for cardio/timed)'),
-          distanceMiles: z.number().min(0).optional().describe('Distance in miles (running only)'),
-          durationSeconds: z.number().int().min(0).optional().describe('Total duration in seconds (running and timed activities)'),
-        })).describe('Array of sets. Cardio/timed activities use a single set with setNumber: 1.'),
-      })).min(1).describe('Array of exercises or activities performed. Must contain at least one entry.'),
+          setNumber: z.number().int().positive().describe('Set number starting from 1'),
+          reps: z.number().int().min(0).describe('Reps performed'),
+          weightLbs: z.number().min(0).describe('Weight in pounds'),
+        })).describe('Array of sets for this exercise'),
+      })).min(1).describe('Array of strength exercises performed'),
     },
     async ({ sessionName, date, exercises }) => {
       const targetDate = date ?? todayStr();
@@ -139,10 +135,8 @@ Examples:
         exerciseName: e.exerciseName,
         sets: e.sets.map(s => ({
           setNumber: s.setNumber,
-          reps: s.reps ?? 0,
-          weightLbs: s.weightLbs ?? 0,
-          ...(s.distanceMiles != null && { distanceMiles: s.distanceMiles }),
-          ...(s.durationSeconds != null && { durationSeconds: s.durationSeconds }),
+          reps: s.reps,
+          weightLbs: s.weightLbs,
         })),
       }));
 
@@ -163,7 +157,7 @@ Examples:
 
   mcp.tool(
     'log_cardio',
-    `Log a distance-based cardio activity (running, cycling, rowing, etc.) where both distance and duration are known.
+    `Log a run, bike ride, row, or any cardio activity where both distance and duration are known. Always use this (not log_workout) for any run or distance-based cardio.
 Do NOT use this for activities with no distance (use log_activity instead).
 Examples:
   "1.53 mile run in 14 mins" → activityName: "Run", distanceMiles: 1.53, durationSeconds: 840
@@ -194,8 +188,7 @@ Examples:
 
   mcp.tool(
     'log_activity',
-    `Log a general timed activity with no distance component — martial arts, yoga, sports, classes, etc.
-Use this for anything that is not a lift (use log_workout) and not distance-based cardio (use log_cardio).
+    `Log a timed activity with no distance — martial arts, yoga, sports, classes, etc. Always use this (not log_workout) for any non-lifting, non-distance activity.
 Only duration is recorded; reps and weight are not applicable.
 Examples:
   "1 hour Muay Thai" → activityName: "Muay Thai", durationSeconds: 3600
