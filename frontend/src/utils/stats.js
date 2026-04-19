@@ -29,6 +29,7 @@ export function buildDayRows(dates, weightData, nutritionData, workoutData) {
       weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)       : null,
       calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)   : null,
       protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)   : null,
+      steps:    nutritionEntry ? (nutritionEntry.steps          ?? null)   : null,
       workout:  workoutEntry
         ? (workoutEntry.sessionName
             ? workoutEntry.sessionName
