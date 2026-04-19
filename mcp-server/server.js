@@ -14,6 +14,26 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDuration(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return [h ? `${h}h` : '', m ? `${m}m` : '', s ? `${s}s` : '']
+    .filter(Boolean).join(' ') || '0s';
+}
+
+function describeSet(s) {
+  if (s.distanceMiles != null || s.durationSeconds != null) {
+    const parts = [];
+    if (s.distanceMiles != null) parts.push(`${s.distanceMiles} mi`);
+    if (s.durationSeconds != null) parts.push(formatDuration(s.durationSeconds));
+    return parts.join(' in ');
+  }
+  return `${s.reps ?? 0} reps @ ${s.weightLbs ?? 0} lbs`;
+}
+
 // ── API helper ──────────────────────────────────────────────────────────────
 
 async function api(method, path, body) {
@@ -73,28 +93,45 @@ function createMcpServer() {
 
   mcp.tool(
     'log_workout',
-    'Log a workout session with exercises and sets. Call this when the user mentions exercises, sets, reps, or weights they lifted.',
+    `Log a workout session. Use for ALL workout types:
+- Strength/lifting: provide reps and weightLbs per set (e.g. Bench Press 3×8 @ 185 lbs)
+- Running: provide distanceMiles and durationSeconds, omit reps/weight (e.g. 5 mi in 2100s)
+- Timed activities (Muay Thai, boxing, yoga, etc.): provide durationSeconds only, omit reps/weight/distance
+For cardio and timed activities use a single set (setNumber: 1).`,
     {
-      sessionName: z.string().optional().describe('Name for the session, e.g. "Push", "Pull", "Legs"'),
+      sessionName: z.string().optional().describe('Name for the session, e.g. "Push Day", "Evening Run", "Muay Thai"'),
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
       exercises: z.array(z.object({
-        exerciseName: z.string().describe('Name of the exercise, e.g. "Bench Press", "Squat"'),
+        exerciseName: z.string().describe('Name of the exercise or activity, e.g. "Bench Press", "Run", "Muay Thai"'),
         sets: z.array(z.object({
-          setNumber: z.number().int().positive().describe('Set number starting from 1'),
-          reps: z.number().int().min(0).describe('Number of reps'),
-          weightLbs: z.number().min(0).describe('Weight in pounds'),
-        })).describe('Array of sets for this exercise'),
-      })).describe('Array of exercises performed'),
+          setNumber: z.number().int().positive().describe('Set number starting from 1. Use 1 for cardio/timed activities.'),
+          reps: z.number().int().min(0).optional().describe('Reps performed (strength exercises only — omit for cardio/timed)'),
+          weightLbs: z.number().min(0).optional().describe('Weight in pounds (strength exercises only — omit for cardio/timed)'),
+          distanceMiles: z.number().min(0).optional().describe('Distance in miles (running only)'),
+          durationSeconds: z.number().int().min(0).optional().describe('Total duration in seconds (running and timed activities)'),
+        })).describe('Array of sets. Cardio/timed activities use a single set.'),
+      })).describe('Array of exercises or activities performed'),
     },
     async ({ sessionName, date, exercises }) => {
-      const result = await api('POST', '/workouts', {
+      const payload = {
         sessionDate: date ?? todayStr(),
         sessionName: sessionName ?? null,
-        exercises,
-      });
+        exercises: exercises.map(e => ({
+          exerciseName: e.exerciseName,
+          sets: e.sets.map(s => ({
+            setNumber: s.setNumber,
+            reps: s.reps ?? 0,
+            weightLbs: s.weightLbs ?? 0,
+            ...(s.distanceMiles != null && { distanceMiles: s.distanceMiles }),
+            ...(s.durationSeconds != null && { durationSeconds: s.durationSeconds }),
+          })),
+        })),
+      };
+
+      const result = await api('POST', '/workouts', payload);
 
       const summary = exercises.map(e => {
-        const setsDesc = e.sets.map(s => `${s.reps}@${s.weightLbs}lbs`).join(', ');
+        const setsDesc = e.sets.map(s => describeSet(s)).join(', ');
         return `• ${e.exerciseName}: ${setsDesc}`;
       }).join('\n');
 
@@ -130,13 +167,13 @@ function createMcpServer() {
         exercises,
       });
 
-      const summary = (result.exerciseSets ?? []).reduce((acc, s) => {
+      const grouped = (result.exerciseSets ?? []).reduce((acc, s) => {
         if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
         acc[s.exerciseName].push(s);
         return acc;
       }, {});
-      const lines = Object.entries(summary).map(([name, sets]) => {
-        const desc = sets.map(s => `${s.reps}@${s.weightLbs}lbs`).join(', ');
+      const lines = Object.entries(grouped).map(([name, sets]) => {
+        const desc = sets.map(s => describeSet(s)).join(', ');
         return `• ${name}: ${desc}`;
       });
 
@@ -280,7 +317,7 @@ function createMcpServer() {
             grouped[s.exerciseName].push(s);
           }
           for (const [name, sets] of Object.entries(grouped)) {
-            const desc = sets.map(s => `${s.reps}@${s.weightLbs}lbs`).join(', ');
+            const desc = sets.map(s => describeSet(s)).join(', ');
             parts.push(`  • ${name}: ${desc}`);
           }
         } else {
