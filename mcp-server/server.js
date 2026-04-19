@@ -231,13 +231,43 @@ Examples:
     },
   );
 
+  // ── Tool: get_workout_by_date ─────────────────────────────────────────────
+
+  mcp.tool(
+    'get_workout_by_date',
+    'Look up a workout session by date. Returns the session ID and full exercise details needed to retroactively edit a past session. Call this before edit_workout when the user wants to change a session from a specific date.',
+    {
+      date: z.string().describe('Date to look up in YYYY-MM-DD format'),
+    },
+    async ({ date }) => {
+      const sessions = await api('GET', `/workouts?date=${encodeURIComponent(date)}`);
+      if (!sessions.length) {
+        return { content: [{ type: 'text', text: `No workout found for ${date}.` }] };
+      }
+      const session = sessions[0];
+      const grouped = (session.exerciseSets ?? []).reduce((acc, s) => {
+        if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
+        acc[s.exerciseName].push(s);
+        return acc;
+      }, {});
+      const lines = Object.entries(grouped).map(([name, sets]) => {
+        const desc = sets.map(s => describeSet(s)).join(', ');
+        return `  • ${name}: ${desc}`;
+      });
+      const header = `Workout on ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ''} [session ID: ${session.id}]`;
+      return {
+        content: [{ type: 'text', text: `${header}\n${lines.join('\n') || '  No exercises logged'}` }],
+      };
+    },
+  );
+
   // ── Tool: edit_workout ─────────────────────────────────────────────────────
 
   mcp.tool(
     'edit_workout',
-    'Edit/update an existing workout session — replace its exercises and sets entirely, or rename it. Use get_today_summary first to find the session ID. Call this when the user wants to change, update, or fix a logged workout.',
+    'Edit/update an existing workout session — replace its exercises and sets entirely, or rename it. Use get_workout_by_date or get_today_summary first to find the session ID. Preserves the original session date automatically.',
     {
-      sessionId: z.number().int().positive().describe('The workout session ID to update (get this from get_today_summary)'),
+      sessionId: z.number().int().positive().describe('The workout session ID to update (get from get_workout_by_date or get_today_summary)'),
       sessionName: z.string().optional().describe('New name for the session'),
       exercises: z.array(z.object({
         exerciseName: z.string().describe('Name of the exercise'),
@@ -251,8 +281,9 @@ Examples:
       })).describe('Complete list of exercises — replaces all existing exercises'),
     },
     async ({ sessionId, sessionName, exercises }) => {
+      const existing = await api('GET', `/workouts/${sessionId}`);
       const result = await api('PUT', `/workouts/${sessionId}`, {
-        sessionDate: todayStr(),
+        sessionDate: existing.sessionDate,
         sessionName: sessionName ?? null,
         exercises,
       });
