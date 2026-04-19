@@ -143,13 +143,131 @@ Examples:
     },
   );
 
+  // ── Tool: log_cardio ─────────────────────────────────────────────────────
+
+  mcp.tool(
+    'log_cardio',
+    `Log a distance-based cardio activity (running, cycling, rowing, etc.) where both distance and duration are known.
+Do NOT use this for activities with no distance (use log_activity instead).
+Examples:
+  "1.53 mile run in 14 mins" → activityName: "Run", distanceMiles: 1.53, durationSeconds: 840
+  "10 mile bike ride in 45 mins" → activityName: "Cycling", distanceMiles: 10, durationSeconds: 2700`,
+    {
+      activityName: z.string().describe('Name of the activity, e.g. "Run", "Cycling", "Rowing"'),
+      distanceMiles: z.number().min(0).describe('Distance covered in miles'),
+      durationSeconds: z.number().int().min(1).describe('Total duration in seconds'),
+      sessionName: z.string().optional().describe('Optional session label. Defaults to "activityName distanceMiles mi".'),
+      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
+    },
+    async ({ activityName, distanceMiles, durationSeconds, sessionName, date }) => {
+      const payload = {
+        sessionDate: date ?? todayStr(),
+        sessionName: sessionName ?? `${activityName} ${distanceMiles} mi`,
+        exercises: [
+          {
+            exerciseName: activityName,
+            sets: [
+              {
+                setNumber: 1,
+                reps: 0,
+                weightLbs: 0,
+                distanceMiles,
+                durationSeconds,
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = await api('POST', '/workouts', payload);
+
+      return {
+        content: [{ type: 'text', text: `Logged ${activityName}: ${distanceMiles} mi in ${formatDuration(durationSeconds)} on ${result.sessionDate}` }],
+      };
+    },
+  );
+
+  // ── Tool: log_activity ────────────────────────────────────────────────────
+
+  mcp.tool(
+    'log_activity',
+    `Log a general timed activity with no distance component — martial arts, yoga, sports, classes, etc.
+Use this for anything that is not a lift (use log_workout) and not distance-based cardio (use log_cardio).
+Only duration is recorded; reps and weight are not applicable.
+Examples:
+  "1 hour Muay Thai" → activityName: "Muay Thai", durationSeconds: 3600
+  "45 min yoga" → activityName: "Yoga", durationSeconds: 2700
+  "30 min boxing" → activityName: "Boxing", durationSeconds: 1800`,
+    {
+      activityName: z.string().describe('Name of the activity, e.g. "Muay Thai", "Yoga", "Boxing", "Basketball", "Soccer"'),
+      durationSeconds: z.number().int().min(1).describe('Total duration of the activity in seconds'),
+      sessionName: z.string().optional().describe('Optional session label. Defaults to activityName.'),
+      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
+    },
+    async ({ activityName, durationSeconds, sessionName, date }) => {
+      const payload = {
+        sessionDate: date ?? todayStr(),
+        sessionName: sessionName ?? activityName,
+        exercises: [
+          {
+            exerciseName: activityName,
+            sets: [
+              {
+                setNumber: 1,
+                reps: 0,
+                weightLbs: 0,
+                durationSeconds,
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = await api('POST', '/workouts', payload);
+
+      return {
+        content: [{ type: 'text', text: `Logged ${activityName}: ${formatDuration(durationSeconds)} on ${result.sessionDate}` }],
+      };
+    },
+  );
+
+  // ── Tool: get_workout_by_date ─────────────────────────────────────────────
+
+  mcp.tool(
+    'get_workout_by_date',
+    'Look up a workout session by date. Returns the session ID and full exercise details needed to retroactively edit a past session. Call this before edit_workout when the user wants to change a session from a specific date.',
+    {
+      date: z.string().describe('Date to look up in YYYY-MM-DD format'),
+    },
+    async ({ date }) => {
+      const sessions = await api('GET', `/workouts?date=${encodeURIComponent(date)}`);
+      if (!sessions.length) {
+        return { content: [{ type: 'text', text: `No workout found for ${date}.` }] };
+      }
+      const session = sessions[0];
+      const grouped = (session.exerciseSets ?? []).reduce((acc, s) => {
+        if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
+        acc[s.exerciseName].push(s);
+        return acc;
+      }, {});
+      const lines = Object.entries(grouped).map(([name, sets]) => {
+        const desc = sets.map(s => describeSet(s)).join(', ');
+        return `  • ${name}: ${desc}`;
+      });
+      const header = `Workout on ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ''} [session ID: ${session.id}]`;
+      return {
+        content: [{ type: 'text', text: `${header}\n${lines.join('\n') || '  No exercises logged'}` }],
+      };
+    },
+  );
+
   // ── Tool: edit_workout ─────────────────────────────────────────────────────
 
   mcp.tool(
     'edit_workout',
-    'Edit/update an existing workout session — replace its exercises and sets entirely, or rename it. Use get_today_summary first to find the session ID. Call this when the user wants to change, update, or fix a logged workout.',
+    'Edit/update an existing workout session — replace its exercises and sets entirely, or rename it. Use get_workout_by_date or get_today_summary first to find the session ID. Preserves the original session date automatically.',
     {
-      sessionId: z.number().int().positive().describe('The workout session ID to update (get this from get_today_summary)'),
+      sessionId: z.number().int().positive().describe('The workout session ID to update (get from get_workout_by_date or get_today_summary)'),
       sessionName: z.string().optional().describe('New name for the session'),
       exercises: z.array(z.object({
         exerciseName: z.string().describe('Name of the exercise'),
@@ -163,8 +281,9 @@ Examples:
       })).describe('Complete list of exercises — replaces all existing exercises'),
     },
     async ({ sessionId, sessionName, exercises }) => {
+      const existing = await api('GET', `/workouts/${sessionId}`);
       const result = await api('PUT', `/workouts/${sessionId}`, {
-        sessionDate: todayStr(),
+        sessionDate: existing.sessionDate,
         sessionName: sessionName ?? null,
         exercises,
       });

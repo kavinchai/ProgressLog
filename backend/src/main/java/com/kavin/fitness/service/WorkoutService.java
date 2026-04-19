@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,10 +29,19 @@ public class WorkoutService {
     }
 
     @Transactional(readOnly = true)
-    public List<WorkoutSessionDTO> getWorkoutSessions(Long userId) {
+    public List<WorkoutSessionDTO> getWorkoutSessions(Long userId, LocalDate date) {
+        if (date != null) {
+            return workoutSessionRepository.findByUserIdAndSessionDate(userId, date)
+                    .map(this::toDTO).map(List::of).orElse(List.of());
+        }
         return workoutSessionRepository
                 .findByUserIdWithSetsOrderByDateAsc(userId)
                 .stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public WorkoutSessionDTO getWorkoutSession(Long sessionId, Long userId) {
+        return toDTO(resolveSession(sessionId, userId));
     }
 
     @Transactional
