@@ -39,6 +39,7 @@ export default function WeeklyStats() {
   const avgWeight    = avg(weights);
   const avgCalories  = avg(rows.map(row => row.calories));
   const avgProtein   = avg(rows.map(row => row.protein));
+  const avgSteps     = avg(rows.map(row => row.steps));
 
   return (
     <div className="weekly-page">
@@ -67,6 +68,10 @@ export default function WeeklyStats() {
               <span className="weekly-stat-value">{avgProtein ? avgProtein + ' g' : '--'}</span>
             </div>
             <div className="weekly-stat">
+              <span className="weekly-stat-label">avg steps</span>
+              <span className="weekly-stat-value">{avgSteps ? avgSteps.toLocaleString() : '--'}</span>
+            </div>
+            <div className="weekly-stat">
               <span className="weekly-stat-label">workouts</span>
               <span className="weekly-stat-value">{workoutCount} / 7</span>
             </div>
@@ -89,6 +94,7 @@ export default function WeeklyStats() {
                   <th>Weight</th>
                   <th>Calories</th>
                   <th>Protein</th>
+                  <th>Steps</th>
                   <th>Workout</th>
                 </tr>
               </thead>
@@ -105,11 +111,12 @@ export default function WeeklyStats() {
                       <td>{row.weight != null ? row.weight + ' lbs' : '--'}</td>
                       <td>{row.calories != null ? row.calories : '--'}</td>
                       <td>{row.protein != null ? row.protein + 'g' : '--'}</td>
+                      <td>{row.steps != null ? row.steps.toLocaleString() : '--'}</td>
                       <td>{row.workout ?? '--'}</td>
                     </tr>
                     {expandedDay === row.date && (
                       <tr key={row.date + '-detail'} className="detail-row">
-                        <td colSpan={5}>
+                        <td colSpan={6}>
                           <DayDetail
                             date={row.date}
                             weightEntry={row.weightEntry}

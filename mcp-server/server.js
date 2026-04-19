@@ -385,6 +385,68 @@ Examples:
     },
   );
 
+  // ── Tool: edit_steps ─────────────────────────────────────────────────────
+
+  mcp.tool(
+    'edit_steps',
+    'Update the step count for a date that already has a nutrition log entry. Preserves the existing day type. Use this when the user wants to correct or change a previously logged step count.',
+    {
+      steps: z.number().int().min(0).describe('New step count to set'),
+      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
+    },
+    async ({ steps, date }) => {
+      const logDate = date ?? todayStr();
+      const allLogs = await api('GET', '/nutrition');
+      const existing = allLogs.find(n => n.logDate === logDate);
+      if (!existing) {
+        return {
+          content: [{ type: 'text', text: `No nutrition log found for ${logDate}. Use log_steps to create one.` }],
+        };
+      }
+      await api('POST', '/nutrition', {
+        logDate,
+        dayType: existing.dayType,
+        steps,
+      });
+      return {
+        content: [{ type: 'text', text: `Updated steps to ${steps.toLocaleString()} on ${logDate}` }],
+      };
+    },
+  );
+
+  // ── Tool: delete_steps ────────────────────────────────────────────────────
+
+  mcp.tool(
+    'delete_steps',
+    'Remove/clear the step count for a given date. The rest of the nutrition log (day type, meals) is preserved. Use this when the user wants to delete or clear their step count for a day.',
+    {
+      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
+    },
+    async ({ date }) => {
+      const logDate = date ?? todayStr();
+      const allLogs = await api('GET', '/nutrition');
+      const existing = allLogs.find(n => n.logDate === logDate);
+      if (!existing) {
+        return {
+          content: [{ type: 'text', text: `No nutrition log found for ${logDate}. Nothing to delete.` }],
+        };
+      }
+      if (existing.steps == null) {
+        return {
+          content: [{ type: 'text', text: `No steps logged for ${logDate}. Nothing to delete.` }],
+        };
+      }
+      await api('POST', '/nutrition', {
+        logDate,
+        dayType: existing.dayType,
+        steps: null,
+      });
+      return {
+        content: [{ type: 'text', text: `Cleared steps for ${logDate}` }],
+      };
+    },
+  );
+
   // ── Tool: get_today_summary ───────────────────────────────────────────────
 
   mcp.tool(
