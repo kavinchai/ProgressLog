@@ -93,24 +93,26 @@ function createMcpServer() {
 
   mcp.tool(
     'log_workout',
-    `Log a workout session. Use for ALL workout types:
-- Strength/lifting: provide reps and weightLbs per set (e.g. Bench Press 3×8 @ 185 lbs)
-- Running: provide distanceMiles and durationSeconds, omit reps/weight (e.g. 5 mi in 2100s)
-- Timed activities (Muay Thai, boxing, yoga, etc.): provide durationSeconds only, omit reps/weight/distance
-For cardio and timed activities use a single set (setNumber: 1).`,
+    `Log a workout session. ALWAYS add the activity as an entry in the exercises array — never use sessionName as a substitute.
+- Strength/lifting: add an exercise with reps and weightLbs per set
+- Running: add an exercise named "Run" with distanceMiles and durationSeconds (setNumber: 1, omit reps/weight)
+- Timed activities (Muay Thai, boxing, yoga, etc.): add an exercise named after the activity with durationSeconds only (setNumber: 1, omit reps/weight/distance)
+Examples:
+  "5 mile run in 35 mins" → exercises: [{ exerciseName: "Run", sets: [{ setNumber: 1, distanceMiles: 5, durationSeconds: 2100 }] }]
+  "1 hour Muay Thai" → exercises: [{ exerciseName: "Muay Thai", sets: [{ setNumber: 1, durationSeconds: 3600 }] }]`,
     {
-      sessionName: z.string().optional().describe('Name for the session, e.g. "Push Day", "Evening Run", "Muay Thai"'),
+      sessionName: z.string().optional().describe('Optional label for the whole session, e.g. "Push Day", "Pull Day", "Legs". Do NOT use this for the activity name — add it as an exercise instead.'),
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
       exercises: z.array(z.object({
         exerciseName: z.string().describe('Name of the exercise or activity, e.g. "Bench Press", "Run", "Muay Thai"'),
         sets: z.array(z.object({
           setNumber: z.number().int().positive().describe('Set number starting from 1. Use 1 for cardio/timed activities.'),
-          reps: z.number().int().min(0).optional().describe('Reps performed (strength exercises only — omit for cardio/timed)'),
-          weightLbs: z.number().min(0).optional().describe('Weight in pounds (strength exercises only — omit for cardio/timed)'),
+          reps: z.number().int().min(0).optional().describe('Reps performed (strength only — omit for cardio/timed)'),
+          weightLbs: z.number().min(0).optional().describe('Weight in pounds (strength only — omit for cardio/timed)'),
           distanceMiles: z.number().min(0).optional().describe('Distance in miles (running only)'),
           durationSeconds: z.number().int().min(0).optional().describe('Total duration in seconds (running and timed activities)'),
-        })).describe('Array of sets. Cardio/timed activities use a single set.'),
-      })).describe('Array of exercises or activities performed'),
+        })).describe('Array of sets. Cardio/timed activities use a single set with setNumber: 1.'),
+      })).min(1).describe('Array of exercises or activities performed. Must contain at least one entry.'),
     },
     async ({ sessionName, date, exercises }) => {
       const payload = {
