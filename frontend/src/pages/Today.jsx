@@ -13,6 +13,7 @@ import MealModal           from '../components/MealModal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
 import { groupByExercise, hasCardioData, formatDuration, calcPace } from '../utils/workout';
+import { mergeWorkoutSessions } from '../utils/stats';
 import { localDateStr, formatDateFull as fmtDate } from '../utils/date';
 import './Today.css';
 
@@ -118,7 +119,7 @@ export default function Today() {
   const templateBtnRef = useRef(null);
 
   const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
-  const todayWorkoutEntry   = workoutData.find(w => w.sessionDate === TODAY);
+  const todayWorkoutEntry   = mergeWorkoutSessions(workoutData.filter(w => w.sessionDate === TODAY));
   const todayNutritionEntry = nutritionData.find(n => n.logDate === TODAY);
 
   const {

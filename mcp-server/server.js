@@ -59,6 +59,25 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Helper: add exercises to an existing session for date, or create a new one.
+// Returns the final WorkoutSessionDTO.
+async function logExercisesToDate(date, sessionName, exercises) {
+  const existing = await api('GET', `/workouts?date=${encodeURIComponent(date)}`);
+  if (existing.length > 0) {
+    const sessionId = existing[0].id;
+    let result;
+    for (const exercise of exercises) {
+      result = await api('POST', `/workouts/${sessionId}/exercises`, exercise);
+    }
+    return result ?? await api('GET', `/workouts/${sessionId}`);
+  }
+  return await api('POST', '/workouts', {
+    sessionDate: date,
+    sessionName: sessionName ?? null,
+    exercises,
+  });
+}
+
 // ── MCP Server factory ─────────────────────────────────────────────────────
 // Each session needs its own McpServer instance because the SDK only allows
 // one transport per server.
@@ -115,22 +134,19 @@ Examples:
       })).min(1).describe('Array of exercises or activities performed. Must contain at least one entry.'),
     },
     async ({ sessionName, date, exercises }) => {
-      const payload = {
-        sessionDate: date ?? todayStr(),
-        sessionName: sessionName ?? null,
-        exercises: exercises.map(e => ({
-          exerciseName: e.exerciseName,
-          sets: e.sets.map(s => ({
-            setNumber: s.setNumber,
-            reps: s.reps ?? 0,
-            weightLbs: s.weightLbs ?? 0,
-            ...(s.distanceMiles != null && { distanceMiles: s.distanceMiles }),
-            ...(s.durationSeconds != null && { durationSeconds: s.durationSeconds }),
-          })),
+      const targetDate = date ?? todayStr();
+      const mappedExercises = exercises.map(e => ({
+        exerciseName: e.exerciseName,
+        sets: e.sets.map(s => ({
+          setNumber: s.setNumber,
+          reps: s.reps ?? 0,
+          weightLbs: s.weightLbs ?? 0,
+          ...(s.distanceMiles != null && { distanceMiles: s.distanceMiles }),
+          ...(s.durationSeconds != null && { durationSeconds: s.durationSeconds }),
         })),
-      };
+      }));
 
-      const result = await api('POST', '/workouts', payload);
+      const result = await logExercisesToDate(targetDate, sessionName ?? null, mappedExercises);
 
       const summary = exercises.map(e => {
         const setsDesc = e.sets.map(s => describeSet(s)).join(', ');
@@ -160,26 +176,13 @@ Examples:
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
     },
     async ({ activityName, distanceMiles, durationSeconds, sessionName, date }) => {
-      const payload = {
-        sessionDate: date ?? todayStr(),
-        sessionName: sessionName ?? `${activityName} ${distanceMiles} mi`,
-        exercises: [
-          {
-            exerciseName: activityName,
-            sets: [
-              {
-                setNumber: 1,
-                reps: 0,
-                weightLbs: 0,
-                distanceMiles,
-                durationSeconds,
-              },
-            ],
-          },
-        ],
+      const targetDate = date ?? todayStr();
+      const exercise = {
+        exerciseName: activityName,
+        sets: [{ setNumber: 1, reps: 0, weightLbs: 0, distanceMiles, durationSeconds }],
       };
 
-      const result = await api('POST', '/workouts', payload);
+      const result = await logExercisesToDate(targetDate, sessionName ?? `${activityName} ${distanceMiles} mi`, [exercise]);
 
       return {
         content: [{ type: 'text', text: `Logged ${activityName}: ${distanceMiles} mi in ${formatDuration(durationSeconds)} on ${result.sessionDate}` }],
@@ -205,25 +208,13 @@ Examples:
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
     },
     async ({ activityName, durationSeconds, sessionName, date }) => {
-      const payload = {
-        sessionDate: date ?? todayStr(),
-        sessionName: sessionName ?? activityName,
-        exercises: [
-          {
-            exerciseName: activityName,
-            sets: [
-              {
-                setNumber: 1,
-                reps: 0,
-                weightLbs: 0,
-                durationSeconds,
-              },
-            ],
-          },
-        ],
+      const targetDate = date ?? todayStr();
+      const exercise = {
+        exerciseName: activityName,
+        sets: [{ setNumber: 1, reps: 0, weightLbs: 0, durationSeconds }],
       };
 
-      const result = await api('POST', '/workouts', payload);
+      const result = await logExercisesToDate(targetDate, sessionName ?? activityName, [exercise]);
 
       return {
         content: [{ type: 'text', text: `Logged ${activityName}: ${formatDuration(durationSeconds)} on ${result.sessionDate}` }],
@@ -416,7 +407,7 @@ Examples:
       ]);
 
       const weight = weightData.find(w => w.logDate === today);
-      const workout = workoutData.find(w => w.sessionDate === today);
+      const workouts = workoutData.filter(w => w.sessionDate === today);
       const nutrition = nutritionData.find(n => n.logDate === today);
 
       const parts = [];
@@ -429,20 +420,22 @@ Examples:
         parts.push('⚖️ Weight: not logged');
       }
 
-      if (workout) {
-        parts.push(`\n🏋️ Workout${workout.sessionName ? ` (${workout.sessionName})` : ''} [session ID: ${workout.id}]:`);
-        if (workout.exerciseSets?.length > 0) {
-          const grouped = {};
-          for (const s of workout.exerciseSets) {
-            if (!grouped[s.exerciseName]) grouped[s.exerciseName] = [];
-            grouped[s.exerciseName].push(s);
+      if (workouts.length > 0) {
+        for (const workout of workouts) {
+          parts.push(`\n🏋️ Workout${workout.sessionName ? ` (${workout.sessionName})` : ''} [session ID: ${workout.id}]:`);
+          if (workout.exerciseSets?.length > 0) {
+            const grouped = {};
+            for (const s of workout.exerciseSets) {
+              if (!grouped[s.exerciseName]) grouped[s.exerciseName] = [];
+              grouped[s.exerciseName].push(s);
+            }
+            for (const [name, sets] of Object.entries(grouped)) {
+              const desc = sets.map(s => describeSet(s)).join(', ');
+              parts.push(`  • ${name}: ${desc}`);
+            }
+          } else {
+            parts.push('  No exercises logged');
           }
-          for (const [name, sets] of Object.entries(grouped)) {
-            const desc = sets.map(s => describeSet(s)).join(', ');
-            parts.push(`  • ${name}: ${desc}`);
-          }
-        } else {
-          parts.push('  No exercises logged');
         }
       } else {
         parts.push('\n🏋️ Workout: not logged');
