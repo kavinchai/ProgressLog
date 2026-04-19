@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -29,8 +30,17 @@ public class WorkoutController {
 
     @GetMapping
     public ResponseEntity<List<WorkoutSessionDTO>> getWorkouts(
-            @AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(workoutService.getWorkoutSessions(userResolver.resolve(principal).getId()));
+            @AuthenticationPrincipal UserDetails principal,
+            @RequestParam(required = false) LocalDate date) {
+        long userId = userResolver.resolve(principal).getId();
+        return ResponseEntity.ok(workoutService.getWorkoutSessions(userId, date));
+    }
+
+    @GetMapping("/{sessionId}")
+    public ResponseEntity<WorkoutSessionDTO> getWorkout(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long sessionId) {
+        return ResponseEntity.ok(workoutService.getWorkoutSession(sessionId, userResolver.resolve(principal).getId()));
     }
 
     @PostMapping
