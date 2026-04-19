@@ -95,7 +95,6 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
                 <span>Set</span>
                 <span>Distance (mi)</span>
                 <span>Duration (m:s)</span>
-                <span></span>
               </div>
               {sets.map((s, setIndex) => (
                 <div key={setIndex} className="wbm-set-row">
@@ -121,7 +120,6 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
                       onChange={e => updateSet(setIndex, 'durationSecs', e.target.value)}
                     />
                   </div>
-                  <button type="button" className="btn btn-sm" onClick={() => removeSet(setIndex)}>&times;</button>
                 </div>
               ))}
             </>
