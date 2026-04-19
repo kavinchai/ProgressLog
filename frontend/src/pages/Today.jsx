@@ -56,12 +56,11 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
       <div className="exercise-card-sets">
         {cardio ? (
           <>
-            <div className="exercise-sets-head exercise-sets-head--cardio">
-              <span>Set</span><span>Distance</span><span>Time</span><span>Pace</span>
+            <div className="exercise-sets-head exercise-sets-head--cardio" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <span>Distance</span><span>Time</span><span>Pace</span>
             </div>
             {sets.map(s => (
-              <div key={s.id} className="exercise-set-row exercise-set-row--cardio">
-                <span>{s.setNumber}</span>
+              <div key={s.id} className="exercise-set-row exercise-set-row--cardio" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
                 <span>{s.distanceMiles != null ? `${s.distanceMiles} mi` : '--'}</span>
                 <span>{formatDuration(s.durationSeconds)}</span>
                 <span>{calcPace(s.distanceMiles, s.durationSeconds) ?? '--'}</span>
