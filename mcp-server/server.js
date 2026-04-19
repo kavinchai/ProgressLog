@@ -143,6 +143,61 @@ Examples:
     },
   );
 
+  // ── Tool: log_cardio ─────────────────────────────────────────────────────
+
+  mcp.tool(
+    'log_cardio',
+    `Log a run or timed activity. Use this instead of log_workout for:
+- Running: provide activityName "Run", distanceMiles, and durationSeconds
+- Timed activities (Muay Thai, boxing, yoga, cycling, etc.): provide activityName and durationSeconds only
+This tool always logs a single activity block with no reps or weight.
+Examples:
+  "1.53 mile run in 14 mins" → activityName: "Run", distanceMiles: 1.53, durationSeconds: 840
+  "1 hour Muay Thai" → activityName: "Muay Thai", durationSeconds: 3600`,
+    {
+      activityName: z.string().describe('Name of the activity, e.g. "Run", "Muay Thai", "Yoga", "Boxing", "Cycling"'),
+      durationSeconds: z.number().int().min(1).describe('Total duration of the activity in seconds'),
+      distanceMiles: z.number().min(0).optional().describe('Distance in miles (running/cycling only — omit for non-distance activities)'),
+      sessionName: z.string().optional().describe('Optional label for the session, e.g. "Morning Run". Defaults to activityName + distance if applicable.'),
+      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
+    },
+    async ({ activityName, durationSeconds, distanceMiles, sessionName, date }) => {
+      const defaultSessionName = distanceMiles != null
+        ? `${activityName} ${distanceMiles} mi`
+        : activityName;
+
+      const payload = {
+        sessionDate: date ?? todayStr(),
+        sessionName: sessionName ?? defaultSessionName,
+        exercises: [
+          {
+            exerciseName: activityName,
+            sets: [
+              {
+                setNumber: 1,
+                reps: 0,
+                weightLbs: 0,
+                durationSeconds,
+                ...(distanceMiles != null && { distanceMiles }),
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = await api('POST', '/workouts', payload);
+
+      const parts = [];
+      if (distanceMiles != null) parts.push(`${distanceMiles} mi`);
+      parts.push(formatDuration(durationSeconds));
+      const desc = parts.join(' in ');
+
+      return {
+        content: [{ type: 'text', text: `Logged ${activityName}: ${desc} on ${result.sessionDate}` }],
+      };
+    },
+  );
+
   // ── Tool: edit_workout ─────────────────────────────────────────────────────
 
   mcp.tool(
