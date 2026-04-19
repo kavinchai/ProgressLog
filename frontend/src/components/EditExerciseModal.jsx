@@ -39,6 +39,10 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
     );
   }
 
+  function addSet() {
+    setSets(prev => [...prev, { setNumber: prev.length + 1, reps: '', weightLbs: '' }]);
+  }
+
   function updateSet(setIndex, field, val) {
     setSets(prev => prev.map((s, i) => i === setIndex ? { ...s, [field]: val } : s));
   }
@@ -146,6 +150,7 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
                   <button type="button" className="btn btn-sm" onClick={() => removeSet(setIndex)}>&times;</button>
                 </div>
               ))}
+              <button type="button" className="btn btn-sm" onClick={addSet}>+ Set</button>
             </>
           )}
         </div>
