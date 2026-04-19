@@ -32,7 +32,7 @@ public class WorkoutService {
     public List<WorkoutSessionDTO> getWorkoutSessions(Long userId, LocalDate date) {
         if (date != null) {
             return workoutSessionRepository.findByUserIdAndSessionDate(userId, date)
-                    .map(this::toDTO).map(List::of).orElse(List.of());
+                    .stream().map(this::toDTO).collect(Collectors.toList());
         }
         return workoutSessionRepository
                 .findByUserIdWithSetsOrderByDateAsc(userId)

@@ -50,7 +50,7 @@ class WorkoutServiceTest {
         WorkoutSession s = sessionWithId(10L, LocalDate.of(2026, 1, 1));
         when(workoutSessionRepository.findByUserIdWithSetsOrderByDateAsc(1L)).thenReturn(List.of(s));
 
-        List<WorkoutSessionDTO> result = workoutService.getWorkoutSessions(1L);
+        List<WorkoutSessionDTO> result = workoutService.getWorkoutSessions(1L, null);
 
         assertEquals(1, result.size());
         assertEquals(10L, result.get(0).getId());
@@ -61,7 +61,7 @@ class WorkoutServiceTest {
     void getWorkoutSessions_emptyListWhenNoSessions() {
         when(workoutSessionRepository.findByUserIdWithSetsOrderByDateAsc(1L)).thenReturn(List.of());
 
-        assertTrue(workoutService.getWorkoutSessions(1L).isEmpty());
+        assertTrue(workoutService.getWorkoutSessions(1L, null).isEmpty());
     }
 
     // ── save ─────────────────────────────────────────────────────────────────
