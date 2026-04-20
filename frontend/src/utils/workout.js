@@ -1,8 +1,3 @@
-/** Detect cardio from backend data — true if any set has distance or duration fields. */
-export function hasCardioData(sets) {
-  return (sets ?? []).some(s => s.distanceMiles != null || s.durationSeconds != null);
-}
-
 /** Classify exercise sets: 'run' (has distance), 'timed' (duration only), or 'lifting'. */
 export function detectType(sets) {
   const arr = sets ?? [];
