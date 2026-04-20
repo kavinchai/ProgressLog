@@ -7,6 +7,7 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
 import com.kavin.fitness.security.JwtUtil;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/profile")
 public class ProfileController {
@@ -42,6 +44,7 @@ public class ProfileController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UserGoalsDTO dto) {
 
+        log.info("PUT goals user={} calTrain={} calRest={} protein={}", userDetails.getUsername(), dto.getCalorieTargetTraining(), dto.getCalorieTargetRest(), dto.getProteinTarget());
         User user = userResolver.resolve(userDetails);
 
         user.setCalorieTargetTraining(dto.getCalorieTargetTraining());
@@ -65,9 +68,11 @@ public class ProfileController {
 
         String email = body.get("email");
         if (email == null || email.isBlank() || !email.contains("@")) {
+            log.warn("Invalid email update attempt by user={}", userDetails.getUsername());
             throw new IllegalArgumentException("Invalid email address.");
         }
 
+        log.info("PUT email user={}", userDetails.getUsername());
         User user = userResolver.resolve(userDetails);
 
         user.setEmail(email.trim());
@@ -83,9 +88,11 @@ public class ProfileController {
         User user = userResolver.resolve(userDetails);
 
         if (!passwordEncoder.matches(body.get("password"), user.getPassword())) {
+            log.warn("Password verification failed for user={}", userDetails.getUsername());
             throw new BadCredentialsException("Incorrect password.");
         }
 
+        log.debug("Password verified for user={}", userDetails.getUsername());
         return ResponseEntity.ok().build();
     }
 
@@ -94,9 +101,11 @@ public class ProfileController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UpdateCredentialsRequest dto) {
 
+        log.info("PUT credentials user={}", userDetails.getUsername());
         User user = userResolver.resolve(userDetails);
 
         if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+            log.warn("Credentials update failed — wrong current password for user={}", userDetails.getUsername());
             throw new BadCredentialsException("Current password is incorrect.");
         }
 

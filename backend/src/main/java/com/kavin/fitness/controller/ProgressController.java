@@ -4,6 +4,7 @@ import com.kavin.fitness.dto.MilestoneDTO;
 import com.kavin.fitness.dto.PREntryDTO;
 import com.kavin.fitness.dto.StrengthProgressDTO;
 import com.kavin.fitness.service.ProgressService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/progress")
 public class ProgressController {

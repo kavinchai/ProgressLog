@@ -6,6 +6,7 @@ import com.kavin.fitness.dto.WorkoutTemplateRequest;
 
 import com.kavin.fitness.service.WorkoutTemplateService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/templates")
 public class WorkoutTemplateController {
@@ -32,6 +34,7 @@ public class WorkoutTemplateController {
     public ResponseEntity<WorkoutTemplateDTO> createTemplate(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody WorkoutTemplateRequest request) {
+        log.info("POST template user={} name={}", principal.getUsername(), request.getName());
         WorkoutTemplateDTO created = templateService.create(userResolver.resolve(principal), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -41,6 +44,7 @@ public class WorkoutTemplateController {
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long templateId,
             @Valid @RequestBody WorkoutTemplateRequest request) {
+        log.info("PUT template templateId={} user={}", templateId, principal.getUsername());
         WorkoutTemplateDTO updated = templateService.update(
                 templateId, userResolver.resolve(principal).getId(), request);
         return ResponseEntity.ok(updated);
@@ -50,6 +54,7 @@ public class WorkoutTemplateController {
     public ResponseEntity<List<WorkoutTemplateDTO>> importTemplates(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody List<WorkoutTemplateRequest> requests) {
+        log.info("POST import templates user={} count={}", principal.getUsername(), requests.size());
         List<WorkoutTemplateDTO> imported = templateService.importAll(userResolver.resolve(principal), requests);
         return ResponseEntity.status(HttpStatus.CREATED).body(imported);
     }
@@ -58,6 +63,7 @@ public class WorkoutTemplateController {
     public ResponseEntity<Void> deleteTemplate(
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long templateId) {
+        log.info("DELETE template templateId={} user={}", templateId, principal.getUsername());
         templateService.delete(templateId, userResolver.resolve(principal).getId());
         return ResponseEntity.noContent().build();
     }
