@@ -7,6 +7,7 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
 import com.kavin.fitness.security.JwtUtil;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -33,6 +35,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        log.info("Login attempt for user={}", request.getUsername());
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(), request.getPassword()));
@@ -40,12 +43,15 @@ public class AuthController {
         UserDetails userDetails = (UserDetails) auth.getPrincipal();
         String token = jwtUtil.generateToken(userDetails.getUsername());
 
+        log.info("Login successful for user={}", userDetails.getUsername());
         return ResponseEntity.ok(new LoginResponse(token, userDetails.getUsername()));
     }
 
     @PostMapping("/register")
     public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("Registration attempt for user={}", request.getUsername());
         if (userRepository.existsByUsername(request.getUsername())) {
+            log.warn("Registration failed — username already taken: {}", request.getUsername());
             throw new IllegalArgumentException("Username already taken.");
         }
 
@@ -56,6 +62,7 @@ public class AuthController {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getUsername());
+        log.info("Registration successful for user={}", user.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new LoginResponse(token, user.getUsername()));
     }
@@ -63,6 +70,7 @@ public class AuthController {
     @PostMapping("/api-key")
     public ResponseEntity<Map<String, String>> generateApiKey(
             @AuthenticationPrincipal UserDetails userDetails) {
+        log.info("API key generation requested by user={}", userDetails.getUsername());
         User user = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -73,6 +81,7 @@ public class AuthController {
         user.setApiKey(apiKey);
         userRepository.save(user);
 
+        log.info("API key generated for user={}", userDetails.getUsername());
         return ResponseEntity.ok(Map.of("apiKey", apiKey));
     }
 }
