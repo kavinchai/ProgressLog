@@ -12,10 +12,12 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
   const [editMeal,     setEditMeal]     = useState(null);
   const [mealLogId,    setMealLogId]    = useState(null);
   const [editExercise, setEditExercise] = useState(null);
+  const [editingSteps, setEditingSteps] = useState(false);
+  const [stepsValue,   setStepsValue]   = useState('');
 
   const {
     renamingSession, setRenamingSession, renameValue, setRenameValue,
-    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, getOrCreateNutritionLogId,
+    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, saveSteps, getOrCreateNutritionLogId,
   } = useDayActions({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo });
 
   const exerciseGroups = workoutEntry?.exerciseSets?.length
@@ -73,7 +75,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
         {nutritionEntry ? (
           <div>
             <div className="day-detail-value">
-              {nutritionEntry.dayType}{nutritionEntry.steps != null ? ' / ' + nutritionEntry.steps.toLocaleString() + ' steps' : ''}
+              {nutritionEntry.dayType}
             </div>
             {meals.length > 0 && (
               <>
@@ -97,6 +99,49 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
           </div>
         ) : (
           <div className="day-detail-value"><span className="muted">--</span></div>
+        )}
+      </div>
+
+      {/* Steps */}
+      <div className="day-detail-section">
+        <div className="day-detail-section-head">
+          <span className="day-detail-label">Steps</span>
+          <div className="btn-actions">
+            {!editingSteps && (
+              <button className="btn btn-sm" onClick={() => {
+                setStepsValue(nutritionEntry?.steps != null ? String(nutritionEntry.steps) : '');
+                setEditingSteps(true);
+              }}>
+                {nutritionEntry?.steps != null ? 'Edit' : '+ Add'}
+              </button>
+            )}
+            {!editingSteps && nutritionEntry?.steps != null && showDelete && (
+              <button className="btn btn-sm btn-danger" onClick={() => saveSteps(null)}>Delete</button>
+            )}
+          </div>
+        </div>
+        {editingSteps ? (
+          <div className="today-steps-edit">
+            <input
+              className="modal-input"
+              type="number" min="0" placeholder="Steps"
+              value={stepsValue}
+              onChange={e => setStepsValue(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { saveSteps(stepsValue || null); setEditingSteps(false); }
+                if (e.key === 'Escape') setEditingSteps(false);
+              }}
+              autoFocus
+            />
+            <button className="btn btn-sm btn-primary" onClick={() => { saveSteps(stepsValue || null); setEditingSteps(false); }}>Save</button>
+            <button className="btn btn-sm" onClick={() => setEditingSteps(false)}>&times;</button>
+          </div>
+        ) : (
+          <div className="day-detail-value">
+            {nutritionEntry?.steps != null
+              ? nutritionEntry.steps.toLocaleString() + ' steps'
+              : <span className="muted">--</span>}
+          </div>
         )}
       </div>
 

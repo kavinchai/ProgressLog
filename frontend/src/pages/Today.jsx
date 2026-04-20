@@ -121,9 +121,12 @@ export default function Today() {
   const todayWorkoutEntry   = mergeWorkoutSessions(workoutData.filter(w => w.sessionDate === TODAY));
   const todayNutritionEntry = nutritionData.find(n => n.logDate === TODAY);
 
+  const [editingSteps,    setEditingSteps]    = useState(false);
+  const [stepsValue,      setStepsValue]      = useState('');
+
   const {
     renamingSession, setRenamingSession, renameValue, setRenameValue,
-    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, getOrCreateNutritionLogId,
+    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, saveSteps, getOrCreateNutritionLogId,
   } = useDayActions({
     date: TODAY,
     weightEntry:    todayWeightEntry,
@@ -215,6 +218,49 @@ export default function Today() {
           {todayWeightEntry
             ? <DataRow label="Weight" value={todayWeightEntry.weightLbs + ' lbs'} />
             : <span className="muted">No entry for today.</span>}
+        </div>
+      </div>
+
+      {/* STEPS */}
+      <div className="section-box">
+        <div className="section-header">
+          <span className="section-title">Steps</span>
+          <div className="btn-actions">
+            {!editingSteps && (
+              <button className="btn btn-sm" onClick={() => {
+                setStepsValue(todayNutritionEntry?.steps != null ? String(todayNutritionEntry.steps) : '');
+                setEditingSteps(true);
+              }}>
+                {todayNutritionEntry?.steps != null ? 'Edit' : '+ Add'}
+              </button>
+            )}
+            {!editingSteps && todayNutritionEntry?.steps != null && (
+              <button className="btn btn-sm btn-danger" onClick={() => saveSteps(null)}>Delete</button>
+            )}
+          </div>
+        </div>
+        <div className="section-body">
+          {editingSteps ? (
+            <div className="today-steps-edit">
+              <input
+                className="modal-input"
+                type="number" min="0" placeholder="Steps"
+                value={stepsValue}
+                onChange={e => setStepsValue(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { saveSteps(stepsValue || null); setEditingSteps(false); }
+                  if (e.key === 'Escape') setEditingSteps(false);
+                }}
+                autoFocus
+              />
+              <button className="btn btn-sm btn-primary" onClick={() => { saveSteps(stepsValue || null); setEditingSteps(false); }}>Save</button>
+              <button className="btn btn-sm" onClick={() => setEditingSteps(false)}>&times;</button>
+            </div>
+          ) : (
+            todayNutritionEntry?.steps != null
+              ? <DataRow label="Steps" value={todayNutritionEntry.steps.toLocaleString()} />
+              : <span className="muted">No steps logged.</span>
+          )}
         </div>
       </div>
 
@@ -356,9 +402,6 @@ export default function Today() {
             <>
               <div className="nutrition-day-info">
                 <DataRow label="Day Type" value={todayNutritionEntry.dayType} />
-                {todayNutritionEntry.steps != null && (
-                  <DataRow label="Steps" value={todayNutritionEntry.steps.toLocaleString()} />
-                )}
               </div>
               {meals.length > 0 && (
                 <>

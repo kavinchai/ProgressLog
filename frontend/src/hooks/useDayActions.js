@@ -29,6 +29,17 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
     setRenamingSession(false);
   }
 
+  async function saveSteps(steps) {
+    try {
+      await api.post('/nutrition', {
+        logDate: date,
+        dayType: nutritionEntry?.dayType ?? 'training',
+        steps: steps != null ? parseInt(steps) : null,
+      });
+      onRefetchN();
+    } catch { /* ignore */ }
+  }
+
   // Creates the nutrition day log if it doesn't exist yet, returns the log id.
   async function getOrCreateNutritionLogId() {
     if (nutritionEntry?.id) return nutritionEntry.id;
@@ -42,6 +53,6 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
   return {
     renamingSession, setRenamingSession,
     renameValue,     setRenameValue,
-    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, getOrCreateNutritionLogId,
+    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, saveSteps, getOrCreateNutritionLogId,
   };
 }

@@ -194,9 +194,9 @@ describe('Today — weight display', () => {
   it('does NOT show + Add in weight section when weight already logged today', () => {
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    // Weight section's + Add is gone; only workout section still has one
+    // Weight section's + Add is gone; workout and steps sections still have one each
     const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
-    expect(addBtns).toHaveLength(1); // workout section only
+    expect(addBtns).toHaveLength(2); // workout + steps
   });
 
   it('ignores weight entries from other dates', () => {
@@ -360,10 +360,11 @@ describe('Today — opening modals', () => {
   });
 
   it('+ Add workout button opens WorkoutBuilderModal', async () => {
-    // With a weight entry logged, only the workout section's + Add remains
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    await userEvent.click(screen.getByRole('button', { name: /^\+ Add$/i }));
+    // Steps section has its own + Add; workout's + Add is the second one
+    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
+    await userEvent.click(addBtns[1]);
     expect(screen.getByTestId('workout-modal')).toBeInTheDocument();
   });
 
@@ -470,9 +471,10 @@ describe('Today — delete actions', () => {
     const { refetchNutrition } = setup({ nutrition: [NUTRITION_ENTRY] });
     render(<Today />);
 
-    // The nutrition section has a Delete button
+    // Steps section also has a Delete button (NUTRITION_ENTRY has steps: 8000);
+    // the nutrition section's Delete is the second one
     const deleteBtns = screen.getAllByRole('button', { name: /^Delete$/i });
-    await userEvent.click(deleteBtns[0]);
+    await userEvent.click(deleteBtns[1]);
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/nutrition/5');

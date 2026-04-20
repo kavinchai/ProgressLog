@@ -312,6 +312,18 @@
   background: var(--hover-bg);
 }
 
+/* ── Steps inline edit ── */
+.today-steps-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.today-steps-edit .modal-input {
+  width: 140px;
+  padding: 4px 8px;
+}
+
 /* ── Mobile ── */
 @media (max-width: 640px) {
   .today-page-header {
