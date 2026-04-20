@@ -12,7 +12,7 @@ import DayInfoModal        from '../components/DayInfoModal';
 import MealModal           from '../components/MealModal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
-import { groupByExercise, hasCardioData, formatDuration, calcPace } from '../utils/workout';
+import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 import { mergeWorkoutSessions } from '../utils/stats';
 import { localDateStr, formatDateFull as fmtDate } from '../utils/date';
 import './Today.css';
@@ -39,14 +39,14 @@ function MealCard({ meal, index, onEdit }) {
 // ── Exercise cards ────────────────────────────────────────────────────────────
 
 function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
-  const cardio = hasCardioData(sets);
+  const type = detectType(sets);
 
   return (
     <div className="exercise-card">
       <div className="exercise-card-header">
         <span className="exercise-card-name">
           {name}
-          {!cardio && (
+          {type === 'lifting' && (
             <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)' }}>{weight} lbs</span>
           )}
           {isPR && <span className="pr-badge">PR</span>}
@@ -54,7 +54,7 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
         <button className="btn btn-sm" onClick={onEdit}>Edit</button>
       </div>
       <div className="exercise-card-sets">
-        {cardio ? (
+        {type === 'run' ? (
           <>
             <div className="exercise-sets-head exercise-sets-head--cardio" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
               <span>Distance</span><span>Time</span><span>Pace</span>
@@ -64,6 +64,18 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
                 <span>{s.distanceMiles != null ? `${s.distanceMiles} mi` : '--'}</span>
                 <span>{formatDuration(s.durationSeconds)}</span>
                 <span>{calcPace(s.distanceMiles, s.durationSeconds) ?? '--'}</span>
+              </div>
+            ))}
+          </>
+        ) : type === 'timed' ? (
+          <>
+            <div className="exercise-sets-head" style={{ gridTemplateColumns: '36px 1fr' }}>
+              <span>#</span><span>Duration</span>
+            </div>
+            {sets.map((s, i) => (
+              <div key={s.id} className="exercise-set-row" style={{ gridTemplateColumns: '36px 1fr' }}>
+                <span>{i + 1}</span>
+                <span>{formatDuration(s.durationSeconds)}</span>
               </div>
             ))}
           </>

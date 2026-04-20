@@ -5,7 +5,7 @@ import DayInfoModal from './DayInfoModal';
 import MealModal from './MealModal';
 import WorkoutBuilderModal from './WorkoutBuilderModal';
 import EditExerciseModal from './EditExerciseModal';
-import { groupByExercise, hasCardioData, formatDuration, calcPace } from '../utils/workout';
+import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 
 export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo, showDelete = true }) {
   const [modal,        setModal]        = useState(null);
@@ -189,7 +189,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
                 <div key={`${g.name}-${g.weight}`} className="day-exercise-item">
                   <div className="day-exercise-row">
                     <span className="day-exercise-name">{g.name}</span>
-                    {!hasCardioData(g.sets) && g.weight != null && (
+                    {detectType(g.sets) === 'lifting' && g.weight != null && (
                       <span className="muted">{g.weight} lbs</span>
                     )}
                     <button className="btn btn-sm" style={{ marginLeft: 'auto' }}
@@ -198,11 +198,13 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
                     </button>
                   </div>
                   <div className="day-exercise-reps">
-                    {hasCardioData(g.sets)
+                    {detectType(g.sets) === 'run'
                       ? g.sets.map(s =>
                           `${s.distanceMiles ?? '--'} mi / ${formatDuration(s.durationSeconds)}${calcPace(s.distanceMiles, s.durationSeconds) ? ` (${calcPace(s.distanceMiles, s.durationSeconds)})` : ''}`
                         ).join('  ')
-                      : g.sets.map(s => s.reps ?? '--').join('  ')
+                      : detectType(g.sets) === 'timed'
+                        ? g.sets.map(s => formatDuration(s.durationSeconds)).join('  ')
+                        : g.sets.map(s => s.reps ?? '--').join('  ')
                     }
                   </div>
                 </div>

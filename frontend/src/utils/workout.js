@@ -3,6 +3,14 @@ export function hasCardioData(sets) {
   return (sets ?? []).some(s => s.distanceMiles != null || s.durationSeconds != null);
 }
 
+/** Classify exercise sets: 'run' (has distance), 'timed' (duration only), or 'lifting'. */
+export function detectType(sets) {
+  const arr = sets ?? [];
+  if (arr.some(s => s.distanceMiles != null)) return 'run';
+  if (arr.some(s => s.durationSeconds != null)) return 'timed';
+  return 'lifting';
+}
+
 /** Format seconds into "Xm Ys" or "Xh Ym Zs". */
 export function formatDuration(seconds) {
   if (seconds == null) return '--';
