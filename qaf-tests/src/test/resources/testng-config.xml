@@ -1,0 +1,56 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="WorkoutApp E2E Tests" verbose="2" parallel="false">
+
+    <parameter name="step.provider.pkg" value="com.kavin.fitness.e2e.steps" />
+    <parameter name="scenario.file.loc" value="src/test/resources/scenarios" />
+
+    <test name="Workout Lifting Flows">
+        <parameter name="scenario.file.loc" value="src/test/resources/scenarios/workout_lifting.feature" />
+        <classes>
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+        </classes>
+    </test>
+
+    <test name="Workout Run Flows">
+        <parameter name="scenario.file.loc" value="src/test/resources/scenarios/workout_run.feature" />
+        <classes>
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+        </classes>
+    </test>
+
+    <test name="Workout Timed Flows">
+        <parameter name="scenario.file.loc" value="src/test/resources/scenarios/workout_timed.feature" />
+        <classes>
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+        </classes>
+    </test>
+
+    <test name="Workout Display">
+        <parameter name="scenario.file.loc" value="src/test/resources/scenarios/workout_display.feature" />
+        <classes>
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+        </classes>
+    </test>
+
+    <test name="Weight Flows">
+        <parameter name="scenario.file.loc" value="src/test/resources/scenarios/weight.feature" />
+        <classes>
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+        </classes>
+    </test>
+
+    <test name="Steps Flows">
+        <parameter name="scenario.file.loc" value="src/test/resources/scenarios/steps.feature" />
+        <classes>
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+        </classes>
+    </test>
+
+    <test name="Meal Flows">
+        <parameter name="scenario.file.loc" value="src/test/resources/scenarios/meals.feature" />
+        <classes>
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+        </classes>
+    </test>
+
+</suite>

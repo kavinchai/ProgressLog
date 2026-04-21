@@ -53,6 +53,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# ── QAF / Selenium E2E tests ───────────────────────
+qaf-tests/.gradle/
+qaf-tests/build/
+qaf-tests/test-results/
+qaf-tests/test-output/
+qaf-tests/src/test/resources/env.properties
+
 # ── Misc ────────────────────────────────────────────
 *.tmp
 *.bak
