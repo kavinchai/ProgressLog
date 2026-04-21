@@ -1,0 +1,43 @@
+# Workout Builder Modal locators
+workout.modal.title=css=.modal-title
+workout.modal.sessionNameInput=css=input[placeholder*='push, pull, legs']
+workout.modal.addExerciseBtn=xpath=//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'\+ exercise')]
+workout.modal.addRunBtn=xpath=//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'\+ run')]
+workout.modal.addTimedBtn=xpath=//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'\+ timed')]
+workout.modal.saveBtn=xpath=//div[contains(@class,'modal')]//button[translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']
+workout.modal.cancelBtn=xpath=//div[contains(@class,'modal')]//button[text()='Cancel' or text()='\u00d7']
+workout.modal.exerciseNameInputs=css=input[placeholder*='exercise name' i]
+workout.modal.weightInputs=css=.exercise-set-row input[placeholder='0']:nth-child(1)
+workout.modal.repsInputs=css=.exercise-set-row input[placeholder='0']:nth-child(2)
+workout.modal.distanceInputs=css=.run-set-row input[placeholder='0']:first-child
+workout.modal.hoursInputs=css=.timed-set-row input[placeholder='0']:nth-child(1)
+workout.modal.minutesInputs=css=.exercise-set-row input[placeholder='0']:nth-child(1)
+workout.modal.secondsInputs=css=.exercise-set-row input[placeholder='0']:nth-child(2)
+workout.modal.addSetBtns=xpath=//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'\+ set')]
+workout.modal.typeBtns=css=.exercise-type-toggle
+
+# Weight Modal locators
+weight.modal.title=css=.modal-title
+weight.modal.weightInput=css=.modal input[type='number']
+weight.modal.saveBtn=xpath=//div[contains(@class,'modal')]//button[translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']
+weight.modal.cancelBtn=xpath=//div[contains(@class,'modal')]//button[text()='Cancel' or text()='\u00d7']
+
+# Meal Modal locators
+meal.modal.title=css=.modal-title
+meal.modal.nameInput=css=.modal input[placeholder*='optional' i]
+meal.modal.caloriesInput=css=.modal input[type='number']:nth-of-type(1)
+meal.modal.proteinInput=css=.modal input[type='number']:nth-of-type(2)
+meal.modal.saveBtn=xpath=//div[contains(@class,'modal')]//button[translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']
+meal.modal.cancelBtn=xpath=//div[contains(@class,'modal')]//button[text()='Cancel' or text()='\u00d7']
+
+# Edit Exercise Modal locators
+editExercise.modal.title=css=.modal-title
+editExercise.modal.weightInputs=css=.modal .exercise-set-row input[placeholder='0']:nth-child(1)
+editExercise.modal.repsInputs=css=.modal .exercise-set-row input[placeholder='0']:nth-child(2)
+editExercise.modal.distanceInputs=css=.modal .run-set-row input[placeholder='0']:first-child
+editExercise.modal.hoursInputs=css=.modal .timed-set-row input:nth-child(1)
+editExercise.modal.minutesInputs=css=.modal .timed-set-row input:nth-child(2)
+editExercise.modal.secondsInputs=css=.modal .timed-set-row input:nth-child(3)
+editExercise.modal.saveBtn=xpath=//div[contains(@class,'modal')]//button[translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']
+editExercise.modal.deleteBtn=xpath=//div[contains(@class,'modal')]//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'delete')]
+editExercise.modal.cancelBtn=xpath=//div[contains(@class,'modal')]//button[text()='Cancel' or text()='\u00d7']

@@ -1,0 +1,5 @@
+# Login Page locators
+login.emailInput=css=input[type='email'], input[name='email']
+login.passwordInput=css=input[type='password']
+login.submitBtn=css=button[type='submit']
+login.errorMessage=css=.error-message, .login-error

@@ -1,0 +1,39 @@
+# Today Page locators
+
+# Weight section
+today.weight.value=css=.day-detail-section:nth-child(1) .day-detail-value
+today.weight.addBtn=xpath=//div[contains(@class,'day-detail-section')][1]//button[contains(text(),'\+ Add')]
+today.weight.editBtn=xpath=//div[contains(@class,'day-detail-section')][1]//button[text()='Edit']
+today.weight.deleteBtn=xpath=//div[contains(@class,'day-detail-section')][1]//button[contains(@class,'btn-danger')]
+
+# Nutrition section
+today.nutrition.addMealBtn=xpath=//button[contains(text(),'\+ Add Meal') or contains(text(),'\+ Meal')]
+today.nutrition.dayTypeValue=css=.day-detail-section:nth-child(2) .day-detail-value
+today.nutrition.editDayBtn=xpath=//button[text()='Edit Day']
+today.nutrition.totalCalories=css=.day-nutrition-total
+today.nutrition.mealRows=css=.day-meal-row
+today.nutrition.mealNames=css=.day-meal-name
+
+# Steps section
+today.steps.value=css=.day-detail-section:nth-child(3) .day-detail-value
+today.steps.addBtn=xpath=//div[contains(@class,'day-detail-section')][3]//button[contains(text(),'\+ Add') or text()='Edit']
+today.steps.editBtn=xpath=//div[contains(@class,'day-detail-section')][3]//button[text()='Edit']
+today.steps.deleteBtn=xpath=//div[contains(@class,'day-detail-section')][3]//button[contains(@class,'btn-danger')]
+today.steps.input=css=.today-steps-edit input[type='number']
+today.steps.saveBtn=css=.today-steps-edit .btn-primary
+
+# Workout section
+today.workout.addBtn=xpath=//div[contains(@class,'day-detail-section')][4]//button[contains(text(),'\+ Add')]
+today.workout.sessionName=css=.day-detail-section:nth-child(4) .day-detail-label .muted
+today.workout.renameBtn=xpath=//div[contains(@class,'day-detail-section')][4]//button[text()='Rename']
+today.workout.deleteBtn=xpath=//div[contains(@class,'day-detail-section')][4]//button[contains(@class,'btn-danger')]
+today.workout.renameInput=css=.day-detail-section:nth-child(4) input[type='text']
+today.workout.renameSaveBtn=xpath=//div[contains(@class,'day-detail-section')][4]//button[contains(@class,'btn-primary') and text()='Save']
+
+# Exercise list
+today.exercise.list=css=.day-exercise-list
+today.exercise.items=css=.day-exercise-item
+today.exercise.editBtns=css=.day-exercise-item .btn
+today.exercise.names=css=.day-exercise-name
+today.exercise.reps=css=.day-exercise-reps
+today.exercise.weights=css=.day-exercise-item .muted
