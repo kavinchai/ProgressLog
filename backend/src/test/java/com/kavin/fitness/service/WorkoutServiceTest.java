@@ -190,6 +190,94 @@ class WorkoutServiceTest {
                 () -> workoutService.upsertExercise(7L, 999L, req));
     }
 
+    // ── exercise name normalization ─────────────────────────────────────────
+
+    @Test
+    void save_normalizesExerciseNameToExistingPlural() {
+        // User already has "Barbell Squats" in their history
+        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
+                .thenReturn(List.of("Barbell Squats", "Bench Press"));
+        when(workoutSessionRepository.save(any())).thenAnswer(inv -> {
+            WorkoutSession s = inv.getArgument(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 9L);
+            return s;
+        });
+
+        ExerciseRequest.SetRequest sr = new ExerciseRequest.SetRequest();
+        sr.setSetNumber(1);
+        sr.setReps(5);
+        sr.setWeightLbs(BigDecimal.valueOf(135));
+
+        ExerciseRequest ex = new ExerciseRequest();
+        ex.setExerciseName("Barbell Squat"); // singular — should become "Barbell Squats"
+        ex.setSets(List.of(sr));
+
+        WorkoutSessionRequest req = new WorkoutSessionRequest();
+        req.setSessionDate(LocalDate.of(2026, 4, 20));
+        req.setExercises(List.of(ex));
+
+        WorkoutSessionDTO dto = workoutService.save(user, req);
+
+        assertEquals("Barbell Squats", dto.getExerciseSets().get(0).getExerciseName());
+    }
+
+    @Test
+    void save_normalizesExerciseNameToExistingSingular() {
+        // User already has "Barbell Squat" in their history
+        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
+                .thenReturn(List.of("Barbell Squat", "Bench Press"));
+        when(workoutSessionRepository.save(any())).thenAnswer(inv -> {
+            WorkoutSession s = inv.getArgument(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 10L);
+            return s;
+        });
+
+        ExerciseRequest.SetRequest sr = new ExerciseRequest.SetRequest();
+        sr.setSetNumber(1);
+        sr.setReps(5);
+        sr.setWeightLbs(BigDecimal.valueOf(135));
+
+        ExerciseRequest ex = new ExerciseRequest();
+        ex.setExerciseName("Barbell Squats"); // plural — should become "Barbell Squat"
+        ex.setSets(List.of(sr));
+
+        WorkoutSessionRequest req = new WorkoutSessionRequest();
+        req.setSessionDate(LocalDate.of(2026, 4, 20));
+        req.setExercises(List.of(ex));
+
+        WorkoutSessionDTO dto = workoutService.save(user, req);
+
+        assertEquals("Barbell Squat", dto.getExerciseSets().get(0).getExerciseName());
+    }
+
+    @Test
+    void save_keepsExerciseNameWhenNoSingularPluralMatch() {
+        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
+                .thenReturn(List.of("Bench Press"));
+        when(workoutSessionRepository.save(any())).thenAnswer(inv -> {
+            WorkoutSession s = inv.getArgument(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 11L);
+            return s;
+        });
+
+        ExerciseRequest.SetRequest sr = new ExerciseRequest.SetRequest();
+        sr.setSetNumber(1);
+        sr.setReps(5);
+        sr.setWeightLbs(BigDecimal.valueOf(200));
+
+        ExerciseRequest ex = new ExerciseRequest();
+        ex.setExerciseName("Deadlift"); // brand new exercise
+        ex.setSets(List.of(sr));
+
+        WorkoutSessionRequest req = new WorkoutSessionRequest();
+        req.setSessionDate(LocalDate.of(2026, 4, 20));
+        req.setExercises(List.of(ex));
+
+        WorkoutSessionDTO dto = workoutService.save(user, req);
+
+        assertEquals("Deadlift", dto.getExerciseSets().get(0).getExerciseName());
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private WorkoutSession sessionWithId(Long id, LocalDate date) {

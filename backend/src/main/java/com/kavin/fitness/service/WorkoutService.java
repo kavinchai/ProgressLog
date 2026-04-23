@@ -120,11 +120,29 @@ public class WorkoutService {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
+    /**
+     * Resolve an exercise name to the canonical form already used by this user.
+     * Matches singular ↔ plural variants (trailing "s") case-insensitively.
+     * Returns the existing name if found, otherwise the original input.
+     */
+    private String resolveCanonicalName(Long userId, String name) {
+        List<String> existing = exerciseSetRepository.findDistinctExerciseNamesByUserId(userId);
+        String nameLower = name.toLowerCase();
+        for (String e : existing) {
+            String eLower = e.toLowerCase();
+            if (eLower.equals(nameLower)) return e;
+            // "Squat" matches "Squats" and vice versa
+            if (eLower.equals(nameLower + "s") || (nameLower.equals(eLower + "s"))) return e;
+        }
+        return name;
+    }
+
     private void addSetsForExercise(WorkoutSession session, ExerciseRequest exerciseRequest) {
+        String canonical = resolveCanonicalName(session.getUser().getId(), exerciseRequest.getExerciseName());
         for (ExerciseRequest.SetRequest setRequest : exerciseRequest.getSets()) {
             ExerciseSet exerciseSet = new ExerciseSet();
             exerciseSet.setSession(session);
-            exerciseSet.setExerciseName(exerciseRequest.getExerciseName());
+            exerciseSet.setExerciseName(canonical);
             exerciseSet.setSetNumber(setRequest.getSetNumber());
             exerciseSet.setReps(setRequest.getReps());
             exerciseSet.setWeightLbs(setRequest.getWeightLbs());
