@@ -17,19 +17,20 @@ export function mergeWorkoutSessions(sessions) {
 }
 
 // Builds a flat row for each date combining weight, nutrition, and workout data.
-export function buildDayRows(dates, weightData, nutritionData, workoutData) {
+export function buildDayRows(dates, weightData, nutritionData, workoutData, stepData = []) {
   return dates.map(date => {
     const weightEntry    = weightData.find(x => x.logDate === date);
     const nutritionEntry = nutritionData.find(x => x.logDate === date);
     const daySessions    = workoutData.filter(x => x.sessionDate === date);
     const workoutEntry   = mergeWorkoutSessions(daySessions);
+    const stepEntry      = stepData.find(x => x.logDate === date);
     return {
       date,
-      weightEntry, nutritionEntry, workoutEntry,
+      weightEntry, nutritionEntry, workoutEntry, stepEntry,
       weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)       : null,
       calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)   : null,
       protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)   : null,
-      steps:    nutritionEntry ? (nutritionEntry.steps          ?? null)   : null,
+      steps:    stepEntry      ? stepEntry.steps                         : null,
       workout:  workoutEntry
         ? (workoutEntry.sessionName
             ? workoutEntry.sessionName

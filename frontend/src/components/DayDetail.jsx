@@ -7,7 +7,7 @@ import WorkoutBuilderModal from './WorkoutBuilderModal';
 import EditExerciseModal from './EditExerciseModal';
 import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 
-export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo, showDelete = true }) {
+export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, stepEntry, onRefetchW, onRefetchN, onRefetchWo, onRefetchS, showDelete = true }) {
   const [modal,        setModal]        = useState(null);
   const [editMeal,     setEditMeal]     = useState(null);
   const [mealLogId,    setMealLogId]    = useState(null);
@@ -18,7 +18,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
   const {
     renamingSession, setRenamingSession, renameValue, setRenameValue,
     deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, saveSteps, getOrCreateNutritionLogId,
-  } = useDayActions({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo });
+  } = useDayActions({ date, weightEntry, nutritionEntry, workoutEntry, stepEntry, onRefetchW, onRefetchN, onRefetchWo, onRefetchS });
 
   const exerciseGroups = workoutEntry?.exerciseSets?.length
     ? groupByExercise(workoutEntry.exerciseSets)
@@ -109,13 +109,13 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
           <div className="btn-actions">
             {!editingSteps && (
               <button className="btn btn-sm" onClick={() => {
-                setStepsValue(nutritionEntry?.steps != null ? String(nutritionEntry.steps) : '');
+                setStepsValue(stepEntry ? String(stepEntry.steps) : '');
                 setEditingSteps(true);
               }}>
-                {nutritionEntry?.steps != null ? 'Edit' : '+ Add'}
+                {stepEntry ? 'Edit' : '+ Add'}
               </button>
             )}
-            {!editingSteps && nutritionEntry?.steps != null && showDelete && (
+            {!editingSteps && stepEntry && showDelete && (
               <button className="btn btn-sm btn-danger" onClick={() => saveSteps(null)}>Delete</button>
             )}
           </div>
@@ -138,8 +138,8 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
           </div>
         ) : (
           <div className="day-detail-value">
-            {nutritionEntry?.steps != null
-              ? nutritionEntry.steps.toLocaleString() + ' steps'
+            {stepEntry
+              ? stepEntry.steps.toLocaleString() + ' steps'
               : <span className="muted">--</span>}
           </div>
         )}

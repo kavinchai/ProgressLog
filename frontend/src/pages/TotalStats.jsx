@@ -4,6 +4,7 @@ import api from '../api';
 import useWeightLog from '../hooks/useWeightLog';
 import useNutrition from '../hooks/useNutrition';
 import useWorkouts  from '../hooks/useWorkouts';
+import useSteps     from '../hooks/useSteps';
 import DayDetail from '../components/DayDetail';
 import WeightLineChart from '../components/WeightLineChart';
 import { groupByExercise } from '../utils/workout';
@@ -27,6 +28,7 @@ export default function TotalStats() {
   const { data: weightData,    refetch: refetchWeight }    = useWeightLog();
   const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
   const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
+  const { data: stepData,      refetch: refetchSteps }     = useSteps();
 
   const [expandedDay,   setExpandedDay]   = useState(null);
   const [importStatus,  setImportStatus]  = useState(null);
@@ -44,7 +46,7 @@ export default function TotalStats() {
     ...workoutData.map(x => x.sessionDate),
   ])].sort((a, b) => b.localeCompare(a));
 
-  const rows = buildDayRows(allDates, weightData, nutritionData, workoutData);
+  const rows = buildDayRows(allDates, weightData, nutritionData, workoutData, stepData);
 
   const cutoff = RANGE_DAYS[rangeKey] === Infinity
     ? null
@@ -317,9 +319,11 @@ export default function TotalStats() {
                               weightEntry={row.weightEntry}
                               nutritionEntry={row.nutritionEntry}
                               workoutEntry={row.workoutEntry}
+                              stepEntry={row.stepEntry}
                               onRefetchW={refetchWeight}
                               onRefetchN={refetchNutrition}
                               onRefetchWo={refetchWorkouts}
+                              onRefetchS={refetchSteps}
                               showDelete={false}
                             />
                           </td>

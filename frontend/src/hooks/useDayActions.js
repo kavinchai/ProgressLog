@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import api from '../api';
 
-export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry, onRefetchW, onRefetchN, onRefetchWo }) {
+export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry, stepEntry, onRefetchW, onRefetchN, onRefetchWo, onRefetchS }) {
   const [renamingSession, setRenamingSession] = useState(false);
   const [renameValue,     setRenameValue]     = useState('');
 
@@ -31,12 +31,12 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
 
   async function saveSteps(steps) {
     try {
-      await api.post('/nutrition', {
-        logDate: date,
-        dayType: nutritionEntry?.dayType ?? 'training',
-        steps: steps != null ? parseInt(steps) : null,
-      });
-      onRefetchN();
+      if (steps != null) {
+        await api.post('/steps', { logDate: date, steps: parseInt(steps) });
+      } else if (stepEntry) {
+        await api.delete(`/steps/${stepEntry.id}`);
+      }
+      onRefetchS();
     } catch { /* ignore */ }
   }
 
@@ -44,7 +44,7 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
   async function getOrCreateNutritionLogId() {
     if (nutritionEntry?.id) return nutritionEntry.id;
     try {
-      const res = await api.post('/nutrition', { logDate: date, dayType: 'training', steps: null });
+      const res = await api.post('/nutrition', { logDate: date, dayType: 'training' });
       onRefetchN();
       return res.data?.id;
     } catch { return null; }
