@@ -3,6 +3,7 @@ import api from '../api';
 import useWeightLog   from '../hooks/useWeightLog';
 import useNutrition   from '../hooks/useNutrition';
 import useWorkouts    from '../hooks/useWorkouts';
+import useSteps       from '../hooks/useSteps';
 import useUserProfile from '../hooks/useUserProfile';
 import useTemplates   from '../hooks/useTemplates';
 import usePRs         from '../hooks/usePRs';
@@ -115,6 +116,7 @@ export default function Today() {
   const { data: weightData,    refetch: refetchWeight }   = useWeightLog();
   const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
   const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
+  const { data: stepData,      refetch: refetchSteps }     = useSteps();
   const { goals } = useUserProfile();
   const { data: templates } = useTemplates();
   const { data: prsData, refetch: refetchPRs } = usePRs();
@@ -132,6 +134,7 @@ export default function Today() {
   const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
   const todayWorkoutEntry   = mergeWorkoutSessions(workoutData.filter(w => w.sessionDate === TODAY));
   const todayNutritionEntry = nutritionData.find(n => n.logDate === TODAY);
+  const todayStepEntry      = stepData.find(s => s.logDate === TODAY);
 
   const [editingSteps,    setEditingSteps]    = useState(false);
   const [stepsValue,      setStepsValue]      = useState('');
@@ -144,9 +147,11 @@ export default function Today() {
     weightEntry:    todayWeightEntry,
     nutritionEntry: todayNutritionEntry,
     workoutEntry:   todayWorkoutEntry,
+    stepEntry:      todayStepEntry,
     onRefetchW:     refetchWeight,
     onRefetchN:     refetchNutrition,
     onRefetchWo:    refetchWorkouts,
+    onRefetchS:     refetchSteps,
   });
 
   const exerciseGroups = todayWorkoutEntry?.exerciseSets?.length
@@ -181,7 +186,6 @@ export default function Today() {
       await api.post('/nutrition', {
         logDate: TODAY,
         dayType: next,
-        steps: todayNutritionEntry?.steps ?? null,
       });
       refetchNutrition();
     } catch { /* ignore */ }
@@ -240,13 +244,13 @@ export default function Today() {
           <div className="btn-actions">
             {!editingSteps && (
               <button className="btn btn-sm" onClick={() => {
-                setStepsValue(todayNutritionEntry?.steps != null ? String(todayNutritionEntry.steps) : '');
+                setStepsValue(todayStepEntry ? String(todayStepEntry.steps) : '');
                 setEditingSteps(true);
               }}>
-                {todayNutritionEntry?.steps != null ? 'Edit' : '+ Add'}
+                {todayStepEntry ? 'Edit' : '+ Add'}
               </button>
             )}
-            {!editingSteps && todayNutritionEntry?.steps != null && (
+            {!editingSteps && todayStepEntry && (
               <button className="btn btn-sm btn-danger" onClick={() => saveSteps(null)}>Delete</button>
             )}
           </div>
@@ -269,8 +273,8 @@ export default function Today() {
               <button className="btn btn-sm" onClick={() => setEditingSteps(false)}>&times;</button>
             </div>
           ) : (
-            todayNutritionEntry?.steps != null
-              ? <DataRow label="Steps" value={todayNutritionEntry.steps.toLocaleString()} />
+            todayStepEntry
+              ? <DataRow label="Steps" value={todayStepEntry.steps.toLocaleString()} />
               : <span className="muted">No steps logged.</span>
           )}
         </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import useWeightLog from '../hooks/useWeightLog';
 import useNutrition from '../hooks/useNutrition';
 import useWorkouts  from '../hooks/useWorkouts';
+import useSteps     from '../hooks/useSteps';
 import DayDetail from '../components/DayDetail';
 import WeightLineChart from '../components/WeightLineChart';
 import { localDateStr, shortDate, avg } from '../utils/date';
@@ -26,13 +27,14 @@ export default function WeeklyStats() {
   const { data: weightData,    refetch: refetchWeight }    = useWeightLog();
   const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
   const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
+  const { data: stepData,      refetch: refetchSteps }     = useSteps();
 
   const [expandedDay, setExpandedDay] = useState(null);
 
   const days  = getLast7Days();
   const today = localDateStr(new Date());
 
-  const rows = buildDayRows(days, weightData, nutritionData, workoutData);
+  const rows = buildDayRows(days, weightData, nutritionData, workoutData, stepData);
 
   const weights      = rows.map(row => row.weight);
   const workoutCount = rows.filter(row => row.workout).length;
@@ -122,9 +124,11 @@ export default function WeeklyStats() {
                             weightEntry={row.weightEntry}
                             nutritionEntry={row.nutritionEntry}
                             workoutEntry={row.workoutEntry}
+                            stepEntry={row.stepEntry}
                             onRefetchW={refetchWeight}
                             onRefetchN={refetchNutrition}
                             onRefetchWo={refetchWorkouts}
+                            onRefetchS={refetchSteps}
                           />
                         </td>
                       </tr>

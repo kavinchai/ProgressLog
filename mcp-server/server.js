@@ -340,7 +340,6 @@ Examples:
       const dayLog = await api('POST', '/nutrition', {
         logDate,
         dayType: dayType ?? 'training',
-        steps: null,
       });
 
       // Step 2: Add the meal to that day log
@@ -366,21 +365,16 @@ Examples:
 
   mcp.tool(
     'log_steps',
-    'Log step count for a given date. Call this when the user mentions steps or walking.',
+    'Log step count for a given date. Call this when the user mentions steps or walking. Creates or updates the step entry for the date.',
     {
       steps: z.number().int().min(0).describe('Number of steps'),
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-      dayType: z.enum(['training', 'rest']).optional().describe('Whether this is a training or rest day. Defaults to "training".'),
     },
-    async ({ steps, date, dayType }) => {
+    async ({ steps, date }) => {
       const logDate = date ?? todayStr();
-      const result = await api('POST', '/nutrition', {
-        logDate,
-        dayType: dayType ?? 'training',
-        steps,
-      });
+      const result = await api('POST', '/steps', { logDate, steps });
       return {
-        content: [{ type: 'text', text: `Logged ${steps.toLocaleString()} steps on ${logDate}` }],
+        content: [{ type: 'text', text: `Logged ${steps.toLocaleString()} steps on ${result.logDate}` }],
       };
     },
   );
@@ -389,25 +383,14 @@ Examples:
 
   mcp.tool(
     'edit_steps',
-    'Update the step count for a date that already has a nutrition log entry. Preserves the existing day type. Use this when the user wants to correct or change a previously logged step count.',
+    'Update the step count for a date. Use this when the user wants to correct or change a previously logged step count.',
     {
       steps: z.number().int().min(0).describe('New step count to set'),
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
     },
     async ({ steps, date }) => {
       const logDate = date ?? todayStr();
-      const allLogs = await api('GET', '/nutrition');
-      const existing = allLogs.find(n => n.logDate === logDate);
-      if (!existing) {
-        return {
-          content: [{ type: 'text', text: `No nutrition log found for ${logDate}. Use log_steps to create one.` }],
-        };
-      }
-      await api('POST', '/nutrition', {
-        logDate,
-        dayType: existing.dayType,
-        steps,
-      });
+      await api('POST', '/steps', { logDate, steps });
       return {
         content: [{ type: 'text', text: `Updated steps to ${steps.toLocaleString()} on ${logDate}` }],
       };
@@ -418,29 +401,20 @@ Examples:
 
   mcp.tool(
     'delete_steps',
-    'Remove/clear the step count for a given date. The rest of the nutrition log (day type, meals) is preserved. Use this when the user wants to delete or clear their step count for a day.',
+    'Remove/clear the step count for a given date. Use this when the user wants to delete or clear their step count for a day.',
     {
       date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
     },
     async ({ date }) => {
       const logDate = date ?? todayStr();
-      const allLogs = await api('GET', '/nutrition');
-      const existing = allLogs.find(n => n.logDate === logDate);
+      const allLogs = await api('GET', '/steps');
+      const existing = allLogs.find(s => s.logDate === logDate);
       if (!existing) {
-        return {
-          content: [{ type: 'text', text: `No nutrition log found for ${logDate}. Nothing to delete.` }],
-        };
-      }
-      if (existing.steps == null) {
         return {
           content: [{ type: 'text', text: `No steps logged for ${logDate}. Nothing to delete.` }],
         };
       }
-      await api('POST', '/nutrition', {
-        logDate,
-        dayType: existing.dayType,
-        steps: null,
-      });
+      await api('DELETE', `/steps/${existing.id}`);
       return {
         content: [{ type: 'text', text: `Cleared steps for ${logDate}` }],
       };
@@ -455,15 +429,17 @@ Examples:
     {},
     async () => {
       const today = todayStr();
-      const [weightData, workoutData, nutritionData] = await Promise.all([
+      const [weightData, workoutData, nutritionData, stepData] = await Promise.all([
         api('GET', '/weight'),
         api('GET', '/workouts'),
         api('GET', '/nutrition'),
+        api('GET', '/steps'),
       ]);
 
       const weight = weightData.find(w => w.logDate === today);
       const workouts = workoutData.filter(w => w.sessionDate === today);
       const nutrition = nutritionData.find(n => n.logDate === today);
+      const stepEntry = stepData.find(s => s.logDate === today);
 
       const parts = [];
 
@@ -496,13 +472,16 @@ Examples:
         parts.push('\n🏋️ Workout: not logged');
       }
 
+      if (stepEntry) {
+        parts.push(`\n👟 Steps: ${stepEntry.steps.toLocaleString()}`);
+      } else {
+        parts.push('\n👟 Steps: not logged');
+      }
+
       if (nutrition) {
         parts.push(`\n🍽️ Nutrition (${nutrition.dayType}):`);
         parts.push(`  Calories: ${nutrition.totalCalories ?? 0} kcal`);
         parts.push(`  Protein: ${nutrition.totalProtein ?? 0}g`);
-        if (nutrition.steps != null) {
-          parts.push(`  Steps: ${nutrition.steps.toLocaleString()}`);
-        }
         if (nutrition.meals?.length > 0) {
           parts.push('  Meals:');
           for (const m of nutrition.meals) {

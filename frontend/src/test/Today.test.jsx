@@ -70,6 +70,7 @@ vi.mock('../api', () => ({ default: { delete: vi.fn(), post: vi.fn(), patch: vi.
 vi.mock('../hooks/useWeightLog',   () => ({ default: vi.fn() }));
 vi.mock('../hooks/useNutrition',   () => ({ default: vi.fn() }));
 vi.mock('../hooks/useWorkouts',    () => ({ default: vi.fn() }));
+vi.mock('../hooks/useSteps',       () => ({ default: vi.fn() }));
 vi.mock('../hooks/useUserProfile', () => ({ default: vi.fn() }));
 vi.mock('../hooks/useTemplates',   () => ({ default: vi.fn() }));
 vi.mock('../hooks/usePRs',         () => ({ default: vi.fn() }));
@@ -78,6 +79,7 @@ import api from '../api';
 import useWeightLog   from '../hooks/useWeightLog';
 import useNutrition   from '../hooks/useNutrition';
 import useWorkouts    from '../hooks/useWorkouts';
+import useSteps       from '../hooks/useSteps';
 import useUserProfile from '../hooks/useUserProfile';
 import useTemplates   from '../hooks/useTemplates';
 import usePRs         from '../hooks/usePRs';
@@ -111,6 +113,7 @@ function setup({
   weight    = [],
   nutrition = [],
   workouts  = [],
+  steps     = [],
   prs       = [],
   templates = [],
   goals     = DEFAULT_GOALS,
@@ -118,16 +121,18 @@ function setup({
   const refetchWeight    = vi.fn();
   const refetchNutrition = vi.fn();
   const refetchWorkouts  = vi.fn();
+  const refetchSteps     = vi.fn();
   const refetchPRs       = vi.fn();
 
   useWeightLog.mockReturnValue({ data: weight,    refetch: refetchWeight });
   useNutrition.mockReturnValue({ data: nutrition, refetch: refetchNutrition });
   useWorkouts.mockReturnValue({  data: workouts,  refetch: refetchWorkouts });
+  useSteps.mockReturnValue({     data: steps,     refetch: refetchSteps });
   useUserProfile.mockReturnValue({ goals, loading: false });
   useTemplates.mockReturnValue({ data: templates });
   usePRs.mockReturnValue({ data: prs, refetch: refetchPRs });
 
-  return { refetchWeight, refetchNutrition, refetchWorkouts, refetchPRs };
+  return { refetchWeight, refetchNutrition, refetchWorkouts, refetchSteps, refetchPRs };
 }
 
 beforeEach(() => {
@@ -468,10 +473,11 @@ describe('Today — delete actions', () => {
 
   it('Delete day calls DELETE /nutrition/{id} and refetches nutrition', async () => {
     api.delete.mockResolvedValue({});
-    const { refetchNutrition } = setup({ nutrition: [NUTRITION_ENTRY] });
+    const STEP_ENTRY = { id: 20, logDate: TODAY, steps: 8000 };
+    const { refetchNutrition } = setup({ nutrition: [NUTRITION_ENTRY], steps: [STEP_ENTRY] });
     render(<Today />);
 
-    // Steps section also has a Delete button (NUTRITION_ENTRY has steps: 8000);
+    // Steps section also has a Delete button (step entry exists);
     // the nutrition section's Delete is the second one
     const deleteBtns = screen.getAllByRole('button', { name: /^Delete$/i });
     await userEvent.click(deleteBtns[1]);
