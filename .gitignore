@@ -64,5 +64,4 @@ qaf-tests/src/test/resources/env.properties
 *.tmp
 *.bak
 coverage/
-.claude/settings.local.json
-.claude/CLAUDE.md
+.claude/
