@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import useAuthStore from './store/authStore';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
+import SplashPage from './pages/SplashPage';
 import Login from './pages/Login';
 import Today from './pages/Today';
 import WeeklyStats from './pages/WeeklyStats';
@@ -39,7 +40,9 @@ export default function App() {
     return (
       <BrowserRouter>
         <Routes>
-          <Route path="*" element={<Login />} />
+          <Route path="/"      element={<SplashPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="*"      element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     );

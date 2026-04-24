@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../api";
 import useAuthStore from "../store/authStore";
 import "./Login.css";
 
 export default function Login() {
 	const login = useAuthStore((state) => state.login);
-	const [mode, setMode] = useState("login");
+	const [searchParams] = useSearchParams();
+	const [mode, setMode] = useState(searchParams.get("mode") === "signup" ? "signup" : "login");
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [email, setEmail] = useState("");

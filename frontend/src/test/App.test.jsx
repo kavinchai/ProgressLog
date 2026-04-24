@@ -4,6 +4,7 @@ import App from '../App';
 import useAuthStore from '../store/authStore';
 
 // Stub all page/layout components to keep tests fast and focused on routing
+vi.mock('../pages/SplashPage',  () => ({ default: () => <div>Splash Page</div> }));
 vi.mock('../pages/Login',       () => ({ default: () => <div>Login Page</div> }));
 vi.mock('../pages/Today',       () => ({ default: () => <div>Today Page</div> }));
 vi.mock('../pages/WeeklyStats', () => ({ default: () => <div>Weekly Stats Page</div> }));
@@ -20,7 +21,13 @@ beforeEach(() => {
 
 
 describe('App routing — unauthenticated', () => {
-  it('shows Login when there is no token', () => {
+  it('shows SplashPage at / when there is no token', () => {
+    render(<App />);
+    expect(screen.getByText('Splash Page')).toBeInTheDocument();
+  });
+
+  it('shows Login at /login when there is no token', () => {
+    window.history.pushState({}, '', '/login');
     render(<App />);
     expect(screen.getByText('Login Page')).toBeInTheDocument();
   });
@@ -55,15 +62,15 @@ describe('App routing — authenticated', () => {
 });
 
 describe('App routing — auth store reactivity', () => {
-  it('switches from Login to app layout when a token is set', async () => {
+  it('switches from SplashPage to app layout when a token is set', async () => {
     render(<App />);
-    expect(screen.getByText('Login Page')).toBeInTheDocument();
+    expect(screen.getByText('Splash Page')).toBeInTheDocument();
 
     // Simulate login
     useAuthStore.setState({ token: 'new-tok', username: 'bob' });
 
     // App re-renders based on Zustand subscription
     await screen.findByText('Today Page');
-    expect(screen.queryByText('Login Page')).not.toBeInTheDocument();
+    expect(screen.queryByText('Splash Page')).not.toBeInTheDocument();
   });
 });

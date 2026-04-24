@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import Login from '../pages/Login';
 import useAuthStore from '../store/authStore';
@@ -16,29 +17,33 @@ beforeEach(() => {
   useAuthStore.setState({ token: null, username: null });
 });
 
+function renderLogin(path = '/login') {
+  return render(<MemoryRouter initialEntries={[path]}><Login /></MemoryRouter>);
+}
+
 // ── Login mode ────────────────────────────────────────────────────────────────
 
 describe('Login — login mode', () => {
   it('renders username and password fields', () => {
-    render(<Login />);
+    renderLogin();
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
   });
 
   it('does NOT render an email field in login mode', () => {
-    render(<Login />);
+    renderLogin();
     expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
   });
 
   it('renders a Sign In button', () => {
-    render(<Login />);
+    renderLogin();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
   it('calls login and stores token on success', async () => {
     api.post.mockResolvedValue({ data: { token: 'jwt-abc', username: 'alice' } });
 
-    render(<Login />);
+    renderLogin();
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'secret');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -52,7 +57,7 @@ describe('Login — login mode', () => {
   it('calls /auth/login endpoint on submit', async () => {
     api.post.mockResolvedValue({ data: { token: 'tok', username: 'alice' } });
 
-    render(<Login />);
+    renderLogin();
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'secret');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -66,7 +71,7 @@ describe('Login — login mode', () => {
   it('shows error message on failed login', async () => {
     api.post.mockRejectedValue({ response: { data: { message: 'Bad credentials' } } });
 
-    render(<Login />);
+    renderLogin();
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'wrong');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -79,7 +84,7 @@ describe('Login — login mode', () => {
   it('shows HTTP status error message when no message in response', async () => {
     api.post.mockRejectedValue({ response: { status: 500 } });
 
-    render(<Login />);
+    renderLogin();
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'pass');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -92,7 +97,7 @@ describe('Login — login mode', () => {
   it('shows fallback error when response has no message', async () => {
     api.post.mockRejectedValue({});
 
-    render(<Login />);
+    renderLogin();
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'pass');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -107,7 +112,7 @@ describe('Login — login mode', () => {
 
 describe('Login — signup mode', () => {
   async function switchToSignup() {
-    render(<Login />);
+    renderLogin();
     await userEvent.click(screen.getByRole('button', { name: /don't have an account/i }));
   }
 
@@ -194,7 +199,7 @@ describe('Login — signup mode', () => {
   it('switching mode clears existing error', async () => {
     api.post.mockRejectedValue({ response: { data: { message: 'Bad credentials' } } });
 
-    render(<Login />);
+    renderLogin();
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
     await userEvent.type(screen.getByLabelText(/password/i), 'wrong');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
@@ -203,5 +208,11 @@ describe('Login — signup mode', () => {
     // Switch to signup — error should be gone
     await userEvent.click(screen.getByRole('button', { name: /don't have an account/i }));
     expect(screen.queryByText(/bad credentials/i)).not.toBeInTheDocument();
+  });
+
+  it('opens directly in signup mode when ?mode=signup is in the URL', () => {
+    renderLogin('/login?mode=signup');
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });
 });
