@@ -1,7 +1,7 @@
 package com.kavin.fitness.controller;
 
+import com.kavin.fitness.dto.StepLogDTO;
 import com.kavin.fitness.dto.StepLogRequest;
-import com.kavin.fitness.model.StepLog;
 import com.kavin.fitness.service.StepService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -23,17 +23,17 @@ public class StepController {
     @Autowired private UserResolver userResolver;
 
     @GetMapping
-    public ResponseEntity<List<StepLog>> getStepLogs(
+    public ResponseEntity<List<StepLogDTO>> getStepLogs(
             @AuthenticationPrincipal UserDetails principal) {
         return ResponseEntity.ok(stepService.getStepLogs(userResolver.resolve(principal).getId()));
     }
 
     @PostMapping
-    public ResponseEntity<StepLog> logSteps(
+    public ResponseEntity<StepLogDTO> logSteps(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody StepLogRequest request) {
         log.info("POST steps user={} date={} steps={}", principal.getUsername(), request.getLogDate(), request.getSteps());
-        StepLog saved = stepService.save(userResolver.resolve(principal), request);
+        StepLogDTO saved = stepService.save(userResolver.resolve(principal), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
