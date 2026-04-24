@@ -1,6 +1,7 @@
 package com.kavin.fitness.controller;
 
 import com.kavin.fitness.dto.ExerciseRequest;
+import com.kavin.fitness.dto.RenameSessionRequest;
 import com.kavin.fitness.dto.WorkoutSessionDTO;
 import com.kavin.fitness.dto.WorkoutSessionRequest;
 import com.kavin.fitness.service.WorkoutService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+
 
 @Slf4j
 @RestController
@@ -61,10 +63,10 @@ public class WorkoutController {
     public ResponseEntity<WorkoutSessionDTO> renameSession(
             @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long sessionId,
-            @RequestBody java.util.Map<String, String> body) {
-        log.info("PATCH rename sessionId={} newName={}", sessionId, body.get("sessionName"));
+            @RequestBody RenameSessionRequest body) {
+        log.info("PATCH rename sessionId={} newName={}", sessionId, body.getSessionName());
         WorkoutSessionDTO dto = workoutService.renameSession(
-                sessionId, userResolver.resolve(principal).getId(), body.get("sessionName"));
+                sessionId, userResolver.resolve(principal).getId(), body.getSessionName());
         return ResponseEntity.ok(dto);
     }
 

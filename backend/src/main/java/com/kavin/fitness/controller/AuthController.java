@@ -1,5 +1,6 @@
 package com.kavin.fitness.controller;
 
+import com.kavin.fitness.dto.ApiKeyResponse;
 import com.kavin.fitness.dto.LoginRequest;
 import com.kavin.fitness.dto.LoginResponse;
 import com.kavin.fitness.dto.RegisterRequest;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -68,7 +68,7 @@ public class AuthController {
     }
 
     @PostMapping("/api-key")
-    public ResponseEntity<Map<String, String>> generateApiKey(
+    public ResponseEntity<ApiKeyResponse> generateApiKey(
             @AuthenticationPrincipal UserDetails userDetails) {
         log.info("API key generation requested by user={}", userDetails.getUsername());
         User user = userRepository.findByUsername(userDetails.getUsername())
@@ -82,6 +82,6 @@ public class AuthController {
         userRepository.save(user);
 
         log.info("API key generated for user={}", userDetails.getUsername());
-        return ResponseEntity.ok(Map.of("apiKey", apiKey));
+        return ResponseEntity.ok(new ApiKeyResponse(apiKey));
     }
 }

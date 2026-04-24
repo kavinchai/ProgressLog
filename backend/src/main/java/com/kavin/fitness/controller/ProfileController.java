@@ -1,6 +1,9 @@
 package com.kavin.fitness.controller;
 
 import com.kavin.fitness.dto.CredentialsUpdateResponse;
+import com.kavin.fitness.dto.EmailRequest;
+import com.kavin.fitness.dto.EmailResponse;
+import com.kavin.fitness.dto.PasswordVerifyRequest;
 import com.kavin.fitness.dto.UpdateCredentialsRequest;
 import com.kavin.fitness.dto.UserGoalsDTO;
 import com.kavin.fitness.model.User;
@@ -15,8 +18,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -56,18 +57,18 @@ public class ProfileController {
     }
 
     @GetMapping("/email")
-    public ResponseEntity<Map<String, String>> getEmail(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<EmailResponse> getEmail(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userResolver.resolve(userDetails);
-        return ResponseEntity.ok(Map.of("email", user.getEmail() != null ? user.getEmail() : ""));
+        return ResponseEntity.ok(new EmailResponse(user.getEmail() != null ? user.getEmail() : ""));
     }
 
     @PutMapping("/email")
-    public ResponseEntity<Map<String, String>> updateEmail(
+    public ResponseEntity<EmailResponse> updateEmail(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> body) {
+            @Valid @RequestBody EmailRequest request) {
 
-        String email = body.get("email");
-        if (email == null || email.isBlank() || !email.contains("@")) {
+        String email = request.getEmail();
+        if (email.isBlank() || !email.contains("@")) {
             log.warn("Invalid email update attempt by user={}", userDetails.getUsername());
             throw new IllegalArgumentException("Invalid email address.");
         }
@@ -77,17 +78,17 @@ public class ProfileController {
 
         user.setEmail(email.trim());
         userRepository.save(user);
-        return ResponseEntity.ok(Map.of("email", user.getEmail()));
+        return ResponseEntity.ok(new EmailResponse(user.getEmail()));
     }
 
     @PostMapping("/verify-password")
     public ResponseEntity<Void> verifyPassword(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> body) {
+            @Valid @RequestBody PasswordVerifyRequest request) {
 
         User user = userResolver.resolve(userDetails);
 
-        if (!passwordEncoder.matches(body.get("password"), user.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             log.warn("Password verification failed for user={}", userDetails.getUsername());
             throw new BadCredentialsException("Incorrect password.");
         }
