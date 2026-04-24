@@ -3,6 +3,7 @@ package com.kavin.fitness.service;
 import com.kavin.fitness.dto.ImportRequest;
 import com.kavin.fitness.dto.ImportResultDTO;
 import com.kavin.fitness.model.ExerciseSet;
+import com.kavin.fitness.model.Meal;
 import com.kavin.fitness.model.NutritionLog;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WeightLog;
@@ -57,8 +58,12 @@ public class ImportService {
                 if (hasCalories || hasProtein) {
                     NutritionLog nutrition = nutritionLogRepository.findByUserIdAndLogDate(user.getId(), date)
                             .orElseGet(() -> { NutritionLog n = new NutritionLog(); n.setUser(user); n.setLogDate(date); n.setDayType("training"); return n; });
-                    if (hasCalories) nutrition.setCalories((int) Math.round(Double.parseDouble(caloriesRaw.toString())));
-                    if (hasProtein)  nutrition.setProteinGrams((int) Math.round(Double.parseDouble(proteinRaw.toString())));
+                    Meal importedMeal = new Meal();
+                    importedMeal.setNutritionLog(nutrition);
+                    importedMeal.setMealName("Imported");
+                    importedMeal.setCalories(hasCalories ? (int) Math.round(Double.parseDouble(String.valueOf(caloriesRaw))) : 0);
+                    importedMeal.setProteinGrams(hasProtein ? (int) Math.round(Double.parseDouble(String.valueOf(proteinRaw))) : 0);
+                    nutrition.getMeals().add(importedMeal);
                     nutritionLogRepository.save(nutrition);
                     nutritionImported++;
                 }

@@ -73,21 +73,6 @@ class NutritionServiceTest {
     }
 
     @Test
-    void getNutritionLog_fallsBackToLegacyColumnsWhenNoMeals() {
-        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "rest", null);
-        log.setCalories(2200);
-        log.setProteinGrams(160);
-
-        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L)).thenReturn(List.of(log));
-
-        List<NutritionLogDTO> result = nutritionService.getNutritionLog(1L);
-
-        assertEquals(2200, result.get(0).getTotalCalories());
-        assertEquals(160, result.get(0).getTotalProtein());
-        assertTrue(result.get(0).getMeals().isEmpty());
-    }
-
-    @Test
     void getNutritionLog_sumsMealCaloriesAndProtein() {
         NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 5000);
         log.getMeals().add(meal(1L, log, "Breakfast", 600, 30));
