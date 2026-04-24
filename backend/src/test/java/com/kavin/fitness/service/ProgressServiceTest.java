@@ -116,6 +116,77 @@ class ProgressServiceTest {
         assertEquals(new BigDecimal("95"), result.get(0).getData().get(1).getMaxWeightLbs());
     }
 
+    @Test
+    void getStrengthProgress_sortsHigherSetCountBeforeLowerWhenWeightTied() {
+        WorkoutSession session = session(LocalDate.of(2026, 3, 1));
+        // Three sets at 135 lbs
+        ExerciseSet s1 = exerciseSet(session, "Bench Press", 1, 6, "135");
+        ExerciseSet s2 = exerciseSet(session, "Bench Press", 2, 6, "135");
+        ExerciseSet s3 = exerciseSet(session, "Bench Press", 3, 6, "135");
+
+        WorkoutSession session2 = session(LocalDate.of(2026, 3, 2));
+        ReflectionTestUtils.setField(session2, "id", 2L);
+        // Two sets at 135 lbs on a different date
+        ExerciseSet s4 = exerciseSet(session2, "Bench Press", 1, 6, "135");
+        ExerciseSet s5 = exerciseSet(session2, "Bench Press", 2, 6, "135");
+
+        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
+                .thenReturn(List.of("Bench Press"));
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+                .thenReturn(List.of(s1, s2, s3, s4, s5));
+
+        List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
+        List<StrengthProgressDTO.SessionData> data = result.get(0).getData();
+
+        assertEquals(2, data.size());
+        assertEquals(3, data.get(0).getSetCount()); // 3-set entry first
+        assertEquals(2, data.get(1).getSetCount());
+    }
+
+    @Test
+    void getStrengthProgress_sortsHigherTotalRepsBeforeLowerWhenWeightAndSetsTied() {
+        WorkoutSession session1 = session(LocalDate.of(2026, 3, 1));
+        WorkoutSession session2 = session(LocalDate.of(2026, 3, 2));
+        ReflectionTestUtils.setField(session2, "id", 2L);
+
+        // Same weight, same set count, but different reps
+        ExerciseSet lowReps  = exerciseSet(session1, "Bench Press", 1, 5, "135"); // 5 reps
+        ExerciseSet highReps = exerciseSet(session2, "Bench Press", 1, 8, "135"); // 8 reps
+
+        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
+                .thenReturn(List.of("Bench Press"));
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+                .thenReturn(List.of(lowReps, highReps));
+
+        List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
+        List<StrengthProgressDTO.SessionData> data = result.get(0).getData();
+
+        assertEquals(2, data.size());
+        assertEquals("8", data.get(0).getRepScheme()); // higher total reps first
+        assertEquals("5", data.get(1).getRepScheme());
+    }
+
+    @Test
+    void getStrengthProgress_sortsByDateAscWhenAllElseEqual() {
+        WorkoutSession earlier = session(LocalDate.of(2026, 3, 1));
+        WorkoutSession later   = session(LocalDate.of(2026, 3, 5));
+        ReflectionTestUtils.setField(later, "id", 2L);
+
+        ExerciseSet e1 = exerciseSet(earlier, "Bench Press", 1, 6, "135");
+        ExerciseSet e2 = exerciseSet(later,   "Bench Press", 1, 6, "135");
+
+        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
+                .thenReturn(List.of("Bench Press"));
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+                .thenReturn(List.of(e1, e2));
+
+        List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
+        List<StrengthProgressDTO.SessionData> data = result.get(0).getData();
+
+        assertEquals(LocalDate.of(2026, 3, 1), data.get(0).getSessionDate());
+        assertEquals(LocalDate.of(2026, 3, 5), data.get(1).getSessionDate());
+    }
+
     // ── getPRs ───────────────────────────────────────────────────────────────
 
     @Test

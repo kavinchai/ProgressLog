@@ -58,7 +58,6 @@ public class ProgressService {
                         Map<BigDecimal, List<ExerciseSet>> byWeight = entry.getValue().stream()
                                 .collect(Collectors.groupingBy(ExerciseSet::getWeightLbs));
                         return byWeight.entrySet().stream()
-                                .sorted(Map.Entry.<BigDecimal, List<ExerciseSet>>comparingByKey().reversed())
                                 .map(weightEntry -> {
                                     BigDecimal weight = weightEntry.getKey();
                                     List<ExerciseSet> weightSets = weightEntry.getValue();
@@ -72,6 +71,13 @@ public class ProgressService {
                                             repScheme);
                                 });
                     })
+                    .sorted(Comparator
+                            .<StrengthProgressDTO.SessionData, BigDecimal>comparing(
+                                    StrengthProgressDTO.SessionData::getMaxWeightLbs, Comparator.reverseOrder())
+                            .thenComparingInt(sd -> -sd.getSetCount())
+                            .thenComparingInt(sd -> -Arrays.stream(sd.getRepScheme().split("/"))
+                                    .mapToInt(Integer::parseInt).sum())
+                            .thenComparing(StrengthProgressDTO.SessionData::getSessionDate))
                     .collect(Collectors.toList());
 
             result.add(new StrengthProgressDTO(name, sessionDataList));
