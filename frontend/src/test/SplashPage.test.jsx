@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import SplashPage from '../pages/SplashPage';
+import motivations from '../data/motivations.json';
 
 vi.mock('../pages/SplashPage.css', () => ({}));
+vi.mock('../data/motivations.json', () => ({ default: ['Quote A', 'Quote B', 'Quote C'] }));
 
 function renderSplash() {
   return render(
@@ -31,7 +33,12 @@ describe('SplashPage', () => {
 
   it('shows the current date', () => {
     renderSplash();
-    // Should render at least the year
     expect(screen.getByText(new RegExp(new Date().getFullYear().toString()))).toBeInTheDocument();
+  });
+
+  it('renders a motivational quote from the JSON', () => {
+    renderSplash();
+    const shown = motivations.some(q => screen.queryByText(q));
+    expect(shown).toBe(true);
   });
 });

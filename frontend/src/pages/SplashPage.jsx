@@ -1,19 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import motivations from '../data/motivations.json';
 import './SplashPage.css';
 
-const MOTIVATIONS = [
-  'Show up. Do the work. Repeat.',
-  'Progress is earned one rep at a time.',
-  'The only bad workout is the one that didn\'t happen.',
-  'Consistency beats intensity every time.',
-  'Every session counts. Make today one of them.',
-  'Strong today. Stronger tomorrow.',
-];
-
-function getTodayQuote() {
-  const day = new Date().getDay();
-  return MOTIVATIONS[day % MOTIVATIONS.length];
-}
+const CYCLE_INTERVAL_MS = 4000;
 
 function formatDate() {
   return new Date().toLocaleDateString('en-US', {
@@ -25,6 +15,21 @@ function formatDate() {
 }
 
 export default function SplashPage() {
+  const [index,   setIndex]   = useState(() => Math.floor(Math.random() * motivations.length));
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex(i => (i + 1) % motivations.length);
+        setVisible(true);
+      }, 400); // matches CSS fade-out duration
+    }, CYCLE_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="splash">
       <div className="splash-card">
@@ -33,7 +38,9 @@ export default function SplashPage() {
         <div className="splash-date">{formatDate()}</div>
 
         <h1 className="splash-headline">Today's your day.</h1>
-        <p className="splash-quote">{getTodayQuote()}</p>
+        <p className={`splash-quote ${visible ? 'splash-quote--visible' : 'splash-quote--hidden'}`}>
+          {motivations[index]}
+        </p>
 
         <div className="splash-actions">
           <Link to="/login" className="btn-primary splash-btn">Sign In</Link>
