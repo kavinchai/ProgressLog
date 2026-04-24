@@ -26,7 +26,7 @@ class NutritionFlowIT extends IntegrationTestBase {
     void fullNutritionDayFlow() throws Exception {
         // 1. Create a nutrition day log
         String dayLog = """
-            {"logDate": "2026-04-01", "dayType": "training", "steps": 10000}
+            {"logDate": "2026-04-01", "dayType": "training"}
             """;
 
         MvcResult dayResult = mockMvc.perform(post("/api/nutrition")
@@ -35,7 +35,6 @@ class NutritionFlowIT extends IntegrationTestBase {
                         .content(dayLog))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.dayType").value("training"))
-                .andExpect(jsonPath("$.steps").value(10000))
                 .andExpect(jsonPath("$.totalCalories").value(0))
                 .andExpect(jsonPath("$.totalProtein").value(0))
                 .andReturn();
@@ -117,7 +116,7 @@ class NutritionFlowIT extends IntegrationTestBase {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {"logDate": "2026-04-05", "dayType": "rest", "steps": 3000}
+                            {"logDate": "2026-04-05", "dayType": "rest"}
                         """))
                 .andExpect(status().isCreated());
 
@@ -126,11 +125,10 @@ class NutritionFlowIT extends IntegrationTestBase {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {"logDate": "2026-04-05", "dayType": "training", "steps": 12000}
+                            {"logDate": "2026-04-05", "dayType": "training"}
                         """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.dayType").value("training"))
-                .andExpect(jsonPath("$.steps").value(12000));
+                .andExpect(jsonPath("$.dayType").value("training"));
 
         // Only one log for that date
         mockMvc.perform(get("/api/nutrition")
@@ -145,7 +143,7 @@ class NutritionFlowIT extends IntegrationTestBase {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {"logDate": "2026-04-03", "dayType": "training", "steps": 8000}
+                            {"logDate": "2026-04-03", "dayType": "training"}
                         """))
                 .andExpect(status().isCreated())
                 .andReturn();
