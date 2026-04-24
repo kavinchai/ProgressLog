@@ -50,7 +50,12 @@
   line-height: var(--lh);
   margin: 0;
   font-style: italic;
+  min-height: 2.5em;
+  transition: opacity 400ms ease;
 }
+
+.splash-quote--visible { opacity: 1; }
+.splash-quote--hidden  { opacity: 0; }
 
 .splash-actions {
   display: flex;
