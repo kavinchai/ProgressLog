@@ -1,9 +1,7 @@
 package com.kavin.fitness.controller;
 
+import com.kavin.fitness.dto.WeightLogDTO;
 import com.kavin.fitness.dto.WeightLogRequest;
-
-import com.kavin.fitness.model.WeightLog;
-
 import com.kavin.fitness.service.WeightService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +23,7 @@ public class WeightController {
     @Autowired private UserResolver userResolver;
 
     @GetMapping
-    public ResponseEntity<List<WeightLog>> getWeightLog(
+    public ResponseEntity<List<WeightLogDTO>> getWeightLog(
             @AuthenticationPrincipal UserDetails principal) {
         return ResponseEntity.ok(weightService.getWeightLog(userResolver.resolve(principal).getId()));
     }
@@ -40,11 +38,11 @@ public class WeightController {
     }
 
     @PostMapping
-    public ResponseEntity<WeightLog> logWeight(
+    public ResponseEntity<WeightLogDTO> logWeight(
             @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody WeightLogRequest request) {
         log.info("POST weight user={} date={} lbs={}", principal.getUsername(), request.getLogDate(), request.getWeightLbs());
-        WeightLog saved = weightService.save(userResolver.resolve(principal), request);
+        WeightLogDTO saved = weightService.save(userResolver.resolve(principal), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 

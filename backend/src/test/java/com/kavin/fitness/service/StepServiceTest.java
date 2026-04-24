@@ -1,5 +1,6 @@
 package com.kavin.fitness.service;
 
+import com.kavin.fitness.dto.StepLogDTO;
 import com.kavin.fitness.dto.StepLogRequest;
 import com.kavin.fitness.model.StepLog;
 import com.kavin.fitness.model.User;
@@ -44,7 +45,7 @@ class StepServiceTest {
         StepLog log2 = stepLog(2L, LocalDate.of(2026, 4, 2), 12000);
         when(stepLogRepository.findByUserIdOrderByLogDateAsc(1L)).thenReturn(List.of(log1, log2));
 
-        List<StepLog> result = stepService.getStepLogs(1L);
+        List<StepLogDTO> result = stepService.getStepLogs(1L);
 
         assertEquals(2, result.size());
         assertEquals(8000, result.get(0).getSteps());
@@ -74,12 +75,11 @@ class StepServiceTest {
             return log;
         });
 
-        StepLog result = stepService.save(user, request);
+        StepLogDTO result = stepService.save(user, request);
 
         assertEquals(5L, result.getId());
         assertEquals(LocalDate.of(2026, 4, 10), result.getLogDate());
         assertEquals(10000, result.getSteps());
-        assertEquals(user, result.getUser());
     }
 
     @Test
@@ -93,7 +93,7 @@ class StepServiceTest {
         request.setLogDate(LocalDate.of(2026, 4, 10));
         request.setSteps(12000);
 
-        StepLog result = stepService.save(user, request);
+        StepLogDTO result = stepService.save(user, request);
 
         assertEquals(3L, result.getId());
         assertEquals(12000, result.getSteps());

@@ -1,5 +1,6 @@
 package com.kavin.fitness.service;
 
+import com.kavin.fitness.dto.WeightLogDTO;
 import com.kavin.fitness.dto.WeightLogRequest;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WeightLog;
@@ -45,7 +46,7 @@ class WeightServiceTest {
         WeightLog log2 = weightLog(2L, LocalDate.of(2026, 3, 2), "150.5");
         when(weightLogRepository.findByUserIdOrderByLogDateAsc(1L)).thenReturn(List.of(log1, log2));
 
-        List<WeightLog> result = weightService.getWeightLog(1L);
+        List<WeightLogDTO> result = weightService.getWeightLog(1L);
 
         assertEquals(2, result.size());
         assertEquals(LocalDate.of(2026, 3, 1), result.get(0).getLogDate());
@@ -73,12 +74,11 @@ class WeightServiceTest {
             return log;
         });
 
-        WeightLog result = weightService.save(user, request);
+        WeightLogDTO result = weightService.save(user, request);
 
         assertEquals(5L, result.getId());
         assertEquals(LocalDate.of(2026, 3, 10), result.getLogDate());
         assertEquals(new BigDecimal("151.5"), result.getWeightLbs());
-        assertEquals(user, result.getUser());
     }
 
     // ── delete ───────────────────────────────────────────────────────────────
