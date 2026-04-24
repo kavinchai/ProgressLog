@@ -5,12 +5,12 @@ import { z } from 'zod';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.FITTRACK_API_URL ?? 'http://localhost:8080/api';
-const API_KEY = process.env.FITTRACK_API_KEY; // Non-expiring API key for the kavinchai account
+const API_BASE = process.env.PROGRESSLOG_API_URL ?? 'http://localhost:8080/api';
+const API_KEY = process.env.PROGRESSLOG_API_KEY; // Non-expiring API key for the kavinchai account
 const PORT = parseInt(process.env.PORT ?? '3100', 10);
 
 if (!API_KEY) {
-  console.error('FITTRACK_API_KEY is required. Generate one: POST /api/auth/api-key (with Bearer token)');
+  console.error('PROGRESSLOG_API_KEY is required. Generate one: POST /api/auth/api-key (with Bearer token)');
   process.exit(1);
 }
 
@@ -49,7 +49,7 @@ async function api(method, path, body) {
   const res = await fetch(`${API_BASE}${path}`, opts);
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`FitTrack API ${method} ${path} → ${res.status}: ${text}`);
+    throw new Error(`ProgressLog API ${method} ${path} → ${res.status}: ${text}`);
   }
   return text ? JSON.parse(text) : null;
 }
@@ -84,7 +84,7 @@ async function logExercisesToDate(date, sessionName, exercises) {
 
 function createMcpServer() {
   const mcp = new McpServer(
-    { name: 'fittrack', version: '1.0.0' },
+    { name: 'progresslog', version: '1.0.0' },
     { capabilities: { tools: {} } },
   );
 
@@ -587,10 +587,10 @@ app.delete('/mcp', (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', server: 'fittrack-mcp' });
+  res.json({ status: 'ok', server: 'progresslog-mcp' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`FitTrack MCP server listening on port ${PORT}`);
+  console.log(`ProgressLog MCP server listening on port ${PORT}`);
   console.log(`API target: ${API_BASE}`);
 });

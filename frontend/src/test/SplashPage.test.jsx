@@ -18,7 +18,7 @@ function renderSplash() {
 describe('SplashPage', () => {
   it('renders the app name', () => {
     renderSplash();
-    expect(screen.getAllByText(/fittrack/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/progresslog/i).length).toBeGreaterThan(0);
   });
 
   it('renders a Sign In link pointing to /login', () => {

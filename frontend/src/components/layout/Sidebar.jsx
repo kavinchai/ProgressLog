@@ -20,7 +20,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        FitTrack
+        ProgressLog
       </div>
 
       <nav className="sidebar-nav">

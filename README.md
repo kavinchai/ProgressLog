@@ -1,4 +1,4 @@
-# FitTrack — Full-Stack Fitness Tracker
+# ProgressLog — Full-Stack Fitness Tracker
 
 Personal fitness tracking application: daily logging for weight, nutrition, and workouts, with strength progression analytics, personal records, workout templates, and Google Calendar integration.
 

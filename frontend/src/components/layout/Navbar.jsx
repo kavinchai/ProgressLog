@@ -30,7 +30,7 @@ export default function Navbar() {
         </button>
       </div>
 
-      <span className="navbar-brand">FitTrack</span>
+      <span className="navbar-brand">ProgressLog</span>
 
       <div style={{ width: 36 }} />
 

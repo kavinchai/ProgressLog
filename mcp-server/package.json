@@ -1,7 +1,7 @@
 {
-  "name": "fittrack-mcp-server",
+  "name": "progresslog-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server that lets Claude log workouts, meals, and weight to FitTrack",
+  "description": "MCP server that lets Claude log workouts, meals, and weight to ProgressLog",
   "type": "module",
   "scripts": {
     "start": "node server.js"

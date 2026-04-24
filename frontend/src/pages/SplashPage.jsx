@@ -33,7 +33,7 @@ export default function SplashPage() {
   return (
     <div className="splash">
       <div className="splash-card">
-        <span className="splash-logo">FitTrack</span>
+        <span className="splash-logo">ProgressLog</span>
 
         <div className="splash-date">{formatDate()}</div>
 
