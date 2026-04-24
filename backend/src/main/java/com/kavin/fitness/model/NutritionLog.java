@@ -31,9 +31,6 @@ public class NutritionLog {
     @Column(name = "day_type", nullable = false, length = 20)
     private String dayType;   // "training" | "rest"
 
-    @Column
-    private Integer steps;
-
     @OneToMany(mappedBy = "nutritionLog", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Meal> meals = new ArrayList<>();
 }

@@ -38,7 +38,6 @@ public class NutritionService {
         log.setUser(user);
         log.setLogDate(request.getLogDate());
         log.setDayType(request.getDayType());
-        log.setSteps(request.getSteps());
         return toDTO(nutritionLogRepository.save(log));
     }
 
@@ -108,6 +107,6 @@ public class NutritionService {
 
         return new NutritionLogDTO(
                 log.getId(), log.getLogDate(), log.getDayType(),
-                log.getSteps(), totalCalories, totalProtein, mealDTOs);
+                totalCalories, totalProtein, mealDTOs);
     }
 }

@@ -14,7 +14,6 @@ public class NutritionLogDTO {
     private Long      id;
     private LocalDate logDate;
     private String    dayType;
-    private Integer   steps;
     private Integer   totalCalories;
     private Integer   totalProtein;
     private List<MealDTO> meals;

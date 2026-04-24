@@ -32,11 +32,6 @@ describe('DayInfoModal — new entry', () => {
     expect(screen.getByRole('option', { name: 'rest' })).toBeInTheDocument();
   });
 
-  it('steps field starts empty', () => {
-    render(<DayInfoModal prefillDate="2026-01-05" onClose={onClose} onSaved={onSaved} />);
-    expect(screen.getByPlaceholderText(/optional/i).value).toBe('');
-  });
-
   it('Cancel button calls onClose', async () => {
     render(<DayInfoModal prefillDate="2026-01-05" onClose={onClose} onSaved={onSaved} />);
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
@@ -48,30 +43,15 @@ describe('DayInfoModal — new entry', () => {
 
     render(<DayInfoModal prefillDate="2026-01-05" onClose={onClose} onSaved={onSaved} />);
     await userEvent.selectOptions(screen.getByRole('combobox'), 'rest');
-    await userEvent.type(screen.getByPlaceholderText(/optional/i), '8000');
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith('/nutrition', {
         logDate: '2026-01-05',
         dayType: 'rest',
-        steps: 8000,
       });
       expect(onSaved).toHaveBeenCalledTimes(1);
       expect(onClose).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('sends steps as null when left empty', async () => {
-    api.post.mockResolvedValue({});
-
-    render(<DayInfoModal prefillDate="2026-01-05" onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
-
-    await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith('/nutrition', expect.objectContaining({
-        steps: null,
-      }));
     });
   });
 
@@ -96,16 +76,11 @@ describe('DayInfoModal — new entry', () => {
 });
 
 describe('DayInfoModal — editing existing entry', () => {
-  const existing = { id: 7, logDate: '2026-01-04', dayType: 'rest', steps: 5000 };
+  const existing = { id: 7, logDate: '2026-01-04', dayType: 'rest' };
 
   it('pre-fills day type from existing', () => {
     render(<DayInfoModal existing={existing} onClose={onClose} onSaved={onSaved} />);
     expect(screen.getByRole('combobox').value).toBe('rest');
-  });
-
-  it('pre-fills steps from existing', () => {
-    render(<DayInfoModal existing={existing} onClose={onClose} onSaved={onSaved} />);
-    expect(screen.getByPlaceholderText(/optional/i).value).toBe('5000');
   });
 
   it('uses existing logDate when submitting', async () => {

@@ -17,5 +17,5 @@ public class NutritionLogRequest {
     @NotBlank
     private String dayType;
 
-    private Integer steps;
+
 }

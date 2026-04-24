@@ -53,7 +53,7 @@ class NutritionServiceTest {
 
     @Test
     void getNutritionLog_mapsMealsToDTO() {
-        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 8000);
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
         Meal meal = meal(20L, log, "Chicken", 500, 40);
         log.getMeals().add(meal);
 
@@ -65,7 +65,6 @@ class NutritionServiceTest {
         NutritionLogDTO dto = result.get(0);
         assertEquals(10L, dto.getId());
         assertEquals("training", dto.getDayType());
-        assertEquals(8000, dto.getSteps());
         assertEquals(500, dto.getTotalCalories());
         assertEquals(40, dto.getTotalProtein());
         assertEquals(1, dto.getMeals().size());
@@ -74,7 +73,7 @@ class NutritionServiceTest {
 
     @Test
     void getNutritionLog_sumsMealCaloriesAndProtein() {
-        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 5000);
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
         log.getMeals().add(meal(1L, log, "Breakfast", 600, 30));
         log.getMeals().add(meal(2L, log, "Lunch", 800, 50));
 
@@ -92,7 +91,6 @@ class NutritionServiceTest {
         NutritionLogRequest request = new NutritionLogRequest();
         request.setLogDate(LocalDate.of(2026, 3, 10));
         request.setDayType("training");
-        request.setSteps(10000);
 
         when(nutritionLogRepository.findByUserIdAndLogDate(1L, LocalDate.of(2026, 3, 10)))
                 .thenReturn(Optional.empty());
@@ -106,17 +104,15 @@ class NutritionServiceTest {
 
         assertEquals(5L, dto.getId());
         assertEquals("training", dto.getDayType());
-        assertEquals(10000, dto.getSteps());
     }
 
     @Test
     void upsertLog_updatesExistingLog() {
-        NutritionLog existing = nutritionLog(10L, LocalDate.of(2026, 3, 10), "rest", 5000);
+        NutritionLog existing = nutritionLog(10L, LocalDate.of(2026, 3, 10), "rest");
 
         NutritionLogRequest request = new NutritionLogRequest();
         request.setLogDate(LocalDate.of(2026, 3, 10));
         request.setDayType("training");
-        request.setSteps(12000);
 
         when(nutritionLogRepository.findByUserIdAndLogDate(1L, LocalDate.of(2026, 3, 10)))
                 .thenReturn(Optional.of(existing));
@@ -126,14 +122,13 @@ class NutritionServiceTest {
 
         assertEquals(10L, dto.getId());
         assertEquals("training", dto.getDayType());
-        assertEquals(12000, dto.getSteps());
     }
 
     // ── addMeal ──────────────────────────────────────────────────────────────
 
     @Test
     void addMeal_addsMealToExistingLog() {
-        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 8000);
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
         when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
         when(nutritionLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -164,7 +159,7 @@ class NutritionServiceTest {
 
     @Test
     void addMeal_throwsWhenLogBelongsToAnotherUser() {
-        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 8000);
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
         when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
 
         MealRequest request = new MealRequest();
@@ -179,7 +174,7 @@ class NutritionServiceTest {
 
     @Test
     void deleteLog_removesLogOwnedByUser() {
-        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 8000);
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
         when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
 
         nutritionService.deleteLog(10L, 1L);
@@ -199,7 +194,7 @@ class NutritionServiceTest {
 
     @Test
     void deleteMeal_removesMealFromLog() {
-        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 8000);
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
         Meal m = meal(20L, log, "Chicken", 500, 40);
 
         when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
@@ -212,7 +207,7 @@ class NutritionServiceTest {
 
     @Test
     void deleteMeal_throwsWhenMealNotFound() {
-        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 8000);
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
         when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
         when(mealRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -222,8 +217,8 @@ class NutritionServiceTest {
 
     @Test
     void deleteMeal_throwsWhenMealBelongsToDifferentLog() {
-        NutritionLog log10 = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training", 8000);
-        NutritionLog log20 = nutritionLog(20L, LocalDate.of(2026, 3, 2), "rest", 5000);
+        NutritionLog log10 = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        NutritionLog log20 = nutritionLog(20L, LocalDate.of(2026, 3, 2), "rest");
         Meal m = meal(30L, log20, "Chicken", 500, 40);
 
         when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log10));
@@ -235,13 +230,12 @@ class NutritionServiceTest {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    private NutritionLog nutritionLog(Long id, LocalDate date, String dayType, Integer steps) {
+    private NutritionLog nutritionLog(Long id, LocalDate date, String dayType) {
         NutritionLog log = new NutritionLog();
         ReflectionTestUtils.setField(log, "id", id);
         log.setUser(user);
         log.setLogDate(date);
         log.setDayType(dayType);
-        log.setSteps(steps);
         log.setMeals(new ArrayList<>());
         return log;
     }

@@ -4,7 +4,6 @@ import Modal from './Modal';
 
 export default function DayInfoModal({ prefillDate, existing, onClose, onSaved }) {
   const [type,  setType]  = useState(existing?.dayType ?? 'training');
-  const [steps, setSteps] = useState(existing?.steps ?? '');
   const [err,   setErr]   = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -16,7 +15,6 @@ export default function DayInfoModal({ prefillDate, existing, onClose, onSaved }
       await api.post('/nutrition', {
         logDate: existing?.logDate ?? prefillDate,
         dayType: type,
-        steps: steps ? parseInt(steps) : null,
       });
       onSaved();
       onClose();
@@ -35,11 +33,6 @@ export default function DayInfoModal({ prefillDate, existing, onClose, onSaved }
             <option value="training">training</option>
             <option value="rest">rest</option>
           </select>
-        </div>
-        <div className="modal-field">
-          <label className="modal-label">Steps</label>
-          <input className="modal-input" type="number" min="0"
-            value={steps} onChange={e => setSteps(e.target.value)} placeholder="optional" />
         </div>
         <div className="modal-actions">
           <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
