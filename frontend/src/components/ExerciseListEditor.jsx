@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
+import useWeightUnit, { toDisplay, fromDisplay } from '../hooks/useWeightUnit';
 
 export function emptySet(num) {
   return { setNumber: num, reps: '', weightLbs: '', distanceMiles: '', durationHours: '', durationMinutes: '', durationSeconds: '' };
@@ -17,14 +18,14 @@ function detectType(sets) {
   return 'lifting';
 }
 
-export function exercisesToForm(exercises) {
+export function exercisesToForm(exercises, unit = 'lbs') {
   return (exercises ?? []).map(ex => ({
     exerciseName: ex.exerciseName,
     type: detectType(ex.sets),
     sets: (ex.sets ?? []).map(s => ({
       setNumber:       s.setNumber,
       reps:            String(s.reps),
-      weightLbs:       String(s.weightLbs),
+      weightLbs:       String(toDisplay(s.weightLbs, unit) ?? ''),
       distanceMiles:   s.distanceMiles != null ? String(s.distanceMiles) : '',
       durationHours:   s.durationSeconds != null ? String(Math.floor(s.durationSeconds / 3600)) : '',
       durationMinutes: s.durationSeconds != null ? String(Math.floor((s.durationSeconds % 3600) / 60)) : '',
@@ -33,13 +34,13 @@ export function exercisesToForm(exercises) {
   }));
 }
 
-export function exercisesToPayload(exercises) {
+export function exercisesToPayload(exercises, unit = 'lbs') {
   return exercises
     .filter(ex => ex.exerciseName.trim())
     .map(ex => ({
       exerciseName: ex.exerciseName.trim(),
       sets: ex.sets.map(s => {
-        const base = { setNumber: s.setNumber, reps: parseInt(s.reps) || 0, weightLbs: parseFloat(s.weightLbs) || 0 };
+        const base = { setNumber: s.setNumber, reps: parseInt(s.reps) || 0, weightLbs: fromDisplay(s.weightLbs, unit) || 0 };
         if (ex.type === 'run') {
           const mins = parseInt(s.durationMinutes) || 0;
           const secs = parseInt(s.durationSeconds) || 0;
@@ -57,6 +58,7 @@ export function exercisesToPayload(exercises) {
 }
 
 export default function ExerciseListEditor({ exercises, onChange }) {
+  const { unit } = useWeightUnit();
   const [knownNames,     setKnownNames]     = useState([]);
   const [suggestionFor,  setSuggestionFor]  = useState(null);
   const [highlightedIdx, setHighlightedIdx] = useState(-1);
@@ -251,7 +253,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
                 ) : (
                   <>
                     <div className="wbm-sets-head">
-                      <span>Set</span><span>Weight (lbs)</span><span>Reps</span><span></span>
+                      <span>Set</span><span>Weight ({unit})</span><span>Reps</span><span></span>
                     </div>
                     {ex.sets.map((s, setIndex) => (
                       <div key={setIndex} className="wbm-set-row">

@@ -7,6 +7,7 @@ import DayDetail from '../components/DayDetail';
 import WeightLineChart from '../components/WeightLineChart';
 import { localDateStr, shortDate, avg } from '../utils/date';
 import { buildDayRows } from '../utils/stats';
+import useWeightUnit from '../hooks/useWeightUnit';
 import './WeeklyStats.css';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -30,6 +31,7 @@ export default function WeeklyStats() {
   const { data: stepData,      refetch: refetchSteps }     = useSteps();
 
   const [expandedDay, setExpandedDay] = useState(null);
+  const { unit, toDisplay } = useWeightUnit();
 
   const days  = getLast7Days();
   const today = localDateStr(new Date());
@@ -59,7 +61,7 @@ export default function WeeklyStats() {
           <div className="weekly-summary-grid">
             <div className="weekly-stat">
               <span className="weekly-stat-label">avg weight</span>
-              <span className="weekly-stat-value">{avgWeight ? avgWeight + ' lbs' : '--'}</span>
+              <span className="weekly-stat-value">{avgWeight ? toDisplay(avgWeight) + ' ' + unit : '--'}</span>
             </div>
             <div className="weekly-stat">
               <span className="weekly-stat-label">avg calories</span>
@@ -110,7 +112,7 @@ export default function WeeklyStats() {
                       style={{ cursor: 'pointer' }}
                     >
                       <td>{shortDate(row.date)}</td>
-                      <td>{row.weight != null ? row.weight + ' lbs' : '--'}</td>
+                      <td>{row.weight != null ? toDisplay(row.weight) + ' ' + unit : '--'}</td>
                       <td>{row.calories != null ? row.calories : '--'}</td>
                       <td>{row.protein != null ? row.protein + 'g' : '--'}</td>
                       <td>{row.steps != null ? row.steps.toLocaleString() : '--'}</td>
@@ -148,7 +150,10 @@ export default function WeeklyStats() {
             <span className="section-title">Weight Trend</span>
           </div>
           <div className="section-body">
-            <WeightLineChart data={[...days].reverse().map((date, i) => ({ label: shortDate(date), weight: [...weights].reverse()[i] }))} />
+            <WeightLineChart
+              unit={unit}
+              data={[...days].reverse().map((date, i) => ({ label: shortDate(date), weight: toDisplay([...weights].reverse()[i]) }))}
+            />
           </div>
         </div>
       )}

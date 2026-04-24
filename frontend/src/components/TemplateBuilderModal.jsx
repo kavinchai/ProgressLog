@@ -2,14 +2,16 @@ import { useState } from 'react';
 import api from '../api';
 import Modal from './Modal';
 import ExerciseListEditor, { exercisesToForm, exercisesToPayload } from './ExerciseListEditor';
+import useWeightUnit from '../hooks/useWeightUnit';
 import './WorkoutBuilderModal.css';
 
 export default function TemplateBuilderModal({ template, onClose, onSaved }) {
   const isEdit = Boolean(template);
+  const { unit } = useWeightUnit();
 
   const [name,      setName]      = useState(template?.name ?? '');
   const [exercises, setExercises] = useState(
-    isEdit ? exercisesToForm(template.exercises) : []
+    isEdit ? exercisesToForm(template.exercises, unit) : []
   );
   const [err,       setErr]       = useState('');
   const [saving,    setSaving]    = useState(false);
@@ -21,7 +23,7 @@ export default function TemplateBuilderModal({ template, onClose, onSaved }) {
     try {
       const payload = {
         name: name.trim(),
-        exercises: exercisesToPayload(exercises),
+        exercises: exercisesToPayload(exercises, unit),
       };
       if (isEdit) {
         await api.put(`/templates/${template.id}`, payload);

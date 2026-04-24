@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 import Modal from './Modal';
 import ExerciseListEditor, { exercisesToForm, exercisesToPayload } from './ExerciseListEditor';
+import useWeightUnit from '../hooks/useWeightUnit';
 import './WorkoutBuilderModal.css';
 
 const now = new Date();
 const TODAY = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
 export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onClose, onSaved }) {
+  const { unit } = useWeightUnit();
   const [date,             setDate]             = useState(prefillDate ?? TODAY);
   const [sessionName,      setSessionName]      = useState('');
   const [exercises,        setExercises]        = useState(
-    prefillExercises ? exercisesToForm(prefillExercises) : []
+    prefillExercises ? exercisesToForm(prefillExercises, unit) : []
   );
   const [templates,        setTemplates]        = useState([]);
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
@@ -23,7 +25,7 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
   }, []);
 
   function loadTemplate(template) {
-    setExercises(exercisesToForm(template.exercises));
+    setExercises(exercisesToForm(template.exercises, unit));
     setTemplateMenuOpen(false);
   }
 
@@ -35,7 +37,7 @@ export default function WorkoutBuilderModal({ prefillDate, prefillExercises, onC
       const payload = {
         sessionDate: date,
         sessionName: sessionName.trim() || null,
-        exercises: exercisesToPayload(exercises),
+        exercises: exercisesToPayload(exercises, unit),
       };
       await api.post('/workouts', payload);
       onSaved();

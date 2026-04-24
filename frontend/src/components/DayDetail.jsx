@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDayActions } from '../hooks/useDayActions';
+import useWeightUnit from '../hooks/useWeightUnit';
 import WeightModal from './WeightModal';
 import DayInfoModal from './DayInfoModal';
 import MealModal from './MealModal';
@@ -8,6 +9,7 @@ import EditExerciseModal from './EditExerciseModal';
 import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 
 export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, stepEntry, onRefetchW, onRefetchN, onRefetchWo, onRefetchS, showDelete = true }) {
+  const { unit, toDisplay } = useWeightUnit();
   const [modal,        setModal]        = useState(null);
   const [editMeal,     setEditMeal]     = useState(null);
   const [mealLogId,    setMealLogId]    = useState(null);
@@ -54,7 +56,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
           </div>
         </div>
         <div className="day-detail-value">
-          {weightEntry ? weightEntry.weightLbs + ' lbs' : <span className="muted">--</span>}
+          {weightEntry ? toDisplay(weightEntry.weightLbs) + ' ' + unit : <span className="muted">--</span>}
         </div>
       </div>
 
@@ -190,7 +192,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
                   <div className="day-exercise-row">
                     <span className="day-exercise-name">{g.name}</span>
                     {detectType(g.sets) === 'lifting' && g.weight != null && (
-                      <span className="muted">{g.weight} lbs</span>
+                      <span className="muted">{toDisplay(g.weight)} {unit}</span>
                     )}
                     <button className="btn btn-sm" style={{ marginLeft: 'auto' }}
                       onClick={() => setEditExercise({ sessionId: g.sets[0]._sessionId ?? workoutEntry.id, name: g.name, sets: g.sets })}>

@@ -15,6 +15,7 @@ import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
 import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 import { mergeWorkoutSessions } from '../utils/stats';
+import useWeightUnit from '../hooks/useWeightUnit';
 import { localDateStr, formatDateFull as fmtDate } from '../utils/date';
 import './Today.css';
 
@@ -41,6 +42,7 @@ function MealCard({ meal, index, onEdit }) {
 
 function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
   const type = detectType(sets);
+  const { unit, toDisplay } = useWeightUnit();
 
   return (
     <div className="exercise-card">
@@ -48,7 +50,7 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
         <span className="exercise-card-name">
           {name}
           {type === 'lifting' && (
-            <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)' }}>{weight} lbs</span>
+            <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)' }}>{toDisplay(weight)} {unit}</span>
           )}
           {isPR && <span className="pr-badge">PR</span>}
         </span>
@@ -88,7 +90,7 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
             {sets.map(s => (
               <div key={s.id} className="exercise-set-row">
                 <span>{s.setNumber}</span>
-                <span>{s.weightLbs} lbs</span>
+                <span>{toDisplay(s.weightLbs)} {unit}</span>
                 <span>{s.reps}</span>
               </div>
             ))}
@@ -120,6 +122,7 @@ export default function Today() {
   const { goals } = useUserProfile();
   const { data: templates } = useTemplates();
   const { data: prsData, refetch: refetchPRs } = usePRs();
+  const { unit, toDisplay } = useWeightUnit();
 
   const [modal,           setModal]           = useState(null);
   const [showPRHistory,   setShowPRHistory]    = useState(false);
@@ -232,7 +235,7 @@ export default function Today() {
         </div>
         <div className="section-body">
           {todayWeightEntry
-            ? <DataRow label="Weight" value={todayWeightEntry.weightLbs + ' lbs'} />
+            ? <DataRow label="Weight" value={toDisplay(todayWeightEntry.weightLbs) + ' ' + unit} />
             : <span className="muted">No entry for today.</span>}
         </div>
       </div>
@@ -382,7 +385,7 @@ export default function Today() {
                     {(prsData ?? []).map(pr => (
                       <tr key={pr.exerciseName}>
                         <td>{pr.exerciseName}</td>
-                        <td>{parseFloat(pr.maxWeightLbs)} lbs</td>
+                        <td>{toDisplay(pr.maxWeightLbs)} {unit}</td>
                         <td className="muted">{pr.achievedDate}</td>
                       </tr>
                     ))}

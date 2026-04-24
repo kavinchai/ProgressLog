@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import api from '../api';
 import Modal from './Modal';
+import useWeightUnit from '../hooks/useWeightUnit';
 
 export default function WeightModal({ prefillDate, existing, onClose, onSaved }) {
+  const { unit, toDisplay, fromDisplay } = useWeightUnit();
   const [date,   setDate]   = useState(existing?.logDate ?? prefillDate ?? '');
-  const [weight, setWeight] = useState(existing?.weightLbs ?? '');
+  const [weight, setWeight] = useState(existing?.weightLbs != null ? String(toDisplay(existing.weightLbs)) : '');
   const [err,    setErr]    = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -13,7 +15,7 @@ export default function WeightModal({ prefillDate, existing, onClose, onSaved })
     setErr('');
     setSaving(true);
     try {
-      await api.post('/weight', { logDate: date, weightLbs: parseFloat(weight) });
+      await api.post('/weight', { logDate: date, weightLbs: fromDisplay(weight) });
       onSaved();
       onClose();
     } catch (ex) {
@@ -31,7 +33,7 @@ export default function WeightModal({ prefillDate, existing, onClose, onSaved })
             onChange={e => setDate(e.target.value)} required />
         </div>
         <div className="modal-field">
-          <label className="modal-label">Weight (lbs)</label>
+          <label className="modal-label">Weight ({unit})</label>
           <input className="modal-input" type="number" step="0.1" min="0"
             value={weight} onChange={e => setWeight(e.target.value)} required />
         </div>

@@ -10,6 +10,7 @@ import WeightLineChart from '../components/WeightLineChart';
 import { groupByExercise } from '../utils/workout';
 import { localDateStr, formatDateShort as formatDate, avg } from '../utils/date';
 import { buildDayRows } from '../utils/stats';
+import useWeightUnit from '../hooks/useWeightUnit';
 import './WeeklyStats.css';
 import './TotalStats.css';
 
@@ -29,6 +30,7 @@ export default function TotalStats() {
   const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
   const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
   const { data: stepData,      refetch: refetchSteps }     = useSteps();
+  const { unit, toDisplay } = useWeightUnit();
 
   const [expandedDay,   setExpandedDay]   = useState(null);
   const [importStatus,  setImportStatus]  = useState(null);
@@ -200,7 +202,7 @@ export default function TotalStats() {
           <div className="weekly-summary-grid">
             <div className="weekly-stat">
               <span className="weekly-stat-label">avg weight</span>
-              <span className="weekly-stat-value">{avgWeight ? avgWeight + ' lbs' : '--'}</span>
+              <span className="weekly-stat-value">{avgWeight ? toDisplay(avgWeight) + ' ' + unit : '--'}</span>
             </div>
             <div className="weekly-stat">
               <span className="weekly-stat-label">avg calories</span>
@@ -305,7 +307,7 @@ export default function TotalStats() {
                         style={{ cursor: 'pointer' }}
                       >
                         <td>{formatDate(row.date)}</td>
-                        <td>{row.weight != null ? row.weight + ' lbs' : '--'}</td>
+                        <td>{row.weight != null ? toDisplay(row.weight) + ' ' + unit : '--'}</td>
                         <td>{row.calories != null ? row.calories : '--'}</td>
                         <td>{row.protein != null ? row.protein + 'g' : '--'}</td>
                         <td>{row.steps != null ? row.steps.toLocaleString() : '--'}</td>
@@ -374,7 +376,7 @@ export default function TotalStats() {
             </div>
           </div>
           <div className="section-body">
-            <WeightLineChart data={weightBarDates.map((date, i) => ({ label: formatDate(date), weight: weightBarWeights[i] }))} height={220} />
+            <WeightLineChart unit={unit} data={weightBarDates.map((date, i) => ({ label: formatDate(date), weight: toDisplay(weightBarWeights[i]) }))} height={220} />
           </div>
         </div>
       )}

@@ -1,18 +1,19 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-function WeightTooltip({ active, payload, label }) {
+function WeightTooltip({ active, payload, label, unit }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="chart-tooltip">
       <div className="chart-tooltip-label">{label}</div>
-      <div className="chart-tooltip-value">{payload[0].value} lbs</div>
+      <div className="chart-tooltip-value">{payload[0].value} {unit}</div>
     </div>
   );
 }
 
 // data: Array<{ label: string, weight: number | null }>
 // height: optional chart height (default 200)
-export default function WeightLineChart({ data, height = 200 }) {
+// unit: 'lbs' | 'kg' — passed from parent so chart label matches display unit
+export default function WeightLineChart({ data, height = 200, unit = 'lbs' }) {
   const valid = data.filter(d => d.weight != null);
   if (!valid.length) return null;
   const vals   = valid.map(d => d.weight);
@@ -35,13 +36,13 @@ export default function WeightLineChart({ data, height = 200 }) {
         />
         <YAxis
           domain={[minVal - pad, maxVal + pad]}
-          tickFormatter={v => parseFloat(v).toFixed(2)}
+          tickFormatter={v => parseFloat(v).toFixed(1)}
           tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
           axisLine={false}
           tickLine={false}
           width={48}
         />
-        <Tooltip content={<WeightTooltip />} />
+        <Tooltip content={<WeightTooltip unit={unit} />} />
         <Line
           type="linear"
           dataKey="weight"

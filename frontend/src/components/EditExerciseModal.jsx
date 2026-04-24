@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../api';
 import Modal from './Modal';
+import useWeightUnit from '../hooks/useWeightUnit';
 import './WorkoutBuilderModal.css';
 
 function detectType(sets) {
@@ -23,6 +24,7 @@ function splitDuration(totalSeconds) {
 /** exerciseSets: all SetDTO rows for one exercise name in a session */
 export default function EditExerciseModal({ sessionId, exerciseName, exerciseSets, onClose, onSaved }) {
   const type = detectType(exerciseSets);
+  const { unit, toDisplay, fromDisplay } = useWeightUnit();
 
   const initialSets = exerciseSets.map(s => {
     if (type === 'run') {
@@ -43,7 +45,7 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
         durationSecs:  secs,
       };
     }
-    return { setNumber: s.setNumber, reps: String(s.reps ?? ''), weightLbs: String(s.weightLbs ?? '') };
+    return { setNumber: s.setNumber, reps: String(s.reps ?? ''), weightLbs: String(toDisplay(s.weightLbs) ?? '') };
   });
 
   const [sets, setSets]     = useState(initialSets);
@@ -85,7 +87,7 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
         return {
           setNumber: s.setNumber,
           reps:      parseInt(s.reps) || 0,
-          weightLbs: parseFloat(s.weightLbs) || 0,
+          weightLbs: fromDisplay(s.weightLbs) || 0,
         };
       });
 
@@ -164,7 +166,7 @@ export default function EditExerciseModal({ sessionId, exerciseName, exerciseSet
           ) : (
             <>
               <div className="wbm-sets-head">
-                <span>Set</span><span>Weight (lbs)</span><span>Reps</span><span></span>
+                <span>Set</span><span>Weight ({unit})</span><span>Reps</span><span></span>
               </div>
               {sets.map((s, setIndex) => (
                 <div key={setIndex} className="wbm-set-row">

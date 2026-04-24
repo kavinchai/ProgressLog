@@ -4,17 +4,20 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts';
 import api from '../api';
+import useWeightUnit from '../hooks/useWeightUnit';
 import { formatDate } from '../utils/date';
 import { CHART_COLORS } from '../utils/constants';
 import './Strength.css';
 
 
-function LiftChart({ data, color }) {
+function LiftChart({ data, color, unit, toDisplay }) {
   // One point per date using the highest weight that day
   const byDate = {};
   data.forEach(d => {
     const date = formatDate(d.sessionDate);
-    if (!byDate[date] || d.maxWeightLbs > byDate[date].weight) byDate[date] = { date, weight: d.maxWeightLbs };
+    if (!byDate[date] || d.maxWeightLbs > byDate[date].rawWeight) {
+      byDate[date] = { date, weight: toDisplay(d.maxWeightLbs), rawWeight: d.maxWeightLbs };
+    }
   });
   const chartData = Object.values(byDate);
   const vals   = chartData.map(d => d.weight);
@@ -31,13 +34,13 @@ function LiftChart({ data, color }) {
           domain={[minVal - pad, maxVal + pad]}
           tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
           axisLine={false} tickLine={false}
-          tickFormatter={v => v + ' lbs'}
+          tickFormatter={v => v + ' ' + unit}
         />
         <Tooltip content={({ active, payload, label }) =>
           active && payload?.length ? (
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '6px 10px', fontSize: 'var(--font-size-sm)' }}>
               <div style={{ color: 'var(--text-muted)' }}>{label}</div>
-              <div style={{ color, fontWeight: 600 }}>{payload[0].value} lbs</div>
+              <div style={{ color, fontWeight: 600 }}>{payload[0].value} {unit}</div>
             </div>
           ) : null
         } />
@@ -52,6 +55,7 @@ export default function Strength() {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [expandedLift, setExpandedLift] = useState(null);
+  const { unit, toDisplay } = useWeightUnit();
 
   useEffect(() => {
     api.get('/progress/strength')
@@ -81,8 +85,11 @@ export default function Strength() {
               maxByDate[d.sessionDate] = d.maxWeightLbs;
           });
           const sortedDates = Object.keys(maxByDate).sort();
-          const delta = sortedDates.length >= 2
+          const deltaLbs = sortedDates.length >= 2
             ? (maxByDate[sortedDates[sortedDates.length - 1]] - maxByDate[sortedDates[0]])
+            : 0;
+          const deltaDisplay = sortedDates.length >= 2
+            ? Math.round((toDisplay(maxByDate[sortedDates[sortedDates.length - 1]]) - toDisplay(maxByDate[sortedDates[0]])) * 100) / 100
             : 0;
           const color    = CHART_COLORS[i % CHART_COLORS.length];
           const expanded = expandedLift === exercise.exerciseName;
@@ -96,13 +103,13 @@ export default function Strength() {
               >
                 <span className="lift-name">{exercise.exerciseName}</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span className="lift-progress-badge">{delta >= 0 ? '+' : ''}{delta} lbs total</span>
+                  <span className="lift-progress-badge">{deltaDisplay >= 0 ? '+' : ''}{deltaDisplay} {unit} total</span>
                   <span style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>{expanded ? '▲' : '▼'}</span>
                 </span>
               </div>
               {expanded && exercise.data.length > 1 && (
                 <div style={{ marginBottom: 'var(--spacing-md)' }}>
-                  <LiftChart data={exercise.data} color={color} />
+                  <LiftChart data={exercise.data} color={color} unit={unit} toDisplay={toDisplay} />
                 </div>
               )}
               <div className="sets-table-wrapper">
@@ -121,7 +128,7 @@ export default function Strength() {
                         <td>{session.sessionDate}</td>
                         <td>
                           <span style={{ color: 'var(--color-primary-light)', fontWeight: 600 }}>
-                            {session.maxWeightLbs} lbs
+                            {toDisplay(session.maxWeightLbs)} {unit}
                           </span>
                         </td>
                         <td>{session.setCount}</td>
