@@ -106,12 +106,6 @@ public class NutritionService {
         int totalCalories = log.getMeals().stream().mapToInt(Meal::getCalories).sum();
         int totalProtein  = log.getMeals().stream().mapToInt(Meal::getProteinGrams).sum();
 
-        // fallback to legacy columns if no meals yet
-        if (mealDTOs.isEmpty()) {
-            totalCalories = log.getCalories()    != null ? log.getCalories()    : 0;
-            totalProtein  = log.getProteinGrams() != null ? log.getProteinGrams() : 0;
-        }
-
         return new NutritionLogDTO(
                 log.getId(), log.getLogDate(), log.getDayType(),
                 log.getSteps(), totalCalories, totalProtein, mealDTOs);

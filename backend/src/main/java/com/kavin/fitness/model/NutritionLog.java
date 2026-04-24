@@ -28,13 +28,6 @@ public class NutritionLog {
     @Column(name = "log_date", nullable = false)
     private LocalDate logDate;
 
-    /** Kept nullable for legacy rows; new rows use meals for totals. */
-    @Column
-    private Integer calories;
-
-    @Column(name = "protein_grams")
-    private Integer proteinGrams;
-
     @Column(name = "day_type", nullable = false, length = 20)
     private String dayType;   // "training" | "rest"
 
