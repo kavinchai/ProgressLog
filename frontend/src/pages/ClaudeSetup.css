@@ -141,6 +141,9 @@ code {
   word-break: break-all;
   flex: 1;
   min-width: 0;
+  color: var(--fg);
+  cursor: text;
+  outline: none;
 }
 
 .claude-setup-hint {

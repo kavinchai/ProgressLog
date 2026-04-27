@@ -30,9 +30,25 @@ export default function ClaudeSetup() {
   }
 
   function copy(text, which) {
-    navigator.clipboard.writeText(text);
-    setCopied(which);
-    setTimeout(() => setCopied(null), 2000);
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(which);
+        setTimeout(() => setCopied(null), 2000);
+      }).catch(() => {
+        // Clipboard blocked — let the user select the text manually
+      });
+    } else {
+      // Fallback for browsers without clipboard API
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      try { document.execCommand('copy'); setCopied(which); setTimeout(() => setCopied(null), 2000); } catch { /* ignore */ }
+      document.body.removeChild(el);
+    }
   }
 
   const mcpUrl = apiKey ? `${MCP_URL}?apiKey=${apiKey}` : null;
@@ -77,7 +93,12 @@ export default function ClaudeSetup() {
           <div className="claude-setup-key-section">
             <div className="claude-setup-field-label">API Key</div>
             <div className="claude-setup-copy-row">
-              <code className="claude-setup-value">{apiKey}</code>
+              <input
+                className="claude-setup-value"
+                readOnly
+                value={apiKey}
+                onFocus={e => e.target.select()}
+              />
               <button className="btn btn-sm" onClick={() => copy(apiKey, 'key')}>
                 {copied === 'key' ? 'Copied!' : 'Copy'}
               </button>
@@ -88,12 +109,17 @@ export default function ClaudeSetup() {
 
             <div className="claude-setup-field-label" style={{ marginTop: 12 }}>Your MCP URL</div>
             <div className="claude-setup-copy-row">
-              <code className="claude-setup-value">{mcpUrl}</code>
+              <input
+                className="claude-setup-value"
+                readOnly
+                value={mcpUrl}
+                onFocus={e => e.target.select()}
+              />
               <button className="btn btn-sm btn-primary" onClick={() => copy(mcpUrl, 'url')}>
                 {copied === 'url' ? 'Copied!' : 'Copy URL'}
               </button>
             </div>
-            <p className="claude-setup-hint">Copy this URL — you'll paste it into Claude in the next step.</p>
+            <p className="claude-setup-hint">Tap the field to select, or use Copy URL — paste it into Claude in the next step.</p>
           </div>
         ) : (
           <button className="btn btn-sm btn-primary" onClick={handleGenerate} disabled={apiKeyGenerating}>
