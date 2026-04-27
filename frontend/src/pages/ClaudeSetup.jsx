@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import './ClaudeSetup.css';
 
-const MCP_URL = 'https://progresslog-mcp.up.railway.app/mcp';
+const MCP_URL = 'https://gallant-forgiveness-production.up.railway.app/mcp';
 
 export default function ClaudeSetup() {
   const navigate = useNavigate();
