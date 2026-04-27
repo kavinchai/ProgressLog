@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
 
 // ── Config ──────────────────────────────────────────────────────────────────
@@ -667,7 +668,7 @@ app.use(express.json());
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, mcp-session-id');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, mcp-session-id, x-api-key');
   res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
   if (req.method === 'OPTIONS') {
     res.status(204).end();
@@ -676,9 +677,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Stateless mode — each POST gets a fresh server+transport.
-// Our tools are pure API proxies with no session state, so this is
-// simpler and survives redeploys without losing sessions.
+// Session store: sessionId → { transport, server }
+// Claude.ai opens an SSE stream via GET after the initial POST/initialize,
+// so we need sessions to tie those two requests together.
+const sessions = new Map();
+
+function cleanupSession(sessionId) {
+  const session = sessions.get(sessionId);
+  if (session) {
+    sessions.delete(sessionId);
+    session.transport.close().catch(() => {});
+    session.server.close().catch(() => {});
+  }
+}
 
 app.post('/mcp', async (req, res) => {
   const apiKey = resolveApiKey(req);
@@ -691,21 +702,50 @@ app.post('/mcp', async (req, res) => {
     return;
   }
 
+  // If the client already has a session, route to its transport.
+  const existingId = req.headers['mcp-session-id'];
+  if (existingId) {
+    const session = sessions.get(existingId);
+    if (!session) {
+      res.status(404).json({
+        jsonrpc: '2.0',
+        error: { code: -32001, message: 'Session not found. Start a new session by omitting mcp-session-id.' },
+        id: null,
+      });
+      return;
+    }
+    try {
+      await session.transport.handleRequest(req, res, req.body);
+    } catch (error) {
+      console.error('Error handling MCP POST (existing session):', error);
+      if (!res.headersSent) res.status(500).end();
+    }
+    return;
+  }
+
+  // New session (initialize request).
   try {
-    const server = createMcpServer(apiKey);
+    const mcpServer = createMcpServer(apiKey);
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // stateless
+      sessionIdGenerator: () => randomUUID(),
     });
 
-    await server.connect(transport);
+    await mcpServer.connect(transport);
     await transport.handleRequest(req, res, req.body);
 
-    res.on('close', () => {
-      transport.close();
-      server.close();
-    });
+    const sessionId = transport.sessionId;
+    if (sessionId) {
+      sessions.set(sessionId, { transport, server: mcpServer });
+      transport.onclose = () => cleanupSession(sessionId);
+    } else {
+      // No session ID assigned — close immediately after response.
+      res.on('close', () => {
+        transport.close().catch(() => {});
+        mcpServer.close().catch(() => {});
+      });
+    }
   } catch (error) {
-    console.error('Error handling MCP POST:', error);
+    console.error('Error handling MCP POST (new session):', error);
     if (!res.headersSent) {
       res.status(500).json({
         jsonrpc: '2.0',
@@ -716,20 +756,43 @@ app.post('/mcp', async (req, res) => {
   }
 });
 
-app.get('/mcp', (_req, res) => {
-  res.status(405).json({
-    jsonrpc: '2.0',
-    error: { code: -32000, message: 'Method not allowed. Use POST.' },
-    id: null,
-  });
+// GET — SSE stream. Claude.ai opens this after initialize to receive
+// server-initiated messages. Route to the existing session's transport.
+app.get('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  if (!sessionId || !sessions.has(sessionId)) {
+    res.status(400).json({
+      jsonrpc: '2.0',
+      error: { code: -32001, message: 'Missing or invalid mcp-session-id. Initialize via POST first.' },
+      id: null,
+    });
+    return;
+  }
+  try {
+    await sessions.get(sessionId).transport.handleRequest(req, res);
+  } catch (error) {
+    console.error('Error handling MCP GET (SSE):', error);
+    if (!res.headersSent) res.status(500).end();
+  }
 });
 
-app.delete('/mcp', (_req, res) => {
-  res.status(405).json({
-    jsonrpc: '2.0',
-    error: { code: -32000, message: 'Method not allowed.' },
-    id: null,
-  });
+// DELETE — session teardown.
+app.delete('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  if (sessionId && sessions.has(sessionId)) {
+    try {
+      await sessions.get(sessionId).transport.handleRequest(req, res);
+    } catch {
+      // ignore
+    }
+    cleanupSession(sessionId);
+  } else {
+    res.status(404).json({
+      jsonrpc: '2.0',
+      error: { code: -32001, message: 'Session not found.' },
+      id: null,
+    });
+  }
 });
 
 // Health check
