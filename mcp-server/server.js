@@ -6,12 +6,15 @@ import { z } from 'zod';
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const API_BASE = process.env.PROGRESSLOG_API_URL ?? 'http://localhost:8080/api';
-const API_KEY = process.env.PROGRESSLOG_API_KEY; // Non-expiring API key for the kavinchai account
+// Default/fallback API key (single-user env-var mode, e.g. kavinchai's Railway deployment).
+// Per-request keys via ?apiKey= query param take precedence and enable multi-user support.
+const DEFAULT_API_KEY = process.env.PROGRESSLOG_API_KEY;
 const PORT = parseInt(process.env.PORT ?? '3100', 10);
 
-if (!API_KEY) {
-  console.error('PROGRESSLOG_API_KEY is required. Generate one: POST /api/auth/api-key (with Bearer token)');
-  process.exit(1);
+/** Resolve the API key for a given request.
+ *  Priority: ?apiKey= query param → X-API-Key header → PROGRESSLOG_API_KEY env var */
+function resolveApiKey(req) {
+  return req.query?.apiKey || req.headers['x-api-key'] || DEFAULT_API_KEY || null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -36,22 +39,24 @@ function describeSet(s) {
 
 // ── API helper ──────────────────────────────────────────────────────────────
 
-async function api(method, path, body) {
-  const opts = {
-    method,
-    headers: {
-      'X-API-Key': API_KEY,
-      'Content-Type': 'application/json',
-    },
-  };
-  if (body !== undefined) opts.body = JSON.stringify(body);
+function makeApi(apiKey) {
+  return async function api(method, path, body) {
+    const opts = {
+      method,
+      headers: {
+        'X-API-Key': apiKey,
+        'Content-Type': 'application/json',
+      },
+    };
+    if (body !== undefined) opts.body = JSON.stringify(body);
 
-  const res = await fetch(`${API_BASE}${path}`, opts);
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`ProgressLog API ${method} ${path} → ${res.status}: ${text}`);
-  }
-  return text ? JSON.parse(text) : null;
+    const res = await fetch(`${API_BASE}${path}`, opts);
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`ProgressLog API ${method} ${path} → ${res.status}: ${text}`);
+    }
+    return text ? JSON.parse(text) : null;
+  };
 }
 
 function todayStr() {
@@ -59,30 +64,30 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// Helper: add exercises to an existing session for date, or create a new one.
-// Returns the final WorkoutSessionDTO.
-async function logExercisesToDate(date, sessionName, exercises) {
-  const existing = await api('GET', `/workouts?date=${encodeURIComponent(date)}`);
-  if (existing.length > 0) {
-    const sessionId = existing[0].id;
-    let result;
-    for (const exercise of exercises) {
-      result = await api('POST', `/workouts/${sessionId}/exercises`, exercise);
-    }
-    return result ?? await api('GET', `/workouts/${sessionId}`);
-  }
-  return await api('POST', '/workouts', {
-    sessionDate: date,
-    sessionName: sessionName ?? null,
-    exercises,
-  });
-}
-
 // ── MCP Server factory ─────────────────────────────────────────────────────
 // Each session needs its own McpServer instance because the SDK only allows
 // one transport per server.
 
-function createMcpServer() {
+function createMcpServer(apiKey) {
+  const api = makeApi(apiKey);
+
+  async function logExercisesToDate(date, sessionName, exercises) {
+    const existing = await api('GET', `/workouts?date=${encodeURIComponent(date)}`);
+    if (existing.length > 0) {
+      const sessionId = existing[0].id;
+      let result;
+      for (const exercise of exercises) {
+        result = await api('POST', `/workouts/${sessionId}/exercises`, exercise);
+      }
+      return result ?? await api('GET', `/workouts/${sessionId}`);
+    }
+    return await api('POST', '/workouts', {
+      sessionDate: date,
+      sessionName: sessionName ?? null,
+      exercises,
+    });
+  }
+
   const mcp = new McpServer(
     { name: 'progresslog', version: '1.0.0' },
     { capabilities: { tools: {} } },
@@ -544,8 +549,18 @@ app.use((req, res, next) => {
 // simpler and survives redeploys without losing sessions.
 
 app.post('/mcp', async (req, res) => {
+  const apiKey = resolveApiKey(req);
+  if (!apiKey) {
+    res.status(401).json({
+      jsonrpc: '2.0',
+      error: { code: -32001, message: 'API key required. Pass ?apiKey=<your-key> or X-API-Key header.' },
+      id: null,
+    });
+    return;
+  }
+
   try {
-    const server = createMcpServer();
+    const server = createMcpServer(apiKey);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless
     });
@@ -569,7 +584,7 @@ app.post('/mcp', async (req, res) => {
   }
 });
 
-app.get('/mcp', (req, res) => {
+app.get('/mcp', (_req, res) => {
   res.status(405).json({
     jsonrpc: '2.0',
     error: { code: -32000, message: 'Method not allowed. Use POST.' },
@@ -577,7 +592,7 @@ app.get('/mcp', (req, res) => {
   });
 });
 
-app.delete('/mcp', (req, res) => {
+app.delete('/mcp', (_req, res) => {
   res.status(405).json({
     jsonrpc: '2.0',
     error: { code: -32000, message: 'Method not allowed.' },

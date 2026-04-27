@@ -67,6 +67,14 @@ public class AuthController {
                 .body(new LoginResponse(token, user.getUsername()));
     }
 
+    @GetMapping("/api-key")
+    public ResponseEntity<ApiKeyResponse> getApiKey(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return ResponseEntity.ok(new ApiKeyResponse(user.getApiKey()));
+    }
+
     @PostMapping("/api-key")
     public ResponseEntity<ApiKeyResponse> generateApiKey(
             @AuthenticationPrincipal UserDetails userDetails) {

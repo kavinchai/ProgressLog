@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import useUserProfile from "../hooks/useUserProfile";
 import useAuthStore from "../store/authStore";
 import useWeightUnit from "../hooks/useWeightUnit";
 import api from "../api";
 import "./Settings.css";
 
+
 export default function Settings() {
+	const navigate = useNavigate();
 	const { goals, loading, saving, error, saveGoals } = useUserProfile();
 	const { unit, toggleUnit } = useWeightUnit();
+
 	const [form, setForm] = useState({
 		calorieTargetTraining: "",
 		calorieTargetRest: "",
@@ -234,6 +238,20 @@ export default function Settings() {
 							<span className={`unit-toggle-label${unit === "kg" ? " active" : ""}`}>kg</span>
 						</div>
 					</div>
+				</div>
+			</div>
+
+			<div className="settings-form">
+				<div className="settings-section-label" style={{ marginTop: 32 }}>
+					Claude Integration
+				</div>
+				<p style={{ fontSize: "var(--fs-sm)", color: "var(--muted)", margin: "0 0 12px" }}>
+					Log workouts, meals, steps and more by chatting with Claude.
+				</p>
+				<div className="settings-actions" style={{ marginTop: 0 }}>
+					<button className="btn btn-sm btn-primary" onClick={() => navigate("/claude-setup")}>
+						Set up Claude integration →
+					</button>
 				</div>
 			</div>
 

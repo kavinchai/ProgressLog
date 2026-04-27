@@ -1,8 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import Settings from '../pages/Settings';
 import useAuthStore from '../store/authStore';
+
+function renderSettings() {
+  return render(<MemoryRouter><Settings /></MemoryRouter>);
+}
 
 // Mock the CSS
 vi.mock('../pages/Settings.css', () => ({}));
@@ -41,13 +46,13 @@ beforeEach(() => {
 describe('Settings — goals form', () => {
   it('shows loading indicator while goals are loading', () => {
     setupProfile({ loading: true });
-    render(<Settings />);
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    renderSettings();
+    expect(screen.getAllByText(/loading…/i).length).toBeGreaterThan(0);
   });
 
   it('populates form with goals from hook once loaded', () => {
     setupProfile();
-    render(<Settings />);
+    renderSettings();
     expect(screen.getByDisplayValue('2600')).toBeInTheDocument();
     expect(screen.getByDisplayValue('2000')).toBeInTheDocument();
     expect(screen.getByDisplayValue('180')).toBeInTheDocument();
@@ -56,7 +61,7 @@ describe('Settings — goals form', () => {
   it('calls saveGoals with parsed integer values on submit', async () => {
     const saveGoals = vi.fn().mockResolvedValue({});
     setupProfile({ saveGoals });
-    render(<Settings />);
+    renderSettings();
 
     const trainingInput = screen.getByLabelText(/training day/i);
     await userEvent.clear(trainingInput);
@@ -75,7 +80,7 @@ describe('Settings — goals form', () => {
   it('shows "saved." confirmation after successful save', async () => {
     const saveGoals = vi.fn().mockResolvedValue({});
     setupProfile({ saveGoals });
-    render(<Settings />);
+    renderSettings();
 
     await userEvent.click(screen.getByRole('button', { name: /save goals/i }));
 
@@ -85,7 +90,7 @@ describe('Settings — goals form', () => {
   it('shows hook error when saveGoals rejects', async () => {
     const saveGoals = vi.fn().mockRejectedValue(new Error('server error'));
     setupProfile({ error: 'Failed to save goals', saveGoals });
-    render(<Settings />);
+    renderSettings();
 
     expect(screen.getByText(/failed to save goals/i)).toBeInTheDocument();
   });
@@ -94,20 +99,20 @@ describe('Settings — goals form', () => {
 describe('Settings — account / password verification', () => {
   it('renders Current Password field by default (not yet verified)', () => {
     setupProfile();
-    render(<Settings />);
+    renderSettings();
     expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
   });
 
   it('does NOT show the credentials form before password is verified', () => {
     setupProfile();
-    render(<Settings />);
+    renderSettings();
     expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
   });
 
   it('successful password verify reveals the credentials form', async () => {
     api.post.mockResolvedValue({});
     setupProfile();
-    render(<Settings />);
+    renderSettings();
 
     await userEvent.type(screen.getByLabelText(/current password/i), 'mypassword');
     await userEvent.click(screen.getByRole('button', { name: /verify/i }));
@@ -121,7 +126,7 @@ describe('Settings — account / password verification', () => {
   it('wrong password shows verify error message', async () => {
     api.post.mockRejectedValue({ response: { data: { message: 'Incorrect password.' } } });
     setupProfile();
-    render(<Settings />);
+    renderSettings();
 
     await userEvent.type(screen.getByLabelText(/current password/i), 'wrongpass');
     await userEvent.click(screen.getByRole('button', { name: /verify/i }));
@@ -133,7 +138,7 @@ describe('Settings — account / password verification', () => {
   it('calls /profile/verify-password with current password', async () => {
     api.post.mockResolvedValue({});
     setupProfile();
-    render(<Settings />);
+    renderSettings();
 
     await userEvent.type(screen.getByLabelText(/current password/i), 'securepass');
     await userEvent.click(screen.getByRole('button', { name: /verify/i }));
@@ -149,7 +154,7 @@ describe('Settings — updating credentials', () => {
   async function verifyPassword() {
     api.post.mockResolvedValue({});
     setupProfile();
-    render(<Settings />);
+    renderSettings();
     await userEvent.type(screen.getByLabelText(/current password/i), 'mypass');
     await userEvent.click(screen.getByRole('button', { name: /verify/i }));
     await waitFor(() => expect(screen.getByLabelText(/new username/i)).toBeInTheDocument());
