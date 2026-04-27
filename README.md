@@ -308,45 +308,45 @@ WorkoutApp/
 
 ## API Endpoints
 
-| Method   | URL                            | Auth     | Description                         |
-| -------- | ------------------------------ | -------- | ----------------------------------- |
-| `POST`   | `/api/auth/register`           | Public   | Create account, returns JWT         |
-| `POST`   | `/api/auth/login`              | Public   | Authenticate, returns JWT           |
-| `GET`    | `/api/auth/api-key`            | Required | Get current MCP API key             |
-| `POST`   | `/api/auth/api-key`            | Required | Generate / rotate MCP API key       |
-| `GET`    | `/api/weight`                  | Required | Weight log (sorted by date)         |
-| `POST`   | `/api/weight`                  | Required | Log a weight entry                  |
-| `DELETE` | `/api/weight/{id}`             | Required | Delete a weight entry               |
-| `GET`    | `/api/nutrition`               | Required | Nutrition logs with meals           |
-| `POST`   | `/api/nutrition`               | Required | Create/update daily nutrition log   |
-| `DELETE` | `/api/nutrition/{id}`          | Required | Delete a nutrition log              |
-| `POST`   | `/api/nutrition/{id}/meals`    | Required | Add a meal to a log                 |
-| `PUT`    | `/api/nutrition/meals/{id}`    | Required | Update a meal                       |
-| `DELETE` | `/api/nutrition/meals/{id}`    | Required | Delete a meal                       |
-| `GET`    | `/api/steps`                   | Required | All step log entries                |
-| `POST`   | `/api/steps`                   | Required | Log or update steps for a date      |
-| `DELETE` | `/api/steps/{id}`              | Required | Delete a step entry                 |
-| `GET`    | `/api/workouts`                | Required | Workout sessions with exercise sets |
-| `GET`    | `/api/workouts?date=YYYY-MM-DD`| Required | Filter sessions by date             |
-| `GET`    | `/api/workouts/{id}`           | Required | Get a single session by ID          |
-| `POST`   | `/api/workouts`                | Required | Log a new workout session           |
-| `PUT`    | `/api/workouts/{id}`           | Required | Replace a session entirely          |
-| `PATCH`  | `/api/workouts/{id}`           | Required | Update session (e.g., rename)       |
-| `DELETE` | `/api/workouts/{id}`           | Required | Delete a workout session            |
-| `POST`   | `/api/workouts/{id}/exercises` | Required | Add/update exercises in a session   |
-| `DELETE` | `/api/workouts/{id}/exercises` | Required | Remove exercises from a session     |
-| `GET`    | `/api/progress/strength`       | Required | Per-exercise strength progression   |
-| `GET`    | `/api/progress/prs`            | Required | Personal records per exercise       |
-| `GET`    | `/api/progress/milestones`     | Required | Achievement timeline                |
-| `GET`    | `/api/templates`               | Required | List workout templates              |
-| `POST`   | `/api/templates`               | Required | Create a workout template           |
-| `PUT`    | `/api/templates/{id}`          | Required | Update a template                   |
-| `DELETE` | `/api/templates/{id}`          | Required | Delete a template                   |
-| `GET`    | `/api/profile/goals`           | Required | Get user nutrition goals            |
-| `PUT`    | `/api/profile/goals`           | Required | Update nutrition goals              |
-| `PUT`    | `/api/profile/email`           | Required | Update email address                |
-| `PUT`    | `/api/profile/credentials`     | Required | Update username/password            |
-| `POST`   | `/api/import`                  | Required | Bulk import from CSV/Excel          |
+| Method   | URL                             | Auth     | Description                         |
+| -------- | ------------------------------- | -------- | ----------------------------------- |
+| `POST`   | `/api/auth/register`            | Public   | Create account, returns JWT         |
+| `POST`   | `/api/auth/login`               | Public   | Authenticate, returns JWT           |
+| `GET`    | `/api/auth/api-key`             | Required | Get current MCP API key             |
+| `POST`   | `/api/auth/api-key`             | Required | Generate / rotate MCP API key       |
+| `GET`    | `/api/weight`                   | Required | Weight log (sorted by date)         |
+| `POST`   | `/api/weight`                   | Required | Log a weight entry                  |
+| `DELETE` | `/api/weight/{id}`              | Required | Delete a weight entry               |
+| `GET`    | `/api/nutrition`                | Required | Nutrition logs with meals           |
+| `POST`   | `/api/nutrition`                | Required | Create/update daily nutrition log   |
+| `DELETE` | `/api/nutrition/{id}`           | Required | Delete a nutrition log              |
+| `POST`   | `/api/nutrition/{id}/meals`     | Required | Add a meal to a log                 |
+| `PUT`    | `/api/nutrition/meals/{id}`     | Required | Update a meal                       |
+| `DELETE` | `/api/nutrition/meals/{id}`     | Required | Delete a meal                       |
+| `GET`    | `/api/steps`                    | Required | All step log entries                |
+| `POST`   | `/api/steps`                    | Required | Log or update steps for a date      |
+| `DELETE` | `/api/steps/{id}`               | Required | Delete a step entry                 |
+| `GET`    | `/api/workouts`                 | Required | Workout sessions with exercise sets |
+| `GET`    | `/api/workouts?date=YYYY-MM-DD` | Required | Filter sessions by date             |
+| `GET`    | `/api/workouts/{id}`            | Required | Get a single session by ID          |
+| `POST`   | `/api/workouts`                 | Required | Log a new workout session           |
+| `PUT`    | `/api/workouts/{id}`            | Required | Replace a session entirely          |
+| `PATCH`  | `/api/workouts/{id}`            | Required | Update session (e.g., rename)       |
+| `DELETE` | `/api/workouts/{id}`            | Required | Delete a workout session            |
+| `POST`   | `/api/workouts/{id}/exercises`  | Required | Add/update exercises in a session   |
+| `DELETE` | `/api/workouts/{id}/exercises`  | Required | Remove exercises from a session     |
+| `GET`    | `/api/progress/strength`        | Required | Per-exercise strength progression   |
+| `GET`    | `/api/progress/prs`             | Required | Personal records per exercise       |
+| `GET`    | `/api/progress/milestones`      | Required | Achievement timeline                |
+| `GET`    | `/api/templates`                | Required | List workout templates              |
+| `POST`   | `/api/templates`                | Required | Create a workout template           |
+| `PUT`    | `/api/templates/{id}`           | Required | Update a template                   |
+| `DELETE` | `/api/templates/{id}`           | Required | Delete a template                   |
+| `GET`    | `/api/profile/goals`            | Required | Get user nutrition goals            |
+| `PUT`    | `/api/profile/goals`            | Required | Update nutrition goals              |
+| `PUT`    | `/api/profile/email`            | Required | Update email address                |
+| `PUT`    | `/api/profile/credentials`      | Required | Update username/password            |
+| `POST`   | `/api/import`                   | Required | Bulk import from CSV/Excel          |
 
 ### Example: Login
 
@@ -363,17 +363,17 @@ WorkoutApp/
 ```json
 // POST /api/workouts
 {
-  "sessionDate": "2026-04-10",
-  "sessionName": "Upper Body",
-  "exercises": [
-    {
-      "exerciseName": "Bench Press",
-      "sets": [
-        { "setNumber": 1, "reps": 8, "weightLbs": 185.0 },
-        { "setNumber": 2, "reps": 8, "weightLbs": 185.0 }
-      ]
-    }
-  ]
+	"sessionDate": "2026-04-10",
+	"sessionName": "Upper Body",
+	"exercises": [
+		{
+			"exerciseName": "Bench Press",
+			"sets": [
+				{ "setNumber": 1, "reps": 8, "weightLbs": 185.0 },
+				{ "setNumber": 2, "reps": 8, "weightLbs": 185.0 }
+			]
+		}
+	]
 }
 ```
 
@@ -392,25 +392,25 @@ ProgressLog ships an MCP server that exposes your fitness data to Claude. Once c
 
 ### MCP Tools
 
-| Tool                 | Description                                              |
-| -------------------- | -------------------------------------------------------- |
-| `log_weight`         | Log body weight for a date                               |
-| `log_workout`        | Log a strength session (reps + weight)                   |
-| `log_cardio`         | Log a run, ride, or distance-based cardio activity       |
-| `log_activity`       | Log a timed activity with no distance (Muay Thai, yoga…) |
-| `log_meal`           | Log a meal with calories and protein                     |
-| `log_steps`          | Log step count for a date                                |
-| `edit_steps`         | Correct a previously logged step count                   |
-| `delete_steps`       | Clear step count for a date                              |
-| `get_today_summary`  | Recap everything logged today                            |
-| `get_workout_by_date`| Look up a session and its exercises by date              |
-| `edit_workout`       | Replace exercises in an existing session                 |
-| `delete_workout`     | Delete an entire workout session                         |
-| `delete_exercise`    | Remove one exercise from a session                       |
-| `get_personal_records` | All-time PRs per exercise                              |
-| `get_all_workouts`   | Full workout history (optionally filtered by date)       |
-| `get_all_weight`     | Full weight log with min/max/avg stats                   |
-| `get_all_stats`      | All-time overview: weight, workouts, nutrition, steps    |
+| Tool                   | Description                                              |
+| ---------------------- | -------------------------------------------------------- |
+| `log_weight`           | Log body weight for a date                               |
+| `log_workout`          | Log a strength session (reps + weight)                   |
+| `log_cardio`           | Log a run, ride, or distance-based cardio activity       |
+| `log_activity`         | Log a timed activity with no distance (Muay Thai, yoga…) |
+| `log_meal`             | Log a meal with calories and protein                     |
+| `log_steps`            | Log step count for a date                                |
+| `edit_steps`           | Correct a previously logged step count                   |
+| `delete_steps`         | Clear step count for a date                              |
+| `get_today_summary`    | Recap everything logged today                            |
+| `get_workout_by_date`  | Look up a session and its exercises by date              |
+| `edit_workout`         | Replace exercises in an existing session                 |
+| `delete_workout`       | Delete an entire workout session                         |
+| `delete_exercise`      | Remove one exercise from a session                       |
+| `get_personal_records` | All-time PRs per exercise                                |
+| `get_all_workouts`     | Full workout history (optionally filtered by date)       |
+| `get_all_weight`       | Full weight log with min/max/avg stats                   |
+| `get_all_stats`        | All-time overview: weight, workouts, nutrition, steps    |
 
 ### Connecting to Claude.ai
 
