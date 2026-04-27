@@ -64,6 +64,7 @@ export default function TotalStats() {
 			...weightData.map((x) => x.logDate),
 			...nutritionData.map((x) => x.logDate),
 			...workoutData.map((x) => x.sessionDate),
+			...stepData.map((x) => x.logDate),
 		]),
 	].sort((a, b) => b.localeCompare(a));
 
