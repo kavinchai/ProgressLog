@@ -523,6 +523,138 @@ Examples:
     },
   );
 
+  // ── Tool: get_all_workouts ────────────────────────────────────────────────
+
+  mcp.tool(
+    'get_all_workouts',
+    'Get all workout sessions ever logged, including exercises, sets, reps, and weights. Call this when the user asks for their workout history, all sessions, or wants to review past training.',
+    {
+      date: z.string().optional().describe('Filter to a specific date in YYYY-MM-DD format. Omit to get all sessions.'),
+    },
+    async ({ date }) => {
+      const sessions = await api('GET', date ? `/workouts?date=${encodeURIComponent(date)}` : '/workouts');
+      if (!sessions.length) {
+        return { content: [{ type: 'text', text: date ? `No workout found for ${date}.` : 'No workouts logged yet.' }] };
+      }
+      const lines = [];
+      for (const session of sessions) {
+        lines.push(`\n📅 ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ''} [ID: ${session.id}]`);
+        const grouped = (session.exerciseSets ?? []).reduce((acc, s) => {
+          if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
+          acc[s.exerciseName].push(s);
+          return acc;
+        }, {});
+        if (Object.keys(grouped).length === 0) {
+          lines.push('  No exercises logged');
+        } else {
+          for (const [name, sets] of Object.entries(grouped)) {
+            lines.push(`  • ${name}: ${sets.map(s => describeSet(s)).join(', ')}`);
+          }
+        }
+      }
+      return {
+        content: [{ type: 'text', text: `🏋️ Workout History (${sessions.length} session${sessions.length === 1 ? '' : 's'}):${lines.join('\n')}` }],
+      };
+    },
+  );
+
+  // ── Tool: get_all_weight ──────────────────────────────────────────────────
+
+  mcp.tool(
+    'get_all_weight',
+    'Get the full weight log — every weight entry ever recorded. Call this when the user asks about their weight history, trends, or progress over time.',
+    {},
+    async () => {
+      const entries = await api('GET', '/weight');
+      if (!entries.length) {
+        return { content: [{ type: 'text', text: 'No weight entries logged yet.' }] };
+      }
+      const lines = entries
+        .sort((a, b) => a.logDate.localeCompare(b.logDate))
+        .map(e => `  ${e.logDate}: ${e.weightLbs} lbs`);
+      const weights = entries.map(e => e.weightLbs);
+      const min = Math.min(...weights);
+      const max = Math.max(...weights);
+      const avg = Math.round((weights.reduce((s, w) => s + w, 0) / weights.length) * 10) / 10;
+      return {
+        content: [{
+          type: 'text',
+          text: `⚖️ Weight History (${entries.length} entries):\n${lines.join('\n')}\n\nMin: ${min} lbs  |  Max: ${max} lbs  |  Avg: ${avg} lbs`,
+        }],
+      };
+    },
+  );
+
+  // ── Tool: get_all_stats ───────────────────────────────────────────────────
+
+  mcp.tool(
+    'get_all_stats',
+    'Get a full overview of all logged data — weight history, workout count, nutrition totals, steps, and strength progress. Call this when the user wants a complete summary or asks "how am I doing overall?".',
+    {},
+    async () => {
+      const [weightData, workoutData, nutritionData, stepData, strengthData] = await Promise.all([
+        api('GET', '/weight'),
+        api('GET', '/workouts'),
+        api('GET', '/nutrition'),
+        api('GET', '/steps'),
+        api('GET', '/progress/strength'),
+      ]);
+
+      const parts = [];
+
+      // Weight
+      if (weightData.length) {
+        const sorted = [...weightData].sort((a, b) => a.logDate.localeCompare(b.logDate));
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const delta = Math.round((last.weightLbs - first.weightLbs) * 10) / 10;
+        parts.push(`⚖️ Weight: ${weightData.length} entries | Current: ${last.weightLbs} lbs | Change: ${delta >= 0 ? '+' : ''}${delta} lbs (${first.logDate} → ${last.logDate})`);
+      } else {
+        parts.push('⚖️ Weight: no entries');
+      }
+
+      // Workouts
+      parts.push(`\n🏋️ Workouts: ${workoutData.length} session${workoutData.length === 1 ? '' : 's'} logged`);
+      if (workoutData.length) {
+        const sorted = [...workoutData].sort((a, b) => a.sessionDate.localeCompare(b.sessionDate));
+        parts.push(`   First: ${sorted[0].sessionDate}  |  Last: ${sorted[sorted.length - 1].sessionDate}`);
+      }
+
+      // Strength PRs
+      if (strengthData.length) {
+        parts.push('\n🏆 Strength PRs:');
+        for (const ex of strengthData) {
+          const maxWeight = Math.max(...ex.data.map(d => d.maxWeightLbs));
+          parts.push(`   • ${ex.exerciseName}: ${maxWeight} lbs`);
+        }
+      }
+
+      // Nutrition
+      if (nutritionData.length) {
+        const totalCal = nutritionData.reduce((s, n) => s + (n.totalCalories ?? 0), 0);
+        const totalProt = nutritionData.reduce((s, n) => s + (n.totalProtein ?? 0), 0);
+        const avgCal = Math.round(totalCal / nutritionData.length);
+        const avgProt = Math.round(totalProt / nutritionData.length);
+        parts.push(`\n🍽️ Nutrition: ${nutritionData.length} days logged | Avg: ${avgCal} kcal / ${avgProt}g protein per day`);
+      } else {
+        parts.push('\n🍽️ Nutrition: no entries');
+      }
+
+      // Steps
+      if (stepData.length) {
+        const totalSteps = stepData.reduce((s, e) => s + e.steps, 0);
+        const avgSteps = Math.round(totalSteps / stepData.length);
+        parts.push(`\n👟 Steps: ${stepData.length} days logged | Avg: ${avgSteps.toLocaleString()} steps/day | Total: ${totalSteps.toLocaleString()}`);
+      } else {
+        parts.push('\n👟 Steps: no entries');
+      }
+
+      return {
+        content: [{ type: 'text', text: `📊 All-time Stats:\n\n${parts.join('\n')}` }],
+      };
+    },
+  );
+
   return mcp;
 }
 
