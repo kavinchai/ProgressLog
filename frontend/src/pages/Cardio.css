@@ -1,0 +1,318 @@
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.cardio-header {
+	margin-bottom: var(--space-xl);
+}
+
+.cardio-header h1 {
+	font-size: var(--fs-2xl);
+	font-weight: var(--fw-bold);
+	letter-spacing: -0.02em;
+}
+
+.cardio-header p {
+	color: var(--muted);
+	margin-top: var(--space-xs);
+	font-size: var(--fs-sm);
+}
+
+/* ── Summary stat cards ─────────────────────────────────────────────── */
+
+.cardio-summary {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: var(--space-md);
+	margin-bottom: var(--space-xl);
+}
+
+.cardio-stat-card {
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-top: 3px solid var(--color-primary);
+	border-radius: var(--radius-lg);
+	padding: var(--space-lg);
+	box-shadow: var(--shadow-xs);
+}
+
+.cardio-stat-label {
+	font-size: var(--fs);
+	font-weight: var(--fw-semibold);
+	color: var(--fg);
+	margin-bottom: var(--space-md);
+}
+
+.cardio-stat-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: var(--space-sm);
+}
+
+.cardio-stat-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.cardio-stat-value {
+	font-size: var(--fs-xl);
+	font-weight: var(--fw-bold);
+	color: var(--fg);
+	line-height: 1.2;
+}
+
+.cardio-stat-unit {
+	font-size: var(--fs-xs);
+	color: var(--muted);
+	margin-top: 2px;
+}
+
+/* ── Detail card ────────────────────────────────────────────────────── */
+
+.cardio-detail-card {
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	padding: var(--space-lg);
+	box-shadow: var(--shadow-xs);
+}
+
+.cardio-detail-title {
+	font-size: var(--fs-lg);
+	font-weight: var(--fw-semibold);
+	color: var(--fg);
+	margin-bottom: var(--space-lg);
+}
+
+/* ── Per-exercise section ───────────────────────────────────────────── */
+
+.cardio-section {
+	margin-bottom: var(--space-xl);
+}
+
+.cardio-section:last-child {
+	margin-bottom: 0;
+}
+
+.cardio-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: var(--space-md);
+	padding-bottom: var(--space-sm);
+	border-bottom: 1px solid var(--border-dim);
+	cursor: pointer;
+}
+
+.cardio-section-name {
+	font-size: var(--fs-lg);
+	font-weight: var(--fw-semibold);
+	color: var(--fg);
+}
+
+.cardio-section-badges {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.cardio-badge {
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+	padding: 2px 10px;
+	border-radius: var(--radius-full);
+}
+
+.cardio-badge-pace {
+	color: var(--info);
+	background: var(--info-light);
+}
+
+.cardio-badge-dist {
+	color: var(--success);
+	background: var(--success-light);
+}
+
+.cardio-chevron {
+	color: var(--muted);
+	font-size: var(--fs-xs);
+}
+
+/* ── Charts ─────────────────────────────────────────────────────────── */
+
+.cardio-charts {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--space-lg);
+	margin-bottom: var(--space-md);
+}
+
+.cardio-chart-group {
+	min-width: 0;
+}
+
+.cardio-chart-label {
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: var(--space-sm);
+}
+
+.cardio-tooltip {
+	background: var(--bg-card);
+	border: 1px solid var(--border-color);
+	padding: 6px 10px;
+	font-size: var(--fs-sm);
+	border-radius: var(--radius-sm);
+}
+
+/* ── Table ──────────────────────────────────────────────────────────── */
+
+.cardio-table-wrapper {
+	overflow-x: auto;
+}
+
+.cardio-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.cardio-table th,
+.cardio-table td {
+	padding: 8px 12px 8px 0;
+	text-align: left;
+	font-size: var(--fs-sm);
+}
+
+.cardio-table th {
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+	border-bottom: 1px solid var(--border-dim);
+	padding-bottom: 10px;
+}
+
+.cardio-table td {
+	border-bottom: 1px solid var(--border-dim);
+}
+
+.cardio-table th:last-child,
+.cardio-table td:last-child {
+	padding-right: 0;
+}
+
+.cardio-cell-distance {
+	color: var(--color-primary-light);
+	font-weight: 600;
+}
+
+.cardio-cell-pace {
+	color: var(--color-info);
+	font-weight: 600;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────── */
+
+.cardio-empty {
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	padding: var(--space-xl) var(--space-lg);
+	text-align: center;
+	box-shadow: var(--shadow-xs);
+}
+
+.cardio-empty p {
+	color: var(--fg);
+	font-size: var(--fs);
+	margin-bottom: var(--space-xs);
+}
+
+.cardio-empty-hint {
+	color: var(--muted);
+	font-size: var(--fs-sm);
+}
+
+/* ── Loading / Error (shared with Strength) ─────────────────────────── */
+
+.loading-state,
+.error-state {
+	padding: var(--space-xl);
+	color: var(--muted);
+	font-size: var(--fs);
+}
+
+.error-state {
+	color: var(--danger);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+	.cardio-summary {
+		grid-template-columns: 1fr;
+	}
+
+	.cardio-stat-grid {
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--space-xs);
+	}
+
+	.cardio-stat-value {
+		font-size: var(--fs-lg);
+	}
+
+	.cardio-detail-card {
+		padding: var(--space-md);
+	}
+
+	.cardio-charts {
+		grid-template-columns: 1fr;
+		gap: var(--space-md);
+	}
+
+	.cardio-section-header {
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.cardio-section-badges {
+		width: 100%;
+		justify-content: flex-start;
+	}
+
+	.cardio-table th,
+	.cardio-table td {
+		padding: 6px 8px 6px 0;
+		font-size: var(--fs-xs);
+	}
+}
+
+@media (max-width: 480px) {
+	.cardio-stat-card {
+		padding: var(--space-md);
+	}
+
+	.cardio-stat-grid {
+		gap: 4px;
+	}
+
+	.cardio-stat-value {
+		font-size: var(--fs);
+	}
+
+	.cardio-stat-unit {
+		font-size: 10px;
+	}
+
+	.cardio-badge {
+		font-size: 10px;
+		padding: 2px 6px;
+	}
+}

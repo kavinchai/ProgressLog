@@ -1,5 +1,6 @@
 package com.kavin.fitness.service;
 
+import com.kavin.fitness.dto.CardioProgressDTO;
 import com.kavin.fitness.dto.MilestoneDTO;
 import com.kavin.fitness.dto.PREntryDTO;
 import com.kavin.fitness.dto.StrengthProgressDTO;
@@ -235,7 +236,87 @@ class ProgressServiceTest {
         assertTrue(milestones.stream().anyMatch(m -> "setback".equals(m.getType())));
     }
 
+    // ── getCardioProgress ────────────────────────────────────────────────────
+
+    @Test
+    void getCardioProgress_returnsEmptyWhenNoCardioSets() {
+        when(exerciseSetRepository.findCardioSetsByUserId(1L)).thenReturn(List.of());
+
+        List<CardioProgressDTO> result = progressService.getCardioProgress(1L);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getCardioProgress_groupsByExerciseAndAggregatesByDate() {
+        WorkoutSession session = session(LocalDate.of(2026, 4, 1));
+        ExerciseSet run1 = cardioSet(session, "Running", 1, "3.10", 1800);
+        ExerciseSet run2 = cardioSet(session, "Running", 2, "1.00", 600);
+
+        when(exerciseSetRepository.findCardioSetsByUserId(1L))
+                .thenReturn(List.of(run1, run2));
+
+        List<CardioProgressDTO> result = progressService.getCardioProgress(1L);
+
+        assertEquals(1, result.size());
+        assertEquals("Running", result.get(0).getExerciseName());
+        assertEquals(1, result.get(0).getData().size());
+
+        CardioProgressDTO.CardioSessionData data = result.get(0).getData().get(0);
+        assertEquals(LocalDate.of(2026, 4, 1), data.getSessionDate());
+        assertEquals(new BigDecimal("4.10"), data.getTotalDistanceMiles());
+        assertEquals(2400, data.getTotalDurationSeconds());
+    }
+
+    @Test
+    void getCardioProgress_sortsSessionsByDateAscending() {
+        WorkoutSession early = session(LocalDate.of(2026, 3, 1));
+        WorkoutSession late  = session(LocalDate.of(2026, 4, 15));
+        ReflectionTestUtils.setField(late, "id", 2L);
+
+        when(exerciseSetRepository.findCardioSetsByUserId(1L))
+                .thenReturn(List.of(
+                        cardioSet(late, "Running", 1, "2.00", 1200),
+                        cardioSet(early, "Running", 1, "3.00", 1800)));
+
+        List<CardioProgressDTO> result = progressService.getCardioProgress(1L);
+
+        assertEquals(2, result.get(0).getData().size());
+        assertEquals(LocalDate.of(2026, 3, 1), result.get(0).getData().get(0).getSessionDate());
+        assertEquals(LocalDate.of(2026, 4, 15), result.get(0).getData().get(1).getSessionDate());
+    }
+
+    @Test
+    void getCardioProgress_separatesDifferentExercises() {
+        WorkoutSession session = session(LocalDate.of(2026, 4, 1));
+
+        when(exerciseSetRepository.findCardioSetsByUserId(1L))
+                .thenReturn(List.of(
+                        cardioSet(session, "Running", 1, "3.00", 1800),
+                        cardioSet(session, "Cycling", 1, "10.00", 2400)));
+
+        List<CardioProgressDTO> result = progressService.getCardioProgress(1L);
+
+        assertEquals(2, result.size());
+        // Sorted alphabetically
+        assertEquals("Cycling", result.get(0).getExerciseName());
+        assertEquals("Running", result.get(1).getExerciseName());
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    private ExerciseSet cardioSet(WorkoutSession session, String name, int setNum, String distance, int duration) {
+        ExerciseSet es = new ExerciseSet();
+        es.setSession(session);
+        es.setExerciseName(name);
+        es.setSetNumber(setNum);
+        es.setReps(0);
+        es.setWeightLbs(BigDecimal.ZERO);
+        es.setCompleted(true);
+        es.setDistanceMiles(new BigDecimal(distance));
+        es.setDurationSeconds(duration);
+        return es;
+    }
 
     private WorkoutSession session(LocalDate date) {
         WorkoutSession s = new WorkoutSession();

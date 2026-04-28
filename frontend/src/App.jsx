@@ -9,6 +9,7 @@ import Today from './pages/Today';
 import WeeklyStats from './pages/WeeklyStats';
 import TotalStats from './pages/TotalStats';
 import Strength from './pages/Strength';
+import Cardio from './pages/Cardio';
 import Templates from './pages/Templates';
 import Settings from './pages/Settings';
 import ClaudeSetup from './pages/ClaudeSetup';
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/weekly"    element={<WeeklyStats />} />
           <Route path="/total"     element={<TotalStats />} />
           <Route path="/strength"  element={<Strength />} />
+          <Route path="/cardio"    element={<Cardio />} />
           <Route path="/templates" element={<Templates />} />
           <Route path="/settings"     element={<Settings />} />
           <Route path="/claude-setup" element={<ClaudeSetup />} />

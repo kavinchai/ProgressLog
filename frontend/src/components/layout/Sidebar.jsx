@@ -9,6 +9,7 @@ const navItems = [
   { to: '/weekly',    label: 'Weekly Stats',  icon: '~' },
   { to: '/total',     label: 'Total Stats',   icon: '~' },
   { to: '/strength',  label: 'Strength',      icon: '~' },
+  { to: '/cardio',    label: 'Cardio',        icon: '~' },
   { to: '/templates', label: 'Templates',     icon: '~' },
   { to: '/settings',  label: 'Settings',      icon: '~' },
 ];

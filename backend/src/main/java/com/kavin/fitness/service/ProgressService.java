@@ -1,5 +1,6 @@
 package com.kavin.fitness.service;
 
+import com.kavin.fitness.dto.CardioProgressDTO;
 import com.kavin.fitness.dto.MilestoneDTO;
 import com.kavin.fitness.dto.PREntryDTO;
 import com.kavin.fitness.dto.StrengthProgressDTO;
@@ -83,6 +84,39 @@ public class ProgressService {
             result.add(new StrengthProgressDTO(name, sessionDataList));
         }
         return result;
+    }
+
+    public List<CardioProgressDTO> getCardioProgress(Long userId) {
+        List<ExerciseSet> cardioSets = exerciseSetRepository.findCardioSetsByUserId(userId);
+        if (cardioSets.isEmpty()) return List.of();
+
+        // Group by exercise name, then by session date, summing distance and duration
+        Map<String, Map<LocalDate, CardioProgressDTO.CardioSessionData>> byExercise = new LinkedHashMap<>();
+
+        for (ExerciseSet set : cardioSets) {
+            String name = set.getExerciseName();
+            LocalDate date = set.getSession().getSessionDate();
+
+            byExercise
+                    .computeIfAbsent(name, k -> new TreeMap<>())
+                    .merge(date,
+                            new CardioProgressDTO.CardioSessionData(date, set.getDistanceMiles(),
+                                    set.getDurationSeconds() != null ? set.getDurationSeconds() : 0),
+                            (existing, incoming) -> {
+                                existing.setTotalDistanceMiles(
+                                        existing.getTotalDistanceMiles().add(incoming.getTotalDistanceMiles()));
+                                existing.setTotalDurationSeconds(
+                                        existing.getTotalDurationSeconds() + incoming.getTotalDurationSeconds());
+                                return existing;
+                            });
+        }
+
+        return byExercise.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> new CardioProgressDTO(
+                        entry.getKey(),
+                        new ArrayList<>(entry.getValue().values())))
+                .collect(Collectors.toList());
     }
 
     public List<PREntryDTO> getPRs(Long userId) {

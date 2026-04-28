@@ -35,6 +35,13 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSet, Long> 
            "GROUP BY e.exerciseName")
     List<Object[]> findMaxWeightPerExercise(@Param("userId") Long userId);
 
+    /** Returns all cardio exercise sets (those with a non-null distanceMiles) for a user, ordered by date. */
+    @Query("SELECT e FROM ExerciseSet e " +
+           "JOIN e.session s " +
+           "WHERE s.user.id = :userId AND e.distanceMiles IS NOT NULL " +
+           "ORDER BY s.sessionDate ASC, e.exerciseName ASC, e.setNumber ASC")
+    List<ExerciseSet> findCardioSetsByUserId(@Param("userId") Long userId);
+
     /** Returns the earliest session date on which the user lifted a given weight for an exercise. */
     @Query("SELECT MIN(s.sessionDate) " +
            "FROM ExerciseSet e JOIN e.session s " +
