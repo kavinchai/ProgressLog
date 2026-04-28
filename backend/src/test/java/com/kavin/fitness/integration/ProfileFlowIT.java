@@ -115,12 +115,10 @@ class ProfileFlowIT extends IntegrationTestBase {
                             {"currentPassword": "oldpass123", "newPassword": "newpass456"}
                         """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists())
                 .andExpect(jsonPath("$.username").exists())
                 .andReturn();
 
-        String newToken = objectMapper.readTree(credResult.getResponse().getContentAsString())
-                .get("token").asText();
+        String newToken = extractJwtFromCookie(credResult);
         String username = objectMapper.readTree(credResult.getResponse().getContentAsString())
                 .get("username").asText();
 
@@ -132,12 +130,13 @@ class ProfileFlowIT extends IntegrationTestBase {
                 .andExpect(status().isUnauthorized());
 
         // New password works for login
-        mockMvc.perform(post("/api/auth/login")
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 java.util.Map.of("username", username, "password", "newpass456"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists());
+                .andReturn();
+        extractJwtFromCookie(loginResult); // verify cookie is set
 
         // New token from credential change is valid
         mockMvc.perform(get("/api/profile/goals")

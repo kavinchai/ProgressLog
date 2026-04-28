@@ -4,15 +4,7 @@ import useAuthStore from '../store/authStore';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api',
   headers: { 'Content-Type': 'application/json' },
-});
-
-// Inject JWT from Zustand store before every request
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true,
 });
 
 // Auto-logout on 401

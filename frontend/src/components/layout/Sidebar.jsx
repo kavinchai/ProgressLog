@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import useTheme from '../../hooks/useTheme';
+import api from '../../api';
 import './Sidebar.css';
 
 const navItems = [
@@ -14,8 +15,13 @@ const navItems = [
 
 export default function Sidebar() {
   const username = useAuthStore((state) => state.username);
-  const logout   = useAuthStore((state) => state.logout);
+  const clearAuth = useAuthStore((state) => state.logout);
   const [dark, setDark] = useTheme();
+
+  function logout() {
+    api.post('/auth/logout').catch(() => {});
+    clearAuth();
+  }
 
   return (
     <aside className="sidebar">

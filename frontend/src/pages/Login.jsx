@@ -24,7 +24,7 @@ export default function Login() {
 			const endpoint = isSignup ? "/auth/register" : "/auth/login";
 			const body = isSignup ? { username, password, email } : { username, password };
 			const res = await api.post(endpoint, body);
-			login(res.data.token, res.data.username);
+			login(res.data.username);
 		} catch (err) {
 			const status = err.response?.status;
 			const msg = err.response?.data?.message;

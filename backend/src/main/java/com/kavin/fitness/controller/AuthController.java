@@ -6,7 +6,9 @@ import com.kavin.fitness.dto.LoginResponse;
 import com.kavin.fitness.dto.RegisterRequest;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
+import com.kavin.fitness.security.CookieUtil;
 import com.kavin.fitness.security.JwtUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +34,11 @@ public class AuthController {
     @Autowired private JwtUtil jwtUtil;
     @Autowired private UserRepository userRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private CookieUtil cookieUtil;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
+                                               HttpServletResponse response) {
         log.info("Login attempt for user={}", request.getUsername());
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -43,12 +47,15 @@ public class AuthController {
         UserDetails userDetails = (UserDetails) auth.getPrincipal();
         String token = jwtUtil.generateToken(userDetails.getUsername());
 
+        cookieUtil.addJwtCookie(response, token);
+
         log.info("Login successful for user={}", userDetails.getUsername());
-        return ResponseEntity.ok(new LoginResponse(token, userDetails.getUsername()));
+        return ResponseEntity.ok(new LoginResponse(userDetails.getUsername()));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request,
+                                                  HttpServletResponse response) {
         log.info("Registration attempt for user={}", request.getUsername());
         if (userRepository.existsByUsername(request.getUsername())) {
             log.warn("Registration failed — username already taken: {}", request.getUsername());
@@ -62,9 +69,17 @@ public class AuthController {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getUsername());
+        cookieUtil.addJwtCookie(response, token);
+
         log.info("Registration successful for user={}", user.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new LoginResponse(token, user.getUsername()));
+                .body(new LoginResponse(user.getUsername()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        cookieUtil.clearJwtCookie(response);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/api-key")

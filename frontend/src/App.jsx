@@ -35,9 +35,9 @@ function AppLayout({ children }) {
 }
 
 export default function App() {
-  const token = useAuthStore((state) => state.token);
+  const authenticated = useAuthStore((state) => state.authenticated);
 
-  if (!token) {
+  if (!authenticated) {
     return (
       <BrowserRouter>
         <Routes>

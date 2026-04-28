@@ -14,7 +14,7 @@ import api from '../api';
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useAuthStore.setState({ token: null, username: null });
+  useAuthStore.setState({ authenticated: false, username: null });
 });
 
 function renderLogin(path = '/login') {
@@ -40,8 +40,8 @@ describe('Login — login mode', () => {
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
-  it('calls login and stores token on success', async () => {
-    api.post.mockResolvedValue({ data: { token: 'jwt-abc', username: 'alice' } });
+  it('calls login and stores authenticated state on success', async () => {
+    api.post.mockResolvedValue({ data: { username: 'alice' } });
 
     renderLogin();
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
@@ -49,13 +49,13 @@ describe('Login — login mode', () => {
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(useAuthStore.getState().token).toBe('jwt-abc');
+      expect(useAuthStore.getState().authenticated).toBe(true);
       expect(useAuthStore.getState().username).toBe('alice');
     });
   });
 
   it('calls /auth/login endpoint on submit', async () => {
-    api.post.mockResolvedValue({ data: { token: 'tok', username: 'alice' } });
+    api.post.mockResolvedValue({ data: { username: 'alice' } });
 
     renderLogin();
     await userEvent.type(screen.getByLabelText(/username/i), 'alice');
@@ -126,8 +126,8 @@ describe('Login — signup mode', () => {
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });
 
-  it('successful signup calls /auth/register with email and stores token', async () => {
-    api.post.mockResolvedValue({ data: { token: 'signup-tok', username: 'bob' } });
+  it('successful signup calls /auth/register with email and stores auth state', async () => {
+    api.post.mockResolvedValue({ data: { username: 'bob' } });
 
     await switchToSignup();
     await userEvent.type(screen.getByLabelText(/username/i), 'bob');
@@ -141,7 +141,7 @@ describe('Login — signup mode', () => {
         password: 'pass123',
         email: 'bob@example.com',
       });
-      expect(useAuthStore.getState().token).toBe('signup-tok');
+      expect(useAuthStore.getState().authenticated).toBe(true);
       expect(useAuthStore.getState().username).toBe('bob');
     });
   });

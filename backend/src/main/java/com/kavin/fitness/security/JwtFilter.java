@@ -2,6 +2,7 @@ package com.kavin.fitness.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import com.kavin.fitness.model.User;
@@ -75,6 +76,16 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private String extractToken(HttpServletRequest request) {
+        // 1. Try httpOnly cookie
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (CookieUtil.COOKIE_NAME.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        // 2. Fall back to Authorization header (for external API consumers)
         String header = request.getHeader("Authorization");
         if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
             return header.substring(7);

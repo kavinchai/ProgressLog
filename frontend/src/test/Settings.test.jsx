@@ -38,7 +38,7 @@ function setupProfile(overrides = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useAuthStore.setState({ token: 'tok', username: 'alice' });
+  useAuthStore.setState({ authenticated: true, username: 'alice' });
   // Default: email endpoint returns an email, profile verify is stubbed
   api.get.mockResolvedValue({ data: { email: 'alice@example.com' } });
 });
@@ -170,7 +170,7 @@ describe('Settings — updating credentials', () => {
   });
 
   it('calls /profile/credentials when new username is provided', async () => {
-    api.put.mockResolvedValue({ data: { token: 'new-tok', username: 'newbob' } });
+    api.put.mockResolvedValue({ data: { username: 'newbob' } });
     await verifyPassword();
 
     await userEvent.clear(screen.getByLabelText(/new email/i));
@@ -184,7 +184,7 @@ describe('Settings — updating credentials', () => {
   });
 
   it('calls /profile/email when new email is provided', async () => {
-    api.put.mockResolvedValue({ data: { token: 'tok', username: 'alice' } });
+    api.put.mockResolvedValue({ data: { username: 'alice' } });
     await verifyPassword();
 
     const emailInput = screen.getByLabelText(/new email/i);
@@ -199,9 +199,7 @@ describe('Settings — updating credentials', () => {
   });
 
   it('resets to the verify-password form after a successful credential update', async () => {
-    // After a successful update, the component resets passwordVerified → false,
-    // which returns to the verify-password form (the credentials form disappears).
-    api.put.mockResolvedValue({ data: { token: 'tok', username: 'alice' } });
+    api.put.mockResolvedValue({ data: { username: 'alice' } });
     await verifyPassword();
 
     const emailInput = screen.getByLabelText(/new email/i);
