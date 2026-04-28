@@ -16,23 +16,23 @@ vi.mock('../components/layout/Sidebar', () => ({ default: () => <nav>Sidebar</na
 vi.mock('../components/layout/Navbar',  () => ({ default: () => <nav>Navbar</nav> }));
 
 beforeEach(() => {
-  useAuthStore.setState({ token: null, username: null });
+  useAuthStore.setState({ authenticated: false, username: null });
 });
 
 
 describe('App routing — unauthenticated', () => {
-  it('shows SplashPage at / when there is no token', () => {
+  it('shows SplashPage at / when not authenticated', () => {
     render(<App />);
     expect(screen.getByText('Splash Page')).toBeInTheDocument();
   });
 
-  it('shows Login at /login when there is no token', () => {
+  it('shows Login at /login when not authenticated', () => {
     window.history.pushState({}, '', '/login');
     render(<App />);
     expect(screen.getByText('Login Page')).toBeInTheDocument();
   });
 
-  it('does NOT show the app layout without a token', () => {
+  it('does NOT show the app layout without authentication', () => {
     render(<App />);
     expect(screen.queryByText('Sidebar')).not.toBeInTheDocument();
     expect(screen.queryByText('Navbar')).not.toBeInTheDocument();
@@ -41,7 +41,7 @@ describe('App routing — unauthenticated', () => {
 
 describe('App routing — authenticated', () => {
   beforeEach(() => {
-    useAuthStore.setState({ token: 'jwt-abc', username: 'alice' });
+    useAuthStore.setState({ authenticated: true, username: 'alice' });
   });
 
   it('shows the app layout (Sidebar + Navbar) when authenticated', () => {
@@ -62,12 +62,12 @@ describe('App routing — authenticated', () => {
 });
 
 describe('App routing — auth store reactivity', () => {
-  it('switches from SplashPage to app layout when a token is set', async () => {
+  it('switches from SplashPage to app layout when authenticated', async () => {
     render(<App />);
     expect(screen.getByText('Splash Page')).toBeInTheDocument();
 
     // Simulate login
-    useAuthStore.setState({ token: 'new-tok', username: 'bob' });
+    useAuthStore.setState({ authenticated: true, username: 'bob' });
 
     // App re-renders based on Zustand subscription
     await screen.findByText('Today Page');

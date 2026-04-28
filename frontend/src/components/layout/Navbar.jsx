@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import useTheme from '../../hooks/useTheme';
+import api from '../../api';
 import './Navbar.css';
 
 const navItems = [
@@ -14,9 +15,14 @@ const navItems = [
 
 export default function Navbar() {
   const location = useLocation();
-  const logout = useAuthStore((state) => state.logout);
+  const clearAuth = useAuthStore((state) => state.logout);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dark, setDark] = useTheme();
+
+  function logout() {
+    api.post('/auth/logout').catch(() => {});
+    clearAuth();
+  }
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 

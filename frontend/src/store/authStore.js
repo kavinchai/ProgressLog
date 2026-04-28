@@ -4,11 +4,11 @@ import { persist } from 'zustand/middleware';
 const useAuthStore = create(
   persist(
     (set) => ({
-      token:    null,
-      username: null,
+      authenticated: false,
+      username:      null,
 
-      login:  (token, username) => set({ token, username }),
-      logout: ()               => set({ token: null, username: null }),
+      login:  (username) => set({ authenticated: true, username }),
+      logout: ()         => set({ authenticated: false, username: null }),
     }),
     { name: 'progresslog-auth' }
   )

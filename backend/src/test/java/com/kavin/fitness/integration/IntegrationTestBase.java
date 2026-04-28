@@ -1,6 +1,7 @@
 package com.kavin.fitness.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -40,7 +41,7 @@ public abstract class IntegrationTestBase {
     }
 
     /**
-     * Register a user and return the JWT token.
+     * Register a user and return the JWT token from the Set-Cookie header.
      */
     protected String registerAndGetToken(String username, String password) throws Exception {
         String body = objectMapper.writeValueAsString(
@@ -53,12 +54,11 @@ public abstract class IntegrationTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        return objectMapper.readTree(result.getResponse().getContentAsString())
-                .get("token").asText();
+        return extractJwtFromCookie(result);
     }
 
     /**
-     * Login and return the JWT token.
+     * Login and return the JWT token from the Set-Cookie header.
      */
     protected String loginAndGetToken(String username, String password) throws Exception {
         String body = objectMapper.writeValueAsString(
@@ -70,7 +70,17 @@ public abstract class IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        return objectMapper.readTree(result.getResponse().getContentAsString())
-                .get("token").asText();
+        return extractJwtFromCookie(result);
+    }
+
+    /**
+     * Extract the JWT value from the "jwt" cookie in the response.
+     */
+    protected String extractJwtFromCookie(MvcResult result) {
+        Cookie cookie = result.getResponse().getCookie("jwt");
+        if (cookie != null) {
+            return cookie.getValue();
+        }
+        throw new AssertionError("Expected 'jwt' cookie in response but none was found");
     }
 }

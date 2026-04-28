@@ -8,7 +8,9 @@ import com.kavin.fitness.dto.UpdateCredentialsRequest;
 import com.kavin.fitness.dto.UserGoalsDTO;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
+import com.kavin.fitness.security.CookieUtil;
 import com.kavin.fitness.security.JwtUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,7 @@ public class ProfileController {
     @Autowired private UserRepository  userRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private JwtUtil         jwtUtil;
+    @Autowired private CookieUtil      cookieUtil;
     @Autowired private UserResolver    userResolver;
 
     @GetMapping("/goals")
@@ -100,7 +103,8 @@ public class ProfileController {
     @PutMapping("/credentials")
     public ResponseEntity<CredentialsUpdateResponse> updateCredentials(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody UpdateCredentialsRequest dto) {
+            @Valid @RequestBody UpdateCredentialsRequest dto,
+            HttpServletResponse response) {
 
         log.info("PUT credentials user={}", userDetails.getUsername());
         User user = userResolver.resolve(userDetails);
@@ -125,7 +129,8 @@ public class ProfileController {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getUsername());
-        return ResponseEntity.ok(new CredentialsUpdateResponse(token, user.getUsername()));
+        cookieUtil.addJwtCookie(response, token);
+        return ResponseEntity.ok(new CredentialsUpdateResponse(user.getUsername()));
     }
 
 }

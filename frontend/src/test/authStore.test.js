@@ -2,28 +2,28 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import useAuthStore from '../store/authStore';
 
 beforeEach(() => {
-  useAuthStore.setState({ token: null, username: null });
+  useAuthStore.setState({ authenticated: false, username: null });
 });
 
 describe('authStore', () => {
-  it('starts with no token or username', () => {
-    const { token, username } = useAuthStore.getState();
-    expect(token).toBeNull();
+  it('starts with no authentication', () => {
+    const { authenticated, username } = useAuthStore.getState();
+    expect(authenticated).toBe(false);
     expect(username).toBeNull();
   });
 
-  it('login sets token and username', () => {
-    useAuthStore.getState().login('my-token', 'alice');
-    const { token, username } = useAuthStore.getState();
-    expect(token).toBe('my-token');
+  it('login sets authenticated and username', () => {
+    useAuthStore.getState().login('alice');
+    const { authenticated, username } = useAuthStore.getState();
+    expect(authenticated).toBe(true);
     expect(username).toBe('alice');
   });
 
-  it('logout clears token and username', () => {
-    useAuthStore.getState().login('my-token', 'alice');
+  it('logout clears authenticated and username', () => {
+    useAuthStore.getState().login('alice');
     useAuthStore.getState().logout();
-    const { token, username } = useAuthStore.getState();
-    expect(token).toBeNull();
+    const { authenticated, username } = useAuthStore.getState();
+    expect(authenticated).toBe(false);
     expect(username).toBeNull();
   });
 });

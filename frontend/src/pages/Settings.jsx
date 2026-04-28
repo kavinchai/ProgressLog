@@ -117,7 +117,7 @@ export default function Settings() {
 							newUsername: credForm.newUsername.trim() || undefined,
 							newPassword: credForm.newPassword || undefined,
 						})
-						.then((res) => login(res.data.token, res.data.username)),
+						.then((res) => login(res.data.username)),
 				);
 			}
 
