@@ -656,6 +656,99 @@ Examples:
     },
   );
 
+  // ── Tool: get_strength_progress ───────────────────────────────────────────
+
+  mcp.tool(
+    'get_strength_progress',
+    'Get detailed strength progress for all exercises — weight progression, reps, dates, and trends over time. More detailed than PRs alone, showing full history. Call this when the user asks about lift progression, strength trends, or how a specific exercise has improved over time.',
+    {
+      exerciseName: z.string().optional().describe('Optional filter to a specific exercise name. Omit to get all exercises.'),
+    },
+    async ({ exerciseName }) => {
+      const allProgress = await api('GET', '/progress/strength');
+      
+      const filtered = exerciseName
+        ? allProgress.filter(p => p.exerciseName.toLowerCase().includes(exerciseName.toLowerCase()))
+        : allProgress;
+
+      if (!filtered.length) {
+        return { content: [{ type: 'text', text: exerciseName ? `No progress data found for "${exerciseName}".` : 'No strength progress data yet.' }] };
+      }
+
+      const lines = [];
+      for (const exercise of filtered) {
+        lines.push(`\n💪 ${exercise.exerciseName}:`);
+        if (exercise.data && exercise.data.length > 0) {
+          // Show the most recent attempts first
+          const recent = exercise.data.slice(0, 10); // Show last 10 sessions
+          for (const session of recent) {
+            const date = session.sessionDate;
+            const weight = session.maxWeightLbs;
+            const reps = session.repScheme;
+            const sets = session.setCount;
+            lines.push(`  • ${date}: ${weight} lbs — ${sets} set${sets === 1 ? '' : 's'} (${reps})`);
+          }
+          if (exercise.data.length > 10) {
+            lines.push(`  ... and ${exercise.data.length - 10} more session${exercise.data.length - 10 === 1 ? '' : 's'}`);
+          }
+          // Show progression trend
+          const first = exercise.data[exercise.data.length - 1];
+          const last = exercise.data[0];
+          const trend = Math.round((last.maxWeightLbs - first.maxWeightLbs) * 10) / 10;
+          const trendSymbol = trend > 0 ? '📈' : trend < 0 ? '📉' : '➡️';
+          lines.push(`  ${trendSymbol} Total change: ${trend > 0 ? '+' : ''}${trend} lbs (${first.maxWeightLbs} → ${last.maxWeightLbs})`);
+        } else {
+          lines.push('  No data logged');
+        }
+      }
+
+      return {
+        content: [{ type: 'text', text: `💪 Strength Progress:${lines.join('\n')}` }],
+      };
+    },
+  );
+
+  // ── Tool: get_workouts_by_exercise ───────────────────────────────────────
+
+  mcp.tool(
+    'get_workouts_by_exercise',
+    'Find all workout sessions where a specific exercise was performed. Shows every date and session where that exercise appears. Call this when the user wants to see their history with a particular lift.',
+    {
+      exerciseName: z.string().describe('Name of the exercise to search for, e.g. "Bench Press", "Squat", "Deadlift"'),
+    },
+    async ({ exerciseName }) => {
+      const sessions = await api('GET', `/workouts/by-exercise/${encodeURIComponent(exerciseName)}`);
+      
+      if (!sessions.length) {
+        return { content: [{ type: 'text', text: `No workouts found for "${exerciseName}".` }] };
+      }
+
+      const lines = [];
+      for (const session of sessions) {
+        lines.push(`\n📅 ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ''} [ID: ${session.id}]`);
+        
+        // Find this exercise in the session
+        const exerciseSets = session.exerciseSets.filter(s => s.exerciseName.toLowerCase() === exerciseName.toLowerCase());
+        if (exerciseSets.length > 0) {
+          const grouped = exerciseSets.reduce((acc, s) => {
+            if (!acc[s.setNumber]) acc[s.setNumber] = [];
+            acc[s.setNumber].push(s);
+            return acc;
+          }, {});
+          
+          for (const setNum of Object.keys(grouped).sort((a, b) => parseInt(a) - parseInt(b))) {
+            const set = grouped[setNum][0];
+            lines.push(`  Set ${setNum}: ${describeSet(set)}`);
+          }
+        }
+      }
+
+      return {
+        content: [{ type: 'text', text: `🔍 All sessions with "${exerciseName}" (${sessions.length} session${sessions.length === 1 ? '' : 's'}):${lines.join('\n')}` }],
+      };
+    },
+  );
+
   return mcp;
 }
 

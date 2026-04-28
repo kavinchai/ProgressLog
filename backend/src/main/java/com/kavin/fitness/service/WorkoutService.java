@@ -44,6 +44,20 @@ public class WorkoutService {
         return toDTO(resolveSession(sessionId, userId));
     }
 
+    @Transactional(readOnly = true)
+    public List<WorkoutSessionDTO> getWorkoutsByExercise(Long userId, String exerciseName) {
+        List<ExerciseSet> sets = exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, exerciseName);
+        List<Long> sessionIds = sets.stream()
+                .map(set -> set.getSession().getId())
+                .distinct()
+                .collect(Collectors.toList());
+        return sessionIds.stream()
+                .map(id -> workoutSessionRepository.findById(id).orElse(null))
+                .filter(session -> session != null && session.getUser().getId().equals(userId))
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public WorkoutSessionDTO save(User user, WorkoutSessionRequest request) {
         WorkoutSession session = new WorkoutSession();

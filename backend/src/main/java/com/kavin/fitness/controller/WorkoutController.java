@@ -48,6 +48,15 @@ public class WorkoutController {
         return ResponseEntity.ok(workoutService.getWorkoutSession(sessionId, userResolver.resolve(principal).getId()));
     }
 
+    @GetMapping("/by-exercise/{exerciseName}")
+    public ResponseEntity<List<WorkoutSessionDTO>> getWorkoutsByExercise(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable String exerciseName) {
+        long userId = userResolver.resolve(principal).getId();
+        log.debug("GET workouts by exercise userId={} exercise={}", userId, exerciseName);
+        return ResponseEntity.ok(workoutService.getWorkoutsByExercise(userId, exerciseName));
+    }
+
     @PostMapping
     public ResponseEntity<WorkoutSessionDTO> logWorkout(
             @AuthenticationPrincipal UserDetails principal,

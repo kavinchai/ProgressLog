@@ -65,3 +65,4 @@ qaf-tests/src/test/resources/env.properties
 *.bak
 coverage/
 .claude/
+AGENTS.md
