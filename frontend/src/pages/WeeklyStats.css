@@ -37,8 +37,8 @@
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
 }
 
 .weekly-stat-value {
@@ -70,8 +70,8 @@
 
 .weekly-table th {
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
   background: var(--bg);
@@ -129,8 +129,8 @@
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
 }
 
 .day-detail-value {
@@ -196,8 +196,8 @@
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid var(--border-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   font-weight: var(--fw-semibold);
 }
 
@@ -295,8 +295,8 @@
 .chart-tooltip-label {
   color: var(--muted);
   font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   font-weight: var(--fw-semibold);
 }
 

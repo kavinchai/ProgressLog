@@ -47,8 +47,8 @@
 
 .data-table th {
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
   border-bottom: 1px solid var(--border-dim);

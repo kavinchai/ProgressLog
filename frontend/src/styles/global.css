@@ -176,7 +176,7 @@ a:hover { text-decoration: underline; }
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
   letter-spacing: 0.03em;
-  text-transform: uppercase;
+  text-transform: capitalize;
   color: var(--muted);
 }
 
@@ -232,8 +232,8 @@ a:hover { text-decoration: underline; }
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
 }
 
 /* ── Page header ── */

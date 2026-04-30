@@ -32,8 +32,8 @@
 .splash-date {
   font-size: var(--fs-sm);
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
 }
 
 .splash-headline {
