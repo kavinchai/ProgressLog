@@ -121,8 +121,8 @@ export default function TotalStats() {
 			.map((date) => rows.find((row) => row.date === date) ?? emptyRow(date));
 	})();
 
-	// Calendar grid: every day of the active month, with leading empty cells
-	// so the first day lands on the correct weekday column.
+	// Calendar grid: always 6 rows × 7 cols = 42 cells, so the calendar's
+	// total height stays constant regardless of which month is active.
 	const calendarCells = (() => {
 		const [y, m] = activeMonth.split("-").map(Number);
 		const firstDow = new Date(y, m - 1, 1).getDay();
@@ -133,6 +133,7 @@ export default function TotalStats() {
 			const date = localDateStr(new Date(y, m - 1, d));
 			cells.push(rows.find((r) => r.date === date) ?? emptyRow(date));
 		}
+		while (cells.length < 35) cells.push(null);
 		return cells;
 	})();
 	const avgWeight = avg(monthRows.map((row) => row.weight));
@@ -183,7 +184,7 @@ export default function TotalStats() {
 			</div>
 
 			{/* Summary */}
-			<div className="section-box" style={{ marginBottom: 24 }}>
+			<div className="section-box" style={{ marginBottom: 12 }}>
 				<div className="section-header">
 					<span className="section-title">Summary</span>
 					<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
