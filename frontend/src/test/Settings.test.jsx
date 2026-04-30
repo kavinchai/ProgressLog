@@ -20,8 +20,29 @@ vi.mock('../hooks/useUserProfile', () => ({
   default: vi.fn(),
 }));
 
+// Mock data hooks used by export/import section
+vi.mock('../hooks/useWeightLog', () => ({ default: vi.fn() }));
+vi.mock('../hooks/useNutrition', () => ({ default: vi.fn() }));
+vi.mock('../hooks/useWorkouts', () => ({ default: vi.fn() }));
+vi.mock('../hooks/useSteps', () => ({ default: vi.fn() }));
+
+// Mock xlsx library
+vi.mock('xlsx', () => ({
+  utils: {
+    json_to_sheet: vi.fn(() => ({})),
+    book_new: vi.fn(() => ({})),
+    book_append_sheet: vi.fn(),
+  },
+  writeFile: vi.fn(),
+}));
+
 import api from '../api';
 import useUserProfile from '../hooks/useUserProfile';
+import useWeightLog from '../hooks/useWeightLog';
+import useNutrition from '../hooks/useNutrition';
+import useWorkouts from '../hooks/useWorkouts';
+import useSteps from '../hooks/useSteps';
+import * as XLSX from 'xlsx';
 
 const DEFAULT_GOALS = { calorieTargetTraining: 2600, calorieTargetRest: 2000, proteinTarget: 180 };
 
@@ -41,6 +62,11 @@ beforeEach(() => {
   useAuthStore.setState({ authenticated: true, username: 'alice' });
   // Default: email endpoint returns an email, profile verify is stubbed
   api.get.mockResolvedValue({ data: { email: 'alice@example.com' } });
+  // Default empty data sets for export/import section
+  useWeightLog.mockReturnValue({ data: [], refetch: vi.fn() });
+  useNutrition.mockReturnValue({ data: [], refetch: vi.fn() });
+  useWorkouts.mockReturnValue({ data: [], refetch: vi.fn() });
+  useSteps.mockReturnValue({ data: [], refetch: vi.fn() });
 });
 
 describe('Settings — goals form', () => {
@@ -221,5 +247,103 @@ describe('Settings — updating credentials', () => {
     await userEvent.click(screen.getByRole('button', { name: /save account/i }));
 
     await waitFor(() => expect(screen.getByText(/username already exists/i)).toBeInTheDocument());
+  });
+});
+
+describe('Settings — data export & import', () => {
+  it('renders the Data section with export and import controls', () => {
+    setupProfile();
+    renderSettings();
+    expect(screen.getByText('Data', { selector: '.settings-section-label' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /export.*xlsx/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /export.*json/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /choose json file/i })).toBeInTheDocument();
+  });
+
+  it('disables export buttons when no data is available', () => {
+    setupProfile();
+    renderSettings();
+    expect(screen.getByRole('button', { name: /export.*xlsx/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /export.*json/i })).toBeDisabled();
+  });
+
+  it('enables export buttons when there is data', () => {
+    setupProfile();
+    useWeightLog.mockReturnValue({
+      data: [{ logDate: '2026-04-01', weightLbs: 180 }],
+      refetch: vi.fn(),
+    });
+    renderSettings();
+    expect(screen.getByRole('button', { name: /export.*xlsx/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /export.*json/i })).toBeEnabled();
+  });
+
+  it('triggers XLSX export when XLSX button clicked', async () => {
+    setupProfile();
+    useWeightLog.mockReturnValue({
+      data: [{ logDate: '2026-04-01', weightLbs: 180 }],
+      refetch: vi.fn(),
+    });
+    renderSettings();
+    await userEvent.click(screen.getByRole('button', { name: /export.*xlsx/i }));
+    expect(XLSX.writeFile).toHaveBeenCalled();
+  });
+
+  it('triggers JSON download when JSON button clicked', async () => {
+    setupProfile();
+    useWeightLog.mockReturnValue({
+      data: [{ logDate: '2026-04-01', weightLbs: 180 }],
+      refetch: vi.fn(),
+    });
+    // jsdom needs URL.createObjectURL stubbed
+    const createObjectURL = vi.fn(() => 'blob:fake-url');
+    const revokeObjectURL = vi.fn();
+    global.URL.createObjectURL = createObjectURL;
+    global.URL.revokeObjectURL = revokeObjectURL;
+    renderSettings();
+    await userEvent.click(screen.getByRole('button', { name: /export.*json/i }));
+    expect(createObjectURL).toHaveBeenCalled();
+  });
+
+  it('shows success status after a successful import', async () => {
+    api.post.mockResolvedValue({
+      data: {
+        weightImported: 2,
+        weightSkipped: 0,
+        nutritionImported: 1,
+        nutritionSkipped: 0,
+        workoutsImported: 0,
+        workoutsSkipped: 0,
+      },
+    });
+    setupProfile();
+    renderSettings();
+
+    const fileInput = document.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+
+    const file = new File([JSON.stringify({ totalStats: [], workouts: [] })], 'data.json', {
+      type: 'application/json',
+    });
+    await userEvent.upload(fileInput, file);
+
+    await waitFor(() =>
+      expect(screen.getByText(/imported/i)).toBeInTheDocument()
+    );
+    expect(api.post).toHaveBeenCalledWith('/import', expect.any(Object));
+  });
+
+  it('shows error status when import fails', async () => {
+    api.post.mockRejectedValue(new Error('bad payload'));
+    setupProfile();
+    renderSettings();
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = new File(['not json'], 'bad.json', { type: 'application/json' });
+    await userEvent.upload(fileInput, file);
+
+    await waitFor(() =>
+      expect(screen.getByText(/import failed/i)).toBeInTheDocument()
+    );
   });
 });

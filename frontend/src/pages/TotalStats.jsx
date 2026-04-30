@@ -1,13 +1,10 @@
-import { useState, useRef } from "react";
-import * as XLSX from "xlsx";
-import api from "../api";
+import { useState } from "react";
 import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import DayDetail from "../components/DayDetail";
 import WeightLineChart from "../components/WeightLineChart";
-import { groupByExercise } from "../utils/workout";
 import {
 	localDateStr,
 	formatDateShort as formatDate,
@@ -50,12 +47,9 @@ export default function TotalStats() {
 	const { unit, toDisplay } = useWeightUnit();
 
 	const [expandedDay, setExpandedDay] = useState(null);
-	const [importStatus, setImportStatus] = useState(null);
-	const [importing, setImporting] = useState(false);
 	const [rangeKey, setRangeKey] = useState("90d");
 	const [logMonth, setLogMonth] = useState(null);
 	const [picker, setPicker] = useState(null);
-	const fileInputRef = useRef(null);
 
 	const today = localDateStr(new Date());
 
@@ -149,125 +143,6 @@ export default function TotalStats() {
 	}
 	function togglePicker(type) {
 		setPicker((p) => (p === type ? null : type));
-	}
-
-	// ── Export helpers ────────────────────────────────────────────────────────
-
-	function buildExportData() {
-		const statsData = rows.map((row) => ({
-			Date: formatDate(row.date),
-			Weight: row.weight != null ? row.weight : "",
-			Calories: row.calories != null ? row.calories : "",
-			Protein: row.protein != null ? row.protein : "",
-			Steps: row.steps != null ? row.steps : "",
-			Workout: row.workout ?? "",
-		}));
-
-		const workoutRows = [];
-		for (const row of rows) {
-			if (!row.workoutEntry?.exerciseSets?.length) continue;
-			const groups = groupByExercise(row.workoutEntry.exerciseSets);
-			for (const g of groups) {
-				const exportRow = {
-					Date: formatDate(row.date),
-					Exercise: g.name,
-					Weight: g.weight,
-				};
-				for (const s of g.sets) {
-					exportRow[`Set ${s.setNumber}`] = s.reps != null ? s.reps : "";
-				}
-				workoutRows.push(exportRow);
-			}
-		}
-
-		const maxSets = workoutRows.reduce((max, row) => {
-			const nums = Object.keys(row)
-				.filter((k) => k.startsWith("Set "))
-				.map((k) => parseInt(k.replace("Set ", "")));
-			return Math.max(max, ...nums, 0);
-		}, 0);
-		const setHeaders = Array.from(
-			{ length: maxSets },
-			(_, i) => `Set ${i + 1}`,
-		);
-		const normalizedWorkoutRows = workoutRows.map((row) => {
-			const normalized = {
-				Date: row.Date,
-				Exercise: row.Exercise,
-				Weight: row.Weight,
-			};
-			for (const h of setHeaders) normalized[h] = row[h] ?? "";
-			return normalized;
-		});
-
-		return { statsData, normalizedWorkoutRows };
-	}
-
-	function handleExportXlsx() {
-		const { statsData, normalizedWorkoutRows } = buildExportData();
-		const ws1 = XLSX.utils.json_to_sheet(statsData);
-		const ws2 = XLSX.utils.json_to_sheet(
-			normalizedWorkoutRows.length
-				? normalizedWorkoutRows
-				: [{ Date: "", Exercise: "", Weight: "" }],
-		);
-		const wb = XLSX.utils.book_new();
-		XLSX.utils.book_append_sheet(wb, ws1, "Total Stats");
-		XLSX.utils.book_append_sheet(wb, ws2, "Workouts");
-		XLSX.writeFile(wb, "total-stats.xlsx");
-	}
-
-	function handleExportJson() {
-		const { statsData, normalizedWorkoutRows } = buildExportData();
-		const json = JSON.stringify(
-			{ totalStats: statsData, workouts: normalizedWorkoutRows },
-			null,
-			2,
-		);
-		const blob = new Blob([json], { type: "application/json" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = "total-stats.json";
-		a.click();
-		URL.revokeObjectURL(url);
-	}
-
-	async function handleImportJson(e) {
-		const file = e.target.files?.[0];
-		if (!fileInputRef.current) return;
-		fileInputRef.current.value = "";
-		if (!file) return;
-
-		setImporting(true);
-		setImportStatus(null);
-		try {
-			const text = await file.text();
-			const payload = JSON.parse(text);
-			const res = await api.post("/import", payload);
-			const {
-				weightImported,
-				weightSkipped,
-				nutritionImported,
-				nutritionSkipped,
-				workoutsImported,
-				workoutsSkipped,
-			} = res.data;
-			setImportStatus({
-				ok: true,
-				message: `imported: ${weightImported} weight, ${nutritionImported} nutrition, ${workoutsImported} workouts  |  skipped: ${weightSkipped} weight, ${nutritionSkipped} nutrition, ${workoutsSkipped} workouts`,
-			});
-			refetchWeight();
-			refetchNutrition();
-			refetchWorkouts();
-		} catch {
-			setImportStatus({
-				ok: false,
-				message: "import failed — check file format",
-			});
-		} finally {
-			setImporting(false);
-		}
 	}
 
 	return (
@@ -485,56 +360,6 @@ export default function TotalStats() {
 						</div>
 					)}
 				</div>
-				<div className="export-bar">
-					<span
-						className="muted"
-						style={{
-							fontSize: "var(--fs-sm)",
-							textTransform: "uppercase",
-							letterSpacing: "0.04em",
-						}}
-					>
-						export
-					</span>
-					<div className="export-bar-btns">
-						{rows.length > 0 && (
-							<>
-								<button className="btn btn-sm" onClick={handleExportXlsx}>
-									XLSX
-								</button>
-								<button className="btn btn-sm" onClick={handleExportJson}>
-									JSON
-								</button>
-							</>
-						)}
-						<button
-							className="btn btn-sm"
-							disabled={importing}
-							onClick={() => fileInputRef.current?.click()}
-						>
-							{importing ? "Importing..." : "Import"}
-						</button>
-						<input
-							ref={fileInputRef}
-							type="file"
-							accept=".json"
-							style={{ display: "none" }}
-							onChange={handleImportJson}
-						/>
-					</div>
-				</div>
-				{importStatus && (
-					<div
-						className="muted"
-						style={{
-							fontSize: "var(--fs-sm)",
-							marginTop: 6,
-							color: importStatus.ok ? "var(--fg)" : "var(--muted)",
-						}}
-					>
-						{importStatus.message}
-					</div>
-				)}
 			</div>
 
 			{/* Weight trend */}
