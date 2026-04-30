@@ -4,6 +4,7 @@ import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import DayDetail from "../components/DayDetail";
+import Modal from "../components/Modal";
 import WeightLineChart from "../components/WeightLineChart";
 import {
 	localDateStr,
@@ -14,6 +15,23 @@ import { buildDayRows } from "../utils/stats";
 import useWeightUnit from "../hooks/useWeightUnit";
 import "./WeeklyStats.css";
 import "./TotalStats.css";
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function emptyRow(date) {
+	return {
+		date,
+		weightEntry: null,
+		nutritionEntry: null,
+		workoutEntry: null,
+		stepEntry: null,
+		weight: null,
+		calories: null,
+		protein: null,
+		steps: null,
+		workout: null,
+	};
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -46,7 +64,7 @@ export default function TotalStats() {
 	const { data: stepData, refetch: refetchSteps } = useSteps();
 	const { unit, toDisplay } = useWeightUnit();
 
-	const [expandedDay, setExpandedDay] = useState(null);
+	const [selectedDay, setSelectedDay] = useState(null);
 	const [rangeKey, setRangeKey] = useState("90d");
 	const [logMonth, setLogMonth] = useState(null);
 	const [picker, setPicker] = useState(null);
@@ -98,19 +116,25 @@ export default function TotalStats() {
 		) {
 			days.push(localDateStr(d));
 		}
-		return days.reverse().map(
-			(date) =>
-				rows.find((row) => row.date === date) ?? {
-					date,
-					weightEntry: null,
-					nutritionEntry: null,
-					workoutEntry: null,
-					weight: null,
-					calories: null,
-					protein: null,
-					workout: null,
-				},
-		);
+		return days
+			.reverse()
+			.map((date) => rows.find((row) => row.date === date) ?? emptyRow(date));
+	})();
+
+	// Calendar grid: always 6 rows × 7 cols = 42 cells, so the calendar's
+	// total height stays constant regardless of which month is active.
+	const calendarCells = (() => {
+		const [y, m] = activeMonth.split("-").map(Number);
+		const firstDow = new Date(y, m - 1, 1).getDay();
+		const numDays = new Date(y, m, 0).getDate();
+		const cells = [];
+		for (let i = 0; i < firstDow; i++) cells.push(null);
+		for (let d = 1; d <= numDays; d++) {
+			const date = localDateStr(new Date(y, m - 1, d));
+			cells.push(rows.find((r) => r.date === date) ?? emptyRow(date));
+		}
+		while (cells.length < 35) cells.push(null);
+		return cells;
 	})();
 	const avgWeight = avg(monthRows.map((row) => row.weight));
 	const avgCalories = avg(monthRows.map((row) => row.calories));
@@ -126,9 +150,14 @@ export default function TotalStats() {
 
 	function goMonth(ym) {
 		setLogMonth(ym);
-		setExpandedDay(null);
+		setSelectedDay(null);
 		setPicker(null);
 	}
+
+	const selectedRow =
+		selectedDay != null
+			? (rows.find((r) => r.date === selectedDay) ?? emptyRow(selectedDay))
+			: null;
 	function selectMonth(mm) {
 		goMonth(`${activeYear}-${mm}`);
 	}
@@ -155,7 +184,7 @@ export default function TotalStats() {
 			</div>
 
 			{/* Summary */}
-			<div className="section-box" style={{ marginBottom: 24 }}>
+			<div className="section-box" style={{ marginBottom: 12 }}>
 				<div className="section-header">
 					<span className="section-title">Summary</span>
 					<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
@@ -201,8 +230,8 @@ export default function TotalStats() {
 				<div className="section-header">
 					<span className="section-title">Full Log</span>
 					<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-						{rows.length} {rows.length === 1 ? "entry" : "entries"} · click row
-						to expand
+						{rows.length} {rows.length === 1 ? "entry" : "entries"} · click a
+						day to view or edit
 					</span>
 				</div>
 				{allMonths.length > 0 && (
@@ -284,83 +313,113 @@ export default function TotalStats() {
 						<div style={{ padding: "12px 14px" }} className="muted">
 							No data logged yet.
 						</div>
-					) : monthRows.length === 0 ? (
-						<div style={{ padding: "12px 14px" }} className="muted">
-							No entries for {monthLabel(activeMonth)}.
-						</div>
 					) : (
-						<div className="weekly-table-wrap">
-							<table className="weekly-table">
-								<thead>
-									<tr>
-										<th>Date</th>
-										<th>Weight</th>
-										<th>Calories</th>
-										<th>Protein</th>
-										<th>Steps</th>
-										<th>Workout</th>
-									</tr>
-								</thead>
-								<tbody>
-									{monthRows.map((row) => (
-										<>
-											<tr
-												key={row.date}
-												className={
-													"weekly-row" +
-													(row.date === today ? " today-row" : "") +
-													(expandedDay === row.date ? " expanded-row" : "")
-												}
-												onClick={() =>
-													setExpandedDay(
-														expandedDay === row.date ? null : row.date,
-													)
-												}
-												style={{ cursor: "pointer" }}
-											>
-												<td>{formatDate(row.date)}</td>
-												<td>
-													{row.weight != null
-														? toDisplay(row.weight) + " " + unit
-														: "--"}
-												</td>
-												<td>{row.calories != null ? row.calories : "--"}</td>
-												<td>
-													{row.protein != null ? row.protein + "g" : "--"}
-												</td>
-												<td>
-													{row.steps != null
-														? row.steps.toLocaleString()
-														: "--"}
-												</td>
-												<td>{row.workout ?? "--"}</td>
-											</tr>
-											{expandedDay === row.date && (
-												<tr key={row.date + "-detail"} className="detail-row">
-													<td colSpan={6}>
-														<DayDetail
-															date={row.date}
-															weightEntry={row.weightEntry}
-															nutritionEntry={row.nutritionEntry}
-															workoutEntry={row.workoutEntry}
-															stepEntry={row.stepEntry}
-															onRefetchW={refetchWeight}
-															onRefetchN={refetchNutrition}
-															onRefetchWo={refetchWorkouts}
-															onRefetchS={refetchSteps}
-															showDelete={false}
-														/>
-													</td>
-												</tr>
-											)}
-										</>
-									))}
-								</tbody>
-							</table>
+						<div className="calendar-wrap">
+							<div className="calendar-weekdays">
+								{WEEKDAYS.map((d) => (
+									<div key={d} className="calendar-weekday">
+										{d}
+									</div>
+								))}
+							</div>
+							<div className="calendar-grid">
+								{calendarCells.map((row, i) =>
+									row === null ? (
+										<div
+											key={`pad-${i}`}
+											className="calendar-cell calendar-cell-pad"
+										/>
+									) : (
+										<button
+											key={row.date}
+											type="button"
+											data-testid={`calendar-day-${row.date}`}
+											className={
+												"calendar-cell" +
+												(row.date === today ? " calendar-cell-today" : "") +
+												(row.date > today ? " calendar-cell-future" : "")
+											}
+											onClick={() =>
+												row.date <= today && setSelectedDay(row.date)
+											}
+											disabled={row.date > today}
+										>
+											<div className="calendar-cell-date">
+												{parseInt(row.date.slice(8))}
+											</div>
+											<div className="calendar-cell-metrics">
+												{row.weight != null && (
+													<div className="calendar-metric calendar-metric--weight">
+														<span className="calendar-metric-key">Weight</span>
+														<span className="calendar-metric-val">
+															{toDisplay(row.weight)} {unit}
+														</span>
+													</div>
+												)}
+												{row.calories != null && (
+													<div className="calendar-metric calendar-metric--calories">
+														<span className="calendar-metric-key">Calories</span>
+														<span className="calendar-metric-val">
+															{row.calories}
+														</span>
+													</div>
+												)}
+												{row.protein != null && (
+													<div className="calendar-metric calendar-metric--protein">
+														<span className="calendar-metric-key">Protein</span>
+														<span className="calendar-metric-val">
+															{row.protein}g
+														</span>
+													</div>
+												)}
+												{row.steps != null && (
+													<div className="calendar-metric calendar-metric--steps">
+														<span className="calendar-metric-key">Steps</span>
+														<span className="calendar-metric-val">
+															{row.steps.toLocaleString()}
+														</span>
+													</div>
+												)}
+												{row.workout != null && (
+													<div className="calendar-metric calendar-metric--workout">
+														<span className="calendar-metric-key">Workout</span>
+														<span
+															className="calendar-metric-val calendar-metric-workout"
+															title={row.workout}
+														>
+															{row.workout}
+														</span>
+													</div>
+												)}
+											</div>
+										</button>
+									),
+								)}
+							</div>
 						</div>
 					)}
 				</div>
 			</div>
+
+			{selectedDay && selectedRow && (
+				<Modal
+					title={formatDate(selectedDay)}
+					onClose={() => setSelectedDay(null)}
+				>
+					<DayDetail
+						date={selectedRow.date}
+						weightEntry={selectedRow.weightEntry}
+						nutritionEntry={selectedRow.nutritionEntry}
+						workoutEntry={selectedRow.workoutEntry}
+						stepEntry={selectedRow.stepEntry}
+						onRefetchW={refetchWeight}
+						onRefetchN={refetchNutrition}
+						onRefetchWo={refetchWorkouts}
+						onRefetchS={refetchSteps}
+						showDelete={true}
+					/>
+				</Modal>
+			)}
 
 			{/* Weight trend */}
 			{weightBarWeights.some((w) => w != null) && (
