@@ -59,6 +59,7 @@ qaf-tests/build/
 qaf-tests/test-results/
 qaf-tests/test-output/
 qaf-tests/src/test/resources/env.properties
+qaf-tests/bin/
 
 # ── Misc ────────────────────────────────────────────
 *.tmp
