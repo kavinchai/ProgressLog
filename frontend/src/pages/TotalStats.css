@@ -127,8 +127,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
-	font-size: clamp(0.55rem, 1.3cqw, var(--fs-xs));
-	line-height: 1.15;
+	font-size: clamp(0.48rem, 1.1cqw, 0.65rem);
+	line-height: 1.2;
 	min-width: 0;
 	flex: 1;
 	overflow: hidden;
@@ -136,24 +136,26 @@
 
 .calendar-metric {
 	display: flex;
-	gap: 3px;
+	justify-content: space-between;
+	gap: 6px;
 	align-items: baseline;
 	min-width: 0;
 }
 
 .calendar-metric-key {
 	color: var(--muted);
-	font-weight: var(--fw-semibold);
+	font-weight: var(--fw-medium);
 	flex-shrink: 0;
-	width: clamp(10px, 2cqw, 16px);
 }
 
 .calendar-metric-val {
 	color: var(--fg);
+	font-weight: var(--fw-semibold);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	min-width: 0;
+	text-align: right;
 }
 
 .calendar-metric-workout {
@@ -208,11 +210,7 @@
 	}
 
 	.calendar-metric {
-		gap: 2px;
-	}
-
-	.calendar-metric-key {
-		width: 10px;
+		gap: 4px;
 	}
 
 	.calendar-weekday {
@@ -221,9 +219,3 @@
 	}
 }
 
-/* ── Very small (< 380px) — drop metric keys, show only values ── */
-@media (max-width: 380px) {
-	.calendar-metric-key {
-		display: none;
-	}
-}

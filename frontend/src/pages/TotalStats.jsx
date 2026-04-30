@@ -156,7 +156,7 @@ export default function TotalStats() {
 
 	const selectedRow =
 		selectedDay != null
-			? rows.find((r) => r.date === selectedDay) ?? emptyRow(selectedDay)
+			? (rows.find((r) => r.date === selectedDay) ?? emptyRow(selectedDay))
 			: null;
 	function selectMonth(mm) {
 		goMonth(`${activeYear}-${mm}`);
@@ -348,43 +348,51 @@ export default function TotalStats() {
 												{parseInt(row.date.slice(8))}
 											</div>
 											<div className="calendar-cell-metrics">
-												<div className="calendar-metric">
-													<span className="calendar-metric-key">W</span>
-													<span className="calendar-metric-val">
-														{row.weight != null
-															? toDisplay(row.weight) + " " + unit
-															: "--"}
-													</span>
-												</div>
-												<div className="calendar-metric">
-													<span className="calendar-metric-key">C</span>
-													<span className="calendar-metric-val">
-														{row.calories != null ? row.calories : "--"}
-													</span>
-												</div>
-												<div className="calendar-metric">
-													<span className="calendar-metric-key">P</span>
-													<span className="calendar-metric-val">
-														{row.protein != null ? row.protein + "g" : "--"}
-													</span>
-												</div>
-												<div className="calendar-metric">
-													<span className="calendar-metric-key">S</span>
-													<span className="calendar-metric-val">
-														{row.steps != null
-															? row.steps.toLocaleString()
-															: "--"}
-													</span>
-												</div>
-												<div className="calendar-metric">
-													<span className="calendar-metric-key">WO</span>
-													<span
-														className="calendar-metric-val calendar-metric-workout"
-														title={row.workout ?? ""}
-													>
-														{row.workout ?? "--"}
-													</span>
-												</div>
+												{row.weight != null && (
+													<div className="calendar-metric">
+														<span className="calendar-metric-key">Weight</span>
+														<span className="calendar-metric-val">
+															{toDisplay(row.weight)} {unit}
+														</span>
+													</div>
+												)}
+												{row.calories != null && (
+													<div className="calendar-metric">
+														<span className="calendar-metric-key">
+															Calories
+														</span>
+														<span className="calendar-metric-val">
+															{row.calories}
+														</span>
+													</div>
+												)}
+												{row.protein != null && (
+													<div className="calendar-metric">
+														<span className="calendar-metric-key">Protein</span>
+														<span className="calendar-metric-val">
+															{row.protein}g
+														</span>
+													</div>
+												)}
+												{row.steps != null && (
+													<div className="calendar-metric">
+														<span className="calendar-metric-key">Steps</span>
+														<span className="calendar-metric-val">
+															{row.steps.toLocaleString()}
+														</span>
+													</div>
+												)}
+												{row.workout != null && (
+													<div className="calendar-metric">
+														<span className="calendar-metric-key">Workout</span>
+														<span
+															className="calendar-metric-val calendar-metric-workout"
+															title={row.workout}
+														>
+															{row.workout}
+														</span>
+													</div>
+												)}
 											</div>
 										</button>
 									),
@@ -396,7 +404,10 @@ export default function TotalStats() {
 			</div>
 
 			{selectedDay && selectedRow && (
-				<Modal title={formatDate(selectedDay)} onClose={() => setSelectedDay(null)}>
+				<Modal
+					title={formatDate(selectedDay)}
+					onClose={() => setSelectedDay(null)}
+				>
 					<DayDetail
 						date={selectedRow.date}
 						weightEntry={selectedRow.weightEntry}
