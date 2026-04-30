@@ -33,8 +33,8 @@
   min-width: 70px;
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
 }
 
@@ -89,8 +89,8 @@
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   margin-bottom: 4px;
 }
 
@@ -170,8 +170,8 @@
 
 .nutrition-totals-label {
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   font-weight: var(--fw-semibold);
   font-size: var(--fs-xs);
   min-width: 50px;
@@ -198,8 +198,8 @@
   padding: 2px 8px;
   font-size: 10px;
   font-weight: var(--fw-bold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
   color: var(--accent-fg);
   background: var(--accent);
   border-radius: var(--radius-full);
@@ -239,8 +239,8 @@
 .pr-history-table th {
   text-align: left;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
   padding: 4px 0 6px;
@@ -262,8 +262,8 @@
   font-size: var(--fs-xs);
   font-family: var(--font);
   font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
