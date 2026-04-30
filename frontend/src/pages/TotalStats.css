@@ -1,58 +1,237 @@
 .total-page {
-  max-width: 860px;
-  width: 100%;
+	max-width: 860px;
+	width: 100%;
 }
 
 .month-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  border-top: 1px solid var(--border-dim);
-  border-bottom: 1px solid var(--border-dim);
-  padding: 10px 16px;
-  background: var(--bg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	border-top: 1px solid var(--border-dim);
+	border-bottom: 1px solid var(--border-dim);
+	padding: 10px 16px;
+	background: var(--bg);
 }
 
 .month-nav-label {
-  display: flex;
-  gap: 6px;
+	display: flex;
+	gap: 6px;
 }
 
 .month-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border-dim);
-  background: var(--bg);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	justify-content: center;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--border-dim);
+	background: var(--bg);
 }
 
 .range-selector {
-  display: flex;
-  gap: 4px;
+	display: flex;
+	gap: 4px;
 }
 
 .range-active {
-  background: var(--accent) !important;
-  color: var(--accent-fg) !important;
-  border-color: var(--accent) !important;
+	background: var(--accent) !important;
+	color: var(--accent-fg) !important;
+	border-color: var(--accent) !important;
+}
+
+.calendar-wrap {
+	padding: 10px 10px 5px;
+	container-type: inline-size;
+}
+
+.calendar-weekdays {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 4px;
+	margin-bottom: 4px;
+}
+
+.calendar-weekday {
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+	color: var(--muted);
+	text-align: center;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	padding: 2px 0;
+}
+
+.calendar-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	grid-template-rows: repeat(5, 1fr);
+	gap: 4px;
+}
+
+.calendar-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	aspect-ratio: 1 / 1;
+	padding: 5px 5px 6px;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+	font-family: var(--font);
+	color: var(--fg);
+	text-align: left;
+	cursor: pointer;
+	overflow: hidden;
+	transition:
+		background var(--transition-fast),
+		border-color var(--transition-fast);
+}
+
+.calendar-cell:hover:not(:disabled) {
+	background: var(--hover-bg);
+	border-color: var(--accent);
+}
+
+.calendar-cell-today {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 1px var(--accent);
+}
+
+.calendar-cell-future {
+	opacity: 0.4;
+	cursor: not-allowed;
+	background: transparent;
+}
+
+.calendar-cell-pad {
+	background: transparent;
+	border: 1px dashed var(--border-dim);
+	min-height: 0;
+	cursor: default;
+	opacity: 0.3;
+}
+
+.calendar-cell-date {
+	font-size: clamp(0.7rem, 1.6cqw, var(--fs-sm));
+	font-weight: var(--fw-semibold);
+	color: var(--fg);
+	line-height: 1;
+}
+
+.calendar-cell-today .calendar-cell-date {
+	color: var(--accent);
+}
+
+.calendar-cell-metrics {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	font-size: clamp(0.48rem, 1.1cqw, 0.65rem);
+	line-height: 1.2;
+	min-width: 0;
+	flex: 1;
+	overflow: hidden;
+}
+
+.calendar-metric {
+	display: flex;
+	justify-content: space-between;
+	gap: 6px;
+	align-items: baseline;
+	min-width: 0;
+	padding: 1px 4px;
+	border-radius: 3px;
+}
+
+.calendar-metric-key {
+	color: var(--muted);
+	font-weight: var(--fw-medium);
+	flex-shrink: 0;
+}
+
+.calendar-metric-val {
+	color: var(--fg);
+	font-weight: var(--fw-semibold);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+	text-align: right;
+}
+
+.calendar-metric-workout {
+	font-style: italic;
+}
+
+/* ── Per-metric chip colours (light mode) ── */
+.calendar-metric--weight   { background: #dde8f6; }
+.calendar-metric--calories { background: #fdecd3; }
+.calendar-metric--protein  { background: #d6f0e2; }
+.calendar-metric--steps    { background: #e8e3f7; }
+.calendar-metric--workout  { background: #fce3e3; }
+
+/* ── Per-metric chip colours (dark mode) ── */
+.dark .calendar-metric--weight   { background: #1b2540; }
+.dark .calendar-metric--calories { background: #2a1e08; }
+.dark .calendar-metric--protein  { background: #0e2118; }
+.dark .calendar-metric--steps    { background: #1e1840; }
+.dark .calendar-metric--workout  { background: #2b1414; }
+
+/* ── Tablet / narrow desktop ── */
+@media (max-width: 900px) {
+	.calendar-wrap {
+		padding: 8px;
+	}
+
+	.calendar-grid,
+	.calendar-weekdays {
+		gap: 3px;
+	}
+
+	.calendar-cell {
+		padding: 4px 4px 5px;
+		border-radius: var(--radius-sm);
+	}
 }
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-  .month-nav {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+	.month-nav {
+		flex-wrap: wrap;
+		gap: 8px;
+	}
 
-  .month-picker {
-    gap: 4px;
-    padding: 8px 12px;
-  }
+	.month-picker {
+		gap: 4px;
+		padding: 8px 12px;
+	}
 
-  .range-selector {
-    flex-wrap: wrap;
-  }
+	.range-selector {
+		flex-wrap: wrap;
+	}
+
+	.calendar-wrap {
+		padding: 4px;
+	}
+
+	.calendar-grid,
+	.calendar-weekdays {
+		gap: 2px;
+	}
+
+	.calendar-cell {
+		padding: 3px 3px 4px;
+		gap: 2px;
+	}
+
+	.calendar-metric {
+		gap: 4px;
+	}
+
+	.calendar-weekday {
+		font-size: 9px;
+		padding: 1px 0;
+	}
 }
+
