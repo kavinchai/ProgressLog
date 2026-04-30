@@ -3,6 +3,16 @@
 	width: 100%;
 }
 
+.total-summary-box {
+	margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+	.total-summary-box {
+		margin-bottom: 6px;
+	}
+}
+
 .month-nav {
 	display: flex;
 	align-items: center;

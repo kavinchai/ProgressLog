@@ -203,8 +203,52 @@
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
+  /* Tighten page header */
+  .weekly-header {
+    margin-bottom: var(--space-sm);
+  }
+
+  .weekly-title {
+    font-size: var(--fs-lg);
+  }
+
+  /* Compact section chrome */
+  .section-header {
+    padding: 7px 12px;
+  }
+
+  .section-body {
+    padding: 10px 12px;
+  }
+
+  /* Force all stats into a single horizontal row, matching desktop layout */
+  .weekly-summary-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
   .weekly-stat {
-    padding: 6px 10px;
+    padding: 5px 6px;
+    gap: 1px;
+    border-right: 1px solid var(--border-dim);
+  }
+
+  .weekly-stat:last-child {
+    border-right: none;
+  }
+
+  .weekly-stat-label {
+    font-size: 9px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .weekly-stat-value {
+    font-size: var(--fs-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .day-detail {

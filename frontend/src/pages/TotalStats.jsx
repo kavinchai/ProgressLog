@@ -184,7 +184,7 @@ export default function TotalStats() {
 			</div>
 
 			{/* Summary */}
-			<div className="section-box" style={{ marginBottom: 12 }}>
+			<div className="section-box total-summary-box">
 				<div className="section-header">
 					<span className="section-title">Summary</span>
 					<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
