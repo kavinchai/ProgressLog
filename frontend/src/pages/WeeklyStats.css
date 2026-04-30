@@ -237,8 +237,8 @@
   }
 
   .weekly-stat-label {
-    font-size: 9px;
-    letter-spacing: 0.03em;
+    font-size: 7.5px;
+    letter-spacing: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
