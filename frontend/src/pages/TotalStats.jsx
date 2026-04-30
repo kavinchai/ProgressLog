@@ -349,7 +349,7 @@ export default function TotalStats() {
 											</div>
 											<div className="calendar-cell-metrics">
 												{row.weight != null && (
-													<div className="calendar-metric">
+													<div className="calendar-metric calendar-metric--weight">
 														<span className="calendar-metric-key">Weight</span>
 														<span className="calendar-metric-val">
 															{toDisplay(row.weight)} {unit}
@@ -357,17 +357,15 @@ export default function TotalStats() {
 													</div>
 												)}
 												{row.calories != null && (
-													<div className="calendar-metric">
-														<span className="calendar-metric-key">
-															Calories
-														</span>
+													<div className="calendar-metric calendar-metric--calories">
+														<span className="calendar-metric-key">Calories</span>
 														<span className="calendar-metric-val">
 															{row.calories}
 														</span>
 													</div>
 												)}
 												{row.protein != null && (
-													<div className="calendar-metric">
+													<div className="calendar-metric calendar-metric--protein">
 														<span className="calendar-metric-key">Protein</span>
 														<span className="calendar-metric-val">
 															{row.protein}g
@@ -375,7 +373,7 @@ export default function TotalStats() {
 													</div>
 												)}
 												{row.steps != null && (
-													<div className="calendar-metric">
+													<div className="calendar-metric calendar-metric--steps">
 														<span className="calendar-metric-key">Steps</span>
 														<span className="calendar-metric-val">
 															{row.steps.toLocaleString()}
@@ -383,7 +381,7 @@ export default function TotalStats() {
 													</div>
 												)}
 												{row.workout != null && (
-													<div className="calendar-metric">
+													<div className="calendar-metric calendar-metric--workout">
 														<span className="calendar-metric-key">Workout</span>
 														<span
 															className="calendar-metric-val calendar-metric-workout"

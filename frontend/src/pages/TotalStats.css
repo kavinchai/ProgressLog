@@ -140,6 +140,8 @@
 	gap: 6px;
 	align-items: baseline;
 	min-width: 0;
+	padding: 1px 4px;
+	border-radius: 3px;
 }
 
 .calendar-metric-key {
@@ -161,6 +163,20 @@
 .calendar-metric-workout {
 	font-style: italic;
 }
+
+/* ── Per-metric chip colours (light mode) ── */
+.calendar-metric--weight   { background: #dde8f6; }
+.calendar-metric--calories { background: #fdecd3; }
+.calendar-metric--protein  { background: #d6f0e2; }
+.calendar-metric--steps    { background: #e8e3f7; }
+.calendar-metric--workout  { background: #fce3e3; }
+
+/* ── Per-metric chip colours (dark mode) ── */
+.dark .calendar-metric--weight   { background: #1b2540; }
+.dark .calendar-metric--calories { background: #2a1e08; }
+.dark .calendar-metric--protein  { background: #0e2118; }
+.dark .calendar-metric--steps    { background: #1e1840; }
+.dark .calendar-metric--workout  { background: #2b1414; }
 
 /* ── Tablet / narrow desktop ── */
 @media (max-width: 900px) {
