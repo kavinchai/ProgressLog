@@ -392,6 +392,13 @@ export default function TotalStats() {
 													</div>
 												)}
 											</div>
+											<div className="calendar-cell-dots" aria-hidden="true">
+												{row.weight   != null && <span className="cal-dot cal-dot--weight" />}
+												{row.calories != null && <span className="cal-dot cal-dot--calories" />}
+												{row.protein  != null && <span className="cal-dot cal-dot--protein" />}
+												{row.steps    != null && <span className="cal-dot cal-dot--steps" />}
+												{row.workout  != null && <span className="cal-dot cal-dot--workout" />}
+											</div>
 										</button>
 									),
 								)}

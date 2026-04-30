@@ -164,6 +164,31 @@
 	font-style: italic;
 }
 
+/* ── Dot indicators (mobile only) ── */
+.calendar-cell-dots {
+	display: none;
+}
+
+.cal-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.cal-dot--weight   { background: #6b9fd4; }
+.cal-dot--calories { background: #d4934e; }
+.cal-dot--protein  { background: #4faa78; }
+.cal-dot--steps    { background: #8a7ec8; }
+.cal-dot--workout  { background: #c97070; }
+
+.dark .cal-dot--weight   { background: #5585bc; }
+.dark .cal-dot--calories { background: #c07a30; }
+.dark .cal-dot--protein  { background: #3d8a5e; }
+.dark .cal-dot--steps    { background: #6a5eab; }
+.dark .cal-dot--workout  { background: #ab4f4f; }
+
 /* ── Per-metric chip colours (light mode) ── */
 .calendar-metric--weight   { background: #dde8f6; }
 .calendar-metric--calories { background: #fdecd3; }
@@ -222,16 +247,29 @@
 
 	.calendar-cell {
 		padding: 3px 3px 4px;
-		gap: 2px;
-	}
-
-	.calendar-metric {
-		gap: 4px;
+		gap: 3px;
 	}
 
 	.calendar-weekday {
 		font-size: 9px;
 		padding: 1px 0;
+	}
+
+	/* Switch from text metrics to dot indicators */
+	.calendar-cell-metrics {
+		display: none;
+	}
+
+	.calendar-cell-dots {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+		align-content: flex-start;
+	}
+
+	.cal-dot {
+		width: 5px;
+		height: 5px;
 	}
 }
 
