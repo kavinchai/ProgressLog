@@ -67,7 +67,7 @@ beforeEach(() => {
 				dayType: 'training',
 				totalCalories: 2400,
 				totalProtein: 180,
-				meals: [],
+				meals: [{ id: 100, mealName: 'eggs', calories: 2400, proteinGrams: 180 }],
 			},
 		],
 		refetch: vi.fn(),
