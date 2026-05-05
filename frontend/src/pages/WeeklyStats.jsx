@@ -5,22 +5,10 @@ import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import DayDetail from "../components/DayDetail";
 import WeightLineChart from "../components/WeightLineChart";
-import { localDateStr, shortDate, avg } from "../utils/date";
+import { localDateStr, shortDate, avg, getCurrentWeek } from "../utils/date";
 import { buildDayRows } from "../utils/stats";
 import useWeightUnit from "../hooks/useWeightUnit";
 import "./WeeklyStats.css";
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-function getLast7Days() {
-	const days = [];
-	for (let i = 0; i <= 6; i++) {
-		const d = new Date();
-		d.setDate(d.getDate() - i);
-		days.push(localDateStr(d));
-	}
-	return days;
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -33,7 +21,7 @@ export default function WeeklyStats() {
 	const [expandedDay, setExpandedDay] = useState(null);
 	const { unit, toDisplay } = useWeightUnit();
 
-	const days = getLast7Days();
+	const days = getCurrentWeek();
 	const today = localDateStr(new Date());
 
 	const rows = buildDayRows(
@@ -56,7 +44,7 @@ export default function WeeklyStats() {
 			<div className="weekly-header">
 				<span className="weekly-title">Weekly Stats</span>
 				<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-					last 7 days
+					this week
 				</span>
 			</div>
 
@@ -184,12 +172,10 @@ export default function WeeklyStats() {
 					<div className="section-body">
 						<WeightLineChart
 							unit={unit}
-							data={[...days]
-								.reverse()
-								.map((date, i) => ({
-									label: shortDate(date),
-									weight: toDisplay([...weights].reverse()[i]),
-								}))}
+							data={days.map((date, i) => ({
+								label: shortDate(date),
+								weight: toDisplay(weights[i]),
+							}))}
 						/>
 					</div>
 				</div>

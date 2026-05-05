@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
   localDateStr,
   formatDate,
@@ -6,6 +6,7 @@ import {
   formatDateFull,
   shortDate,
   avg,
+  getCurrentWeek,
 } from '../utils/date';
 
 describe('localDateStr', () => {
@@ -72,6 +73,68 @@ describe('shortDate', () => {
   it('works for a Saturday', () => {
     // 2026-01-03 is a Saturday
     expect(shortDate('2026-01-03')).toBe('Sat 1/3');
+  });
+});
+
+describe('getCurrentWeek', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns 7 dates', () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 4, 6, 12, 0, 0) }); // Wed May 6
+    expect(getCurrentWeek()).toHaveLength(7);
+  });
+
+  it('starts on Sunday and ends on Saturday', () => {
+    // 2026-05-06 is a Wednesday → week is 2026-05-03 (Sun) to 2026-05-09 (Sat)
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 4, 6, 12, 0, 0) });
+    const week = getCurrentWeek();
+    expect(week[0]).toBe('2026-05-03');
+    expect(week[6]).toBe('2026-05-09');
+  });
+
+  it('returns dates in calendar order (Sun first, Sat last)', () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 4, 6, 12, 0, 0) });
+    const week = getCurrentWeek();
+    expect(week).toEqual([
+      '2026-05-03',
+      '2026-05-04',
+      '2026-05-05',
+      '2026-05-06',
+      '2026-05-07',
+      '2026-05-08',
+      '2026-05-09',
+    ]);
+  });
+
+  it('returns the same week when called from any day in that week', () => {
+    // From Sunday
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 4, 3, 12, 0, 0) });
+    const fromSun = getCurrentWeek();
+    vi.useRealTimers();
+    // From Saturday
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 4, 9, 12, 0, 0) });
+    const fromSat = getCurrentWeek();
+    expect(fromSun).toEqual(fromSat);
+    expect(fromSun[0]).toBe('2026-05-03');
+    expect(fromSun[6]).toBe('2026-05-09');
+  });
+
+  it('handles month rollover correctly', () => {
+    // 2026-05-01 is a Friday → week is 2026-04-26 (Sun) to 2026-05-02 (Sat)
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 4, 1, 12, 0, 0) });
+    const week = getCurrentWeek();
+    expect(week[0]).toBe('2026-04-26');
+    expect(week[6]).toBe('2026-05-02');
+  });
+
+  it('handles year rollover correctly', () => {
+    // 2025-12-31 is a Wednesday → week is 2025-12-28 (Sun) to 2026-01-03 (Sat)
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2025, 11, 31, 12, 0, 0) });
+    const week = getCurrentWeek();
+    expect(week[0]).toBe('2025-12-28');
+    expect(week[6]).toBe('2026-01-03');
   });
 });
 
