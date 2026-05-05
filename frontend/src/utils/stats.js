@@ -24,12 +24,13 @@ export function buildDayRows(dates, weightData, nutritionData, workoutData, step
     const daySessions    = workoutData.filter(x => x.sessionDate === date);
     const workoutEntry   = mergeWorkoutSessions(daySessions);
     const stepEntry      = stepData.find(x => x.logDate === date);
+    const hasMeals       = nutritionEntry && (nutritionEntry.meals?.length ?? 0) > 0;
     return {
       date,
       weightEntry, nutritionEntry, workoutEntry, stepEntry,
       weight:   weightEntry    ? parseFloat(weightEntry.weightLbs)       : null,
-      calories: nutritionEntry ? (nutritionEntry.totalCalories ?? null)   : null,
-      protein:  nutritionEntry ? (nutritionEntry.totalProtein  ?? null)   : null,
+      calories: hasMeals       ? (nutritionEntry.totalCalories ?? null)  : null,
+      protein:  hasMeals       ? (nutritionEntry.totalProtein  ?? null)  : null,
       steps:    stepEntry      ? stepEntry.steps                         : null,
       workout:  workoutEntry
         ? (workoutEntry.sessionName
