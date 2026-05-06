@@ -168,6 +168,31 @@ class ProgressServiceTest {
     }
 
     @Test
+    void getStrengthProgress_excludesCardioAndTimedExercises() {
+        WorkoutSession session = session(LocalDate.of(2026, 4, 1));
+        ExerciseSet runSet   = cardioSet(session, "Running", 1, "3.0", 1800); // cardio: has distanceMiles
+        ExerciseSet yogaSet  = timedSet(session,  "Yoga",    1, 3600);        // timed: has durationSeconds only
+        ExerciseSet benchSet = exerciseSet(session, "Bench Press", 1, 5, "135");
+
+        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
+                .thenReturn(List.of("Bench Press", "Running", "Yoga"));
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+                .thenReturn(List.of(benchSet));
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Running"))
+                .thenReturn(List.of(runSet));
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Yoga"))
+                .thenReturn(List.of(yogaSet));
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(eq(1L), argThat(
+                name -> !List.of("Bench Press", "Running", "Yoga").contains(name))))
+                .thenReturn(List.of());
+
+        List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
+
+        assertEquals(1, result.size());
+        assertEquals("Bench Press", result.get(0).getExerciseName());
+    }
+
+    @Test
     void getStrengthProgress_sortsByDateAscWhenAllElseEqual() {
         WorkoutSession earlier = session(LocalDate.of(2026, 3, 1));
         WorkoutSession later   = session(LocalDate.of(2026, 3, 5));
@@ -334,6 +359,18 @@ class ProgressServiceTest {
         es.setReps(reps);
         es.setWeightLbs(new BigDecimal(weight));
         es.setCompleted(true);
+        return es;
+    }
+
+    private ExerciseSet timedSet(WorkoutSession session, String name, int setNum, int duration) {
+        ExerciseSet es = new ExerciseSet();
+        es.setSession(session);
+        es.setExerciseName(name);
+        es.setSetNumber(setNum);
+        es.setReps(0);
+        es.setWeightLbs(BigDecimal.ZERO);
+        es.setCompleted(true);
+        es.setDurationSeconds(duration);
         return es;
     }
 }
