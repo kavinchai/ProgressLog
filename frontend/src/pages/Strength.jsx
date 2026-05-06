@@ -142,8 +142,9 @@ export default function Strength() {
   useEffect(() => {
     api.get('/progress/strength')
       .then((res) => {
-        setProgressData(res.data);
-        if (res.data.length > 0) setActiveName(res.data[0].exerciseName);
+        const sorted = [...res.data].sort((a, b) => b.data.length - a.data.length);
+        setProgressData(sorted);
+        if (sorted.length > 0) setActiveName(sorted[0].exerciseName);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));

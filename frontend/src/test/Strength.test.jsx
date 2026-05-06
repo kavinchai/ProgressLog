@@ -131,6 +131,32 @@ describe('Strength page — sidebar list', () => {
 		expect(within(sidebar).getByText(/155/)).toBeInTheDocument();
 		expect(within(sidebar).getByText(/195/)).toBeInTheDocument();
 	});
+
+	it('sorts exercises by session frequency descending (most sessions first)', async () => {
+		const frequencyData = [
+			{
+				exerciseName: 'Deadlift',
+				data: [
+					{ sessionDate: '2026-04-01', maxWeightLbs: 225, setCount: 3, repScheme: '5/5/5' },
+				],
+			},
+			{
+				exerciseName: 'Overhead Press',
+				data: [
+					{ sessionDate: '2026-04-01', maxWeightLbs: 95,  setCount: 3, repScheme: '8/8/8' },
+					{ sessionDate: '2026-04-08', maxWeightLbs: 100, setCount: 3, repScheme: '8/8/8' },
+					{ sessionDate: '2026-04-15', maxWeightLbs: 105, setCount: 3, repScheme: '8/8/8' },
+				],
+			},
+		];
+		mockApiGet.mockResolvedValue({ data: frequencyData });
+		render(<Strength />);
+		const sidebar = await screen.findByTestId('strength-sidebar');
+		const buttons = within(sidebar).getAllByRole('button');
+		// Overhead Press (3 sessions) must appear before Deadlift (1 session)
+		expect(buttons[0]).toHaveTextContent('Overhead Press');
+		expect(buttons[1]).toHaveTextContent('Deadlift');
+	});
 });
 
 describe('Strength page — stat row for active exercise', () => {
