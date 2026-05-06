@@ -178,6 +178,15 @@ export default function Strength() {
     );
   }
 
+  // Sidebar items: name + current max for each exercise
+  const sidebarItems = progressData.map((e) => {
+    const maxLbs = Math.max(...e.data.map(s => Number(s.maxWeightLbs)));
+    return {
+      name:    e.exerciseName,
+      maxDisp: toDisplay(maxLbs),
+    };
+  });
+
   // Sessions sorted by date descending for the table
   const sortedSessions = active
     ? [...active.data].sort((a, b) => b.sessionDate.localeCompare(a.sessionDate))
@@ -190,118 +199,134 @@ export default function Strength() {
         <p>Track max weight progression across your lifts</p>
       </div>
 
-      {/* Exercise pill selector */}
-      <div className="strength-pills" aria-label="Tracked exercises">
-        {progressData.map((e) => {
-          const isActive = e.exerciseName === activeName;
-          return (
-            <button
-              key={e.exerciseName}
-              type="button"
-              aria-pressed={isActive}
-              className={'strength-pill' + (isActive ? ' strength-pill-active' : '')}
-              onClick={() => setActiveName(e.exerciseName)}
-            >
-              {e.exerciseName}
-            </button>
-          );
-        })}
-      </div>
+      <div className="strength-layout">
+        {/* Sidebar list */}
+        <aside className="strength-sidebar" data-testid="strength-sidebar">
+          <div className="strength-sidebar-header">
+            <span className="strength-sidebar-title">Exercises</span>
+            <span className="strength-sidebar-count">{progressData.length}</span>
+          </div>
+          <ul className="strength-sidebar-list">
+            {sidebarItems.map((item) => {
+              const isActive = item.name === activeName;
+              return (
+                <li key={item.name}>
+                  <button
+                    type="button"
+                    aria-label={item.name}
+                    aria-pressed={isActive}
+                    className={'strength-sidebar-item' + (isActive ? ' strength-sidebar-item-active' : '')}
+                    onClick={() => setActiveName(item.name)}
+                  >
+                    <span className="strength-sidebar-item-name">{item.name}</span>
+                    <span className="strength-sidebar-item-meta" aria-hidden="true">
+                      {item.maxDisp} {unit}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
 
-      {/* Stat row */}
-      {stats && (
-        <div className="section-box strength-stats-box">
-          <div className="strength-stats-grid">
-            <Stat
-              label="current max"
-              value={`${stats.currentMax} ${unit}`}
-              testId="stat-current-max"
-              accent
-            />
-            <Stat
-              label="sessions"
-              value={stats.sessions}
-              testId="stat-sessions"
-            />
-            <Stat
-              label="improvement"
-              value={`${stats.improvement >= 0 ? '+' : ''}${stats.improvement} ${unit}`}
-              testId="stat-improvement"
-            />
-            <Stat
-              label="last trained"
-              value={stats.lastTrained}
-              testId="stat-last-trained"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Chart */}
-      {active && active.data.length > 0 && (
-        <div className="section-box">
-          <div className="section-header">
-            <span className="section-title">Weight Progression</span>
-            <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
-              PR highlighted
-            </span>
-          </div>
-          <div className="section-body">
-            <StrengthChart
-              sessions={active.data}
-              prWeightLbs={stats?.prWeightLbs}
-              unit={unit}
-              toDisplay={toDisplay}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Session history */}
-      {active && (
-        <div className="section-box">
-          <div className="section-header">
-            <span className="section-title">Session History</span>
-            <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
-              {sortedSessions.length} {sortedSessions.length === 1 ? 'session' : 'sessions'}
-            </span>
-          </div>
-          <div className="section-body" style={{ padding: 0 }}>
-            <div className="strength-table-wrap">
-              <table className="strength-table" data-testid="session-history-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Max Weight</th>
-                    <th>Sets</th>
-                    <th>Rep Scheme</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedSessions.map((s) => {
-                    const isPR = stats && Number(s.maxWeightLbs) === stats.prWeightLbs
-                                 && s.sessionDate === stats.prDate;
-                    return (
-                      <tr
-                        key={`${s.sessionDate}-${s.maxWeightLbs}`}
-                        className={isPR ? 'strength-pr-row' : ''}
-                      >
-                        <td>{s.sessionDate}</td>
-                        <td className="strength-cell-weight">
-                          {toDisplay(Number(s.maxWeightLbs))} {unit}
-                          {isPR && <span className="strength-pr-tag">PR</span>}
-                        </td>
-                        <td>{s.setCount}</td>
-                        <td className="strength-cell-reps">{s.repScheme}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        {/* Detail panel */}
+        <div className="strength-detail">
+          {/* Stat row */}
+          {stats && (
+            <div className="section-box strength-stats-box">
+              <div className="strength-stats-grid">
+                <Stat
+                  label="current max"
+                  value={`${stats.currentMax} ${unit}`}
+                  testId="stat-current-max"
+                  accent
+                />
+                <Stat
+                  label="sessions"
+                  value={stats.sessions}
+                  testId="stat-sessions"
+                />
+                <Stat
+                  label="improvement"
+                  value={`${stats.improvement >= 0 ? '+' : ''}${stats.improvement} ${unit}`}
+                  testId="stat-improvement"
+                />
+                <Stat
+                  label="last trained"
+                  value={stats.lastTrained}
+                  testId="stat-last-trained"
+                />
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Chart */}
+          {active && active.data.length > 0 && (
+            <div className="section-box">
+              <div className="section-header">
+                <span className="section-title">Weight Progression</span>
+                <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
+                  PR highlighted
+                </span>
+              </div>
+              <div className="section-body">
+                <StrengthChart
+                  sessions={active.data}
+                  prWeightLbs={stats?.prWeightLbs}
+                  unit={unit}
+                  toDisplay={toDisplay}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Session history */}
+          {active && (
+            <div className="section-box">
+              <div className="section-header">
+                <span className="section-title">Session History</span>
+                <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
+                  {sortedSessions.length} {sortedSessions.length === 1 ? 'session' : 'sessions'}
+                </span>
+              </div>
+              <div className="section-body" style={{ padding: 0 }}>
+                <div className="strength-table-wrap">
+                  <table className="strength-table" data-testid="session-history-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Max Weight</th>
+                        <th>Sets</th>
+                        <th>Rep Scheme</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedSessions.map((s) => {
+                        const isPR = stats && Number(s.maxWeightLbs) === stats.prWeightLbs
+                                     && s.sessionDate === stats.prDate;
+                        return (
+                          <tr
+                            key={`${s.sessionDate}-${s.maxWeightLbs}`}
+                            className={isPR ? 'strength-pr-row' : ''}
+                          >
+                            <td>{s.sessionDate}</td>
+                            <td className="strength-cell-weight">
+                              {toDisplay(Number(s.maxWeightLbs))} {unit}
+                              {isPR && <span className="strength-pr-tag">PR</span>}
+                            </td>
+                            <td>{s.setCount}</td>
+                            <td className="strength-cell-reps">{s.repScheme}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
