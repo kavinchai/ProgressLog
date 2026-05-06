@@ -1,11 +1,12 @@
 /**
- * Strength page — redesign tests.
+ * Strength page — sidebar list + detail panel layout.
  *
  * The page is structured as:
- *   1. Exercise pill selector (one pill per tracked lift)
- *   2. Stat row for the active lift (current max, sessions, improvement, last trained)
- *   3. Weight progression chart (always visible — not behind a toggle)
- *   4. Session history table sorted by date descending; PR row highlighted
+ *   1. Sidebar list of tracked exercises (scrollable to support many entries)
+ *   2. Detail panel for the active lift, containing:
+ *      - Stat row (current max, sessions, improvement, last trained)
+ *      - Weight progression chart (always visible — not behind a toggle)
+ *      - Session history table sorted by date descending; PR row highlighted
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
@@ -88,12 +89,12 @@ describe('Strength page — states', () => {
 	});
 });
 
-describe('Strength page — pill selector', () => {
+describe('Strength page — sidebar list', () => {
 	beforeEach(() => {
 		mockApiGet.mockResolvedValue({ data: STRENGTH_DATA });
 	});
 
-	it('renders a pill button for each tracked exercise', async () => {
+	it('renders a list item button for each tracked exercise', async () => {
 		render(<Strength />);
 		await screen.findByRole('button', { name: 'Bench Press' });
 		expect(screen.getByRole('button', { name: 'Squat' })).toBeInTheDocument();
@@ -101,19 +102,34 @@ describe('Strength page — pill selector', () => {
 
 	it('auto-selects the first exercise on mount', async () => {
 		render(<Strength />);
-		const benchPill = await screen.findByRole('button', { name: 'Bench Press' });
-		expect(benchPill).toHaveAttribute('aria-pressed', 'true');
-		const squatPill = screen.getByRole('button', { name: 'Squat' });
-		expect(squatPill).toHaveAttribute('aria-pressed', 'false');
+		const bench = await screen.findByRole('button', { name: 'Bench Press' });
+		expect(bench).toHaveAttribute('aria-pressed', 'true');
+		const squat = screen.getByRole('button', { name: 'Squat' });
+		expect(squat).toHaveAttribute('aria-pressed', 'false');
 	});
 
-	it('switches active exercise when a different pill is clicked', async () => {
+	it('switches active exercise when a different list item is clicked', async () => {
 		render(<Strength />);
-		const squatPill = await screen.findByRole('button', { name: 'Squat' });
-		await userEvent.click(squatPill);
-		expect(squatPill).toHaveAttribute('aria-pressed', 'true');
-		const benchPill = screen.getByRole('button', { name: 'Bench Press' });
-		expect(benchPill).toHaveAttribute('aria-pressed', 'false');
+		const squat = await screen.findByRole('button', { name: 'Squat' });
+		await userEvent.click(squat);
+		expect(squat).toHaveAttribute('aria-pressed', 'true');
+		const bench = screen.getByRole('button', { name: 'Bench Press' });
+		expect(bench).toHaveAttribute('aria-pressed', 'false');
+	});
+
+	it('shows the total exercise count in the sidebar header', async () => {
+		render(<Strength />);
+		const sidebar = await screen.findByTestId('strength-sidebar');
+		// 2 exercises in STRENGTH_DATA
+		expect(within(sidebar).getByText(/2/)).toBeInTheDocument();
+	});
+
+	it('shows current max next to each exercise name in the sidebar', async () => {
+		render(<Strength />);
+		const sidebar = await screen.findByTestId('strength-sidebar');
+		// Bench Press current max = 155, Squat current max = 195
+		expect(within(sidebar).getByText(/155/)).toBeInTheDocument();
+		expect(within(sidebar).getByText(/195/)).toBeInTheDocument();
 	});
 });
 
