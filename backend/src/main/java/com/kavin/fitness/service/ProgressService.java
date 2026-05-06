@@ -45,6 +45,7 @@ public class ProgressService {
             List<ExerciseSet> sets =
                     exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, name);
             if (sets.isEmpty()) continue;
+            if (sets.stream().anyMatch(s -> s.getDistanceMiles() != null || s.getDurationSeconds() != null)) continue;
 
             // Group by session date, then by weight descending
             Map<LocalDate, List<ExerciseSet>> byDate = sets.stream()
