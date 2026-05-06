@@ -1,318 +1,411 @@
-/* ── Header ─────────────────────────────────────────────────────────── */
+/* ── Page wrapper ───────────────────────────────────────────────────── */
+
+.cardio-page {
+  max-width: 1100px;
+  width: 100%;
+}
 
 .cardio-header {
-	margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-lg);
 }
 
 .cardio-header h1 {
-	font-size: var(--fs-2xl);
-	font-weight: var(--fw-bold);
-	letter-spacing: -0.02em;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
 }
 
 .cardio-header p {
-	color: var(--muted);
-	margin-top: var(--space-xs);
-	font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-top: var(--space-xs);
+  font-size: var(--fs-sm);
 }
 
-/* ── Summary stat cards ─────────────────────────────────────────────── */
+/* ── Two-column layout ──────────────────────────────────────────────── */
 
-.cardio-summary {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-	gap: var(--space-md);
-	margin-bottom: var(--space-xl);
+.cardio-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: var(--space-lg);
+  align-items: flex-start;
 }
 
-.cardio-stat-card {
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-top: 3px solid var(--color-primary);
-	border-radius: var(--radius-lg);
-	padding: var(--space-lg);
-	box-shadow: var(--shadow-xs);
+/* ── Sidebar ────────────────────────────────────────────────────────── */
+
+.cardio-sidebar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+  position: sticky;
+  top: var(--space-md);
+  max-height: calc(100vh - var(--space-2xl));
+  display: flex;
+  flex-direction: column;
+}
+
+.cardio-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-dim);
+  background: var(--bg);
+}
+
+.cardio-sidebar-title {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.03em;
+  text-transform: capitalize;
+  color: var(--muted);
+}
+
+.cardio-sidebar-count {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 1px 8px;
+}
+
+.cardio-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.cardio-sidebar-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font);
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.cardio-sidebar-item:hover {
+  background: var(--hover-bg);
+}
+
+.cardio-sidebar-item-active,
+.cardio-sidebar-item-active:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.cardio-sidebar-item-name {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--fg);
+  line-height: 1.3;
+}
+
+.cardio-sidebar-item-active .cardio-sidebar-item-name {
+  color: var(--accent);
+}
+
+.cardio-sidebar-item-meta {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
+}
+
+/* ── Detail panel ───────────────────────────────────────────────────── */
+
+.cardio-detail {
+  min-width: 0;
+}
+
+/* ── Time range row ─────────────────────────────────────────────────── */
+
+.cardio-range-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.cardio-range-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.cardio-range-buttons {
+  display: inline-flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.cardio-range-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  font-family: var(--font);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  border-right: 1px solid var(--border-dim);
+}
+
+.cardio-range-btn:last-child {
+  border-right: none;
+}
+
+.cardio-range-btn:hover {
+  background: var(--hover-bg);
+  color: var(--fg);
+}
+
+.cardio-range-btn-active,
+.cardio-range-btn-active:hover {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* ── Stats row ──────────────────────────────────────────────────────── */
+
+.cardio-stats-box {
+  margin-bottom: var(--space-lg);
+}
+
+.cardio-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0;
+}
+
+.cardio-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  border-right: 1px solid var(--border-dim);
+}
+
+.cardio-stat:last-child {
+  border-right: none;
 }
 
 .cardio-stat-label {
-	font-size: var(--fs);
-	font-weight: var(--fw-semibold);
-	color: var(--fg);
-	margin-bottom: var(--space-md);
-}
-
-.cardio-stat-grid {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: var(--space-sm);
-}
-
-.cardio-stat-item {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--muted);
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
 }
 
 .cardio-stat-value {
-	font-size: var(--fs-xl);
-	font-weight: var(--fw-bold);
-	color: var(--fg);
-	line-height: 1.2;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-semibold);
+  color: var(--fg);
+  line-height: 1.2;
 }
 
-.cardio-stat-unit {
-	font-size: var(--fs-xs);
-	color: var(--muted);
-	margin-top: 2px;
+.cardio-stat-value-accent {
+  color: var(--accent);
 }
 
-/* ── Detail card ────────────────────────────────────────────────────── */
+/* ── Session log ────────────────────────────────────────────────────── */
 
-.cardio-detail-card {
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-lg);
-	padding: var(--space-lg);
-	box-shadow: var(--shadow-xs);
+.cardio-session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.cardio-detail-title {
-	font-size: var(--fs-lg);
-	font-weight: var(--fw-semibold);
-	color: var(--fg);
-	margin-bottom: var(--space-lg);
+.cardio-session {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) 1fr 1fr 1fr;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-dim);
+  font-size: var(--fs-sm);
 }
 
-/* ── Per-exercise section ───────────────────────────────────────────── */
-
-.cardio-section {
-	margin-bottom: var(--space-xl);
+.cardio-session:last-child {
+  border-bottom: none;
 }
 
-.cardio-section:last-child {
-	margin-bottom: 0;
+.cardio-session-pr {
+  background: var(--accent-light);
 }
 
-.cardio-section-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: var(--space-md);
-	padding-bottom: var(--space-sm);
-	border-bottom: 1px solid var(--border-dim);
-	cursor: pointer;
+.cardio-session-date {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.01em;
 }
 
-.cardio-section-name {
-	font-size: var(--fs-lg);
-	font-weight: var(--fw-semibold);
-	color: var(--fg);
+.cardio-session-distance {
+  font-weight: var(--fw-semibold);
+  color: var(--fg);
 }
 
-.cardio-section-badges {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-	justify-content: flex-end;
+.cardio-session-duration {
+  color: var(--fg);
 }
 
-.cardio-badge {
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-semibold);
-	padding: 2px 10px;
-	border-radius: var(--radius-full);
+.cardio-session-pace {
+  color: var(--accent);
+  font-weight: var(--fw-semibold);
+  text-align: right;
 }
 
-.cardio-badge-pace {
-	color: var(--info);
-	background: var(--info-light);
+.cardio-pr-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.05em;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
 }
 
-.cardio-badge-dist {
-	color: var(--success);
-	background: var(--success-light);
+/* ── Chart tooltip & PR tag (used by Recharts custom Tooltip) ───────── */
+
+.chart-tooltip {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--fs-sm);
 }
 
-.cardio-chevron {
-	color: var(--muted);
-	font-size: var(--fs-xs);
+.chart-tooltip-label {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  margin-bottom: 2px;
 }
 
-/* ── Charts ─────────────────────────────────────────────────────────── */
-
-.cardio-charts {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: var(--space-lg);
-	margin-bottom: var(--space-md);
+.chart-tooltip-value {
+  color: var(--fg);
+  font-weight: var(--fw-semibold);
 }
 
-.cardio-chart-group {
-	min-width: 0;
+.chart-pr-tag {
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.05em;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--radius-sm);
 }
 
-.cardio-chart-label {
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-semibold);
-	color: var(--muted);
-	text-transform: capitalize;
-	letter-spacing: 0.02em;
-	margin-bottom: var(--space-sm);
+/* ── No-data / Empty / loading / error ──────────────────────────────── */
+
+.cardio-no-data {
+  text-align: center;
+  color: var(--muted);
+  padding: var(--space-lg);
 }
-
-.cardio-tooltip {
-	background: var(--bg-card);
-	border: 1px solid var(--border-color);
-	padding: 6px 10px;
-	font-size: var(--fs-sm);
-	border-radius: var(--radius-sm);
-}
-
-/* ── Table ──────────────────────────────────────────────────────────── */
-
-.cardio-table-wrapper {
-	overflow-x: auto;
-}
-
-.cardio-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.cardio-table th,
-.cardio-table td {
-	padding: 8px 12px 8px 0;
-	text-align: left;
-	font-size: var(--fs-sm);
-}
-
-.cardio-table th {
-	color: var(--muted);
-	text-transform: capitalize;
-	letter-spacing: 0.02em;
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-semibold);
-	border-bottom: 1px solid var(--border-dim);
-	padding-bottom: 10px;
-}
-
-.cardio-table td {
-	border-bottom: 1px solid var(--border-dim);
-}
-
-.cardio-table th:last-child,
-.cardio-table td:last-child {
-	padding-right: 0;
-}
-
-.cardio-cell-distance {
-	color: var(--color-primary-light);
-	font-weight: 600;
-}
-
-.cardio-cell-pace {
-	color: var(--color-info);
-	font-weight: 600;
-}
-
-/* ── Empty state ────────────────────────────────────────────────────── */
 
 .cardio-empty {
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-lg);
-	padding: var(--space-xl) var(--space-lg);
-	text-align: center;
-	box-shadow: var(--shadow-xs);
-}
-
-.cardio-empty p {
-	color: var(--fg);
-	font-size: var(--fs);
-	margin-bottom: var(--space-xs);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--muted);
+  box-shadow: var(--shadow-xs);
 }
 
 .cardio-empty-hint {
-	color: var(--muted);
-	font-size: var(--fs-sm);
+  margin-top: var(--space-sm);
+  font-size: var(--fs-sm);
+  color: var(--muted);
 }
-
-/* ── Loading / Error (shared with Strength) ─────────────────────────── */
 
 .loading-state,
 .error-state {
-	padding: var(--space-xl);
-	color: var(--muted);
-	font-size: var(--fs);
+  padding: var(--space-xl);
+  color: var(--muted);
+  font-size: var(--fs);
 }
 
 .error-state {
-	color: var(--danger);
+  color: var(--danger);
 }
 
-/* ── Responsive ─────────────────────────────────────────────────────── */
+/* ── Mobile ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-	.cardio-summary {
-		grid-template-columns: 1fr;
-	}
+  .cardio-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
 
-	.cardio-stat-grid {
-		grid-template-columns: repeat(3, 1fr);
-		gap: var(--space-xs);
-	}
+  .cardio-sidebar {
+    position: static;
+    max-height: 240px;
+  }
 
-	.cardio-stat-value {
-		font-size: var(--fs-lg);
-	}
-
-	.cardio-detail-card {
-		padding: var(--space-md);
-	}
-
-	.cardio-charts {
-		grid-template-columns: 1fr;
-		gap: var(--space-md);
-	}
-
-	.cardio-section-header {
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.cardio-section-badges {
-		width: 100%;
-		justify-content: flex-start;
-	}
-
-	.cardio-table th,
-	.cardio-table td {
-		padding: 6px 8px 6px 0;
-		font-size: var(--fs-xs);
-	}
+  .cardio-range-row {
+    justify-content: flex-start;
+  }
 }
 
-@media (max-width: 480px) {
-	.cardio-stat-card {
-		padding: var(--space-md);
-	}
+@media (max-width: 640px) {
+  .cardio-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-	.cardio-stat-grid {
-		gap: 4px;
-	}
+  .cardio-stat {
+    padding: 10px 12px;
+  }
 
-	.cardio-stat-value {
-		font-size: var(--fs);
-	}
+  .cardio-stat:nth-child(2) {
+    border-right: none;
+  }
 
-	.cardio-stat-unit {
-		font-size: 10px;
-	}
+  .cardio-stat:nth-child(-n+2) {
+    border-bottom: 1px solid var(--border-dim);
+  }
 
-	.cardio-badge {
-		font-size: 10px;
-		padding: 2px 6px;
-	}
+  .cardio-stat-value {
+    font-size: var(--fs-lg);
+  }
+
+  .cardio-session {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xs) var(--space-sm);
+    padding: 10px 12px;
+  }
+
+  .cardio-session-date {
+    grid-column: 1 / -1;
+  }
+
+  .cardio-session-pace {
+    text-align: right;
+  }
 }
