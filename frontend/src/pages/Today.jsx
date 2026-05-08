@@ -125,7 +125,6 @@ export default function Today() {
   const { unit, toDisplay } = useWeightUnit();
 
   const [modal,           setModal]           = useState(null);
-  const [showPRHistory,   setShowPRHistory]    = useState(false);
   const [editingEntry,    setEditingEntry]     = useState(null);
   const [editExercise,    setEditExercise]     = useState(null);
   const [editMeal,        setEditMeal]         = useState(null);
@@ -370,29 +369,6 @@ export default function Today() {
             )
           ) : (
             <span className="muted">No entry for today.</span>
-          )}
-          {(prsData ?? []).length > 0 && (
-            <div className="pr-history">
-              <button className="pr-history-toggle" onClick={() => setShowPRHistory(v => !v)}>
-                {showPRHistory ? '▾' : '▸'} Personal Records
-              </button>
-              {showPRHistory && (
-                <table className="pr-history-table">
-                  <thead>
-                    <tr><th>Exercise</th><th>Weight</th><th>Date</th></tr>
-                  </thead>
-                  <tbody>
-                    {(prsData ?? []).map(pr => (
-                      <tr key={pr.exerciseName}>
-                        <td>{pr.exerciseName}</td>
-                        <td>{toDisplay(pr.maxWeightLbs)} {unit}</td>
-                        <td className="muted">{pr.achievedDate}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
           )}
         </div>
       </div>
