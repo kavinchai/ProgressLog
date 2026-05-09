@@ -16,6 +16,7 @@ desktop.ini
 secrets/
 
 # ── Frontend (Node / Vite / React) ──────────────────
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
