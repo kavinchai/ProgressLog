@@ -121,17 +121,49 @@ public class ProgressService {
     }
 
     public List<PREntryDTO> getPRs(Long userId) {
-        List<Object[]> rows = exerciseSetRepository.findMaxWeightPerExercise(userId);
-        return rows.stream()
-                .map(row -> {
-                    String name         = (String)     row[0];
-                    java.math.BigDecimal maxWeight = (java.math.BigDecimal) row[1];
-                    java.time.LocalDate date = exerciseSetRepository
-                            .findFirstDateForMaxWeight(userId, name, maxWeight);
-                    return new PREntryDTO(name, maxWeight, date);
-                })
-                .sorted(java.util.Comparator.comparing(PREntryDTO::getExerciseName))
-                .collect(java.util.stream.Collectors.toList());
+        List<String> exerciseNames = exerciseSetRepository.findDistinctExerciseNamesByUserId(userId);
+        List<PREntryDTO> result = new ArrayList<>();
+
+        for (String name : exerciseNames) {
+            List<ExerciseSet> sets = exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, name);
+            if (sets.isEmpty()) continue;
+            // Skip cardio/timed — PRs only apply to weighted lifts
+            if (sets.stream().anyMatch(s -> s.getDistanceMiles() != null || s.getDurationSeconds() != null)) continue;
+
+            // Group by (date, weight). Each group is one "candidate": (weight, setCount, maxRepsInSet, date)
+            Map<LocalDate, Map<BigDecimal, List<ExerciseSet>>> byDateAndWeight = sets.stream()
+                    .collect(Collectors.groupingBy(
+                            s -> s.getSession().getSessionDate(),
+                            Collectors.groupingBy(ExerciseSet::getWeightLbs)));
+
+            PREntryDTO best = null;
+            for (var dateEntry : byDateAndWeight.entrySet()) {
+                LocalDate date = dateEntry.getKey();
+                for (var weightEntry : dateEntry.getValue().entrySet()) {
+                    List<ExerciseSet> group = weightEntry.getValue();
+                    int setCount = group.size();
+                    int maxReps  = group.stream().mapToInt(ExerciseSet::getReps).max().orElse(0);
+                    PREntryDTO candidate = new PREntryDTO(name, weightEntry.getKey(), setCount, maxReps, date);
+                    if (best == null || prComparator().compare(candidate, best) < 0) {
+                        best = candidate;
+                    }
+                }
+            }
+            if (best != null) result.add(best);
+        }
+
+        result.sort(Comparator.comparing(PREntryDTO::getExerciseName));
+        return result;
+    }
+
+    /** Ranks PR candidates: heavier weight first, then more sets, then higher single-set reps,
+     *  with ties broken by earliest date. Use with `Stream.min` or as a sort comparator. */
+    private static Comparator<PREntryDTO> prComparator() {
+        return Comparator
+                .comparing(PREntryDTO::getMaxWeightLbs, Comparator.reverseOrder())
+                .thenComparingInt((PREntryDTO p) -> -p.getSetCount())
+                .thenComparingInt((PREntryDTO p) -> -p.getMaxRepsInSet())
+                .thenComparing(PREntryDTO::getAchievedDate);
     }
 
     public List<MilestoneDTO> getMilestones(Long userId) {

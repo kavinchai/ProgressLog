@@ -125,7 +125,6 @@ export default function Today() {
   const { unit, toDisplay } = useWeightUnit();
 
   const [modal,           setModal]           = useState(null);
-  const [showPRHistory,   setShowPRHistory]    = useState(false);
   const [editingEntry,    setEditingEntry]     = useState(null);
   const [editExercise,    setEditExercise]     = useState(null);
   const [editMeal,        setEditMeal]         = useState(null);
@@ -165,14 +164,37 @@ export default function Today() {
     ? groupByExercise(todayWorkoutEntry.exerciseSets)
     : [];
 
+  // PR comparison: lexicographic (weight, setCount, maxRepsInSet). Higher is better.
+  // Returns >0 if a beats b, <0 if a loses to b, 0 if tied.
+  function comparePRTuple(a, b) {
+    if (a.weight !== b.weight) return a.weight - b.weight;
+    if (a.setCount !== b.setCount) return a.setCount - b.setCount;
+    return a.maxRepsInSet - b.maxRepsInSet;
+  }
+
+  function tupleForGroup(g) {
+    return {
+      weight: g.weight,
+      setCount: g.sets.length,
+      maxRepsInSet: g.sets.reduce((m, s) => Math.max(m, s.reps ?? 0), 0),
+    };
+  }
+
   const prMap = Object.fromEntries(
-    (prsData ?? []).map(pr => [pr.exerciseName, parseFloat(pr.maxWeightLbs)])
+    (prsData ?? []).map(pr => [pr.exerciseName, {
+      weight: parseFloat(pr.maxWeightLbs),
+      setCount: pr.setCount ?? 0,
+      maxRepsInSet: pr.maxRepsInSet ?? 0,
+    }])
   );
 
-  const todayMaxByExercise = {};
+  // Find today's best tuple per exercise (across its weight-groups).
+  const todayBestByExercise = {};
   for (const g of exerciseGroups) {
-    if (todayMaxByExercise[g.name] == null || g.weight > todayMaxByExercise[g.name]) {
-      todayMaxByExercise[g.name] = g.weight;
+    const tuple = tupleForGroup(g);
+    const current = todayBestByExercise[g.name];
+    if (current == null || comparePRTuple(tuple, current) > 0) {
+      todayBestByExercise[g.name] = tuple;
     }
   }
 
@@ -378,7 +400,12 @@ export default function Today() {
             exerciseGroups.length > 0 ? (
               <div className="exercise-cards">
                 {exerciseGroups.map(g => {
-                  const isPR = g.weight === todayMaxByExercise[g.name] && g.weight >= (prMap[g.name] ?? g.weight);
+                  const groupTuple = tupleForGroup(g);
+                  const todayBest  = todayBestByExercise[g.name];
+                  const allTimePR  = prMap[g.name];
+                  const isBestOfDay = comparePRTuple(groupTuple, todayBest) === 0;
+                  const beatsAllTime = allTimePR == null || comparePRTuple(todayBest, allTimePR) >= 0;
+                  const isPR = isBestOfDay && beatsAllTime;
                   return (
                     <ExerciseCard
                       key={`${g.name}-${g.weight}`}
@@ -408,29 +435,6 @@ export default function Today() {
             )
           ) : (
             <span className="muted">No entry for today.</span>
-          )}
-          {(prsData ?? []).length > 0 && (
-            <div className="pr-history">
-              <button className="pr-history-toggle" onClick={() => setShowPRHistory(v => !v)}>
-                {showPRHistory ? '▾' : '▸'} Personal Records
-              </button>
-              {showPRHistory && (
-                <table className="pr-history-table">
-                  <thead>
-                    <tr><th>Exercise</th><th>Weight</th><th>Date</th></tr>
-                  </thead>
-                  <tbody>
-                    {(prsData ?? []).map(pr => (
-                      <tr key={pr.exerciseName}>
-                        <td>{pr.exerciseName}</td>
-                        <td>{toDisplay(pr.maxWeightLbs)} {unit}</td>
-                        <td className="muted">{pr.achievedDate}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
           )}
         </div>
       </div>
