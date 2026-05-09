@@ -260,25 +260,79 @@ describe('Today — workout display', () => {
     expect(editButtons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('shows a PR badge when the exercise weight equals the all-time PR', () => {
-    // Use a single-exercise workout so only one PR badge can possibly appear
+  it('shows a PR badge when today ties the all-time PR tuple', () => {
     const singleExercise = {
       id: 10, sessionDate: TODAY, sessionName: 'Push',
       exerciseSets: [{ id: 1, exerciseName: 'Bench Press', setNumber: 1, reps: 8, weightLbs: 135 }],
     };
-    const prs = [{ exerciseName: 'Bench Press', maxWeightLbs: '135', achievedDate: TODAY }];
+    const prs = [{ exerciseName: 'Bench Press', maxWeightLbs: '135', setCount: 1, maxRepsInSet: 8, achievedDate: TODAY }];
     setup({ workouts: [singleExercise], prs });
     render(<Today />);
     expect(screen.getByText('PR')).toBeInTheDocument();
   });
 
   it('does NOT show a PR badge when weight is below the all-time PR', () => {
-    // Provide PRs for ALL exercises so none auto-badge (prMap defaults to current weight when absent)
     const prs = [
-      { exerciseName: 'Bench Press', maxWeightLbs: '200', achievedDate: '2025-01-01' },
-      { exerciseName: 'OHP',         maxWeightLbs: '150', achievedDate: '2025-01-01' },
+      { exerciseName: 'Bench Press', maxWeightLbs: '200', setCount: 3, maxRepsInSet: 5, achievedDate: '2025-01-01' },
+      { exerciseName: 'OHP',         maxWeightLbs: '150', setCount: 3, maxRepsInSet: 5, achievedDate: '2025-01-01' },
     ];
     setup({ workouts: [WORKOUT_ENTRY], prs });
+    render(<Today />);
+    expect(screen.queryByText('PR')).not.toBeInTheDocument();
+  });
+
+  it('shows a PR badge when same weight but more sets than the all-time PR', () => {
+    const singleExercise = {
+      id: 10, sessionDate: TODAY, sessionName: 'Push',
+      exerciseSets: [
+        { id: 1, exerciseName: 'Bench Press', setNumber: 1, reps: 5, weightLbs: 135 },
+        { id: 2, exerciseName: 'Bench Press', setNumber: 2, reps: 5, weightLbs: 135 },
+        { id: 3, exerciseName: 'Bench Press', setNumber: 3, reps: 5, weightLbs: 135 },
+      ],
+    };
+    // Old PR: same weight, but only 2 sets
+    const prs = [{ exerciseName: 'Bench Press', maxWeightLbs: '135', setCount: 2, maxRepsInSet: 5, achievedDate: '2025-01-01' }];
+    setup({ workouts: [singleExercise], prs });
+    render(<Today />);
+    expect(screen.getByText('PR')).toBeInTheDocument();
+  });
+
+  it('shows a PR badge when same weight + sets but higher max reps in any set', () => {
+    const singleExercise = {
+      id: 10, sessionDate: TODAY, sessionName: 'Push',
+      exerciseSets: [
+        { id: 1, exerciseName: 'Bench Press', setNumber: 1, reps: 10, weightLbs: 135 }, // 10 max
+        { id: 2, exerciseName: 'Bench Press', setNumber: 2, reps: 3,  weightLbs: 135 },
+      ],
+    };
+    // Old PR: same weight, same set count, but max reps in any single set was 5
+    const prs = [{ exerciseName: 'Bench Press', maxWeightLbs: '135', setCount: 2, maxRepsInSet: 5, achievedDate: '2025-01-01' }];
+    setup({ workouts: [singleExercise], prs });
+    render(<Today />);
+    expect(screen.getByText('PR')).toBeInTheDocument();
+  });
+
+  it('does NOT show a PR badge when same weight but fewer sets than the all-time PR', () => {
+    const singleExercise = {
+      id: 10, sessionDate: TODAY, sessionName: 'Push',
+      exerciseSets: [{ id: 1, exerciseName: 'Bench Press', setNumber: 1, reps: 8, weightLbs: 135 }],
+    };
+    const prs = [{ exerciseName: 'Bench Press', maxWeightLbs: '135', setCount: 3, maxRepsInSet: 5, achievedDate: '2025-01-01' }];
+    setup({ workouts: [singleExercise], prs });
+    render(<Today />);
+    expect(screen.queryByText('PR')).not.toBeInTheDocument();
+  });
+
+  it('does NOT show a PR badge when same weight + sets but lower max reps in any set', () => {
+    const singleExercise = {
+      id: 10, sessionDate: TODAY, sessionName: 'Push',
+      exerciseSets: [
+        { id: 1, exerciseName: 'Bench Press', setNumber: 1, reps: 4, weightLbs: 135 },
+        { id: 2, exerciseName: 'Bench Press', setNumber: 2, reps: 4, weightLbs: 135 },
+      ],
+    };
+    const prs = [{ exerciseName: 'Bench Press', maxWeightLbs: '135', setCount: 2, maxRepsInSet: 6, achievedDate: '2025-01-01' }];
+    setup({ workouts: [singleExercise], prs });
     render(<Today />);
     expect(screen.queryByText('PR')).not.toBeInTheDocument();
   });

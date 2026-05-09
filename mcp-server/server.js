@@ -516,7 +516,7 @@ Examples:
         return { content: [{ type: 'text', text: 'No personal records yet.' }] };
       }
       const lines = prs.map(pr =>
-        `• ${pr.exerciseName}: ${parseFloat(pr.maxWeightLbs)} lbs (${pr.achievedDate})`
+        `• ${pr.exerciseName}: ${parseFloat(pr.maxWeightLbs)} lbs × ${pr.setCount} set${pr.setCount === 1 ? '' : 's'} (top set ${pr.maxRepsInSet} reps, ${pr.achievedDate})`
       );
       return {
         content: [{ type: 'text', text: `🏆 Personal Records:\n${lines.join('\n')}` }],
