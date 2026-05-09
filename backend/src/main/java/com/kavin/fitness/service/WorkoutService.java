@@ -110,6 +110,7 @@ public class WorkoutService {
     @Transactional
     public WorkoutSessionDTO updateSession(Long sessionId, Long userId, WorkoutSessionRequest request) {
         WorkoutSession session = resolveSession(sessionId, userId);
+        session.setSessionDate(request.getSessionDate());
         session.setSessionName(request.getSessionName());
         session.getExerciseSets().clear();
         workoutSessionRepository.flush();

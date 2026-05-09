@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 
-vi.mock('../api', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('../api', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
 vi.mock('../components/WorkoutBuilderModal.css', () => ({}));
 vi.mock('../components/Modal.css', () => ({}));
 
@@ -191,6 +191,80 @@ describe('WorkoutBuilderModal — prefilled from template', () => {
     );
     expect(screen.getAllByDisplayValue('225')).toHaveLength(2);
     expect(screen.getAllByDisplayValue('5')).toHaveLength(2);
+  });
+});
+
+describe('WorkoutBuilderModal — editing an existing session', () => {
+  const existingSession = {
+    id: 10,
+    sessionDate: '2026-01-05',
+    sessionName: 'Push',
+    exerciseSets: [
+      { id: 1, exerciseName: 'Bench Press', setNumber: 1, reps: 8, weightLbs: 135 },
+      { id: 2, exerciseName: 'Bench Press', setNumber: 2, reps: 6, weightLbs: 140 },
+    ],
+  };
+
+  it('renders edit title and pre-fills session fields', () => {
+    render(
+      <WorkoutBuilderModal
+        existingSession={existingSession}
+        onClose={onClose}
+        onSaved={onSaved}
+      />
+    );
+
+    expect(screen.getByText(/Edit Workout/)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2026-01-05')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Push')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Bench Press')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('135')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('140')).toBeInTheDocument();
+  });
+
+  it('can open with a blank exercise appended for quick add', () => {
+    render(
+      <WorkoutBuilderModal
+        existingSession={existingSession}
+        appendBlankExercise
+        onClose={onClose}
+        onSaved={onSaved}
+      />
+    );
+
+    expect(screen.getByDisplayValue('Bench Press')).toBeInTheDocument();
+    const nameInputs = screen.getAllByPlaceholderText(/exercise name/i);
+    expect(nameInputs).toHaveLength(2);
+    expect(nameInputs[1]).toHaveValue('');
+  });
+
+  it('submits edited sessions with PUT instead of creating another session', async () => {
+    api.put.mockResolvedValue({});
+
+    render(
+      <WorkoutBuilderModal
+        existingSession={existingSession}
+        onClose={onClose}
+        onSaved={onSaved}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+    await waitFor(() => {
+      expect(api.put).toHaveBeenCalledWith('/workouts/10', {
+        sessionDate: '2026-01-05',
+        sessionName: 'Push',
+        exercises: [{
+          exerciseName: 'Bench Press',
+          sets: [
+            { setNumber: 1, reps: 8, weightLbs: 135 },
+            { setNumber: 2, reps: 6, weightLbs: 140 },
+          ],
+        }],
+      });
+      expect(api.post).not.toHaveBeenCalledWith('/workouts', expect.anything());
+    });
   });
 });
 

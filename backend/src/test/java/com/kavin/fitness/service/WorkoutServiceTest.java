@@ -141,6 +141,43 @@ class WorkoutServiceTest {
         assertEquals(8, dto.getExerciseSets().get(0).getReps());
     }
 
+    // ── updateSession ────────────────────────────────────────────────────────
+
+    @Test
+    void updateSession_replacesDateNameAndExercises() {
+        WorkoutSession session = sessionWithId(12L, LocalDate.of(2026, 3, 1));
+        session.setSessionName("Old Push");
+        ExerciseSet oldSet = new ExerciseSet();
+        oldSet.setExerciseName("Bench Press");
+        oldSet.setSetNumber(1);
+        session.getExerciseSets().add(oldSet);
+
+        when(workoutSessionRepository.findById(12L)).thenReturn(Optional.of(session));
+        when(workoutSessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ExerciseRequest.SetRequest sr = new ExerciseRequest.SetRequest();
+        sr.setSetNumber(1);
+        sr.setReps(5);
+        sr.setWeightLbs(BigDecimal.valueOf(225));
+
+        ExerciseRequest ex = new ExerciseRequest();
+        ex.setExerciseName("Squat");
+        ex.setSets(List.of(sr));
+
+        WorkoutSessionRequest req = new WorkoutSessionRequest();
+        req.setSessionDate(LocalDate.of(2026, 3, 2));
+        req.setSessionName("Leg Day");
+        req.setExercises(List.of(ex));
+
+        WorkoutSessionDTO dto = workoutService.updateSession(12L, 1L, req);
+
+        assertEquals(LocalDate.of(2026, 3, 2), dto.getSessionDate());
+        assertEquals("Leg Day", dto.getSessionName());
+        assertEquals(1, dto.getExerciseSets().size());
+        assertEquals("Squat", dto.getExerciseSets().get(0).getExerciseName());
+        verify(workoutSessionRepository).flush();
+    }
+
     // ── deleteExercise ────────────────────────────────────────────────────────
 
     @Test
