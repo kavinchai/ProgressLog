@@ -32,9 +32,11 @@ vi.mock('../components/WeightModal', () => ({
   ),
 }));
 vi.mock('../components/WorkoutBuilderModal', () => ({
-  default: ({ prefillExercises, onClose }) => (
+  default: ({ prefillExercises, existingSession, appendBlankExercise, onClose }) => (
     <div data-testid="workout-modal"
-         data-prefill={prefillExercises ? JSON.stringify(prefillExercises) : ''}>
+         data-prefill={prefillExercises ? JSON.stringify(prefillExercises) : ''}
+         data-existing-session-id={existingSession?.id ?? ''}
+         data-append-blank={appendBlankExercise ? 'true' : 'false'}>
       <button onClick={onClose}>modal-close</button>
     </div>
   ),
@@ -150,12 +152,13 @@ describe('Today — empty states', () => {
     expect(empties).toHaveLength(3);
   });
 
-  it('shows + Add buttons for weight and workout when nothing logged', () => {
+  it('shows + Add buttons for daily logs and Start Workout when nothing logged', () => {
     setup();
     render(<Today />);
-    // Two "+ Add" buttons: weight section and workout section
+    // Two "+ Add" buttons: weight section and steps section
     const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
-    expect(addBtns.length).toBeGreaterThanOrEqual(2);
+    expect(addBtns).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /start workout/i })).toBeInTheDocument();
   });
 
   it('does NOT show Edit or Delete weight buttons when no weight entry', () => {
@@ -199,9 +202,9 @@ describe('Today — weight display', () => {
   it('does NOT show + Add in weight section when weight already logged today', () => {
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    // Weight section's + Add is gone; workout and steps sections still have one each
+    // Weight section's + Add is gone; steps section still has one
     const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
-    expect(addBtns).toHaveLength(2); // workout + steps
+    expect(addBtns).toHaveLength(1);
   });
 
   it('ignores weight entries from other dates', () => {
@@ -418,13 +421,33 @@ describe('Today — opening modals', () => {
     expect(modal.dataset.existingId).toBe('1');
   });
 
-  it('+ Add workout button opens WorkoutBuilderModal', async () => {
+  it('Start Workout button opens WorkoutBuilderModal for a new session', async () => {
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    // Steps section has its own + Add; workout's + Add is the second one
-    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
-    await userEvent.click(addBtns[1]);
-    expect(screen.getByTestId('workout-modal')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /start workout/i }));
+    const modal = screen.getByTestId('workout-modal');
+    expect(modal).toBeInTheDocument();
+    expect(modal.dataset.existingSessionId).toBe('');
+  });
+
+  it('Edit Workout opens WorkoutBuilderModal for the existing session', async () => {
+    setup({ workouts: [WORKOUT_ENTRY] });
+    render(<Today />);
+    await userEvent.click(screen.getByRole('button', { name: /edit workout/i }));
+    const modal = screen.getByTestId('workout-modal');
+    expect(modal).toBeInTheDocument();
+    expect(modal.dataset.existingSessionId).toBe('10');
+    expect(modal.dataset.appendBlank).toBe('false');
+  });
+
+  it('+ Exercise opens the existing workout with a blank exercise appended', async () => {
+    setup({ workouts: [WORKOUT_ENTRY] });
+    render(<Today />);
+    await userEvent.click(screen.getByRole('button', { name: /^\+ Exercise$/i }));
+    const modal = screen.getByTestId('workout-modal');
+    expect(modal).toBeInTheDocument();
+    expect(modal.dataset.existingSessionId).toBe('10');
+    expect(modal.dataset.appendBlank).toBe('true');
   });
 
   it('exercise Edit button opens EditExerciseModal with correct exercise name', async () => {

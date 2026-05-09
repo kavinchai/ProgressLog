@@ -130,11 +130,15 @@ export default function Today() {
   const [editMeal,        setEditMeal]         = useState(null);
   const [mealLogId,       setMealLogId]        = useState(null);
   const [prefillExercises,setPrefillExercises] = useState(null);
+  const [appendBlankExercise, setAppendBlankExercise] = useState(false);
   const [templateMenuOpen,setTemplateMenuOpen] = useState(false);
   const templateBtnRef = useRef(null);
 
   const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
-  const todayWorkoutEntry   = mergeWorkoutSessions(workoutData.filter(w => w.sessionDate === TODAY));
+  const todayWorkoutSessions = workoutData.filter(w => w.sessionDate === TODAY);
+  const todayWorkoutEntry   = mergeWorkoutSessions(todayWorkoutSessions);
+  const editableWorkoutSession = todayWorkoutSessions[0] ?? null;
+  const hasSingleWorkoutSession = todayWorkoutSessions.length === 1;
   const todayNutritionEntry = nutritionData.find(n => n.logDate === TODAY);
   const todayStepEntry      = stepData.find(s => s.logDate === TODAY);
 
@@ -196,12 +200,22 @@ export default function Today() {
 
   const meals = todayNutritionEntry?.meals ?? [];
 
-  function closeModal() { setModal(null); setEditingEntry(null); setPrefillExercises(null); }
+  function closeModal() {
+    setModal(null);
+    setEditingEntry(null);
+    setPrefillExercises(null);
+    setAppendBlankExercise(false);
+  }
+
+  function openWorkoutModal({ exercises = null, appendBlank = false } = {}) {
+    setPrefillExercises(exercises);
+    setAppendBlankExercise(appendBlank);
+    setModal('workout');
+  }
 
   function openFromTemplate(template) {
-    setPrefillExercises(template.exercises);
     setTemplateMenuOpen(false);
-    setModal('workout');
+    openWorkoutModal({ exercises: template.exercises });
   }
 
   async function toggleDayType() {
@@ -336,12 +350,24 @@ export default function Today() {
                 <button className="btn btn-sm" onClick={() => setRenamingSession(false)}>&times;</button>
               </>
             )}
+            {todayWorkoutEntry && hasSingleWorkoutSession && (
+              <button className="btn btn-sm" onClick={() => openWorkoutModal()}>
+                Edit Workout
+              </button>
+            )}
+            {todayWorkoutEntry && editableWorkoutSession && (
+              <button className="btn btn-sm btn-primary" onClick={() => openWorkoutModal({ appendBlank: true })}>
+                + Exercise
+              </button>
+            )}
             {todayWorkoutEntry && (
               <button className="btn btn-sm btn-danger" onClick={deleteWorkoutSession}>Delete</button>
             )}
-            <button className="btn btn-sm btn-primary" onClick={() => { setPrefillExercises(null); setModal('workout'); }}>
-              + Add
-            </button>
+            {!todayWorkoutEntry && (
+              <button className="btn btn-sm btn-primary" onClick={() => openWorkoutModal()}>
+                Start Workout
+              </button>
+            )}
             {(templates ?? []).length > 0 && (
               <div className="today-template-picker">
                 <button
@@ -391,9 +417,21 @@ export default function Today() {
                     />
                   );
                 })}
+                {editableWorkoutSession && (
+                  <button className="today-add-exercise-row" onClick={() => openWorkoutModal({ appendBlank: true })}>
+                    + Add another exercise
+                  </button>
+                )}
               </div>
             ) : (
-              <span className="muted">Session logged. No exercises yet.</span>
+              <div className="today-workout-empty">
+                <span className="muted">Session logged. No exercises yet.</span>
+                {editableWorkoutSession && (
+                  <button className="btn btn-sm btn-primary" onClick={() => openWorkoutModal({ appendBlank: true })}>
+                    + Exercise
+                  </button>
+                )}
+              </div>
             )
           ) : (
             <span className="muted">No entry for today.</span>
@@ -487,6 +525,8 @@ export default function Today() {
         <WorkoutBuilderModal
           prefillDate={TODAY}
           prefillExercises={prefillExercises}
+          existingSession={todayWorkoutEntry ? editableWorkoutSession : null}
+          appendBlankExercise={appendBlankExercise}
           onClose={closeModal}
           onSaved={() => { refetchWorkouts(); refetchPRs(); }}
         />

@@ -54,6 +54,32 @@
   gap: 10px;
 }
 
+.today-add-exercise-row {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--accent);
+  background: var(--accent-light);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.today-add-exercise-row:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent);
+}
+
+.today-workout-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .exercise-card {
   border: 1px solid var(--border-dim);
   border-radius: var(--radius-md);
@@ -204,6 +230,56 @@
   background: var(--accent);
   border-radius: var(--radius-full);
   vertical-align: middle;
+}
+
+/* ── PR history ── */
+.pr-history {
+  margin-top: 16px;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 12px;
+}
+
+.pr-history-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.pr-history-toggle:hover {
+  color: var(--fg);
+}
+
+.pr-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: var(--fs-sm);
+}
+
+.pr-history-table th {
+  text-align: left;
+  color: var(--muted);
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.pr-history-table td {
+  padding: 6px 0;
+}
+
+.pr-history-table th:not(:first-child),
+.pr-history-table td:not(:first-child) {
+  padding-left: 16px;
 }
 
 .today-day-type-toggle {
