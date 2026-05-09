@@ -6,10 +6,8 @@ import Navbar from './components/layout/Navbar';
 import SplashPage from './pages/SplashPage';
 import Login from './pages/Login';
 import Today from './pages/Today';
-import WeeklyStats from './pages/WeeklyStats';
-import TotalStats from './pages/TotalStats';
-import Strength from './pages/Strength';
-import Cardio from './pages/Cardio';
+import History from './pages/History';
+import Progress from './pages/Progress';
 import Templates from './pages/Templates';
 import Settings from './pages/Settings';
 import ClaudeSetup from './pages/ClaudeSetup';
@@ -57,10 +55,12 @@ export default function App() {
         <Routes>
           <Route path="/"       element={<Navigate to="/today" replace />} />
           <Route path="/today"     element={<Today />} />
-          <Route path="/weekly"    element={<WeeklyStats />} />
-          <Route path="/total"     element={<TotalStats />} />
-          <Route path="/strength"  element={<Strength />} />
-          <Route path="/cardio"    element={<Cardio />} />
+          <Route path="/history/*" element={<History />} />
+          <Route path="/progress/*" element={<Progress />} />
+          <Route path="/weekly"    element={<Navigate to="/history/weekly" replace />} />
+          <Route path="/total"     element={<Navigate to="/history/total" replace />} />
+          <Route path="/strength"  element={<Navigate to="/progress/strength" replace />} />
+          <Route path="/cardio"    element={<Navigate to="/progress/cardio" replace />} />
           <Route path="/templates" element={<Templates />} />
           <Route path="/settings"     element={<Settings />} />
           <Route path="/claude-setup" element={<ClaudeSetup />} />

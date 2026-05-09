@@ -5,13 +5,11 @@ import api from '../../api';
 import './Sidebar.css';
 
 const navItems = [
-  { to: '/today',     label: 'Today',        icon: '~' },
-  { to: '/weekly',    label: 'Weekly Stats',  icon: '~' },
-  { to: '/total',     label: 'Total Stats',   icon: '~' },
-  { to: '/strength',  label: 'Strength',      icon: '~' },
-  { to: '/cardio',    label: 'Cardio',        icon: '~' },
-  { to: '/templates', label: 'Templates',     icon: '~' },
-  { to: '/settings',  label: 'Settings',      icon: '~' },
+  { to: '/today',     label: 'Today' },
+  { to: '/history',   label: 'History' },
+  { to: '/progress',  label: 'Progress' },
+  { to: '/templates', label: 'Templates' },
+  { to: '/settings',  label: 'Settings' },
 ];
 
 export default function Sidebar() {

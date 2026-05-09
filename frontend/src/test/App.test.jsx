@@ -60,6 +60,40 @@ describe('App routing — authenticated', () => {
     render(<App />);
     expect(screen.getByText('Today Page')).toBeInTheDocument();
   });
+
+  it('routes History to weekly stats by default', async () => {
+    window.history.pushState({}, '', '/history');
+    render(<App />);
+    expect(await screen.findByText('Weekly Stats Page')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Weekly' })).toHaveAttribute('href', '/history/weekly');
+    expect(screen.getByRole('link', { name: 'Total' })).toHaveAttribute('href', '/history/total');
+  });
+
+  it('routes History total tab to total stats', async () => {
+    window.history.pushState({}, '', '/history/total');
+    render(<App />);
+    expect(await screen.findByText('Total Stats Page')).toBeInTheDocument();
+  });
+
+  it('routes Progress to strength by default', async () => {
+    window.history.pushState({}, '', '/progress');
+    render(<App />);
+    expect(await screen.findByText('Strength Page')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Strength' })).toHaveAttribute('href', '/progress/strength');
+    expect(screen.getByRole('link', { name: 'Cardio' })).toHaveAttribute('href', '/progress/cardio');
+  });
+
+  it('routes Progress cardio tab to cardio progress', async () => {
+    window.history.pushState({}, '', '/progress/cardio');
+    render(<App />);
+    expect(await screen.findByText('Cardio Page')).toBeInTheDocument();
+  });
+
+  it('keeps old progress URLs working through redirects', async () => {
+    window.history.pushState({}, '', '/strength');
+    render(<App />);
+    expect(await screen.findByText('Strength Page')).toBeInTheDocument();
+  });
 });
 
 describe('App routing — auth store reactivity', () => {
