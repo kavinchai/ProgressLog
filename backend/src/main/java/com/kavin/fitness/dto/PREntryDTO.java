@@ -12,5 +12,7 @@ import java.time.LocalDate;
 public class PREntryDTO {
     private String     exerciseName;
     private BigDecimal maxWeightLbs;
+    private int        setCount;
+    private int        maxRepsInSet;
     private LocalDate  achievedDate;
 }
