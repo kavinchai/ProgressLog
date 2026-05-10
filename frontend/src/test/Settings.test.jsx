@@ -348,6 +348,19 @@ describe('Settings — data export & import', () => {
   });
 });
 
+const NUTRITION_DATA = [
+  {
+    logDate: '2026-04-01',
+    dayType: 'training',
+    totalCalories: 1200,
+    totalProtein: 80,
+    meals: [
+      { id: 1, mealName: 'Breakfast', calories: 500, proteinGrams: 30 },
+      { id: 2, mealName: 'Lunch',     calories: 700, proteinGrams: 50 },
+    ],
+  },
+];
+
 const WORKOUT_WITH_CARDIO = [
   {
     sessionDate: '2026-04-01',
@@ -358,17 +371,69 @@ const WORKOUT_WITH_CARDIO = [
   },
 ];
 
+describe('Settings — export handles nutrition meals', () => {
+  beforeEach(() => {
+    setupProfile();
+    useNutrition.mockReturnValue({ data: NUTRITION_DATA, refetch: vi.fn() });
+  });
+
+  it('XLSX export creates four sheets including Nutrition', async () => {
+    renderSettings();
+    await userEvent.click(screen.getByRole('button', { name: /export.*xlsx/i }));
+    const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
+    expect(sheetNames).toEqual(['Total Stats', 'Workouts', 'Cardio', 'Nutrition']);
+  });
+
+  it('JSON export includes a nutrition key with per-meal rows', async () => {
+    let capturedJson = null;
+    const OrigBlob = global.Blob;
+    global.Blob = class { constructor(data) { capturedJson = data[0]; } };
+    global.URL.createObjectURL = vi.fn(() => 'blob:x');
+    global.URL.revokeObjectURL = vi.fn();
+
+    renderSettings();
+    await userEvent.click(screen.getByRole('button', { name: /export.*json/i }));
+
+    const parsed = JSON.parse(capturedJson);
+    expect(parsed).toHaveProperty('nutrition');
+    expect(parsed.nutrition).toHaveLength(2);
+    expect(parsed.nutrition[0]).toMatchObject({
+      Meal: 'Breakfast', Calories: 500, Protein: 30, 'Day Type': 'training',
+    });
+    expect(parsed.nutrition[1]).toMatchObject({ Meal: 'Lunch', Calories: 700, Protein: 50 });
+    global.Blob = OrigBlob;
+  });
+
+  it('nutrition totals in totalStats are still exported', async () => {
+    let capturedJson = null;
+    const OrigBlob = global.Blob;
+    global.Blob = class { constructor(data) { capturedJson = data[0]; } };
+    global.URL.createObjectURL = vi.fn(() => 'blob:x');
+    global.URL.revokeObjectURL = vi.fn();
+
+    renderSettings();
+    await userEvent.click(screen.getByRole('button', { name: /export.*json/i }));
+
+    const parsed = JSON.parse(capturedJson);
+    const statsRow = parsed.totalStats.find((r) => r.Date !== '' && r.Calories !== '');
+    expect(statsRow).toBeDefined();
+    expect(statsRow.Calories).toBe(1200);
+    expect(statsRow.Protein).toBe(80);
+    global.Blob = OrigBlob;
+  });
+});
+
 describe('Settings — export handles cardio sets', () => {
   beforeEach(() => {
     setupProfile();
     useWorkouts.mockReturnValue({ data: WORKOUT_WITH_CARDIO, refetch: vi.fn() });
   });
 
-  it('XLSX export creates three sheets: Total Stats, Workouts, Cardio', async () => {
+  it('XLSX export creates four sheets: Total Stats, Workouts, Cardio, Nutrition', async () => {
     renderSettings();
     await userEvent.click(screen.getByRole('button', { name: /export.*xlsx/i }));
     const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
-    expect(sheetNames).toEqual(['Total Stats', 'Workouts', 'Cardio']);
+    expect(sheetNames).toEqual(['Total Stats', 'Workouts', 'Cardio', 'Nutrition']);
   });
 
   it('JSON export includes a cardio key with cardio rows', async () => {

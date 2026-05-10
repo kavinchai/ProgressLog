@@ -229,11 +229,26 @@ export default function Settings() {
       return normalized;
     });
 
-    return { statsData, normalizedWorkoutRows, cardioRows };
+    // Build nutrition rows (one per meal) from the raw nutritionData hook
+    const nutritionRows = [];
+    for (const entry of nutritionData) {
+      if (!entry.meals?.length) continue;
+      for (const meal of entry.meals) {
+        nutritionRows.push({
+          Date:      formatDate(entry.logDate),
+          'Day Type': entry.dayType ?? 'training',
+          Meal:      meal.mealName ?? '',
+          Calories:  meal.calories  ?? '',
+          Protein:   meal.proteinGrams ?? '',
+        });
+      }
+    }
+
+    return { statsData, normalizedWorkoutRows, cardioRows, nutritionRows };
   }
 
   function handleExportXlsx() {
-    const { statsData, normalizedWorkoutRows, cardioRows } = buildExportData();
+    const { statsData, normalizedWorkoutRows, cardioRows, nutritionRows } = buildExportData();
     const ws1 = XLSX.utils.json_to_sheet(statsData);
     const ws2 = XLSX.utils.json_to_sheet(
       normalizedWorkoutRows.length
@@ -245,16 +260,25 @@ export default function Settings() {
         ? cardioRows
         : [{ Date: '', Exercise: '', Set: '', 'Distance (mi)': '', 'Duration (sec)': '' }],
     );
+    const ws4 = XLSX.utils.json_to_sheet(
+      nutritionRows.length
+        ? nutritionRows
+        : [{ Date: '', 'Day Type': '', Meal: '', Calories: '', Protein: '' }],
+    );
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, 'Total Stats');
     XLSX.utils.book_append_sheet(wb, ws2, 'Workouts');
     XLSX.utils.book_append_sheet(wb, ws3, 'Cardio');
+    XLSX.utils.book_append_sheet(wb, ws4, 'Nutrition');
     XLSX.writeFile(wb, 'total-stats.xlsx');
   }
 
   function handleExportJson() {
-    const { statsData, normalizedWorkoutRows, cardioRows } = buildExportData();
-    const json = JSON.stringify({ totalStats: statsData, workouts: normalizedWorkoutRows, cardio: cardioRows }, null, 2);
+    const { statsData, normalizedWorkoutRows, cardioRows, nutritionRows } = buildExportData();
+    const json = JSON.stringify(
+      { totalStats: statsData, workouts: normalizedWorkoutRows, cardio: cardioRows, nutrition: nutritionRows },
+      null, 2,
+    );
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

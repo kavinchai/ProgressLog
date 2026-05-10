@@ -20,4 +20,8 @@ public class ImportRequest {
     // Each element mirrors an exported cardio row:
     // { "Date": "M/D/YY", "Exercise": "Running", "Set": 1, "Distance (mi)": 3.1, "Duration (sec)": 1800 }
     private List<Map<String, Object>> cardio;
+
+    // Each element mirrors an exported nutrition row:
+    // { "Date": "M/D/YY", "Day Type": "training", "Meal": "Breakfast", "Calories": 500, "Protein": 30 }
+    private List<Map<String, Object>> nutrition;
 }
