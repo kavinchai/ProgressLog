@@ -36,7 +36,12 @@ public class ImportService {
         int workoutsImported = 0, workoutsSkipped = 0;
         int stepsImported = 0, stepsSkipped = 0;
 
-        // ── Weight + Nutrition + Steps ─────────────────────────────────────────
+        // Determine whether to use the detailed nutrition section (new format) or fall back to
+        // totalStats aggregates (old format). When a nutrition section is present, skip the
+        // Calories/Protein columns in totalStats to avoid creating duplicate "Imported" meals.
+        boolean hasDetailedNutrition = request.getNutrition() != null && !request.getNutrition().isEmpty();
+
+        // ── Weight + Steps (+ legacy nutrition from totalStats) ────────────────
         if (request.getTotalStats() != null) {
             for (Map<String, Object> row : request.getTotalStats()) {
                 String dateStr = getString(row, "Date");
@@ -45,42 +50,81 @@ public class ImportService {
                 if (date == null) continue;
 
                 // Weight
-                Object weightRaw = row.get("Weight");
-                if (weightRaw != null && !weightRaw.toString().isBlank()) {
+                String weightStr = getString(row, "Weight");
+                if (weightStr != null) {
                     WeightLog log = weightLogRepository.findByUserIdAndLogDate(user.getId(), date)
                             .orElseGet(() -> { WeightLog l = new WeightLog(); l.setUser(user); l.setLogDate(date); return l; });
-                    log.setWeightLbs(new BigDecimal(weightRaw.toString()));
+                    log.setWeightLbs(new BigDecimal(weightStr));
                     weightLogRepository.save(log);
                     weightImported++;
                 }
 
-                // Nutrition (calories + protein)
-                Object caloriesRaw = row.get("Calories");
-                Object proteinRaw  = row.get("Protein");
-                boolean hasCalories = caloriesRaw != null && !caloriesRaw.toString().isBlank();
-                boolean hasProtein  = proteinRaw  != null && !proteinRaw.toString().isBlank();
-                if (hasCalories || hasProtein) {
-                    NutritionLog nutrition = nutritionLogRepository.findByUserIdAndLogDate(user.getId(), date)
-                            .orElseGet(() -> { NutritionLog n = new NutritionLog(); n.setUser(user); n.setLogDate(date); n.setDayType("training"); return n; });
-                    Meal importedMeal = new Meal();
-                    importedMeal.setNutritionLog(nutrition);
-                    importedMeal.setMealName("Imported");
-                    importedMeal.setCalories(hasCalories ? (int) Math.round(Double.parseDouble(String.valueOf(caloriesRaw))) : 0);
-                    importedMeal.setProteinGrams(hasProtein ? (int) Math.round(Double.parseDouble(String.valueOf(proteinRaw))) : 0);
-                    nutrition.getMeals().add(importedMeal);
-                    nutritionLogRepository.save(nutrition);
-                    nutritionImported++;
+                // Nutrition aggregates — only used when no detailed nutrition section is present
+                if (!hasDetailedNutrition) {
+                    String caloriesStr = getString(row, "Calories");
+                    String proteinStr  = getString(row, "Protein");
+                    if (caloriesStr != null || proteinStr != null) {
+                        NutritionLog nutrition = nutritionLogRepository.findByUserIdAndLogDate(user.getId(), date)
+                                .orElseGet(() -> { NutritionLog n = new NutritionLog(); n.setUser(user); n.setLogDate(date); n.setDayType("training"); return n; });
+                        Meal importedMeal = new Meal();
+                        importedMeal.setNutritionLog(nutrition);
+                        importedMeal.setMealName("Imported");
+                        importedMeal.setCalories(caloriesStr != null ? (int) Math.round(Double.parseDouble(caloriesStr)) : 0);
+                        importedMeal.setProteinGrams(proteinStr != null ? (int) Math.round(Double.parseDouble(proteinStr)) : 0);
+                        nutrition.getMeals().add(importedMeal);
+                        nutritionLogRepository.save(nutrition);
+                        nutritionImported++;
+                    }
                 }
 
                 // Steps
-                Object stepsRaw = row.get("Steps");
-                if (stepsRaw != null && !stepsRaw.toString().isBlank()) {
+                String stepsStr = getString(row, "Steps");
+                if (stepsStr != null) {
                     StepLog stepLog = stepLogRepository.findByUserIdAndLogDate(user.getId(), date)
                             .orElseGet(() -> { StepLog s = new StepLog(); s.setUser(user); s.setLogDate(date); return s; });
-                    stepLog.setSteps(Integer.parseInt(stepsRaw.toString()));
+                    stepLog.setSteps(Integer.parseInt(stepsStr));
                     stepLogRepository.save(stepLog);
                     stepsImported++;
                 }
+            }
+        }
+
+        // ── Detailed nutrition ────────────────────────────────────────────────
+        if (hasDetailedNutrition) {
+            Map<LocalDate, List<Map<String, Object>>> nutritionByDate = new LinkedHashMap<>();
+            for (Map<String, Object> row : request.getNutrition()) {
+                LocalDate date = parseDate(getString(row, "Date"));
+                if (date == null) continue;
+                nutritionByDate.computeIfAbsent(date, d -> new ArrayList<>()).add(row);
+            }
+            for (Map.Entry<LocalDate, List<Map<String, Object>>> entry : nutritionByDate.entrySet()) {
+                LocalDate date     = entry.getKey();
+                List<Map<String, Object>> mealRows = entry.getValue();
+
+                nutritionLogRepository.findByUserIdAndLogDate(user.getId(), date)
+                        .ifPresent(nutritionLogRepository::delete);
+
+                String dayType = getString(mealRows.get(0), "Day Type");
+                NutritionLog log = new NutritionLog();
+                log.setUser(user);
+                log.setLogDate(date);
+                log.setDayType(dayType != null ? dayType : "training");
+
+                for (Map<String, Object> row : mealRows) {
+                    String mealName   = getString(row, "Meal");
+                    String caloriesStr = getString(row, "Calories");
+                    String proteinStr  = getString(row, "Protein");
+                    if (mealName == null && caloriesStr == null && proteinStr == null) continue;
+                    Meal meal = new Meal();
+                    meal.setNutritionLog(log);
+                    meal.setMealName(mealName != null ? mealName : "");
+                    meal.setCalories(caloriesStr != null ? (int) Math.round(Double.parseDouble(caloriesStr)) : 0);
+                    meal.setProteinGrams(proteinStr != null ? (int) Math.round(Double.parseDouble(proteinStr)) : 0);
+                    log.getMeals().add(meal);
+                }
+
+                nutritionLogRepository.save(log);
+                nutritionImported++;
             }
         }
 

@@ -154,6 +154,150 @@ class ImportServiceTest {
         assertEquals(1, result.getWorkoutsImported());
     }
 
+    // ── nutrition import ──────────────────────────────────────────────────────
+
+    @Test
+    void importData_importsDetailedMealsFromNutritionSection() {
+        Map<String, Object> row1 = new LinkedHashMap<>();
+        row1.put("Date", "4/1/26");
+        row1.put("Day Type", "training");
+        row1.put("Meal", "Breakfast");
+        row1.put("Calories", "500");
+        row1.put("Protein", "30");
+
+        Map<String, Object> row2 = new LinkedHashMap<>();
+        row2.put("Date", "4/1/26");
+        row2.put("Day Type", "training");
+        row2.put("Meal", "Lunch");
+        row2.put("Calories", "700");
+        row2.put("Protein", "50");
+
+        ImportRequest req = new ImportRequest();
+        req.setNutrition(List.of(row1, row2));
+
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
+        when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        ImportResultDTO result = importService.importData(user, req);
+
+        ArgumentCaptor<NutritionLog> captor = ArgumentCaptor.forClass(NutritionLog.class);
+        verify(nutritionLogRepository).save(captor.capture());
+        NutritionLog saved = captor.getValue();
+        assertEquals("training", saved.getDayType());
+        assertEquals(2, saved.getMeals().size());
+        assertEquals("Breakfast", saved.getMeals().get(0).getMealName());
+        assertEquals(500, saved.getMeals().get(0).getCalories());
+        assertEquals(30, saved.getMeals().get(0).getProteinGrams());
+        assertEquals("Lunch", saved.getMeals().get(1).getMealName());
+        assertEquals(1, result.getNutritionImported());
+    }
+
+    @Test
+    void importData_importsNutritionAcrossMultipleDates() {
+        Map<String, Object> row1 = new LinkedHashMap<>();
+        row1.put("Date", "4/1/26");
+        row1.put("Day Type", "training");
+        row1.put("Meal", "Dinner");
+        row1.put("Calories", "600");
+        row1.put("Protein", "45");
+
+        Map<String, Object> row2 = new LinkedHashMap<>();
+        row2.put("Date", "4/2/26");
+        row2.put("Day Type", "rest");
+        row2.put("Meal", "Breakfast");
+        row2.put("Calories", "400");
+        row2.put("Protein", "20");
+
+        ImportRequest req = new ImportRequest();
+        req.setNutrition(List.of(row1, row2));
+
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
+        when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        ImportResultDTO result = importService.importData(user, req);
+
+        verify(nutritionLogRepository, times(2)).save(any(NutritionLog.class));
+        assertEquals(2, result.getNutritionImported());
+    }
+
+    @Test
+    void importData_replacesExistingNutritionLogWhenNutritionSectionPresent() {
+        NutritionLog existing = new NutritionLog();
+        existing.setDayType("rest");
+
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("Date", "4/1/26");
+        row.put("Day Type", "training");
+        row.put("Meal", "Breakfast");
+        row.put("Calories", "500");
+        row.put("Protein", "30");
+
+        ImportRequest req = new ImportRequest();
+        req.setNutrition(List.of(row));
+
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.of(existing));
+        when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        importService.importData(user, req);
+
+        verify(nutritionLogRepository).delete(existing);
+        ArgumentCaptor<NutritionLog> captor = ArgumentCaptor.forClass(NutritionLog.class);
+        verify(nutritionLogRepository).save(captor.capture());
+        assertEquals("training", captor.getValue().getDayType());
+    }
+
+    @Test
+    void importData_doesNotCreateImportedMealFromTotalStatsWhenNutritionSectionPresent() {
+        Map<String, Object> statsRow = new LinkedHashMap<>();
+        statsRow.put("Date", "4/1/26");
+        statsRow.put("Calories", "1200");
+        statsRow.put("Protein", "80");
+
+        Map<String, Object> nutritionRow = new LinkedHashMap<>();
+        nutritionRow.put("Date", "4/1/26");
+        nutritionRow.put("Day Type", "training");
+        nutritionRow.put("Meal", "Lunch");
+        nutritionRow.put("Calories", "600");
+        nutritionRow.put("Protein", "40");
+
+        ImportRequest req = new ImportRequest();
+        req.setTotalStats(List.of(statsRow));
+        req.setNutrition(List.of(nutritionRow));
+
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
+        when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        importService.importData(user, req);
+
+        // Only one save for the nutrition section — not a second "Imported" save from totalStats
+        verify(nutritionLogRepository, times(1)).save(any(NutritionLog.class));
+        ArgumentCaptor<NutritionLog> captor = ArgumentCaptor.forClass(NutritionLog.class);
+        verify(nutritionLogRepository).save(captor.capture());
+        assertEquals("Lunch", captor.getValue().getMeals().get(0).getMealName());
+    }
+
+    @Test
+    void importData_fallsBackToImportedMealWhenNutritionSectionAbsent() {
+        Map<String, Object> statsRow = new LinkedHashMap<>();
+        statsRow.put("Date", "4/1/26");
+        statsRow.put("Calories", "1200");
+        statsRow.put("Protein", "80");
+
+        ImportRequest req = new ImportRequest();
+        req.setTotalStats(List.of(statsRow));
+        // req.setNutrition intentionally left null
+
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
+        when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        ImportResultDTO result = importService.importData(user, req);
+
+        ArgumentCaptor<NutritionLog> captor = ArgumentCaptor.forClass(NutritionLog.class);
+        verify(nutritionLogRepository).save(captor.capture());
+        assertEquals("Imported", captor.getValue().getMeals().get(0).getMealName());
+        assertEquals(1, result.getNutritionImported());
+    }
+
     @Test
     void importData_handlesNullCardioSection_backwardCompat() {
         Map<String, Object> row = new LinkedHashMap<>();
