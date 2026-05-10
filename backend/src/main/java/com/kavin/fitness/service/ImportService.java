@@ -22,6 +22,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Service
 public class ImportService {
 
@@ -30,6 +33,7 @@ public class ImportService {
     @Autowired private NutritionLogRepository    nutritionLogRepository;
     @Autowired private StepLogRepository         stepLogRepository;
     @Autowired private MealRepository            mealRepository;
+    @PersistenceContext private EntityManager     entityManager;
 
     @Transactional
     public ImportResultDTO importData(User user, ImportRequest request) {
@@ -159,11 +163,17 @@ public class ImportService {
         allWorkoutDates.addAll(cardioByDate.keySet());
 
         for (LocalDate date : allWorkoutDates) {
-            workoutSessionRepository.findByUserIdAndSessionDate(user.getId(), date)
-                    .forEach(workoutSessionRepository::delete);
+            // Bulk-delete existing sessions (and their exercise sets) for this date
+            workoutSessionRepository.bulkDeleteExerciseSetsByUserAndDate(user.getId(), date);
+            workoutSessionRepository.deleteByUserIdAndSessionDate(user.getId(), date);
+            entityManager.flush();
+            entityManager.clear();
+
+            // After clear(), get a managed reference to the user for FK assignment
+            User userRef = entityManager.getReference(User.class, user.getId());
 
             WorkoutSession session = new WorkoutSession();
-            session.setUser(user);
+            session.setUser(userRef);
             session.setSessionDate(date);
             session = workoutSessionRepository.save(session);
 

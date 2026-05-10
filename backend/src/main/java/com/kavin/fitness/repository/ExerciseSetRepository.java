@@ -2,6 +2,7 @@ package com.kavin.fitness.repository;
 
 import com.kavin.fitness.model.ExerciseSet;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,6 +13,10 @@ import java.util.List;
 public interface ExerciseSetRepository extends JpaRepository<ExerciseSet, Long> {
 
     List<ExerciseSet> findBySessionId(Long sessionId);
+
+    @Modifying
+    @Query("DELETE FROM ExerciseSet e WHERE e.session.id = :sessionId")
+    void deleteBySessionId(@Param("sessionId") Long sessionId);
 
     @Query("SELECT DISTINCT e.exerciseName FROM ExerciseSet e " +
            "JOIN e.session s WHERE s.user.id = :userId " +

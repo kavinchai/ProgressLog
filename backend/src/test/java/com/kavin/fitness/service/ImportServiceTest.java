@@ -11,6 +11,8 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import jakarta.persistence.EntityManager;
+
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,11 +31,24 @@ class ImportServiceTest {
     @InjectMocks ImportService importService;
 
     private User user;
+    private EntityManager entityManager;
 
     @BeforeEach
     void setUp() {
         user = new User();
         ReflectionTestUtils.setField(user, "id", 1L);
+
+        // Mockito cannot mock EntityManager on Java 23 (ByteBuddy limitation).
+        // Use a JDK dynamic proxy as a lightweight stub instead.
+        entityManager = (EntityManager) java.lang.reflect.Proxy.newProxyInstance(
+                EntityManager.class.getClassLoader(),
+                new Class[]{EntityManager.class},
+                (proxy, method, args) -> {
+                    if ("getReference".equals(method.getName())) return user;
+                    return null; // flush(), clear() etc. are no-ops
+                }
+        );
+        ReflectionTestUtils.setField(importService, "entityManager", entityManager);
     }
 
     // ── steps import ──────────────────────────────────────────────────────────
@@ -97,7 +112,6 @@ class ImportServiceTest {
         req.setCardio(List.of(row));
 
         WorkoutSession savedSession = new WorkoutSession();
-        when(workoutSessionRepository.findByUserIdAndSessionDate(any(), any())).thenReturn(List.of());
         when(workoutSessionRepository.save(any())).thenReturn(savedSession);
 
         ImportResultDTO result = importService.importData(user, req);
@@ -118,7 +132,6 @@ class ImportServiceTest {
         req.setCardio(List.of(row));
 
         WorkoutSession savedSession = new WorkoutSession();
-        when(workoutSessionRepository.findByUserIdAndSessionDate(any(), any())).thenReturn(List.of());
         when(workoutSessionRepository.save(any())).thenReturn(savedSession);
 
         ImportResultDTO result = importService.importData(user, req);
@@ -146,7 +159,6 @@ class ImportServiceTest {
         req.setCardio(List.of(cardioRow));
 
         WorkoutSession savedSession = new WorkoutSession();
-        when(workoutSessionRepository.findByUserIdAndSessionDate(any(), any())).thenReturn(List.of());
         when(workoutSessionRepository.save(any())).thenReturn(savedSession);
 
         ImportResultDTO result = importService.importData(user, req);
@@ -317,7 +329,6 @@ class ImportServiceTest {
         // req.setCardio intentionally left null
 
         WorkoutSession savedSession = new WorkoutSession();
-        when(workoutSessionRepository.findByUserIdAndSessionDate(any(), any())).thenReturn(List.of());
         when(workoutSessionRepository.save(any())).thenReturn(savedSession);
 
         // Should not throw
