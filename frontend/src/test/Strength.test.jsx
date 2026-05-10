@@ -254,3 +254,92 @@ describe('Strength page — session history table', () => {
 		expect(nonPrRow).not.toHaveClass('strength-pr-row');
 	});
 });
+
+// Fake date: 2026-04-15
+// 4W cutoff:  2026-03-18  (28 days back)
+// 3M cutoff:  2026-01-15  (90 days back)
+// 6M cutoff:  2025-10-17  (180 days back)
+const RANGED_DATA = [
+	{
+		exerciseName: 'Bench Press',
+		data: [
+			{ sessionDate: '2025-09-01', maxWeightLbs: 100, setCount: 3, repScheme: '8/8/8' }, // beyond 6M
+			{ sessionDate: '2026-01-01', maxWeightLbs: 115, setCount: 3, repScheme: '8/8/8' }, // within 6M, beyond 3M
+			{ sessionDate: '2026-02-01', maxWeightLbs: 125, setCount: 3, repScheme: '8/8/8' }, // within 3M, beyond 4W
+			{ sessionDate: '2026-04-01', maxWeightLbs: 135, setCount: 3, repScheme: '8/8/8' }, // within 4W
+		],
+	},
+];
+
+describe('Strength page — time range filter', () => {
+	beforeEach(() => {
+		mockApiGet.mockResolvedValue({ data: RANGED_DATA });
+	});
+
+	it('renders all four range buttons', async () => {
+		render(<Strength />);
+		const rangeGroup = await screen.findByRole('group', { name: /time range/i });
+		expect(within(rangeGroup).getByRole('button', { name: '4W' })).toBeInTheDocument();
+		expect(within(rangeGroup).getByRole('button', { name: '3M' })).toBeInTheDocument();
+		expect(within(rangeGroup).getByRole('button', { name: '6M' })).toBeInTheDocument();
+		expect(within(rangeGroup).getByRole('button', { name: 'All' })).toBeInTheDocument();
+	});
+
+	it('selects "All" by default', async () => {
+		render(<Strength />);
+		const rangeGroup = await screen.findByRole('group', { name: /time range/i });
+		expect(within(rangeGroup).getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+		expect(within(rangeGroup).getByRole('button', { name: '4W' })).toHaveAttribute('aria-pressed', 'false');
+	});
+
+	it('selects clicked range button and deselects others', async () => {
+		render(<Strength />);
+		const rangeGroup = await screen.findByRole('group', { name: /time range/i });
+		const btn4W = within(rangeGroup).getByRole('button', { name: '4W' });
+		await userEvent.click(btn4W);
+		expect(btn4W).toHaveAttribute('aria-pressed', 'true');
+		expect(within(rangeGroup).getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'false');
+	});
+
+	it('sessions stat reflects only sessions in the selected range', async () => {
+		render(<Strength />);
+		// Default All → 4 sessions
+		const sessionsCard = await screen.findByTestId('stat-sessions');
+		expect(within(sessionsCard).getByText('4')).toBeInTheDocument();
+
+		// Switch to 4W → only 2026-04-01 qualifies (1 session)
+		const rangeGroup = screen.getByRole('group', { name: /time range/i });
+		await userEvent.click(within(rangeGroup).getByRole('button', { name: '4W' }));
+		expect(within(sessionsCard).getByText('1')).toBeInTheDocument();
+	});
+
+	it('sessions stat updates correctly for 3M and 6M ranges', async () => {
+		render(<Strength />);
+		await screen.findByTestId('stat-sessions');
+		const rangeGroup = screen.getByRole('group', { name: /time range/i });
+
+		// 3M: 2026-02-01 and 2026-04-01 qualify (2 sessions)
+		await userEvent.click(within(rangeGroup).getByRole('button', { name: '3M' }));
+		expect(within(screen.getByTestId('stat-sessions')).getByText('2')).toBeInTheDocument();
+
+		// 6M: adds 2026-01-01 (3 sessions)
+		await userEvent.click(within(rangeGroup).getByRole('button', { name: '6M' }));
+		expect(within(screen.getByTestId('stat-sessions')).getByText('3')).toBeInTheDocument();
+	});
+
+	it('shows no-sessions message when range has no data', async () => {
+		mockApiGet.mockResolvedValue({
+			data: [{
+				exerciseName: 'Old Lift',
+				data: [
+					{ sessionDate: '2025-01-01', maxWeightLbs: 100, setCount: 3, repScheme: '5/5/5' },
+				],
+			}],
+		});
+		render(<Strength />);
+		await screen.findByRole('button', { name: 'Old Lift' });
+		const rangeGroup = screen.getByRole('group', { name: /time range/i });
+		await userEvent.click(within(rangeGroup).getByRole('button', { name: '4W' }));
+		expect(screen.getByText(/no sessions in selected range/i)).toBeInTheDocument();
+	});
+});

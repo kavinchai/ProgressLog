@@ -125,6 +125,67 @@
   min-width: 0;
 }
 
+/* ── Time range selector ── */
+.strength-range-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: var(--space-md);
+}
+
+.strength-range-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.strength-range-buttons {
+  display: inline-flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.strength-range-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  font-family: var(--font);
+  color: var(--muted);
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.strength-range-btn:last-child {
+  border-right: none;
+}
+
+.strength-range-btn:hover {
+  background: var(--hover-bg);
+  color: var(--fg);
+}
+
+.strength-range-btn-active,
+.strength-range-btn-active:hover {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* ── No-data in range ── */
+.strength-no-data {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  text-align: center;
+  padding: var(--space-lg);
+}
+
 /* ── Stat row ── */
 .strength-stats-box {
   margin-bottom: var(--space-lg);
