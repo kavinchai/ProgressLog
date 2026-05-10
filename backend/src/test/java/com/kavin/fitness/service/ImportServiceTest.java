@@ -24,6 +24,7 @@ class ImportServiceTest {
     @Mock WorkoutSessionRepository  workoutSessionRepository;
     @Mock NutritionLogRepository    nutritionLogRepository;
     @Mock StepLogRepository         stepLogRepository;
+    @Mock MealRepository            mealRepository;
 
     @InjectMocks ImportService importService;
 
@@ -223,6 +224,7 @@ class ImportServiceTest {
     @Test
     void importData_replacesExistingNutritionLogWhenNutritionSectionPresent() {
         NutritionLog existing = new NutritionLog();
+        ReflectionTestUtils.setField(existing, "id", 99L);
         existing.setDayType("rest");
 
         Map<String, Object> row = new LinkedHashMap<>();
@@ -237,10 +239,14 @@ class ImportServiceTest {
 
         when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.of(existing));
         when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(mealRepository.findByNutritionLogId(99L)).thenReturn(List.of());
 
         importService.importData(user, req);
 
-        verify(nutritionLogRepository).delete(existing);
+        // Reuses the existing log — does NOT delete and recreate it
+        verify(nutritionLogRepository, never()).delete(any());
+        verify(mealRepository).findByNutritionLogId(99L);
+        verify(mealRepository).deleteAll(any());
         ArgumentCaptor<NutritionLog> captor = ArgumentCaptor.forClass(NutritionLog.class);
         verify(nutritionLogRepository).save(captor.capture());
         assertEquals("training", captor.getValue().getDayType());

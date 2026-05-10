@@ -9,6 +9,7 @@ import com.kavin.fitness.model.StepLog;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WeightLog;
 import com.kavin.fitness.model.WorkoutSession;
+import com.kavin.fitness.repository.MealRepository;
 import com.kavin.fitness.repository.NutritionLogRepository;
 import com.kavin.fitness.repository.StepLogRepository;
 import com.kavin.fitness.repository.WeightLogRepository;
@@ -28,6 +29,7 @@ public class ImportService {
     @Autowired private WorkoutSessionRepository  workoutSessionRepository;
     @Autowired private NutritionLogRepository    nutritionLogRepository;
     @Autowired private StepLogRepository         stepLogRepository;
+    @Autowired private MealRepository            mealRepository;
 
     @Transactional
     public ImportResultDTO importData(User user, ImportRequest request) {
@@ -101,14 +103,16 @@ public class ImportService {
                 LocalDate date     = entry.getKey();
                 List<Map<String, Object>> mealRows = entry.getValue();
 
-                nutritionLogRepository.findByUserIdAndLogDate(user.getId(), date)
-                        .ifPresent(nutritionLogRepository::delete);
-
                 String dayType = getString(mealRows.get(0), "Day Type");
-                NutritionLog log = new NutritionLog();
-                log.setUser(user);
-                log.setLogDate(date);
+                NutritionLog log = nutritionLogRepository.findByUserIdAndLogDate(user.getId(), date)
+                        .orElseGet(() -> { NutritionLog n = new NutritionLog(); n.setUser(user); n.setLogDate(date); return n; });
                 log.setDayType(dayType != null ? dayType : "training");
+
+                // Explicitly delete old meals to avoid orphans (no orphanRemoval on the mapping)
+                if (log.getId() != null) {
+                    mealRepository.deleteAll(mealRepository.findByNutritionLogId(log.getId()));
+                    log.getMeals().clear();
+                }
 
                 for (Map<String, Object> row : mealRows) {
                     String mealName   = getString(row, "Meal");
