@@ -9,7 +9,7 @@ import useNutrition from '../hooks/useNutrition';
 import useWorkouts from '../hooks/useWorkouts';
 import useSteps from '../hooks/useSteps';
 import { buildDayRows } from '../utils/stats';
-import { groupByExercise } from '../utils/workout';
+import { groupByExercise, detectType } from '../utils/workout';
 import { formatDateShort as formatDate } from '../utils/date';
 import api from '../api';
 import './Settings.css';
@@ -179,9 +179,20 @@ export default function Settings() {
     }));
 
     const workoutRows = [];
+    const cardioRows  = [];
+
     for (const row of rows) {
       if (!row.workoutEntry?.exerciseSets?.length) continue;
-      const groups = groupByExercise(row.workoutEntry.exerciseSets);
+      const allSets = row.workoutEntry.exerciseSets;
+
+      const strengthSets = allSets.filter(
+        (s) => s.distanceMiles == null && s.durationSeconds == null,
+      );
+      const cardioSets = allSets.filter(
+        (s) => s.distanceMiles != null || s.durationSeconds != null,
+      );
+
+      const groups = groupByExercise(strengthSets);
       for (const g of groups) {
         const exportRow = {
           Date:     formatDate(row.date),
@@ -192,6 +203,16 @@ export default function Settings() {
           exportRow[`Set ${s.setNumber}`] = s.reps != null ? s.reps : '';
         }
         workoutRows.push(exportRow);
+      }
+
+      for (const s of cardioSets) {
+        cardioRows.push({
+          Date:              formatDate(row.date),
+          Exercise:          s.exerciseName,
+          Set:               s.setNumber,
+          'Distance (mi)':   s.distanceMiles  != null ? parseFloat(s.distanceMiles)  : '',
+          'Duration (sec)':  s.durationSeconds != null ? s.durationSeconds           : '',
+        });
       }
     }
 
@@ -208,26 +229,32 @@ export default function Settings() {
       return normalized;
     });
 
-    return { statsData, normalizedWorkoutRows };
+    return { statsData, normalizedWorkoutRows, cardioRows };
   }
 
   function handleExportXlsx() {
-    const { statsData, normalizedWorkoutRows } = buildExportData();
+    const { statsData, normalizedWorkoutRows, cardioRows } = buildExportData();
     const ws1 = XLSX.utils.json_to_sheet(statsData);
     const ws2 = XLSX.utils.json_to_sheet(
       normalizedWorkoutRows.length
         ? normalizedWorkoutRows
         : [{ Date: '', Exercise: '', Weight: '' }],
     );
+    const ws3 = XLSX.utils.json_to_sheet(
+      cardioRows.length
+        ? cardioRows
+        : [{ Date: '', Exercise: '', Set: '', 'Distance (mi)': '', 'Duration (sec)': '' }],
+    );
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, 'Total Stats');
     XLSX.utils.book_append_sheet(wb, ws2, 'Workouts');
+    XLSX.utils.book_append_sheet(wb, ws3, 'Cardio');
     XLSX.writeFile(wb, 'total-stats.xlsx');
   }
 
   function handleExportJson() {
-    const { statsData, normalizedWorkoutRows } = buildExportData();
-    const json = JSON.stringify({ totalStats: statsData, workouts: normalizedWorkoutRows }, null, 2);
+    const { statsData, normalizedWorkoutRows, cardioRows } = buildExportData();
+    const json = JSON.stringify({ totalStats: statsData, workouts: normalizedWorkoutRows, cardio: cardioRows }, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -253,10 +280,11 @@ export default function Settings() {
         weightImported, weightSkipped,
         nutritionImported, nutritionSkipped,
         workoutsImported, workoutsSkipped,
+        stepsImported = 0, stepsSkipped = 0,
       } = res.data;
       setImportStatus({
         ok: true,
-        message: `imported: ${weightImported} weight, ${nutritionImported} nutrition, ${workoutsImported} workouts  |  skipped: ${weightSkipped} weight, ${nutritionSkipped} nutrition, ${workoutsSkipped} workouts`,
+        message: `imported: ${weightImported} weight, ${nutritionImported} nutrition, ${workoutsImported} workouts, ${stepsImported} steps  |  skipped: ${weightSkipped} weight, ${nutritionSkipped} nutrition, ${workoutsSkipped} workouts, ${stepsSkipped} steps`,
       });
       refetchWeight();
       refetchNutrition();

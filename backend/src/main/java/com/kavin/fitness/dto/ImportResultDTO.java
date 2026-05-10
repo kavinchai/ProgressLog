@@ -11,4 +11,6 @@ public class ImportResultDTO {
     private int nutritionSkipped;
     private int workoutsImported;
     private int workoutsSkipped;
+    private int stepsImported;
+    private int stepsSkipped;
 }
