@@ -65,9 +65,13 @@ public class WorkoutBuilderModal {
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
     }
 
+    public void waitForExerciseCount(int count) {
+        wait.until(d -> d.findElements(EXERCISE_NAME_INPUTS).size() >= count);
+    }
+
     public void enterExerciseName(int idx, String name) {
-        List<WebElement> inputs = driver.findElements(EXERCISE_NAME_INPUTS);
-        WebElement el = inputs.get(idx);
+        wait.until(d -> d.findElements(EXERCISE_NAME_INPUTS).size() > idx);
+        WebElement el = driver.findElements(EXERCISE_NAME_INPUTS).get(idx);
         el.clear();
         el.sendKeys(name);
     }
@@ -108,8 +112,9 @@ public class WorkoutBuilderModal {
     }
 
     public void enterDuration(int idx, String h, String m, String s) {
-        List<WebElement> inputs = driver.findElements(
-                By.cssSelector(".wbm-set-row--cardio input[placeholder='0']"));
+        By cardioInputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
+        wait.until(d -> d.findElements(cardioInputs).size() > idx * 3 + 2);
+        List<WebElement> inputs = driver.findElements(cardioInputs);
         WebElement hi = inputs.get(idx * 3);
         WebElement mi = inputs.get(idx * 3 + 1);
         WebElement si = inputs.get(idx * 3 + 2);

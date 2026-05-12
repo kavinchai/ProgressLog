@@ -140,7 +140,7 @@ Browser
 | CI/CD              | GitHub Actions                               | Automated testing on push/PR             |
 | Testing (frontend) | Vitest + React Testing Library               | Fast, Vite-native test runner            |
 | Testing (backend)  | JUnit 5 + Mockito                            | Standard Spring Boot testing             |
-| Testing (e2e)      | QAF + Selenium                               | BDD-style UI integration tests           |
+| Testing (e2e)      | Selenium + TestNG                            | Page-object UI integration tests         |
 | MCP server         | Node.js + @modelcontextprotocol/sdk          | Claude AI integration                    |
 
 ---
@@ -297,8 +297,8 @@ WorkoutApp/
 │   ├── server.js                   ← MCP server (Node.js + Express)
 │   └── package.json
 │
-├── qaf-tests/
-│   └── ...                         ← QAF Selenium e2e tests (BDD / page objects)
+├── e2e-tests/
+│   └── ...                         ← Selenium + TestNG e2e tests (page objects)
 │
 └── docs/
     └── data-flow-diagram.html      ← interactive architecture diagram
@@ -522,11 +522,11 @@ Tests for JWT utilities and workout service logic.
 **End-to-End** (QAF + Selenium):
 
 ```bash
-cd qaf-tests
-# See qaf-tests/README.md for setup and run instructions
+cd e2e-tests
+# See e2e-tests/README.md for setup and run instructions
 ```
 
-BDD-style UI integration tests using QAF's page object and locator repository patterns.
+Selenium + TestNG UI integration tests using page object patterns.
 
 ---
 
