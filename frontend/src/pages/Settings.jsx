@@ -234,9 +234,10 @@ export default function Settings() {
     for (const entry of nutritionData) {
       if (!entry.meals?.length) continue;
       for (const meal of entry.meals) {
+        const dayType = (entry.dayType ?? 'training').charAt(0).toUpperCase() + (entry.dayType ?? 'training').slice(1);
         nutritionRows.push({
           Date:      formatDate(entry.logDate),
-          'Day Type': entry.dayType ?? 'training',
+          'Day Type': dayType,
           Meal:      meal.mealName ?? '',
           Calories:  meal.calories  ?? '',
           Protein:   meal.proteinGrams ?? '',
