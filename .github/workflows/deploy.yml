@@ -141,6 +141,29 @@ jobs:
             -Dtest.user.username="$TEST_USERNAME" \
             -Dtest.user.password="$TEST_PASSWORD"
 
+      - name: Summarize E2E test failures
+        if: failure()
+        working-directory: qaf-tests
+        run: |
+          echo "── failing tests (from build/test-results/test/*.xml) ──"
+          shopt -s nullglob globstar
+          xml_files=(build/test-results/test/**/*.xml)
+          if [ ${#xml_files[@]} -eq 0 ]; then
+            echo "No JUnit XML results found under build/test-results/test/."
+          else
+            # Grep each XML for <failure ...> / <error ...> with up to 20 lines of context
+            # so the message attribute and stack-trace body land in the log.
+            for f in "${xml_files[@]}"; do
+              if grep -qE '<(failure|error)[ />]' "$f"; then
+                echo
+                echo "── $f ──"
+                grep -nE -A 20 '<(failure|error)[ />]' "$f" | sed 's/^/  /'
+              fi
+            done
+          fi
+          echo
+          echo "Full HTML report is in the 'e2e-test-reports' artifact (build/reports/tests/test/index.html)."
+
       - name: Dump container logs on failure
         if: failure()
         run: |
@@ -160,6 +183,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-reports
+          if-no-files-found: warn
           path: |
             qaf-tests/test-results/
             qaf-tests/build/reports/
