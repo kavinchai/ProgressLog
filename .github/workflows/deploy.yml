@@ -136,8 +136,7 @@ jobs:
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
         run: |
-          chmod +x ./gradlew
-          ./gradlew test --no-daemon \
+          gradle test --no-daemon \
             -Denv.baseurl=http://localhost:5173 \
             -Dtest.user.username="$TEST_USERNAME" \
             -Dtest.user.password="$TEST_PASSWORD"
