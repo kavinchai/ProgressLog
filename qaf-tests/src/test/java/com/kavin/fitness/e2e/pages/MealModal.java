@@ -13,11 +13,11 @@ public class MealModal {
     private final WebDriverWait wait;
 
     private static final By TITLE = By.cssSelector(".modal-title");
-    private static final By NAME = By.cssSelector(".modal input[placeholder*='optional' i]");
+    private static final By NAME = By.cssSelector(".modal-box input[placeholder*='optional' i]");
     private static final By CALORIES = By.cssSelector(
-            ".modal .modal-form-row .modal-field:nth-child(1) input[type='number']");
+            ".modal-box .modal-form-row .modal-field:nth-child(1) input[type='number']");
     private static final By PROTEIN = By.cssSelector(
-            ".modal .modal-form-row .modal-field:nth-child(2) input[type='number']");
+            ".modal-box .modal-form-row .modal-field:nth-child(2) input[type='number']");
     private static final By SAVE = By.xpath(
             "//div[contains(@class,'modal')]//button[translate(text()," +
                     "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']");

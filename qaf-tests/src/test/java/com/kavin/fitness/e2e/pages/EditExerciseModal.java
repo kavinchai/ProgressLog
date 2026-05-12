@@ -37,21 +37,21 @@ public class EditExerciseModal {
 
     public void editWeight(int setIdx, String weight) {
         WebElement input = driver.findElements(
-                By.cssSelector(".modal .exercise-set-row input[placeholder='0']")).get(setIdx * 2);
+                By.cssSelector(".modal-box .wbm-set-row .wbm-set-input")).get(setIdx * 2);
         input.clear();
         input.sendKeys(weight);
     }
 
     public void editDistance(int setIdx, String distance) {
         WebElement input = driver.findElements(
-                By.cssSelector(".modal .run-set-row input[placeholder='0']")).get(setIdx * 3);
+                By.cssSelector(".modal-box .wbm-set-row--cardio input[placeholder='0']")).get(setIdx * 3);
         input.clear();
         input.sendKeys(distance);
     }
 
     public void editMinutes(int setIdx, String minutes) {
         List<WebElement> inputs = driver.findElements(
-                By.cssSelector(".modal .timed-set-row input"));
+                By.cssSelector(".modal-box .wbm-set-row--cardio input[placeholder='0']"));
         WebElement input = inputs.get(setIdx * 3 + 1);
         input.clear();
         input.sendKeys(minutes);

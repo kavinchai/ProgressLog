@@ -13,7 +13,7 @@ public class WeightModal {
     private final WebDriverWait wait;
 
     private static final By TITLE = By.cssSelector(".modal-title");
-    private static final By INPUT = By.cssSelector(".modal input[type='number']");
+    private static final By INPUT = By.cssSelector(".modal-box input[type='number']");
     private static final By SAVE = By.xpath(
             "//div[contains(@class,'modal')]//button[translate(text()," +
                     "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']");

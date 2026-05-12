@@ -14,23 +14,27 @@ public class TodayPage {
     private final WebDriverWait wait;
 
     private static final int WEIGHT_IDX = 1;
-    private static final int STEPS_IDX = 3;
-    private static final int WORKOUT_IDX = 4;
+    private static final int STEPS_IDX = 2;
+    private static final int WORKOUT_IDX = 3;
+    private static final int NUTRITION_IDX = 4;
 
     public TodayPage(WebDriver driver) {
         this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
+    /** nth-child offset: today-page-header is 1st child, section-boxes start at 2nd */
+    private int cssNth(int sectionIdx) { return sectionIdx + 1; }
+
     private WebElement sectionBtnContains(int sectionIdx, String text) {
         return driver.findElement(By.xpath(
-                "//div[contains(@class,'day-detail-section')][" + sectionIdx +
+                "(//div[contains(@class,'section-box')])[" + sectionIdx +
                         "]//button[contains(text(),'" + text + "')]"));
     }
 
     private WebElement sectionBtnExact(int sectionIdx, String text) {
         return driver.findElement(By.xpath(
-                "//div[contains(@class,'day-detail-section')][" + sectionIdx +
+                "(//div[contains(@class,'section-box')])[" + sectionIdx +
                         "]//button[text()='" + text + "']"));
     }
 
@@ -41,7 +45,7 @@ public class TodayPage {
 
     public void waitForWeightValue(String expected) {
         wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                By.cssSelector(".day-detail-section:nth-child(" + WEIGHT_IDX + ") .day-detail-value"),
+                By.cssSelector(".section-box:nth-child(" + cssNth(WEIGHT_IDX) + ") .today-data-value"),
                 expected));
     }
 
@@ -51,7 +55,7 @@ public class TodayPage {
 
     public void clickDeleteSteps() {
         driver.findElement(By.xpath(
-                "//div[contains(@class,'day-detail-section')][" + STEPS_IDX +
+                "(//div[contains(@class,'section-box')])[" + STEPS_IDX +
                         "]//button[contains(@class,'btn-danger')]")).click();
     }
 
@@ -67,9 +71,15 @@ public class TodayPage {
     }
 
     public void waitForStepsValue(String expected) {
-        wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                By.cssSelector(".day-detail-section:nth-child(" + STEPS_IDX + ") .day-detail-value"),
-                expected));
+        if ("--".equals(expected)) {
+            wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                    By.cssSelector(".section-box:nth-child(" + cssNth(STEPS_IDX) + ") .section-body"),
+                    "No steps logged"));
+        } else {
+            wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                    By.cssSelector(".section-box:nth-child(" + cssNth(STEPS_IDX) + ") .today-data-value"),
+                    expected));
+        }
     }
 
     // ── Nutrition / Meals ────────────────────────────────────────────────────
@@ -81,33 +91,42 @@ public class TodayPage {
 
     public void waitForMealDisplayed(String name) {
         wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//span[contains(@class,'day-meal-name') and contains(text(),'" + name + "')]")));
+                By.xpath("//span[contains(@class,'meal-card-name') and contains(text(),'" + name + "')]")));
     }
 
     public void waitForNutritionTotal(String text) {
         wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                By.cssSelector(".day-nutrition-total"), text));
+                By.cssSelector(".nutrition-totals"), text));
     }
 
     // ── Workout ──────────────────────────────────────────────────────────────
 
-    public void clickAddWorkout() { sectionBtnContains(WORKOUT_IDX, "+ Add").click(); }
+    public void clickAddWorkout() {
+        List<WebElement> startBtns = driver.findElements(By.xpath(
+                "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
+                        "]//button[contains(text(),'Start Workout')]"));
+        if (!startBtns.isEmpty()) {
+            startBtns.get(0).click();
+        } else {
+            sectionBtnContains(WORKOUT_IDX, "+ Exercise").click();
+        }
+    }
 
     public void renameWorkoutSession(String newName) {
         sectionBtnExact(WORKOUT_IDX, "Rename").click();
         WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector(".day-detail-section:nth-child(" + WORKOUT_IDX + ") input[type='text']")));
+                By.cssSelector(".section-box:nth-child(" + cssNth(WORKOUT_IDX) + ") input[type='text']")));
         input.clear();
         input.sendKeys(newName);
         driver.findElement(By.xpath(
-                "//div[contains(@class,'day-detail-section')][" + WORKOUT_IDX +
+                "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
                         "]//button[contains(@class,'btn-primary') and text()='Save']")).click();
     }
 
     public void waitForSessionName(String name) {
         wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                By.cssSelector(".day-detail-section:nth-child(" + WORKOUT_IDX +
-                        ") .day-detail-label .muted"),
+                By.cssSelector(".section-box:nth-child(" + cssNth(WORKOUT_IDX) +
+                        ") .section-title .muted"),
                 name));
     }
 
@@ -115,19 +134,19 @@ public class TodayPage {
 
     public void waitForExercise(String name) {
         wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//span[contains(@class,'day-exercise-name') and contains(text(),'" + name + "')]")));
+                By.xpath("//span[contains(@class,'exercise-card-name') and contains(text(),'" + name + "')]")));
     }
 
     public void waitForExerciseDetail(String exerciseName, String detail) {
         wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//div[contains(@class,'day-exercise-item')]" +
+                By.xpath("//div[contains(@class,'exercise-card')]" +
                         "[.//span[contains(text(),'" + exerciseName + "')]]" +
                         "[.//*[contains(text(),'" + detail + "')]]")));
     }
 
     public void assertExerciseDoesNotShowWeight(String name) {
         List<WebElement> items = driver.findElements(By.xpath(
-                "//div[contains(@class,'day-exercise-item')]" +
+                "//div[contains(@class,'exercise-card')]" +
                         "[.//span[contains(text(),'" + name + "')]]" +
                         "[.//span[contains(text(),'lbs')]]"));
         if (!items.isEmpty()) {
@@ -136,7 +155,7 @@ public class TodayPage {
     }
 
     public void clickEditExercise(int index) {
-        List<WebElement> editBtns = driver.findElements(By.cssSelector(".day-exercise-item .btn"));
+        List<WebElement> editBtns = driver.findElements(By.cssSelector(".exercise-card .btn.btn-sm"));
         editBtns.get(index).click();
     }
 
@@ -146,7 +165,7 @@ public class TodayPage {
 
     public boolean isExerciseVisible(String name) {
         return !driver.findElements(By.xpath(
-                "//span[contains(@class,'day-exercise-name') and contains(text(),'" + name + "')]"))
+                "//span[contains(@class,'exercise-card-name') and contains(text(),'" + name + "')]"))
                 .isEmpty();
     }
 }

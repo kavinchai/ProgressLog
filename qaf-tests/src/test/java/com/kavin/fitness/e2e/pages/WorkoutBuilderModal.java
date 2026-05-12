@@ -27,7 +27,7 @@ public class WorkoutBuilderModal {
     private static final By EXERCISE_NAME_INPUTS = By.cssSelector("input[placeholder*='exercise name' i]");
     private static final By ADD_SET_BTNS = By.xpath(
             "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ set')]");
-    private static final By TYPE_BTNS = By.cssSelector(".exercise-type-toggle");
+    private static final By TYPE_BTNS = By.cssSelector(".wbm-type-toggle");
 
     public WorkoutBuilderModal(WebDriver driver) {
         this.driver = driver;
@@ -37,8 +37,8 @@ public class WorkoutBuilderModal {
     public WorkoutBuilderModal waitUntilVisible() {
         wait.until(ExpectedConditions.visibilityOfElementLocated(TITLE));
         String actual = driver.findElement(TITLE).getText();
-        if (!actual.contains("Log Workout")) {
-            throw new AssertionError("Expected 'Log Workout' modal but got: " + actual);
+        if (!actual.contains("Log Workout") && !actual.contains("Edit Workout")) {
+            throw new AssertionError("Expected 'Log Workout' or 'Edit Workout' modal but got: " + actual);
         }
         return this;
     }
@@ -62,42 +62,42 @@ public class WorkoutBuilderModal {
 
     public void enterWeight(int idx, String weight) {
         WebElement input = driver.findElements(
-                By.cssSelector(".exercise-set-row input[placeholder='0']")).get(idx * 2);
+                By.cssSelector(".wbm-set-row input[placeholder='0']")).get(idx * 2);
         input.clear();
         input.sendKeys(weight);
     }
 
     public void enterReps(int idx, String reps) {
         WebElement input = driver.findElements(
-                By.cssSelector(".exercise-set-row input[placeholder='0']")).get(idx * 2 + 1);
+                By.cssSelector(".wbm-set-row input[placeholder='0']")).get(idx * 2 + 1);
         input.clear();
         input.sendKeys(reps);
     }
 
     public void enterDistance(int idx, String distance) {
         WebElement input = driver.findElements(
-                By.cssSelector(".run-set-row input[placeholder='0']")).get(idx * 3);
+                By.cssSelector(".wbm-set-row--cardio input[placeholder='0']")).get(idx * 3);
         input.clear();
         input.sendKeys(distance);
     }
 
     public void enterRunMinutes(int idx, String minutes) {
         WebElement input = driver.findElements(
-                By.cssSelector(".run-set-row input[placeholder='0']")).get(idx * 3 + 1);
+                By.cssSelector(".wbm-set-row--cardio input[placeholder='0']")).get(idx * 3 + 1);
         input.clear();
         input.sendKeys(minutes);
     }
 
     public void enterRunSeconds(int idx, String seconds) {
         WebElement input = driver.findElements(
-                By.cssSelector(".run-set-row input[placeholder='0']")).get(idx * 3 + 2);
+                By.cssSelector(".wbm-set-row--cardio input[placeholder='0']")).get(idx * 3 + 2);
         input.clear();
         input.sendKeys(seconds);
     }
 
     public void enterDuration(int idx, String h, String m, String s) {
         List<WebElement> inputs = driver.findElements(
-                By.cssSelector(".timed-set-row input[placeholder='0']"));
+                By.cssSelector(".wbm-set-row--cardio input[placeholder='0']"));
         WebElement hi = inputs.get(idx * 3);
         WebElement mi = inputs.get(idx * 3 + 1);
         WebElement si = inputs.get(idx * 3 + 2);
