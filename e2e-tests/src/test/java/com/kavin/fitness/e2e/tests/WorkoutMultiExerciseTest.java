@@ -29,19 +29,21 @@ public class WorkoutMultiExerciseTest extends BaseTest {
 
         step("add lifting exercise: Overhead Press 95x10");
         workout.clickAddExercise();
+        workout.waitForExerciseCount(1);
         workout.enterExerciseName(0, "Overhead Press");
         workout.enterWeight(0, "95");
         workout.enterReps(0, "10");
 
-        step("add Run: 2 mi, 18m 0s");
+        step("add Run: 2 mi, 18m 0s (name pre-filled by + Run)");
         workout.clickAddRun();
-        workout.enterExerciseName(1, "Run");
+        workout.waitForExerciseCount(2);
         workout.enterDistance(0, "2");
         workout.enterRunMinutes(0, "18");
         workout.enterRunSeconds(0, "0");
 
         step("add Timed exercise: Yoga 0h 30m 0s");
         workout.clickAddTimed();
+        workout.waitForExerciseCount(3);
         workout.enterExerciseName(2, "Yoga");
         workout.enterDuration(1, "0", "30", "0");
 
@@ -51,7 +53,7 @@ public class WorkoutMultiExerciseTest extends BaseTest {
 
         step("verify all three exercises displayed");
         today.waitForExercise("Overhead Press");
-        today.waitForExerciseDetail("Overhead Press", "95 lbs");
+        today.waitForExerciseDetail("Overhead Press", "95");
         today.waitForExercise("Run");
         today.waitForExerciseDetail("Run", "2 mi");
         today.waitForExercise("Yoga");

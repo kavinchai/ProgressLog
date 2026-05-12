@@ -44,8 +44,10 @@ public abstract class BaseTest {
     }
 
     protected void navigateToToday() {
-        driver.get(baseUrl + "/");
+        driver.get(baseUrl + "/today");
         waitForPageLoad();
+        wait.until(org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated(
+                org.openqa.selenium.By.cssSelector(".section-box")));
     }
 
     protected void step(String description) {
