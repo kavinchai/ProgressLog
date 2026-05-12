@@ -40,6 +40,15 @@ tasks.withType<Test> {
         suites("src/test/resources/testng-config.xml")
     }
     workingDir = projectDir
+
+    // QAF uses AspectJ Load-Time Weaving (aop.xml is bundled in qaf.jar). Without the
+    // weaver agent, Scenario has no @Test method and TestNG finds 0 tests to execute.
+    jvmArgs(
+        "-javaagent:${configurations.testRuntimeClasspath.get()
+            .resolvedConfiguration.resolvedArtifacts
+            .first { it.name == "aspectjweaver" }.file}"
+    )
+
     systemProperty("application.properties.file", "src/test/resources/application.properties")
     testLogging {
         showStandardStreams = true
