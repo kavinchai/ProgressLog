@@ -1,128 +1,62 @@
 package com.kavin.fitness.e2e.pages;
 
-import com.qmetry.qaf.automation.ui.WebDriverBaseTestPage;
-import com.qmetry.qaf.automation.ui.annotations.FindBy;
-import com.qmetry.qaf.automation.ui.api.PageLocator;
-import com.qmetry.qaf.automation.ui.api.WebDriverTestPage;
-import com.qmetry.qaf.automation.ui.webdriver.QAFExtendedWebElement;
-import com.qmetry.qaf.automation.ui.webdriver.QAFWebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.List;
 
-public class EditExerciseModal extends WebDriverBaseTestPage<WebDriverTestPage> {
+public class EditExerciseModal {
+    private final WebDriver driver;
+    private final WebDriverWait wait;
 
-    @FindBy(locator = "editExercise.modal.title")
-    private QAFExtendedWebElement modalTitle;
+    private static final By TITLE = By.cssSelector(".modal-title");
+    private static final By SAVE = By.xpath(
+            "//div[contains(@class,'modal')]//button[translate(text()," +
+                    "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']");
+    private static final By DELETE = By.xpath(
+            "//div[contains(@class,'modal')]//button[contains(translate(text()," +
+                    "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'delete')]");
 
-    @FindBy(locator = "editExercise.modal.weightInputs")
-    private List<QAFWebElement> weightInputs;
-
-    @FindBy(locator = "editExercise.modal.repsInputs")
-    private List<QAFWebElement> repsInputs;
-
-    @FindBy(locator = "editExercise.modal.distanceInputs")
-    private List<QAFWebElement> distanceInputs;
-
-    @FindBy(locator = "editExercise.modal.hoursInputs")
-    private List<QAFWebElement> hoursInputs;
-
-    @FindBy(locator = "editExercise.modal.minutesInputs")
-    private List<QAFWebElement> minutesInputs;
-
-    @FindBy(locator = "editExercise.modal.secondsInputs")
-    private List<QAFWebElement> secondsInputs;
-
-    @FindBy(locator = "editExercise.modal.saveBtn")
-    private QAFExtendedWebElement saveBtn;
-
-    @FindBy(locator = "editExercise.modal.deleteBtn")
-    private QAFExtendedWebElement deleteBtn;
-
-    @FindBy(locator = "editExercise.modal.cancelBtn")
-    private QAFExtendedWebElement cancelBtn;
-
-    @Override
-    protected void openPage(PageLocator locator, Object... args) {
-        // Opened from TodayPage exercise edit button
+    public EditExerciseModal(WebDriver driver) {
+        this.driver = driver;
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
-    public boolean isDisplayed() {
-        return modalTitle.isDisplayed();
+    public EditExerciseModal waitUntilTitleContains(String expected) {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(TITLE));
+        String actual = driver.findElement(TITLE).getText();
+        if (!actual.contains(expected)) {
+            throw new AssertionError("Expected title to contain '" + expected + "' but got: " + actual);
+        }
+        return this;
     }
 
-    public String getTitle() {
-        return modalTitle.getText();
-    }
-
-    // ── Lifting fields ───────────────────────────────────────────────────────
-
-    public void enterWeight(int setIndex, String weight) {
-        QAFWebElement input = weightInputs.get(setIndex);
+    public void editWeight(int setIdx, String weight) {
+        WebElement input = driver.findElements(
+                By.cssSelector(".modal .exercise-set-row input[placeholder='0']")).get(setIdx * 2);
         input.clear();
         input.sendKeys(weight);
     }
 
-    public String getWeight(int setIndex) {
-        return weightInputs.get(setIndex).getAttribute("value");
-    }
-
-    public void enterReps(int setIndex, String reps) {
-        QAFWebElement input = repsInputs.get(setIndex);
-        input.clear();
-        input.sendKeys(reps);
-    }
-
-    // ── Run fields ───────────────────────────────────────────────────────────
-
-    public void enterDistance(int setIndex, String distance) {
-        QAFWebElement input = distanceInputs.get(setIndex);
+    public void editDistance(int setIdx, String distance) {
+        WebElement input = driver.findElements(
+                By.cssSelector(".modal .run-set-row input[placeholder='0']")).get(setIdx * 3);
         input.clear();
         input.sendKeys(distance);
     }
 
-    public String getDistance(int setIndex) {
-        return distanceInputs.get(setIndex).getAttribute("value");
-    }
-
-    // ── Timed fields ─────────────────────────────────────────────────────────
-
-    public void enterHours(int setIndex, String hours) {
-        QAFWebElement input = hoursInputs.get(setIndex);
-        input.clear();
-        input.sendKeys(hours);
-    }
-
-    public void enterMinutes(int setIndex, String minutes) {
-        QAFWebElement input = minutesInputs.get(setIndex);
+    public void editMinutes(int setIdx, String minutes) {
+        List<WebElement> inputs = driver.findElements(
+                By.cssSelector(".modal .timed-set-row input"));
+        WebElement input = inputs.get(setIdx * 3 + 1);
         input.clear();
         input.sendKeys(minutes);
     }
 
-    public void enterSeconds(int setIndex, String seconds) {
-        QAFWebElement input = secondsInputs.get(setIndex);
-        input.clear();
-        input.sendKeys(seconds);
-    }
-
-    public String getMinutes(int setIndex) {
-        return minutesInputs.get(setIndex).getAttribute("value");
-    }
-
-    public String getSeconds(int setIndex) {
-        return secondsInputs.get(setIndex).getAttribute("value");
-    }
-
-    // ── Actions ──────────────────────────────────────────────────────────────
-
-    public void save() {
-        saveBtn.click();
-    }
-
-    public void deleteExercise() {
-        deleteBtn.click();
-    }
-
-    public void cancel() {
-        cancelBtn.click();
-    }
+    public void save() { driver.findElement(SAVE).click(); }
+    public void deleteExercise() { driver.findElement(DELETE).click(); }
 }

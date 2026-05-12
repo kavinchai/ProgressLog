@@ -69,7 +69,7 @@ jobs:
           path: backend/build/reports/
 
   e2e-tests:
-    name: E2E Tests (QAF)
+    name: E2E Tests (Selenium)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -185,7 +185,6 @@ jobs:
           name: e2e-test-reports
           if-no-files-found: warn
           path: |
-            qaf-tests/test-results/
             qaf-tests/build/reports/
             qaf-tests/build/test-results/
 

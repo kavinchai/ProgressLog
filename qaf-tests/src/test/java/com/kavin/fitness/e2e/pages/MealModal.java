@@ -1,64 +1,56 @@
 package com.kavin.fitness.e2e.pages;
 
-import com.qmetry.qaf.automation.ui.WebDriverBaseTestPage;
-import com.qmetry.qaf.automation.ui.annotations.FindBy;
-import com.qmetry.qaf.automation.ui.api.PageLocator;
-import com.qmetry.qaf.automation.ui.api.WebDriverTestPage;
-import com.qmetry.qaf.automation.ui.webdriver.QAFExtendedWebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
-public class MealModal extends WebDriverBaseTestPage<WebDriverTestPage> {
+import java.time.Duration;
 
-    @FindBy(locator = "meal.modal.title")
-    private QAFExtendedWebElement modalTitle;
+public class MealModal {
+    private final WebDriver driver;
+    private final WebDriverWait wait;
 
-    @FindBy(locator = "meal.modal.nameInput")
-    private QAFExtendedWebElement nameInput;
+    private static final By TITLE = By.cssSelector(".modal-title");
+    private static final By NAME = By.cssSelector(".modal input[placeholder*='optional' i]");
+    private static final By CALORIES = By.cssSelector(
+            ".modal .modal-form-row .modal-field:nth-child(1) input[type='number']");
+    private static final By PROTEIN = By.cssSelector(
+            ".modal .modal-form-row .modal-field:nth-child(2) input[type='number']");
+    private static final By SAVE = By.xpath(
+            "//div[contains(@class,'modal')]//button[translate(text()," +
+                    "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']");
 
-    @FindBy(locator = "meal.modal.caloriesInput")
-    private QAFExtendedWebElement caloriesInput;
-
-    @FindBy(locator = "meal.modal.proteinInput")
-    private QAFExtendedWebElement proteinInput;
-
-    @FindBy(locator = "meal.modal.saveBtn")
-    private QAFExtendedWebElement saveBtn;
-
-    @FindBy(locator = "meal.modal.cancelBtn")
-    private QAFExtendedWebElement cancelBtn;
-
-    @Override
-    protected void openPage(PageLocator locator, Object... args) {
-        // Opened from TodayPage
+    public MealModal(WebDriver driver) {
+        this.driver = driver;
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
-    public boolean isDisplayed() {
-        return modalTitle.isDisplayed();
+    public MealModal waitUntilVisible() {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(TITLE));
+        return this;
     }
 
-    public String getTitle() {
-        return modalTitle.getText();
-    }
-
-    public void enterMealName(String name) {
-        nameInput.clear();
-        nameInput.sendKeys(name);
+    public void enterName(String name) {
+        WebElement el = driver.findElement(NAME);
+        el.clear();
+        el.sendKeys(name);
     }
 
     public void enterCalories(String calories) {
-        caloriesInput.clear();
-        caloriesInput.sendKeys(calories);
+        WebElement el = driver.findElement(CALORIES);
+        el.clear();
+        el.sendKeys(calories);
     }
 
     public void enterProtein(String protein) {
-        proteinInput.clear();
-        proteinInput.sendKeys(protein);
+        WebElement el = driver.findElement(PROTEIN);
+        el.clear();
+        el.sendKeys(protein);
     }
 
     public void save() {
-        saveBtn.click();
-    }
-
-    public void cancel() {
-        cancelBtn.click();
+        driver.findElement(SAVE).click();
     }
 }
