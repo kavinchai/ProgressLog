@@ -131,7 +131,7 @@ jobs:
           fi
 
       - name: Run E2E tests
-        working-directory: qaf-tests
+        working-directory: e2e-tests
         env:
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
@@ -143,7 +143,7 @@ jobs:
 
       - name: Summarize E2E test failures
         if: failure()
-        working-directory: qaf-tests
+        working-directory: e2e-tests
         run: |
           echo "── failing tests (from build/test-results/test/*.xml) ──"
           shopt -s nullglob globstar
@@ -185,8 +185,8 @@ jobs:
           name: e2e-test-reports
           if-no-files-found: warn
           path: |
-            qaf-tests/build/reports/
-            qaf-tests/build/test-results/
+            e2e-tests/build/reports/
+            e2e-tests/build/test-results/
 
   all-tests-pass:
     name: All Tests Pass
