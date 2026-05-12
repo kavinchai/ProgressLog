@@ -65,14 +65,15 @@
 }
 
 .splash-btn {
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   padding: 12px;
   border-radius: var(--radius-md);
   font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);
   text-decoration: none;
-  text-align: center;
 }
 
 .splash-link {
