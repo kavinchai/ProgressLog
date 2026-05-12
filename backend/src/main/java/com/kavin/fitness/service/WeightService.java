@@ -35,9 +35,13 @@ public class WeightService {
 
     @Transactional
     public WeightLogDTO save(User user, WeightLogRequest request) {
-        WeightLog log = new WeightLog();
-        log.setUser(user);
-        log.setLogDate(request.getLogDate());
+        WeightLog log = weightLogRepository.findByUserIdAndLogDate(user.getId(), request.getLogDate())
+                .orElseGet(() -> {
+                    WeightLog newLog = new WeightLog();
+                    newLog.setUser(user);
+                    newLog.setLogDate(request.getLogDate());
+                    return newLog;
+                });
         log.setWeightLbs(request.getWeightLbs());
         return toDTO(weightLogRepository.save(log));
     }
