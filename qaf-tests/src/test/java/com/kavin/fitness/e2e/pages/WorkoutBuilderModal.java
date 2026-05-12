@@ -1,6 +1,7 @@
 package com.kavin.fitness.e2e.pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -49,9 +50,23 @@ public class WorkoutBuilderModal {
         el.sendKeys(name);
     }
 
-    public void clickAddExercise() { driver.findElement(ADD_EXERCISE).click(); }
-    public void clickAddRun() { driver.findElement(ADD_RUN).click(); }
-    public void clickAddTimed() { driver.findElement(ADD_TIMED).click(); }
+    public void clickAddExercise() {
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_EXERCISE));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
+        wait.until(ExpectedConditions.elementToBeClickable(btn)).click();
+    }
+
+    public void clickAddRun() {
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_RUN));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
+        wait.until(ExpectedConditions.elementToBeClickable(btn)).click();
+    }
+
+    public void clickAddTimed() {
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_TIMED));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
+        wait.until(ExpectedConditions.elementToBeClickable(btn)).click();
+    }
 
     public void enterExerciseName(int idx, String name) {
         List<WebElement> inputs = driver.findElements(EXERCISE_NAME_INPUTS);
