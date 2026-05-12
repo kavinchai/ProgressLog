@@ -7,49 +7,49 @@
     <test name="Workout Lifting Flows">
         <parameter name="scenario.file.loc" value="src/test/resources/scenarios/workout_lifting.feature" />
         <classes>
-            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory2" />
         </classes>
     </test>
 
     <test name="Workout Run Flows">
         <parameter name="scenario.file.loc" value="src/test/resources/scenarios/workout_run.feature" />
         <classes>
-            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory2" />
         </classes>
     </test>
 
     <test name="Workout Timed Flows">
         <parameter name="scenario.file.loc" value="src/test/resources/scenarios/workout_timed.feature" />
         <classes>
-            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory2" />
         </classes>
     </test>
 
     <test name="Workout Display">
         <parameter name="scenario.file.loc" value="src/test/resources/scenarios/workout_display.feature" />
         <classes>
-            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory2" />
         </classes>
     </test>
 
     <test name="Weight Flows">
         <parameter name="scenario.file.loc" value="src/test/resources/scenarios/weight.feature" />
         <classes>
-            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory2" />
         </classes>
     </test>
 
     <test name="Steps Flows">
         <parameter name="scenario.file.loc" value="src/test/resources/scenarios/steps.feature" />
         <classes>
-            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory2" />
         </classes>
     </test>
 
     <test name="Meal Flows">
         <parameter name="scenario.file.loc" value="src/test/resources/scenarios/meals.feature" />
         <classes>
-            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory" />
+            <class name="com.qmetry.qaf.automation.step.client.text.BDDTestFactory2" />
         </classes>
     </test>
 
