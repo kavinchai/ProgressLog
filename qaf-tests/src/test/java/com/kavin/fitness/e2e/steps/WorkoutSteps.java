@@ -8,6 +8,7 @@ import com.qmetry.qaf.automation.ui.WebDriverTestBase;
 import org.openqa.selenium.By;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Reporter;
 
 import java.time.Duration;
 
@@ -17,15 +18,22 @@ public class WorkoutSteps {
     private final WorkoutBuilderModal workoutModal = new WorkoutBuilderModal();
     private final EditExerciseModal editModal = new EditExerciseModal();
 
+    private static void step(String description) {
+        System.out.println("  STEP: " + description);
+        Reporter.log(description, false);
+    }
+
     // ── Workout Builder Modal ────────────────────────────────────────────────
 
     @QAFTestStep(description = "user clicks Add Workout button")
     public void userClicksAddWorkout() {
+        step("user clicks Add Workout button");
         todayPage.clickAddWorkout();
     }
 
     @QAFTestStep(description = "workout builder modal is displayed")
     public void workoutBuilderModalIsDisplayed() {
+        step("workout builder modal is displayed");
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(5));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".modal-title")));
@@ -35,46 +43,55 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "user enters session name {name}")
     public void userEntersSessionName(String name) {
+        step("user enters session name: " + name);
         workoutModal.enterSessionName(name);
     }
 
     @QAFTestStep(description = "user clicks Add Exercise button")
     public void userClicksAddExercise() {
+        step("user clicks Add Exercise button");
         workoutModal.clickAddExercise();
     }
 
     @QAFTestStep(description = "user clicks Add Run button")
     public void userClicksAddRun() {
+        step("user clicks Add Run button");
         workoutModal.clickAddRun();
     }
 
     @QAFTestStep(description = "user clicks Add Timed button")
     public void userClicksAddTimed() {
+        step("user clicks Add Timed button");
         workoutModal.clickAddTimed();
     }
 
     @QAFTestStep(description = "user enters exercise name {name} at index {index}")
     public void userEntersExerciseName(String name, int index) {
+        step("user enters exercise name '" + name + "' at index " + index);
         workoutModal.enterExerciseName(index, name);
     }
 
     @QAFTestStep(description = "user enters weight {weight} at index {index}")
     public void userEntersWeight(String weight, int index) {
+        step("user enters weight '" + weight + "' at index " + index);
         workoutModal.enterWeight(index, weight);
     }
 
     @QAFTestStep(description = "user enters reps {reps} at index {index}")
     public void userEntersReps(String reps, int index) {
+        step("user enters reps '" + reps + "' at index " + index);
         workoutModal.enterReps(index, reps);
     }
 
     @QAFTestStep(description = "user enters distance {distance} at index {index}")
     public void userEntersDistance(String distance, int index) {
+        step("user enters distance '" + distance + "' at index " + index);
         workoutModal.enterDistance(index, distance);
     }
 
     @QAFTestStep(description = "user enters duration hours {h} minutes {m} seconds {s} at index {index}")
     public void userEntersDuration(String h, String m, String s, int index) {
+        step("user enters duration " + h + "h " + m + "m " + s + "s at index " + index);
         workoutModal.enterHours(index, h);
         workoutModal.enterMinutes(index, m);
         workoutModal.enterSeconds(index, s);
@@ -82,27 +99,32 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "user enters run time minutes {m} seconds {s} at index {index}")
     public void userEntersRunTime(String m, String s, int index) {
+        step("user enters run time " + m + "m " + s + "s at index " + index);
         workoutModal.enterMinutes(index, m);
         workoutModal.enterSeconds(index, s);
     }
 
     @QAFTestStep(description = "user clicks Add Set for exercise at index {index}")
     public void userClicksAddSet(int index) {
+        step("user clicks Add Set for exercise at index " + index);
         workoutModal.clickAddSet(index);
     }
 
     @QAFTestStep(description = "user toggles exercise type at index {index}")
     public void userTogglesExerciseType(int index) {
+        step("user toggles exercise type at index " + index);
         workoutModal.toggleExerciseType(index);
     }
 
     @QAFTestStep(description = "user saves the workout")
     public void userSavesWorkout() {
+        step("user saves the workout");
         workoutModal.save();
     }
 
     @QAFTestStep(description = "user cancels the workout modal")
     public void userCancelsWorkout() {
+        step("user cancels the workout modal");
         workoutModal.cancel();
     }
 
@@ -110,6 +132,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "exercise {name} is displayed on the page")
     public void exerciseIsDisplayed(String name) {
+        step("exercise '" + name + "' is displayed on the page");
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(5));
         wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -118,6 +141,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "exercise {name} shows weight {weight}")
     public void exerciseShowsWeight(String name, String weight) {
+        step("exercise '" + name + "' shows weight '" + weight + "'");
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(5));
         wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -128,6 +152,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "exercise {name} shows reps {reps}")
     public void exerciseShowsReps(String name, String reps) {
+        step("exercise '" + name + "' shows reps '" + reps + "'");
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(5));
         wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -138,6 +163,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "exercise {name} shows distance {distance}")
     public void exerciseShowsDistance(String name, String distance) {
+        step("exercise '" + name + "' shows distance '" + distance + "'");
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(5));
         wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -148,6 +174,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "exercise {name} shows duration {duration}")
     public void exerciseShowsDuration(String name, String duration) {
+        step("exercise '" + name + "' shows duration '" + duration + "'");
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(5));
         wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -158,6 +185,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "exercise {name} does not show weight")
     public void exerciseDoesNotShowWeight(String name) {
+        step("exercise '" + name + "' does not show weight");
         var items = new WebDriverTestBase().getDriver().findElements(
                 By.xpath("//div[contains(@class,'day-exercise-item')]" +
                         "[.//span[contains(text(),'" + name + "')]]" +
@@ -169,11 +197,13 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "user clicks Edit on exercise at index {index}")
     public void userClicksEditExercise(int index) {
+        step("user clicks Edit on exercise at index " + index);
         todayPage.clickEditExercise(index);
     }
 
     @QAFTestStep(description = "edit exercise modal shows title containing {text}")
     public void editExerciseModalShowsTitle(String text) {
+        step("edit exercise modal shows title containing '" + text + "'");
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(5));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".modal-title")));
@@ -183,26 +213,31 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "user edits weight to {weight} at set index {index}")
     public void userEditsWeight(String weight, int index) {
+        step("user edits weight to '" + weight + "' at set index " + index);
         editModal.enterWeight(index, weight);
     }
 
     @QAFTestStep(description = "user edits distance to {distance} at set index {index}")
     public void userEditsDistance(String distance, int index) {
+        step("user edits distance to '" + distance + "' at set index " + index);
         editModal.enterDistance(index, distance);
     }
 
     @QAFTestStep(description = "user edits minutes to {minutes} at set index {index}")
     public void userEditsMinutes(String minutes, int index) {
+        step("user edits minutes to '" + minutes + "' at set index " + index);
         editModal.enterMinutes(index, minutes);
     }
 
     @QAFTestStep(description = "user saves the exercise edit")
     public void userSavesExerciseEdit() {
+        step("user saves the exercise edit");
         editModal.save();
     }
 
     @QAFTestStep(description = "user deletes the exercise")
     public void userDeletesExercise() {
+        step("user deletes the exercise");
         editModal.deleteExercise();
     }
 
@@ -210,6 +245,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "user renames workout session to {name}")
     public void userRenamesWorkoutSession(String name) {
+        step("user renames workout session to '" + name + "'");
         todayPage.clickRenameWorkout();
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(3));
@@ -224,6 +260,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "workout session name shows {name}")
     public void workoutSessionNameShows(String name) {
+        step("workout session name shows '" + name + "'");
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(), Duration.ofSeconds(5));
         wait.until(ExpectedConditions.textToBePresentInElementLocated(
@@ -233,6 +270,7 @@ public class WorkoutSteps {
 
     @QAFTestStep(description = "user deletes the workout session")
     public void userDeletesWorkoutSession() {
+        step("user deletes the workout session");
         todayPage.clickDeleteWorkout();
     }
 }
