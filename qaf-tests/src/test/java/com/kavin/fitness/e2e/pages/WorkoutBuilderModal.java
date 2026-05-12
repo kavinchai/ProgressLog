@@ -1,155 +1,118 @@
 package com.kavin.fitness.e2e.pages;
 
-import com.qmetry.qaf.automation.ui.WebDriverBaseTestPage;
-import com.qmetry.qaf.automation.ui.annotations.FindBy;
-import com.qmetry.qaf.automation.ui.api.PageLocator;
-import com.qmetry.qaf.automation.ui.api.WebDriverTestPage;
-import com.qmetry.qaf.automation.ui.webdriver.QAFExtendedWebElement;
-import com.qmetry.qaf.automation.ui.webdriver.QAFWebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.List;
 
-public class WorkoutBuilderModal extends WebDriverBaseTestPage<WebDriverTestPage> {
+public class WorkoutBuilderModal {
+    private final WebDriver driver;
+    private final WebDriverWait wait;
 
-    @FindBy(locator = "workout.modal.title")
-    private QAFExtendedWebElement modalTitle;
+    private static final By TITLE = By.cssSelector(".modal-title");
+    private static final By SESSION_NAME = By.cssSelector("input[placeholder*='push, pull, legs' i]");
+    private static final By ADD_EXERCISE = By.xpath(
+            "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ exercise')]");
+    private static final By ADD_RUN = By.xpath(
+            "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ run')]");
+    private static final By ADD_TIMED = By.xpath(
+            "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ timed')]");
+    private static final By SAVE = By.xpath(
+            "//div[contains(@class,'modal')]//button[translate(text()," +
+                    "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']");
+    private static final By EXERCISE_NAME_INPUTS = By.cssSelector("input[placeholder*='exercise name' i]");
+    private static final By ADD_SET_BTNS = By.xpath(
+            "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ set')]");
+    private static final By TYPE_BTNS = By.cssSelector(".exercise-type-toggle");
 
-    @FindBy(locator = "workout.modal.sessionNameInput")
-    private QAFExtendedWebElement sessionNameInput;
-
-    @FindBy(locator = "workout.modal.addExerciseBtn")
-    private QAFExtendedWebElement addExerciseBtn;
-
-    @FindBy(locator = "workout.modal.addRunBtn")
-    private QAFExtendedWebElement addRunBtn;
-
-    @FindBy(locator = "workout.modal.addTimedBtn")
-    private QAFExtendedWebElement addTimedBtn;
-
-    @FindBy(locator = "workout.modal.saveBtn")
-    private QAFExtendedWebElement saveBtn;
-
-    @FindBy(locator = "workout.modal.cancelBtn")
-    private QAFExtendedWebElement cancelBtn;
-
-    @FindBy(locator = "workout.modal.exerciseNameInputs")
-    private List<QAFWebElement> exerciseNameInputs;
-
-    @FindBy(locator = "workout.modal.weightInputs")
-    private List<QAFWebElement> weightInputs;
-
-    @FindBy(locator = "workout.modal.repsInputs")
-    private List<QAFWebElement> repsInputs;
-
-    @FindBy(locator = "workout.modal.distanceInputs")
-    private List<QAFWebElement> distanceInputs;
-
-    @FindBy(locator = "workout.modal.hoursInputs")
-    private List<QAFWebElement> hoursInputs;
-
-    @FindBy(locator = "workout.modal.minutesInputs")
-    private List<QAFWebElement> minutesInputs;
-
-    @FindBy(locator = "workout.modal.secondsInputs")
-    private List<QAFWebElement> secondsInputs;
-
-    @FindBy(locator = "workout.modal.addSetBtns")
-    private List<QAFWebElement> addSetBtns;
-
-    @FindBy(locator = "workout.modal.typeBtns")
-    private List<QAFWebElement> typeBtns;
-
-    @Override
-    protected void openPage(PageLocator locator, Object... args) {
-        // Modal is opened from TodayPage actions
+    public WorkoutBuilderModal(WebDriver driver) {
+        this.driver = driver;
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
-    public boolean isDisplayed() {
-        return modalTitle.isDisplayed();
+    public WorkoutBuilderModal waitUntilVisible() {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(TITLE));
+        String actual = driver.findElement(TITLE).getText();
+        if (!actual.contains("Log Workout")) {
+            throw new AssertionError("Expected 'Log Workout' modal but got: " + actual);
+        }
+        return this;
     }
-
-    public String getTitle() {
-        return modalTitle.getText();
-    }
-
-    // ── Session ──────────────────────────────────────────────────────────────
 
     public void enterSessionName(String name) {
-        sessionNameInput.clear();
-        sessionNameInput.sendKeys(name);
+        WebElement el = driver.findElement(SESSION_NAME);
+        el.clear();
+        el.sendKeys(name);
     }
 
-    // ── Exercise actions ─────────────────────────────────────────────────────
+    public void clickAddExercise() { driver.findElement(ADD_EXERCISE).click(); }
+    public void clickAddRun() { driver.findElement(ADD_RUN).click(); }
+    public void clickAddTimed() { driver.findElement(ADD_TIMED).click(); }
 
-    public void clickAddExercise() {
-        addExerciseBtn.click();
+    public void enterExerciseName(int idx, String name) {
+        List<WebElement> inputs = driver.findElements(EXERCISE_NAME_INPUTS);
+        WebElement el = inputs.get(idx);
+        el.clear();
+        el.sendKeys(name);
     }
 
-    public void clickAddRun() {
-        addRunBtn.click();
-    }
-
-    public void clickAddTimed() {
-        addTimedBtn.click();
-    }
-
-    public void enterExerciseName(int index, String name) {
-        QAFWebElement input = exerciseNameInputs.get(index);
-        input.clear();
-        input.sendKeys(name);
-    }
-
-    public void enterWeight(int index, String weight) {
-        QAFWebElement input = weightInputs.get(index);
+    public void enterWeight(int idx, String weight) {
+        WebElement input = driver.findElements(
+                By.cssSelector(".exercise-set-row input[placeholder='0']")).get(idx * 2);
         input.clear();
         input.sendKeys(weight);
     }
 
-    public void enterReps(int index, String reps) {
-        QAFWebElement input = repsInputs.get(index);
+    public void enterReps(int idx, String reps) {
+        WebElement input = driver.findElements(
+                By.cssSelector(".exercise-set-row input[placeholder='0']")).get(idx * 2 + 1);
         input.clear();
         input.sendKeys(reps);
     }
 
-    public void enterDistance(int index, String distance) {
-        QAFWebElement input = distanceInputs.get(index);
+    public void enterDistance(int idx, String distance) {
+        WebElement input = driver.findElements(
+                By.cssSelector(".run-set-row input[placeholder='0']")).get(idx * 3);
         input.clear();
         input.sendKeys(distance);
     }
 
-    public void enterHours(int index, String hours) {
-        QAFWebElement input = hoursInputs.get(index);
-        input.clear();
-        input.sendKeys(hours);
-    }
-
-    public void enterMinutes(int index, String minutes) {
-        QAFWebElement input = minutesInputs.get(index);
+    public void enterRunMinutes(int idx, String minutes) {
+        WebElement input = driver.findElements(
+                By.cssSelector(".run-set-row input[placeholder='0']")).get(idx * 3 + 1);
         input.clear();
         input.sendKeys(minutes);
     }
 
-    public void enterSeconds(int index, String seconds) {
-        QAFWebElement input = secondsInputs.get(index);
+    public void enterRunSeconds(int idx, String seconds) {
+        WebElement input = driver.findElements(
+                By.cssSelector(".run-set-row input[placeholder='0']")).get(idx * 3 + 2);
         input.clear();
         input.sendKeys(seconds);
     }
 
-    public void clickAddSet(int exerciseIndex) {
-        addSetBtns.get(exerciseIndex).click();
+    public void enterDuration(int idx, String h, String m, String s) {
+        List<WebElement> inputs = driver.findElements(
+                By.cssSelector(".timed-set-row input[placeholder='0']"));
+        WebElement hi = inputs.get(idx * 3);
+        WebElement mi = inputs.get(idx * 3 + 1);
+        WebElement si = inputs.get(idx * 3 + 2);
+        hi.clear(); hi.sendKeys(h);
+        mi.clear(); mi.sendKeys(m);
+        si.clear(); si.sendKeys(s);
     }
 
-    public void toggleExerciseType(int exerciseIndex) {
-        typeBtns.get(exerciseIndex).click();
+    public void clickAddSet(int exerciseIdx) {
+        driver.findElements(ADD_SET_BTNS).get(exerciseIdx).click();
     }
 
-    // ── Save / Cancel ────────────────────────────────────────────────────────
-
-    public void save() {
-        saveBtn.click();
+    public void toggleExerciseType(int exerciseIdx) {
+        driver.findElements(TYPE_BTNS).get(exerciseIdx).click();
     }
 
-    public void cancel() {
-        cancelBtn.click();
-    }
+    public void save() { driver.findElement(SAVE).click(); }
 }

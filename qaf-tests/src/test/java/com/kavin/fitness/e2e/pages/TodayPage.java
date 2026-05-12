@@ -1,157 +1,152 @@
 package com.kavin.fitness.e2e.pages;
 
-import com.qmetry.qaf.automation.core.ConfigurationManager;
-import com.qmetry.qaf.automation.ui.WebDriverBaseTestPage;
-import com.qmetry.qaf.automation.ui.annotations.FindBy;
-import com.qmetry.qaf.automation.ui.api.PageLocator;
-import com.qmetry.qaf.automation.ui.api.WebDriverTestPage;
-import com.qmetry.qaf.automation.ui.webdriver.QAFExtendedWebElement;
-import com.qmetry.qaf.automation.ui.webdriver.QAFWebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.List;
 
-public class TodayPage extends WebDriverBaseTestPage<WebDriverTestPage> {
+public class TodayPage {
+    private final WebDriver driver;
+    private final WebDriverWait wait;
 
-    @FindBy(locator = "today.weight.value")
-    private QAFExtendedWebElement weightValue;
+    private static final int WEIGHT_IDX = 1;
+    private static final int STEPS_IDX = 3;
+    private static final int WORKOUT_IDX = 4;
 
-    @FindBy(locator = "today.weight.addBtn")
-    private QAFExtendedWebElement weightAddBtn;
-
-    @FindBy(locator = "today.weight.editBtn")
-    private QAFExtendedWebElement weightEditBtn;
-
-    @FindBy(locator = "today.steps.value")
-    private QAFExtendedWebElement stepsValue;
-
-    @FindBy(locator = "today.steps.addBtn")
-    private QAFExtendedWebElement stepsAddBtn;
-
-    @FindBy(locator = "today.steps.editBtn")
-    private QAFExtendedWebElement stepsEditBtn;
-
-    @FindBy(locator = "today.steps.deleteBtn")
-    private QAFExtendedWebElement stepsDeleteBtn;
-
-    @FindBy(locator = "today.steps.input")
-    private QAFExtendedWebElement stepsInput;
-
-    @FindBy(locator = "today.steps.saveBtn")
-    private QAFExtendedWebElement stepsSaveBtn;
-
-    @FindBy(locator = "today.nutrition.addMealBtn")
-    private QAFExtendedWebElement addMealBtn;
-
-    @FindBy(locator = "today.workout.addBtn")
-    private QAFExtendedWebElement workoutAddBtn;
-
-    @FindBy(locator = "today.workout.sessionName")
-    private QAFExtendedWebElement workoutSessionName;
-
-    @FindBy(locator = "today.workout.renameBtn")
-    private QAFExtendedWebElement workoutRenameBtn;
-
-    @FindBy(locator = "today.workout.deleteBtn")
-    private QAFExtendedWebElement workoutDeleteBtn;
-
-    @FindBy(locator = "today.exercise.list")
-    private QAFExtendedWebElement exerciseList;
-
-    @FindBy(locator = "today.exercise.items")
-    private List<QAFWebElement> exerciseItems;
-
-    @FindBy(locator = "today.exercise.editBtns")
-    private List<QAFWebElement> exerciseEditBtns;
-
-    @Override
-    protected void openPage(PageLocator locator, Object... args) {
-        driver.get(getBaseUrl() + "/");
+    public TodayPage(WebDriver driver) {
+        this.driver = driver;
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
-    private String getBaseUrl() {
-        return ConfigurationManager.getBundle().getString("env.baseurl", "http://localhost:5173");
+    private WebElement sectionBtnContains(int sectionIdx, String text) {
+        return driver.findElement(By.xpath(
+                "//div[contains(@class,'day-detail-section')][" + sectionIdx +
+                        "]//button[contains(text(),'" + text + "')]"));
     }
 
-    // ── Weight actions ───────────────────────────────────────────────────────
-
-    public void clickAddWeight() {
-        weightAddBtn.click();
+    private WebElement sectionBtnExact(int sectionIdx, String text) {
+        return driver.findElement(By.xpath(
+                "//div[contains(@class,'day-detail-section')][" + sectionIdx +
+                        "]//button[text()='" + text + "']"));
     }
 
-    public void clickEditWeight() {
-        weightEditBtn.click();
+    // ── Weight ───────────────────────────────────────────────────────────────
+
+    public void clickAddWeight() { sectionBtnContains(WEIGHT_IDX, "+ Add").click(); }
+    public void clickEditWeight() { sectionBtnExact(WEIGHT_IDX, "Edit").click(); }
+
+    public void waitForWeightValue(String expected) {
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.cssSelector(".day-detail-section:nth-child(" + WEIGHT_IDX + ") .day-detail-value"),
+                expected));
     }
 
-    public String getWeightValue() {
-        return weightValue.getText();
-    }
+    // ── Steps ────────────────────────────────────────────────────────────────
 
-    // ── Steps actions ────────────────────────────────────────────────────────
-
-    public void clickAddSteps() {
-        stepsAddBtn.click();
-    }
-
-    public void clickEditSteps() {
-        stepsEditBtn.click();
-    }
+    public void clickAddSteps() { sectionBtnContains(STEPS_IDX, "+ Add").click(); }
 
     public void clickDeleteSteps() {
-        stepsDeleteBtn.click();
+        driver.findElement(By.xpath(
+                "//div[contains(@class,'day-detail-section')][" + STEPS_IDX +
+                        "]//button[contains(@class,'btn-danger')]")).click();
     }
 
     public void enterSteps(String value) {
-        stepsInput.clear();
-        stepsInput.sendKeys(value);
+        WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.cssSelector(".today-steps-edit input[type='number']")));
+        input.clear();
+        input.sendKeys(value);
     }
 
     public void saveSteps() {
-        stepsSaveBtn.click();
+        driver.findElement(By.cssSelector(".today-steps-edit .btn-primary")).click();
     }
 
-    public String getStepsValue() {
-        return stepsValue.getText();
+    public void waitForStepsValue(String expected) {
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.cssSelector(".day-detail-section:nth-child(" + STEPS_IDX + ") .day-detail-value"),
+                expected));
     }
 
-    // ── Nutrition actions ────────────────────────────────────────────────────
+    // ── Nutrition / Meals ────────────────────────────────────────────────────
 
     public void clickAddMeal() {
-        addMealBtn.click();
+        driver.findElement(By.xpath(
+                "//button[contains(text(),'+ Add Meal') or contains(text(),'+ Meal')]")).click();
     }
 
-    // ── Workout actions ──────────────────────────────────────────────────────
-
-    public void clickAddWorkout() {
-        workoutAddBtn.click();
+    public void waitForMealDisplayed(String name) {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//span[contains(@class,'day-meal-name') and contains(text(),'" + name + "')]")));
     }
 
-    public void clickRenameWorkout() {
-        workoutRenameBtn.click();
+    public void waitForNutritionTotal(String text) {
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.cssSelector(".day-nutrition-total"), text));
     }
 
-    public void clickDeleteWorkout() {
-        workoutDeleteBtn.click();
+    // ── Workout ──────────────────────────────────────────────────────────────
+
+    public void clickAddWorkout() { sectionBtnContains(WORKOUT_IDX, "+ Add").click(); }
+
+    public void renameWorkoutSession(String newName) {
+        sectionBtnExact(WORKOUT_IDX, "Rename").click();
+        WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.cssSelector(".day-detail-section:nth-child(" + WORKOUT_IDX + ") input[type='text']")));
+        input.clear();
+        input.sendKeys(newName);
+        driver.findElement(By.xpath(
+                "//div[contains(@class,'day-detail-section')][" + WORKOUT_IDX +
+                        "]//button[contains(@class,'btn-primary') and text()='Save']")).click();
     }
 
-    public String getSessionName() {
-        return workoutSessionName.getText();
+    public void waitForSessionName(String name) {
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.cssSelector(".day-detail-section:nth-child(" + WORKOUT_IDX +
+                        ") .day-detail-label .muted"),
+                name));
     }
 
-    public int getExerciseCount() {
-        return exerciseItems.size();
+    // ── Exercises ────────────────────────────────────────────────────────────
+
+    public void waitForExercise(String name) {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//span[contains(@class,'day-exercise-name') and contains(text(),'" + name + "')]")));
+    }
+
+    public void waitForExerciseDetail(String exerciseName, String detail) {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//div[contains(@class,'day-exercise-item')]" +
+                        "[.//span[contains(text(),'" + exerciseName + "')]]" +
+                        "[.//*[contains(text(),'" + detail + "')]]")));
+    }
+
+    public void assertExerciseDoesNotShowWeight(String name) {
+        List<WebElement> items = driver.findElements(By.xpath(
+                "//div[contains(@class,'day-exercise-item')]" +
+                        "[.//span[contains(text(),'" + name + "')]]" +
+                        "[.//span[contains(text(),'lbs')]]"));
+        if (!items.isEmpty()) {
+            throw new AssertionError("Expected no weight display for " + name + " but found one");
+        }
     }
 
     public void clickEditExercise(int index) {
-        exerciseEditBtns.get(index).click();
+        List<WebElement> editBtns = driver.findElements(By.cssSelector(".day-exercise-item .btn"));
+        editBtns.get(index).click();
     }
 
-    public String getExerciseName(int index) {
-        QAFWebElement item = exerciseItems.get(index);
-        return item.findElement("css=.day-exercise-name").getText();
+    public boolean isTextVisible(String text) {
+        return !driver.findElements(By.xpath("//*[contains(text(),'" + text + "')]")).isEmpty();
     }
 
-    public String getExerciseDetail(int index) {
-        QAFWebElement item = exerciseItems.get(index);
-        return item.findElement("css=.day-exercise-reps").getText();
+    public boolean isExerciseVisible(String name) {
+        return !driver.findElements(By.xpath(
+                "//span[contains(@class,'day-exercise-name') and contains(text(),'" + name + "')]"))
+                .isEmpty();
     }
 }

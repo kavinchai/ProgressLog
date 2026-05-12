@@ -1,5 +1,0 @@
-# Login Page locators
-login.usernameInput=css=#username
-login.passwordInput=css=#password
-login.submitBtn=css=button.login-btn[type='submit']
-login.errorMessage=css=.login-error

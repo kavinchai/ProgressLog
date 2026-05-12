@@ -1,48 +1,36 @@
 package com.kavin.fitness.e2e.pages;
 
-import com.qmetry.qaf.automation.core.ConfigurationManager;
-import com.qmetry.qaf.automation.ui.WebDriverBaseTestPage;
-import com.qmetry.qaf.automation.ui.annotations.FindBy;
-import com.qmetry.qaf.automation.ui.api.PageLocator;
-import com.qmetry.qaf.automation.ui.api.WebDriverTestPage;
-import com.qmetry.qaf.automation.ui.webdriver.QAFExtendedWebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
-public class LoginPage extends WebDriverBaseTestPage<WebDriverTestPage> {
+import java.time.Duration;
 
-    @FindBy(locator = "login.usernameInput")
-    private QAFExtendedWebElement usernameInput;
+public class LoginPage {
+    private final WebDriver driver;
+    private final WebDriverWait wait;
 
-    @FindBy(locator = "login.passwordInput")
-    private QAFExtendedWebElement passwordInput;
+    private static final By USERNAME = By.cssSelector("#username");
+    private static final By PASSWORD = By.cssSelector("#password");
+    private static final By SUBMIT = By.cssSelector("button.login-btn[type='submit']");
 
-    @FindBy(locator = "login.submitBtn")
-    private QAFExtendedWebElement submitBtn;
-
-    @FindBy(locator = "login.errorMessage")
-    private QAFExtendedWebElement errorMessage;
-
-    @Override
-    protected void openPage(PageLocator locator, Object... args) {
-        driver.get(getBaseUrl() + "/login");
+    public LoginPage(WebDriver driver) {
+        this.driver = driver;
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
-    private String getBaseUrl() {
-        return ConfigurationManager.getBundle().getString("env.baseurl", "http://localhost:5173");
+    public LoginPage open(String baseUrl) {
+        driver.get(baseUrl + "/login");
+        wait.until(ExpectedConditions.visibilityOfElementLocated(USERNAME));
+        return this;
     }
 
     public void login(String username, String password) {
-        usernameInput.clear();
-        usernameInput.sendKeys(username);
-        passwordInput.clear();
-        passwordInput.sendKeys(password);
-        submitBtn.click();
-    }
-
-    public boolean isErrorDisplayed() {
-        return errorMessage.isDisplayed();
-    }
-
-    public String getErrorMessage() {
-        return errorMessage.getText();
+        driver.findElement(USERNAME).clear();
+        driver.findElement(USERNAME).sendKeys(username);
+        driver.findElement(PASSWORD).clear();
+        driver.findElement(PASSWORD).sendKeys(password);
+        driver.findElement(SUBMIT).click();
     }
 }
