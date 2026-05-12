@@ -25,8 +25,6 @@ dependencies {
     // WebDriverManager for automatic driver management
     testImplementation("io.github.bonigarcia:webdrivermanager:5.7.0")
 
-    // TestNG (QAF is built on TestNG)
-    testImplementation("org.testng:testng:7.9.0")
 
     // Logging
     testImplementation("org.slf4j:slf4j-api:2.0.12")
