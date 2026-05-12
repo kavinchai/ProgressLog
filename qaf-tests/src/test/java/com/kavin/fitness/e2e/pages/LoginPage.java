@@ -9,8 +9,8 @@ import com.qmetry.qaf.automation.ui.webdriver.QAFExtendedWebElement;
 
 public class LoginPage extends WebDriverBaseTestPage<WebDriverTestPage> {
 
-    @FindBy(locator = "login.emailInput")
-    private QAFExtendedWebElement emailInput;
+    @FindBy(locator = "login.usernameInput")
+    private QAFExtendedWebElement usernameInput;
 
     @FindBy(locator = "login.passwordInput")
     private QAFExtendedWebElement passwordInput;
@@ -30,9 +30,9 @@ public class LoginPage extends WebDriverBaseTestPage<WebDriverTestPage> {
         return ConfigurationManager.getBundle().getString("env.baseurl", "http://localhost:5173");
     }
 
-    public void login(String email, String password) {
-        emailInput.clear();
-        emailInput.sendKeys(email);
+    public void login(String username, String password) {
+        usernameInput.clear();
+        usernameInput.sendKeys(username);
         passwordInput.clear();
         passwordInput.sendKeys(password);
         submitBtn.click();

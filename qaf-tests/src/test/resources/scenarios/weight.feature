@@ -2,7 +2,7 @@
 Feature: Weight logging CRUD
 
   Background:
-    Given user is logged in with email '${test.user.email}' and password '${test.user.password}'
+    Given user is logged in with username '${test.user.username}' and password '${test.user.password}'
     And user navigates to the Today page
     And user waits for page to load
 

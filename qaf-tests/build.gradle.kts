@@ -38,4 +38,16 @@ tasks.withType<Test> {
         suites("src/test/resources/testng-config.xml")
     }
     systemProperty("application.properties.file", "src/test/resources/application.properties")
+
+    // Propagate selected -D system properties from the gradle invocation through to the JVM
+    // running the tests. This lets CI override credentials and base URL via secrets.
+    listOf(
+        "env.baseurl",
+        "test.user.username",
+        "test.user.password",
+        "driver.name",
+        "driver.additional.capabilities"
+    ).forEach { key ->
+        System.getProperty(key)?.let { systemProperty(key, it) }
+    }
 }

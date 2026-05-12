@@ -12,18 +12,18 @@ import java.time.Duration;
 
 public class CommonSteps {
 
-    @QAFTestStep(description = "user is logged in with email {email} and password {password}")
-    public void userIsLoggedIn(String email, String password) {
+    @QAFTestStep(description = "user is logged in with username {username} and password {password}")
+    public void userIsLoggedIn(String username, String password) {
         LoginPage loginPage = new LoginPage();
         loginPage.launchPage(null);
-        loginPage.login(email, password);
+        loginPage.login(username, password);
 
-        // Wait for redirect to Today page
+        // Wait for redirect away from /login (Today page)
         WebDriverWait wait = new WebDriverWait(
                 new WebDriverTestBase().getDriver(),
                 Duration.ofSeconds(10)
         );
-        wait.until(ExpectedConditions.urlContains("/"));
+        wait.until(d -> !d.getCurrentUrl().contains("/login"));
     }
 
     @QAFTestStep(description = "user navigates to the Today page")

@@ -1,6 +1,6 @@
 # Workout Builder Modal locators
 workout.modal.title=css=.modal-title
-workout.modal.sessionNameInput=css=input[placeholder*='push, pull, legs']
+workout.modal.sessionNameInput=css=input[placeholder*='push, pull, legs' i]
 workout.modal.addExerciseBtn=xpath=//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'\+ exercise')]
 workout.modal.addRunBtn=xpath=//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'\+ run')]
 workout.modal.addTimedBtn=xpath=//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'\+ timed')]
@@ -25,8 +25,8 @@ weight.modal.cancelBtn=xpath=//div[contains(@class,'modal')]//button[text()='Can
 # Meal Modal locators
 meal.modal.title=css=.modal-title
 meal.modal.nameInput=css=.modal input[placeholder*='optional' i]
-meal.modal.caloriesInput=css=.modal input[type='number']:nth-of-type(1)
-meal.modal.proteinInput=css=.modal input[type='number']:nth-of-type(2)
+meal.modal.caloriesInput=css=.modal .modal-form-row .modal-field:nth-child(1) input[type='number']
+meal.modal.proteinInput=css=.modal .modal-form-row .modal-field:nth-child(2) input[type='number']
 meal.modal.saveBtn=xpath=//div[contains(@class,'modal')]//button[translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']
 meal.modal.cancelBtn=xpath=//div[contains(@class,'modal')]//button[text()='Cancel' or text()='\u00d7']
 
