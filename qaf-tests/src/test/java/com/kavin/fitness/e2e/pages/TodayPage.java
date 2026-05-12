@@ -51,7 +51,16 @@ public class TodayPage {
 
     // ── Steps ────────────────────────────────────────────────────────────────
 
-    public void clickAddSteps() { sectionBtnContains(STEPS_IDX, "+ Add").click(); }
+    public void clickAddSteps() {
+        List<WebElement> addBtns = driver.findElements(By.xpath(
+                "(//div[contains(@class,'section-box')])[" + STEPS_IDX +
+                        "]//button[contains(text(),'+ Add')]"));
+        if (!addBtns.isEmpty()) {
+            addBtns.get(0).click();
+        } else {
+            sectionBtnExact(STEPS_IDX, "Edit").click();
+        }
+    }
 
     public void clickDeleteSteps() {
         driver.findElement(By.xpath(
@@ -102,13 +111,17 @@ public class TodayPage {
     // ── Workout ──────────────────────────────────────────────────────────────
 
     public void clickAddWorkout() {
-        List<WebElement> startBtns = driver.findElements(By.xpath(
+        By startXpath = By.xpath(
                 "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                        "]//button[contains(text(),'Start Workout')]"));
+                        "]//button[contains(text(),'Start Workout')]");
+        By exerciseXpath = By.xpath(
+                "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
+                        "]//button[contains(text(),'+ Exercise')]");
+        List<WebElement> startBtns = driver.findElements(startXpath);
         if (!startBtns.isEmpty()) {
-            startBtns.get(0).click();
+            wait.until(ExpectedConditions.elementToBeClickable(startXpath)).click();
         } else {
-            sectionBtnContains(WORKOUT_IDX, "+ Exercise").click();
+            wait.until(ExpectedConditions.elementToBeClickable(exerciseXpath)).click();
         }
     }
 
@@ -138,10 +151,15 @@ public class TodayPage {
     }
 
     public void waitForExerciseDetail(String exerciseName, String detail) {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//div[contains(@class,'exercise-card')]" +
-                        "[.//span[contains(text(),'" + exerciseName + "')]]" +
-                        "[.//*[contains(text(),'" + detail + "')]]")));
+        wait.until(d -> {
+            List<WebElement> cards = d.findElements(
+                    By.xpath("//div[contains(@class,'exercise-card')]"));
+            for (WebElement card : cards) {
+                String cardText = card.getText();
+                if (cardText.contains(exerciseName) && cardText.contains(detail)) return true;
+            }
+            return false;
+        });
     }
 
     public void assertExerciseDoesNotShowWeight(String name) {
