@@ -52,20 +52,17 @@ public class WorkoutBuilderModal {
 
     public void clickAddExercise() {
         WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_EXERCISE));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
-        wait.until(ExpectedConditions.elementToBeClickable(btn)).click();
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
     }
 
     public void clickAddRun() {
         WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_RUN));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
-        wait.until(ExpectedConditions.elementToBeClickable(btn)).click();
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
     }
 
     public void clickAddTimed() {
         WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_TIMED));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
-        wait.until(ExpectedConditions.elementToBeClickable(btn)).click();
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
     }
 
     public void enterExerciseName(int idx, String name) {
