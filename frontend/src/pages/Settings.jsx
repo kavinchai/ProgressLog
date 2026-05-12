@@ -463,17 +463,17 @@ export default function Settings() {
               <div className="data-card-body">
                 <button
                   className="btn btn-primary data-btn"
-                  onClick={handleExportXlsx}
-                  disabled={!hasData}
-                >
-                  <span className="data-btn-label">Export as XLSX</span>
-                </button>
-                <button
-                  className="btn data-btn"
                   onClick={handleExportJson}
                   disabled={!hasData}
                 >
                   <span className="data-btn-label">Export as JSON</span>
+                </button>
+                <button
+                  className="btn data-btn"
+                  onClick={handleExportXlsx}
+                  disabled={!hasData}
+                >
+                  <span className="data-btn-label">Export as XLSX</span>
                 </button>
               </div>
               {!hasData && (
