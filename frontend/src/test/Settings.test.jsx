@@ -398,9 +398,9 @@ describe('Settings — export handles nutrition meals', () => {
     expect(parsed).toHaveProperty('nutrition');
     expect(parsed.nutrition).toHaveLength(2);
     expect(parsed.nutrition[0]).toMatchObject({
-      Meal: 'Breakfast', Calories: 500, Protein: 30, 'Day Type': 'training',
+      Meal: 'Breakfast', Calories: 500, Protein: 30, 'Day Type': 'Training',
     });
-    expect(parsed.nutrition[1]).toMatchObject({ Meal: 'Lunch', Calories: 700, Protein: 50 });
+    expect(parsed.nutrition[1]).toMatchObject({ Meal: 'Lunch', Calories: 700, Protein: 50, 'Day Type': 'Training' });
     global.Blob = OrigBlob;
   });
 
