@@ -117,12 +117,19 @@ public class TodayPage {
         By exerciseXpath = By.xpath(
                 "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
                         "]//button[contains(text(),'+ Exercise')]");
-        List<WebElement> startBtns = driver.findElements(startXpath);
-        if (!startBtns.isEmpty()) {
-            wait.until(ExpectedConditions.elementToBeClickable(startXpath)).click();
-        } else {
-            wait.until(ExpectedConditions.elementToBeClickable(exerciseXpath)).click();
-        }
+        wait.until(d -> {
+            List<WebElement> starts = d.findElements(startXpath);
+            for (WebElement btn : starts) {
+                try { if (btn.isDisplayed() && btn.isEnabled()) { btn.click(); return true; } }
+                catch (Exception ignored) {}
+            }
+            List<WebElement> exercises = d.findElements(exerciseXpath);
+            for (WebElement btn : exercises) {
+                try { if (btn.isDisplayed() && btn.isEnabled()) { btn.click(); return true; } }
+                catch (Exception ignored) {}
+            }
+            return false;
+        });
     }
 
     public void renameWorkoutSession(String newName) {
