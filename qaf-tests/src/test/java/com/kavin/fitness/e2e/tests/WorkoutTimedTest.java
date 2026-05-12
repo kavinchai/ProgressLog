@@ -18,6 +18,7 @@ public class WorkoutTimedTest extends BaseTest {
         workout = new WorkoutBuilderModal(driver);
         editModal = new EditExerciseModal(driver);
         navigateToToday();
+        today.deleteWorkoutIfExists();
     }
 
     @Test(priority = 1)

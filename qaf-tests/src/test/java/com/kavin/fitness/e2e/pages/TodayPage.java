@@ -110,6 +110,20 @@ public class TodayPage {
 
     // ── Workout ──────────────────────────────────────────────────────────────
 
+    public void deleteWorkoutIfExists() {
+        By deleteBtn = By.xpath(
+                "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
+                        "]//button[contains(@class,'btn-danger') and text()='Delete']");
+        List<WebElement> btns = driver.findElements(deleteBtn);
+        if (!btns.isEmpty()) {
+            btns.get(0).click();
+            By startBtn = By.xpath(
+                    "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
+                            "]//button[contains(text(),'Start Workout')]");
+            wait.until(ExpectedConditions.visibilityOfElementLocated(startBtn));
+        }
+    }
+
     public void clickAddWorkout() {
         By startXpath = By.xpath(
                 "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
