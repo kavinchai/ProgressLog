@@ -119,12 +119,20 @@ public class WorkoutBuilderModal {
     }
 
     public void clickAddSet(int exerciseIdx) {
-        driver.findElements(ADD_SET_BTNS).get(exerciseIdx).click();
+        WebElement btn = driver.findElements(ADD_SET_BTNS).get(exerciseIdx);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
     }
 
     public void toggleExerciseType(int exerciseIdx) {
-        driver.findElements(TYPE_BTNS).get(exerciseIdx).click();
+        WebElement btn = driver.findElements(TYPE_BTNS).get(exerciseIdx);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
     }
 
-    public void save() { driver.findElement(SAVE).click(); }
+    public void save() {
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(SAVE));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+    }
 }
