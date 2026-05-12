@@ -28,7 +28,7 @@ dependencies {
     // QAF 4.0.0-RC3's POM declares TestNG 6.10 (stale), but its bytecode calls TestNG 7.x
     // internal APIs. Pin to 7.5.0 — new enough for QAF's runtime, old enough that
     // TestRunner's constructor hasn't been removed yet (broken in 7.7+).
-    testImplementation("org.testng:testng:7.5.0")
+    testImplementation("org.testng:testng:7.6.1")
 
     // Logging
     testImplementation("org.slf4j:slf4j-api:2.0.12")
