@@ -1,6 +1,7 @@
 package com.kavin.fitness.e2e.pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -122,8 +123,14 @@ public class TemplatesPage {
     }
 
     public void waitForTemplateRemoved(String name) {
-        wait.until(d -> d.findElements(TEMPLATE_NAMES).stream()
-                .noneMatch(el -> el.getText().contains(name)));
+        wait.until(d -> {
+            try {
+                return d.findElements(TEMPLATE_NAMES).stream()
+                        .noneMatch(el -> el.getText().contains(name));
+            } catch (StaleElementReferenceException e) {
+                return false;
+            }
+        });
     }
 
     public boolean isEmptyMessageVisible() {

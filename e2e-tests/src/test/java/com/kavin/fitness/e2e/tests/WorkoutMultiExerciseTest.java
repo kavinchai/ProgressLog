@@ -22,7 +22,7 @@ public class WorkoutMultiExerciseTest extends BaseTest {
     }
 
     @Test(priority = 1)
-    public void addMultipleExerciseTypes() {
+    public void addMultipleExerciseTypesInOneSession() {
         step("open workout builder");
         today.clickAddWorkout();
         workout.waitUntilVisible();
@@ -33,58 +33,34 @@ public class WorkoutMultiExerciseTest extends BaseTest {
         workout.enterWeight(0, "95");
         workout.enterReps(0, "10");
 
-        step("save workout");
-        workout.save();
-        waitForModalClosed();
-
-        step("verify Overhead Press displayed");
-        today.waitForExercise("Overhead Press");
-        today.waitForExerciseDetail("Overhead Press", "95 lbs");
-    }
-
-    @Test(priority = 2, dependsOnMethods = "addMultipleExerciseTypes")
-    public void addSecondExerciseToExistingWorkout() {
-        step("click add exercise to existing workout");
-        today.clickAddWorkout();
-        workout.waitUntilVisible();
-
-        step("add Run 2 mi, 18m 0s");
+        step("add Run: 2 mi, 18m 0s");
         workout.clickAddRun();
+        workout.enterExerciseName(1, "Run");
         workout.enterDistance(0, "2");
         workout.enterRunMinutes(0, "18");
         workout.enterRunSeconds(0, "0");
-        workout.save();
-        waitForModalClosed();
 
-        step("verify both exercises displayed");
-        today.waitForExercise("Overhead Press");
-        today.waitForExercise("Run");
-        today.waitForExerciseDetail("Run", "2 mi");
-    }
-
-    @Test(priority = 3, dependsOnMethods = "addSecondExerciseToExistingWorkout")
-    public void addThirdTimedExercise() {
-        step("add timed exercise");
-        today.clickAddWorkout();
-        workout.waitUntilVisible();
-
-        step("add Yoga, 1h 0m 0s");
+        step("add Timed exercise: Yoga 0h 30m 0s");
         workout.clickAddTimed();
-        workout.enterExerciseName(0, "Yoga");
-        workout.enterDuration(0, "1", "0", "0");
+        workout.enterExerciseName(2, "Yoga");
+        workout.enterDuration(1, "0", "30", "0");
+
+        step("save workout");
         workout.save();
         waitForModalClosed();
 
         step("verify all three exercises displayed");
         today.waitForExercise("Overhead Press");
+        today.waitForExerciseDetail("Overhead Press", "95 lbs");
         today.waitForExercise("Run");
+        today.waitForExerciseDetail("Run", "2 mi");
         today.waitForExercise("Yoga");
-        today.waitForExerciseDetail("Yoga", "1h");
+        today.waitForExerciseDetail("Yoga", "30m");
     }
 
-    @Test(priority = 4, dependsOnMethods = "addThirdTimedExercise")
+    @Test(priority = 2, dependsOnMethods = "addMultipleExerciseTypesInOneSession")
     public void deleteMiddleExerciseLeavesOthers() {
-        step("click Edit on Run (index 1)");
+        step("click Edit on Run exercise");
         today.clickEditExercise(1);
         editModal.waitUntilTitleContains("Run");
 
