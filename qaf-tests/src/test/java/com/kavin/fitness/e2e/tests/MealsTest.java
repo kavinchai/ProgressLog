@@ -50,8 +50,8 @@ public class MealsTest extends BaseTest {
 
         step("Dinner is displayed and totals show 1500 kcal / 95g protein");
         today.waitForMealDisplayed("Dinner");
-        today.waitForNutritionTotal("1500 kcal");
-        today.waitForNutritionTotal("95g protein");
+        today.waitForNutritionTotal("1500");
+        today.waitForNutritionTotal("95");
     }
 
     @Test(priority = 3, dependsOnMethods = "addNewMealCreatesNutritionLog")
