@@ -3,8 +3,6 @@ package com.kavin.fitness.e2e.tests;
 import com.kavin.fitness.e2e.pages.TodayPage;
 import com.kavin.fitness.e2e.pages.WorkoutBuilderModal;
 import com.kavin.fitness.e2e.support.BaseTest;
-import org.openqa.selenium.By;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -16,10 +14,7 @@ public class WorkoutSessionRenameTest extends BaseTest {
     public void initPages() {
         today = new TodayPage(driver);
         workout = new WorkoutBuilderModal(driver);
-        driver.get(baseUrl + "/today");
-        waitForPageLoad();
-        wait.until(ExpectedConditions.presenceOfElementLocated(
-                By.cssSelector(".section-box")));
+        navigateToToday();
         today.deleteWorkoutIfExists();
     }
 
