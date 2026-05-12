@@ -39,7 +39,12 @@ tasks.withType<Test> {
     useTestNG {
         suites("src/test/resources/testng-config.xml")
     }
+    workingDir = projectDir
     systemProperty("application.properties.file", "src/test/resources/application.properties")
+    testLogging {
+        showStandardStreams = true
+        events("started", "passed", "failed", "skipped")
+    }
 
     addTestListener(object : TestListener {
         override fun beforeSuite(suite: TestDescriptor) {}
