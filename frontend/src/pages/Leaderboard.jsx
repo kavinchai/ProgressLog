@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 import {
   ResponsiveContainer,
   BarChart, Bar,
@@ -47,6 +48,8 @@ export default function Leaderboard() {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+
+  const authenticated = useAuthStore((s) => s.authenticated);
 
   const [exerciseTab,          setExerciseTab]          = useState('strength');
   const [selectedStrength,     setSelectedStrength]     = useState(null);
@@ -113,13 +116,15 @@ export default function Leaderboard() {
 
   return (
     <div className="lb-page">
-      <header className="lb-topbar">
-        <span className="lb-brand">ProgressLog</span>
-        <div className="lb-auth-actions">
-          <Link to="/login" className="lb-btn lb-btn-ghost">Sign In</Link>
-          <Link to="/login?mode=signup" className="lb-btn lb-btn-primary">Create Account</Link>
-        </div>
-      </header>
+      {!authenticated && (
+        <header className="lb-topbar">
+          <span className="lb-brand">ProgressLog</span>
+          <div className="lb-auth-actions">
+            <Link to="/login" className="lb-btn lb-btn-ghost">Sign In</Link>
+            <Link to="/login?mode=signup" className="lb-btn lb-btn-primary">Create Account</Link>
+          </div>
+        </header>
+      )}
 
       <section className="lb-hero">
         <h1>Community Leaderboard</h1>
