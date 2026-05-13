@@ -162,7 +162,7 @@ export default function Leaderboard() {
                 <h2 className="lb-card-title">Exercise Leaderboard</h2>
                 <span className="lb-card-sub">
                   {exerciseTab === 'cardio'
-                    ? 'Running categories — pick one to see the board'
+                    ? 'Runs only — longest single-run time and best lifetime average pace'
                     : 'Ranked by best single set (weight → reps)'}
                 </span>
               </div>
@@ -311,12 +311,19 @@ export default function Leaderboard() {
 function ExerciseBoard({ exercise }) {
   const metric = exercise.metric ?? (exercise.type === 'cardio' ? 'distance' : 'weight');
 
+  const paceSecondsPerMile = (e) => {
+    const dist = Number(e.totalDistance ?? 0);
+    const dur  = Number(e.totalDurationSeconds ?? 0);
+    return dist > 0 ? dur / dist : 0;
+  };
+
   const primaryValue = (e) => {
     switch (metric) {
       case 'weight':   return Number(e.bestWeight ?? 0);
       case 'time':     return Number(e.totalDurationSeconds ?? 0);
       case 'distance': return Number(e.totalDistance ?? 0);
       case 'count':    return Number(e.bestReps ?? 0);
+      case 'pace':     return paceSecondsPerMile(e);
       default:         return 0;
     }
   };
@@ -327,6 +334,7 @@ function ExerciseBoard({ exercise }) {
       case 'time':     return formatDuration(Math.round(v));
       case 'distance': return `${v.toFixed(2)} mi`;
       case 'count':    return `${v}`;
+      case 'pace':     return formatPaceSeconds(v);
       default:         return `${v}`;
     }
   };
@@ -336,6 +344,7 @@ function ExerciseBoard({ exercise }) {
     time:     'Time',
     distance: 'Distance',
     count:    'Runs',
+    pace:     'Avg Pace',
   }[metric] ?? 'Score';
 
   const chartData = exercise.entries.map((e) => ({
@@ -347,8 +356,9 @@ function ExerciseBoard({ exercise }) {
     return <div className="lb-empty">No entries yet for this category.</div>;
   }
 
-  // For time-based categories, faster is better — invert chart bar so larger bars = faster runners.
-  const reverseXAxis = metric === 'time';
+  // For pace-based categories, lower is better — invert chart bar so larger bars = faster runners.
+  // For time-based, longer is the achievement (longest run time), so don't reverse.
+  const reverseXAxis = metric === 'pace';
 
   return (
     <>
@@ -379,9 +389,10 @@ function ExerciseBoard({ exercise }) {
             <th>#</th>
             <th>User</th>
             <th className="lb-num">{columnLabel}</th>
-            {metric === 'weight' && <th className="lb-num lb-hide-sm">Reps</th>}
-            {metric === 'time'   && <th className="lb-num lb-hide-sm">Pace</th>}
+            {metric === 'weight'   && <th className="lb-num lb-hide-sm">Reps</th>}
+            {metric === 'time'     && <th className="lb-num lb-hide-sm">Distance</th>}
             {metric === 'distance' && <th className="lb-num lb-hide-sm">Duration</th>}
+            {metric === 'pace'     && <th className="lb-num lb-hide-sm">Total Distance</th>}
             <th className="lb-num lb-hide-sm">Date</th>
           </tr>
         </thead>
@@ -395,10 +406,12 @@ function ExerciseBoard({ exercise }) {
                 {metric === 'time'     && formatDuration(e.totalDurationSeconds)}
                 {metric === 'distance' && `${Number(e.totalDistance ?? 0).toFixed(2)} mi`}
                 {metric === 'count'    && `${e.bestReps}`}
+                {metric === 'pace'     && formatPaceSeconds(paceSecondsPerMile(e))}
               </td>
               {metric === 'weight'   && <td className="lb-num lb-hide-sm">{e.bestReps}</td>}
-              {metric === 'time'     && <td className="lb-num lb-hide-sm">{formatPace(e.totalDistance, e.totalDurationSeconds)}</td>}
+              {metric === 'time'     && <td className="lb-num lb-hide-sm">{e.totalDistance != null ? `${Number(e.totalDistance).toFixed(2)} mi` : '—'}</td>}
               {metric === 'distance' && <td className="lb-num lb-hide-sm">{formatDuration(e.totalDurationSeconds)}</td>}
+              {metric === 'pace'     && <td className="lb-num lb-hide-sm">{e.totalDistance != null ? `${Number(e.totalDistance).toFixed(2)} mi` : '—'}</td>}
               <td className="lb-num lb-hide-sm">{formatDate(e.achievedDate)}</td>
             </tr>
           ))}
@@ -408,12 +421,10 @@ function ExerciseBoard({ exercise }) {
   );
 }
 
-function formatPace(distanceMiles, durationSeconds) {
-  if (!distanceMiles || !durationSeconds) return '—';
-  const dist = Number(distanceMiles);
-  if (dist <= 0) return '—';
-  const secPerMile = Math.round(Number(durationSeconds) / dist);
-  const m = Math.floor(secPerMile / 60);
-  const s = secPerMile % 60;
+function formatPaceSeconds(secPerMile) {
+  if (!secPerMile || secPerMile <= 0) return '—';
+  const total = Math.round(Number(secPerMile));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${String(s).padStart(2, '0')}/mi`;
 }

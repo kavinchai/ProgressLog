@@ -53,33 +53,24 @@ const LEADERBOARD_DATA = {
       ],
     },
     {
-      exerciseName: 'Fastest Mile',
+      exerciseName: 'Longest Run Time',
       type: 'cardio',
       metric: 'time',
       totalSets: 12,
       participantCount: 1,
       entries: [
-        { rank: 1, username: 'carol', score: 450, bestWeight: null, bestReps: null, totalDistance: 1.0, totalDurationSeconds: 450, achievedDate: '2026-05-05' },
+        { rank: 1, username: 'carol', score: 5400, bestWeight: null, bestReps: null, totalDistance: 8.0, totalDurationSeconds: 5400, achievedDate: '2026-05-05' },
       ],
     },
     {
-      exerciseName: 'Longest Run',
+      exerciseName: 'Fastest Avg Pace',
       type: 'cardio',
-      metric: 'distance',
+      metric: 'pace',
       totalSets: 12,
       participantCount: 1,
       entries: [
-        { rank: 1, username: 'carol', score: 13.1, bestWeight: null, bestReps: null, totalDistance: 13.1, totalDurationSeconds: 6000, achievedDate: '2026-05-02' },
-      ],
-    },
-    {
-      exerciseName: 'Total Runs',
-      type: 'cardio',
-      metric: 'count',
-      totalSets: 12,
-      participantCount: 1,
-      entries: [
-        { rank: 1, username: 'carol', score: 12, bestWeight: null, bestReps: 12, totalDistance: null, totalDurationSeconds: null, achievedDate: '2026-05-05' },
+        // pace = 4500 / 10 = 450 sec/mile = 7:30/mi
+        { rank: 1, username: 'carol', score: 450, bestWeight: null, bestReps: null, totalDistance: 10.0, totalDurationSeconds: 4500, achievedDate: '2026-05-02' },
       ],
     },
   ],
@@ -216,12 +207,12 @@ describe('Leaderboard — exercise type tabs', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /bench press/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /squats/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /fastest mile/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /longest run/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /longest run time/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /fastest avg pace/i })).not.toBeInTheDocument();
     });
   });
 
-  it('switching to Cardio shows running category pills and hides strength pills', async () => {
+  it('switching to Cardio shows only Longest Run Time + Fastest Avg Pace pills', async () => {
     const user = userEvent.setup();
     mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
     renderLeaderboard();
@@ -232,11 +223,31 @@ describe('Leaderboard — exercise type tabs', () => {
     await user.click(screen.getByRole('button', { name: /^cardio$/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /fastest mile/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /longest run/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /total runs/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /longest run time/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /fastest avg pace/i })).toBeInTheDocument();
+      // Strength pills hidden
       expect(screen.queryByRole('button', { name: /bench press/i })).not.toBeInTheDocument();
+      // Any previous categories removed
+      expect(screen.queryByRole('button', { name: /^fastest 5k$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /total distance/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /incline walk/i })).not.toBeInTheDocument();
     });
+  });
+
+  it('shows the running-only description in the card subtitle when Cardio is selected', async () => {
+    const user = userEvent.setup();
+    mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
+    renderLeaderboard();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /^cardio$/i })).toBeInTheDocument()
+    );
+
+    await user.click(screen.getByRole('button', { name: /^cardio$/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/runs only.*longest single-run time.*best lifetime average pace/i))
+        .toBeInTheDocument()
+    );
   });
 
   it('shows empty state when there are no cardio categories', async () => {
@@ -285,7 +296,7 @@ describe('Leaderboard — exercise board content', () => {
     );
   });
 
-  it('Fastest Mile category shows the time formatted as m:ss', async () => {
+  it('Longest Run Time category shows the duration formatted as time (default cardio category)', async () => {
     const user = userEvent.setup();
     mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
     renderLeaderboard();
@@ -294,17 +305,14 @@ describe('Leaderboard — exercise board content', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /^cardio$/i }));
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /fastest mile/i })).toBeInTheDocument()
-    );
 
-    // 450 seconds = 7m 30s
+    // 5400 seconds = 90m 00s
     await waitFor(() =>
-      expect(screen.getByText(/7m 30s/i)).toBeInTheDocument()
+      expect(screen.getByText(/90m 00s/i)).toBeInTheDocument()
     );
   });
 
-  it('Longest Run category shows distance in miles', async () => {
+  it('Fastest Avg Pace category shows pace formatted as m:ss/mi', async () => {
     const user = userEvent.setup();
     mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
     renderLeaderboard();
@@ -314,33 +322,14 @@ describe('Leaderboard — exercise board content', () => {
 
     await user.click(screen.getByRole('button', { name: /^cardio$/i }));
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /longest run/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /fastest avg pace/i })).toBeInTheDocument()
     );
-    await user.click(screen.getByRole('button', { name: /longest run/i }));
+    await user.click(screen.getByRole('button', { name: /fastest avg pace/i }));
 
+    // pace = 4500s / 10mi = 450 sec/mi = 7:30/mi
     await waitFor(() =>
-      expect(screen.getByText(/13\.10 mi/i)).toBeInTheDocument()
+      expect(screen.getByText(/7:30\/mi/i)).toBeInTheDocument()
     );
-  });
-
-  it('Total Runs category shows the run count', async () => {
-    const user = userEvent.setup();
-    mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-    renderLeaderboard();
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /^cardio$/i })).toBeInTheDocument()
-    );
-
-    await user.click(screen.getByRole('button', { name: /^cardio$/i }));
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /total runs/i })).toBeInTheDocument()
-    );
-    await user.click(screen.getByRole('button', { name: /total runs/i }));
-
-    await waitFor(() => {
-      const cell = screen.getByRole('columnheader', { name: /^runs$/i });
-      expect(cell).toBeInTheDocument();
-    });
   });
 });
 
