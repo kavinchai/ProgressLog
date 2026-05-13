@@ -31,6 +31,7 @@ describe('main navigation', () => {
     expect(within(nav).getByRole('link', { name: 'History' })).toHaveAttribute('href', '/history');
     expect(within(nav).getByRole('link', { name: 'Progress' })).toHaveAttribute('href', '/progress');
     expect(within(nav).getByRole('link', { name: 'Templates' })).toHaveAttribute('href', '/templates');
+    expect(within(nav).getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', '/leaderboard');
     expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
 
     expect(within(nav).queryByRole('link', { name: 'Weekly Stats' })).not.toBeInTheDocument();
@@ -54,6 +55,7 @@ describe('main navigation', () => {
     expect(within(nav).getByRole('link', { name: 'History' })).toHaveAttribute('href', '/history');
     expect(within(nav).getByRole('link', { name: 'Progress' })).toHaveAttribute('href', '/progress');
     expect(within(nav).getByRole('link', { name: 'Templates' })).toHaveAttribute('href', '/templates');
+    expect(within(nav).getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', '/leaderboard');
     expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
 
     expect(within(nav).queryByRole('link', { name: 'Weekly Stats' })).not.toBeInTheDocument();

@@ -60,8 +60,11 @@ function setupProfile(overrides = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   useAuthStore.setState({ authenticated: true, username: 'alice' });
-  // Default: email endpoint returns an email, profile verify is stubbed
-  api.get.mockResolvedValue({ data: { email: 'alice@example.com' } });
+  // Route-specific API GET mocks: email + privacy endpoints
+  api.get.mockImplementation((url) => {
+    if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: false } });
+    return Promise.resolve({ data: { email: 'alice@example.com' } });
+  });
   // Default empty data sets for export/import section
   useWeightLog.mockReturnValue({ data: [], refetch: vi.fn() });
   useNutrition.mockReturnValue({ data: [], refetch: vi.fn() });
@@ -471,5 +474,72 @@ describe('Settings — export handles cardio sets', () => {
     expect(workoutExercises).not.toContain('Running');
     expect(workoutExercises).toContain('Bench Press');
     global.Blob = OrigBlob;
+  });
+});
+
+describe('Settings — privacy / data sharing', () => {
+  it('renders the Privacy section heading', async () => {
+    setupProfile();
+    renderSettings();
+    await waitFor(() => expect(screen.getByText('Privacy')).toBeInTheDocument());
+  });
+
+  it('shows the Share Data on Leaderboard label', async () => {
+    setupProfile();
+    renderSettings();
+    await waitFor(() =>
+      expect(screen.getByText(/share data on leaderboard/i)).toBeInTheDocument()
+    );
+  });
+
+  it('toggle starts as Off when shareData is false', async () => {
+    setupProfile();
+    renderSettings();
+    await waitFor(() => {
+      const offLabel = screen.getAllByText(/^off$/i);
+      expect(offLabel.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('clicking the toggle calls PUT /profile/privacy with shareData true', async () => {
+    api.put.mockResolvedValue({ data: { shareData: true } });
+    setupProfile();
+    renderSettings();
+
+    await waitFor(() => expect(screen.getByText(/share data on leaderboard/i)).toBeInTheDocument());
+
+    const toggle = screen.getByRole('button', { name: /toggle data sharing/i });
+    await userEvent.click(toggle);
+
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith('/profile/privacy', { shareData: true })
+    );
+  });
+
+  it('reverts the toggle on PUT failure', async () => {
+    api.put.mockRejectedValue({ response: { data: { message: 'Server error' } } });
+    setupProfile();
+    renderSettings();
+
+    await waitFor(() => expect(screen.getByText(/share data on leaderboard/i)).toBeInTheDocument());
+
+    const toggle = screen.getByRole('button', { name: /toggle data sharing/i });
+    await userEvent.click(toggle);
+
+    await waitFor(() => expect(screen.getByText(/server error/i)).toBeInTheDocument());
+  });
+
+  it('shows shareData as On when API returns true', async () => {
+    api.get.mockImplementation((url) => {
+      if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: true } });
+      return Promise.resolve({ data: { email: 'alice@example.com' } });
+    });
+    setupProfile();
+    renderSettings();
+
+    await waitFor(() => {
+      const onLabel = screen.getAllByText(/^on$/i);
+      expect(onLabel.length).toBeGreaterThan(0);
+    });
   });
 });
