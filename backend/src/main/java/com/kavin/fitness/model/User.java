@@ -39,4 +39,7 @@ public class User {
 
     @Column(name = "api_key", unique = true, length = 64)
     private String apiKey;
+
+    @Column(name = "share_data", nullable = false)
+    private boolean shareData = false;
 }
