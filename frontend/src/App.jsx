@@ -4,6 +4,7 @@ import useAuthStore from './store/authStore';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
 import SplashPage from './pages/SplashPage';
+import Leaderboard from './pages/Leaderboard';
 import Login from './pages/Login';
 import Today from './pages/Today';
 import History from './pages/History';
@@ -40,9 +41,10 @@ export default function App() {
     return (
       <BrowserRouter>
         <Routes>
-          <Route path="/"      element={<SplashPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="*"      element={<Navigate to="/" replace />} />
+          <Route path="/"        element={<Leaderboard />} />
+          <Route path="/splash"  element={<SplashPage />} />
+          <Route path="/login"   element={<Login />} />
+          <Route path="*"        element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     );
@@ -62,6 +64,7 @@ export default function App() {
           <Route path="/strength"  element={<Navigate to="/progress/strength" replace />} />
           <Route path="/cardio"    element={<Navigate to="/progress/cardio" replace />} />
           <Route path="/templates" element={<Templates />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/settings"     element={<Settings />} />
           <Route path="/claude-setup" element={<ClaudeSetup />} />
           <Route path="*"             element={<Navigate to="/today" replace />} />

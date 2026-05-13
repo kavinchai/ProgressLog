@@ -59,12 +59,41 @@ export default function Settings() {
   const [importing,    setImporting]    = useState(false);
   const fileInputRef = useRef(null);
 
+  // ── Privacy state ────────────────────────────────────────────────────────
+  const [shareData,        setShareData]        = useState(false);
+  const [privacyLoading,   setPrivacyLoading]   = useState(true);
+  const [privacySaving,    setPrivacySaving]    = useState(false);
+  const [privacyError,     setPrivacyError]     = useState(null);
+
   // ── Load email on mount ──────────────────────────────────────────────────
   useEffect(() => {
     api.get('/profile/email')
       .then((res) => setCredForm((f) => ({ ...f, email: res.data.email })))
       .catch(() => {});
   }, []);
+
+  // ── Load privacy on mount ───────────────────────────────────────────────
+  useEffect(() => {
+    api.get('/profile/privacy')
+      .then((res) => setShareData(Boolean(res.data.shareData)))
+      .catch(() => setPrivacyError('Could not load privacy setting.'))
+      .finally(() => setPrivacyLoading(false));
+  }, []);
+
+  async function handleShareDataToggle() {
+    const next = !shareData;
+    setPrivacySaving(true);
+    setPrivacyError(null);
+    setShareData(next); // optimistic
+    try {
+      await api.put('/profile/privacy', { shareData: next });
+    } catch (err) {
+      setShareData(!next); // revert
+      setPrivacyError(err.response?.data?.message ?? 'Failed to update privacy.');
+    } finally {
+      setPrivacySaving(false);
+    }
+  }
 
   // ── Sync goals form when hook resolves ──────────────────────────────────
   useEffect(() => {
@@ -427,6 +456,43 @@ export default function Settings() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Privacy ── */}
+      <section className="settings-card">
+        <header className="settings-card-head">
+          <h2 className="settings-card-title">Privacy</h2>
+          <p className="settings-card-desc">
+            Choose whether your workout data appears in the public community leaderboard.
+            Only your username, exercise names, and aggregated stats are shown.
+          </p>
+        </header>
+        <div className="settings-card-body">
+          {privacyLoading ? (
+            <p className="settings-loading">Loading…</p>
+          ) : (
+            <div className="settings-field">
+              <label>Share Data on Leaderboard</label>
+              <div className="settings-input-row">
+                <div
+                  className="unit-toggle"
+                  onClick={privacySaving ? undefined : handleShareDataToggle}
+                  role="button"
+                  aria-label="Toggle data sharing"
+                  aria-pressed={shareData}
+                >
+                  <span className={`unit-toggle-label${!shareData ? ' active' : ''}`}>Off</span>
+                  <div className={`toggle-track${shareData ? ' on' : ''}`}>
+                    <div className="toggle-thumb" />
+                  </div>
+                  <span className={`unit-toggle-label${shareData ? ' active' : ''}`}>On</span>
+                </div>
+                {privacySaving && <span className="settings-saved">Saving…</span>}
+              </div>
+              {privacyError && <p className="settings-error">{privacyError}</p>}
+            </div>
+          )}
         </div>
       </section>
 

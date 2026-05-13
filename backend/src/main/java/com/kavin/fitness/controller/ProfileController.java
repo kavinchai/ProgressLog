@@ -4,6 +4,7 @@ import com.kavin.fitness.dto.CredentialsUpdateResponse;
 import com.kavin.fitness.dto.EmailRequest;
 import com.kavin.fitness.dto.EmailResponse;
 import com.kavin.fitness.dto.PasswordVerifyRequest;
+import com.kavin.fitness.dto.PrivacyDTO;
 import com.kavin.fitness.dto.UpdateCredentialsRequest;
 import com.kavin.fitness.dto.UserGoalsDTO;
 import com.kavin.fitness.model.User;
@@ -131,6 +132,23 @@ public class ProfileController {
         String token = jwtUtil.generateToken(user.getUsername());
         cookieUtil.addJwtCookie(response, token);
         return ResponseEntity.ok(new CredentialsUpdateResponse(user.getUsername()));
+    }
+
+    @GetMapping("/privacy")
+    public ResponseEntity<PrivacyDTO> getPrivacy(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userResolver.resolve(userDetails);
+        return ResponseEntity.ok(new PrivacyDTO(user.isShareData()));
+    }
+
+    @PutMapping("/privacy")
+    public ResponseEntity<PrivacyDTO> updatePrivacy(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody PrivacyDTO dto) {
+        log.info("PUT privacy user={} shareData={}", userDetails.getUsername(), dto.isShareData());
+        User user = userResolver.resolve(userDetails);
+        user.setShareData(dto.isShareData());
+        userRepository.save(user);
+        return ResponseEntity.ok(new PrivacyDTO(user.isShareData()));
     }
 
 }
