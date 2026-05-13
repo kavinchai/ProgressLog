@@ -171,6 +171,46 @@
   letter-spacing: 0.06em;
 }
 
+/* ── Exercise type tabs (Strength / Cardio) ────────────────────────────── */
+.lb-ex-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+
+.lb-ex-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.lb-ex-tab:hover {
+  color: var(--fg);
+  background: var(--hover-bg);
+}
+
+.lb-ex-tab-active {
+  color: var(--accent);
+  background: var(--accent-light);
+  font-weight: var(--fw-semibold);
+}
+
 /* ── Exercise picker ───────────────────────────────────────────────────── */
 .lb-exercise-list {
   display: flex;

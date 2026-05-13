@@ -66,10 +66,16 @@ public class LeaderboardService {
             String name = entry.getKey();
             List<ExerciseSet> exSets = entry.getValue();
 
-            boolean isCardio = exSets.stream()
-                    .anyMatch(s -> s.getDistanceMiles() != null || s.getDurationSeconds() != null);
+            boolean isCardio     = exSets.stream().anyMatch(s -> s.getDistanceMiles() != null);
+            boolean isStrength   = exSets.stream().anyMatch(
+                    s -> s.getDistanceMiles() == null && s.getDurationSeconds() == null);
+            // Skip timed-only activities (duration but no distance and no weight/reps sets).
+            if (!isCardio && !isStrength) continue;
 
-            List<LeaderboardDTO.Entry> entries = isCardio
+            // If the exercise has both types of sets, let the type be determined by presence of distance.
+            boolean classify = isCardio;
+
+            List<LeaderboardDTO.Entry> entries = classify
                     ? cardioEntries(exSets, userIdToName)
                     : strengthEntries(exSets, userIdToName);
 
@@ -78,7 +84,7 @@ public class LeaderboardService {
 
             result.add(new LeaderboardDTO.ExerciseLeaderboard(
                     name,
-                    isCardio ? "cardio" : "strength",
+                    classify ? "cardio" : "strength",
                     exSets.size(),
                     participants.size(),
                     entries

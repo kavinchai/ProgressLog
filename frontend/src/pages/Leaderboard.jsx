@@ -47,17 +47,22 @@ export default function Leaderboard() {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
-  const [selectedExercise, setSelectedExercise] = useState(null);
+
+  const [exerciseTab,          setExerciseTab]          = useState('strength');
+  const [selectedStrength,     setSelectedStrength]     = useState(null);
+  const [selectedCardio,       setSelectedCardio]       = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     api.get('/leaderboard')
       .then((res) => {
         if (cancelled) return;
-        setData(res.data);
-        if (res.data?.exercises?.length) {
-          setSelectedExercise(res.data.exercises[0].exerciseName);
-        }
+        const d = res.data;
+        setData(d);
+        const strengthList = (d?.exercises ?? []).filter((e) => e.type === 'strength');
+        const cardioList   = (d?.exercises ?? []).filter((e) => e.type === 'cardio');
+        if (strengthList.length) setSelectedStrength(strengthList[0].exerciseName);
+        if (cardioList.length)   setSelectedCardio(cardioList[0].exerciseName);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -67,10 +72,20 @@ export default function Leaderboard() {
     return () => { cancelled = true; };
   }, []);
 
+  const strengthExercises = useMemo(
+    () => (data?.exercises ?? []).filter((e) => e.type === 'strength'),
+    [data],
+  );
+  const cardioExercises = useMemo(
+    () => (data?.exercises ?? []).filter((e) => e.type === 'cardio'),
+    [data],
+  );
+
   const currentExercise = useMemo(() => {
-    if (!data?.exercises) return null;
-    return data.exercises.find((e) => e.exerciseName === selectedExercise) ?? data.exercises[0];
-  }, [data, selectedExercise]);
+    const list = exerciseTab === 'cardio' ? cardioExercises : strengthExercises;
+    const sel  = exerciseTab === 'cardio' ? selectedCardio  : selectedStrength;
+    return list.find((e) => e.exerciseName === sel) ?? list[0] ?? null;
+  }, [exerciseTab, strengthExercises, cardioExercises, selectedStrength, selectedCardio]);
 
   const topLiftersChartData = useMemo(() => {
     if (!data?.topLifters) return [];
@@ -83,11 +98,18 @@ export default function Leaderboard() {
   const activityChartData = useMemo(() => {
     if (!data?.activity) return [];
     return data.activity.map((p) => ({
-      date: formatDate(p.date),
+      date:     formatDate(p.date),
       sessions: p.sessionCount,
       sets:     p.setCount,
     }));
   }, [data]);
+
+  function selectExercise(name) {
+    if (exerciseTab === 'cardio') setSelectedCardio(name);
+    else setSelectedStrength(name);
+  }
+
+  const activeList = exerciseTab === 'cardio' ? cardioExercises : strengthExercises;
 
   return (
     <div className="lb-page">
@@ -134,6 +156,59 @@ export default function Leaderboard() {
           </div>
 
           <div className="lb-main">
+            {/* Per-exercise leaderboard with Strength / Cardio tabs — first, full width */}
+            <div className="lb-card lb-card-wide">
+              <div className="lb-card-head">
+                <h2 className="lb-card-title">Exercise Leaderboard</h2>
+                <span className="lb-card-sub">
+                  {exerciseTab === 'cardio'
+                    ? 'Ranked by total distance (mi)'
+                    : 'Ranked by best single set (weight → reps)'}
+                </span>
+              </div>
+
+              {/* Strength / Cardio tab switcher */}
+              <div className="lb-ex-tabs">
+                <button
+                  type="button"
+                  className={'lb-ex-tab' + (exerciseTab === 'strength' ? ' lb-ex-tab-active' : '')}
+                  onClick={() => setExerciseTab('strength')}
+                >
+                  Strength
+                </button>
+                <button
+                  type="button"
+                  className={'lb-ex-tab' + (exerciseTab === 'cardio' ? ' lb-ex-tab-active' : '')}
+                  onClick={() => setExerciseTab('cardio')}
+                >
+                  Cardio
+                </button>
+              </div>
+
+              {activeList.length > 0 ? (
+                <>
+                  <div className="lb-exercise-list">
+                    {activeList.map((e) => (
+                      <button
+                        key={e.exerciseName}
+                        type="button"
+                        className={'lb-pill' + (e.exerciseName === currentExercise?.exerciseName ? ' active' : '')}
+                        onClick={() => selectExercise(e.exerciseName)}
+                      >
+                        {e.exerciseName}
+                      </button>
+                    ))}
+                  </div>
+
+                  {currentExercise && <ExerciseBoard exercise={currentExercise} />}
+                </>
+              ) : (
+                <div className="lb-empty">
+                  No {exerciseTab} exercises logged yet.
+                </div>
+              )}
+            </div>
+
             {/* Top lifters by volume */}
             <div className="lb-card">
               <div className="lb-card-head">
@@ -219,41 +294,6 @@ export default function Leaderboard() {
                 </ResponsiveContainer>
               ) : (
                 <div className="lb-empty">No activity yet.</div>
-              )}
-            </div>
-
-            {/* Per-exercise leaderboard */}
-            <div className="lb-card lb-card-wide">
-              <div className="lb-card-head">
-                <h2 className="lb-card-title">Exercise Leaderboard</h2>
-                <span className="lb-card-sub">
-                  {currentExercise?.type === 'cardio'
-                    ? 'Ranked by total distance'
-                    : 'Ranked by best single set'}
-                </span>
-              </div>
-
-              {data.exercises.length > 0 ? (
-                <>
-                  <div className="lb-exercise-list">
-                    {data.exercises.map((e) => (
-                      <button
-                        key={e.exerciseName}
-                        type="button"
-                        className={'lb-pill' + (e.exerciseName === currentExercise?.exerciseName ? ' active' : '')}
-                        onClick={() => setSelectedExercise(e.exerciseName)}
-                      >
-                        {e.exerciseName}
-                      </button>
-                    ))}
-                  </div>
-
-                  {currentExercise && (
-                    <ExerciseBoard exercise={currentExercise} />
-                  )}
-                </>
-              ) : (
-                <div className="lb-empty">No exercises logged yet.</div>
               )}
             </div>
           </div>
