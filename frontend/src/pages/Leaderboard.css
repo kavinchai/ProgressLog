@@ -175,12 +175,7 @@
 .lb-ex-tabs {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xs);
+  gap: 6px;
 }
 
 .lb-ex-tab {

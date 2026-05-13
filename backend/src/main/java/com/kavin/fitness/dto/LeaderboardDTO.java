@@ -23,6 +23,7 @@ public class LeaderboardDTO {
     public static class ExerciseLeaderboard {
         private String exerciseName;
         private String type;            // "strength" | "cardio"
+        private String metric;          // "weight" | "time" | "distance" | "count"
         private int    totalSets;
         private int    participantCount;
         private List<Entry> entries;
