@@ -4,6 +4,7 @@ import App from '../App';
 import useAuthStore from '../store/authStore';
 
 // Stub all page/layout components to keep tests fast and focused on routing
+vi.mock('../pages/Leaderboard', () => ({ default: () => <div>Leaderboard Page</div> }));
 vi.mock('../pages/SplashPage',  () => ({ default: () => <div>Splash Page</div> }));
 vi.mock('../pages/Login',       () => ({ default: () => <div>Login Page</div> }));
 vi.mock('../pages/Today',       () => ({ default: () => <div>Today Page</div> }));
@@ -22,7 +23,14 @@ beforeEach(() => {
 
 
 describe('App routing — unauthenticated', () => {
-  it('shows SplashPage at / when not authenticated', () => {
+  it('shows Leaderboard at / when not authenticated', () => {
+    window.history.pushState({}, '', '/');
+    render(<App />);
+    expect(screen.getByText('Leaderboard Page')).toBeInTheDocument();
+  });
+
+  it('shows SplashPage at /splash when not authenticated', () => {
+    window.history.pushState({}, '', '/splash');
     render(<App />);
     expect(screen.getByText('Splash Page')).toBeInTheDocument();
   });
@@ -34,6 +42,7 @@ describe('App routing — unauthenticated', () => {
   });
 
   it('does NOT show the app layout without authentication', () => {
+    window.history.pushState({}, '', '/');
     render(<App />);
     expect(screen.queryByText('Sidebar')).not.toBeInTheDocument();
     expect(screen.queryByText('Navbar')).not.toBeInTheDocument();
@@ -97,15 +106,16 @@ describe('App routing — authenticated', () => {
 });
 
 describe('App routing — auth store reactivity', () => {
-  it('switches from SplashPage to app layout when authenticated', async () => {
+  it('switches from Leaderboard to app layout when authenticated', async () => {
+    window.history.pushState({}, '', '/');
     render(<App />);
-    expect(screen.getByText('Splash Page')).toBeInTheDocument();
+    expect(screen.getByText('Leaderboard Page')).toBeInTheDocument();
 
     // Simulate login
     useAuthStore.setState({ authenticated: true, username: 'bob' });
 
-    // App re-renders based on Zustand subscription
+    // App re-renders based on Zustand subscription; / redirects to /today
     await screen.findByText('Today Page');
-    expect(screen.queryByText('Splash Page')).not.toBeInTheDocument();
+    expect(screen.queryByText('Leaderboard Page')).not.toBeInTheDocument();
   });
 });
