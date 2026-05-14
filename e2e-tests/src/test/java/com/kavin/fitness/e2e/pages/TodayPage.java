@@ -172,15 +172,33 @@ public class TodayPage {
     }
 
     public void waitForExerciseDetail(String exerciseName, String detail) {
-        wait.until(d -> {
-            List<WebElement> cards = d.findElements(
+        try {
+            wait.until(d -> {
+                List<WebElement> cards = d.findElements(
+                        By.xpath("//div[contains(@class,'exercise-card')]"));
+                for (WebElement card : cards) {
+                    String cardText = card.getText();
+                    if (cardText.contains(exerciseName) && cardText.contains(detail)) return true;
+                }
+                return false;
+            });
+        } catch (org.openqa.selenium.TimeoutException e) {
+            // Dump card contents to make diagnosis possible — we couldn't find the
+            // expected detail, so the test author needs to see what's actually rendered.
+            System.err.println(">>> waitForExerciseDetail FAILED — expected name='" + exerciseName
+                    + "' detail='" + detail + "'. Dumping all exercise-card text:");
+            List<WebElement> cards = driver.findElements(
                     By.xpath("//div[contains(@class,'exercise-card')]"));
-            for (WebElement card : cards) {
-                String cardText = card.getText();
-                if (cardText.contains(exerciseName) && cardText.contains(detail)) return true;
+            if (cards.isEmpty()) {
+                System.err.println("    (no exercise-card elements on page)");
+            } else {
+                for (int i = 0; i < cards.size(); i++) {
+                    String text = cards.get(i).getText().replace("\n", " | ");
+                    System.err.println("    card[" + i + "]: " + text);
+                }
             }
-            return false;
-        });
+            throw e;
+        }
     }
 
     public void assertExerciseDoesNotShowWeight(String name) {

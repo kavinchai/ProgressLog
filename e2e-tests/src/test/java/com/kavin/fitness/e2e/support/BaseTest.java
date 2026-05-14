@@ -9,6 +9,10 @@ import org.testng.Reporter;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 
 public abstract class BaseTest {
@@ -19,8 +23,11 @@ public abstract class BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUpDriverAndLogIn() {
         baseUrl = System.getProperty("env.baseurl", "http://localhost:5173");
+        String apiUrl = System.getProperty("env.apiurl", "http://localhost:8080/api");
         String username = System.getProperty("test.user.username", "qaf_test_user");
         String password = System.getProperty("test.user.password", "qaf_test_password");
+
+        ensureTestUserExists(apiUrl, username, password);
 
         driver = Drivers.chrome();
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -29,6 +36,25 @@ public abstract class BaseTest {
         new LoginPage(driver).open(baseUrl).login(username, password);
         wait.until(d -> !d.getCurrentUrl().contains("/login"));
         waitForPageLoad();
+    }
+
+    private void ensureTestUserExists(String apiUrl, String username, String password) {
+        try {
+            String body = "{\"username\":\"" + username + "\","
+                    + "\"password\":\"" + password + "\","
+                    + "\"email\":\"" + username + "@test.local\"}";
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(apiUrl + "/auth/register"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            Reporter.log("Test user setup: HTTP " + response.statusCode()
+                    + (response.statusCode() == 201 ? " (created)" : " (already exists)"), true);
+        } catch (Exception e) {
+            Reporter.log("Could not pre-register test user, will attempt login anyway: " + e.getMessage(), true);
+        }
     }
 
     @AfterClass(alwaysRun = true)

@@ -98,25 +98,25 @@ export default function ExerciseListEditor({ exercises, onChange }) {
   }
 
   function updateExerciseName(exerciseIndex, val) {
-    onChange(exercises.map((ex, i) =>
+    onChange(prev => prev.map((ex, i) =>
       i === exerciseIndex ? { ...ex, exerciseName: val } : ex
     ));
   }
 
   function addExercise() {
-    onChange([...exercises, emptyExercise()]);
+    onChange(prev => [...prev, emptyExercise()]);
   }
 
   function addRun() {
-    onChange([...exercises, { exerciseName: 'Run', type: 'run', sets: [emptySet(1)] }]);
+    onChange(prev => [...prev, { exerciseName: 'Run', type: 'run', sets: [emptySet(1)] }]);
   }
 
   function addTimed() {
-    onChange([...exercises, { exerciseName: '', type: 'timed', sets: [emptySet(1)] }]);
+    onChange(prev => [...prev, { exerciseName: '', type: 'timed', sets: [emptySet(1)] }]);
   }
 
   function toggleType(exerciseIndex) {
-    onChange(exercises.map((ex, i) => {
+    onChange(prev => prev.map((ex, i) => {
       if (i !== exerciseIndex) return ex;
       const next = ex.type === 'lifting' ? 'timed' : 'lifting';
       return { ...ex, type: next };
@@ -124,18 +124,18 @@ export default function ExerciseListEditor({ exercises, onChange }) {
   }
 
   function removeExercise(exerciseIndex) {
-    onChange(exercises.filter((_, i) => i !== exerciseIndex));
+    onChange(prev => prev.filter((_, i) => i !== exerciseIndex));
   }
 
   function addSet(exerciseIndex) {
-    onChange(exercises.map((ex, i) => {
+    onChange(prev => prev.map((ex, i) => {
       if (i !== exerciseIndex) return ex;
       return { ...ex, sets: [...ex.sets, emptySet(ex.sets.length + 1)] };
     }));
   }
 
   function removeSet(exerciseIndex, setIndex) {
-    onChange(exercises.map((ex, i) => {
+    onChange(prev => prev.map((ex, i) => {
       if (i !== exerciseIndex) return ex;
       const sets = ex.sets
         .filter((_, j) => j !== setIndex)
@@ -145,7 +145,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
   }
 
   function updateSet(exerciseIndex, setIndex, field, val) {
-    onChange(exercises.map((ex, i) => {
+    onChange(prev => prev.map((ex, i) => {
       if (i !== exerciseIndex) return ex;
       const sets = ex.sets.map((s, j) =>
         j === setIndex ? { ...s, [field]: val } : s
