@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import Leaderboard from '../pages/Leaderboard';
@@ -148,21 +148,25 @@ describe('Leaderboard — loading / error / empty states', () => {
 describe('Leaderboard — stats strip', () => {
   it('shows Lifters, Sessions, and Sets labels', async () => {
     mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-    renderLeaderboard();
+    const { container } = renderLeaderboard();
     await waitFor(() => {
-      expect(screen.getByText(/^lifters$/i)).toBeInTheDocument();
-      expect(screen.getByText(/^sessions$/i)).toBeInTheDocument();
-      expect(screen.getByText(/^sets$/i)).toBeInTheDocument();
+      const strip = container.querySelector('.lb-stats');
+      expect(strip).not.toBeNull();
+      expect(within(strip).getByText(/^lifters$/i)).toBeInTheDocument();
+      expect(within(strip).getByText(/^sessions$/i)).toBeInTheDocument();
+      expect(within(strip).getByText(/^sets$/i)).toBeInTheDocument();
     });
   });
 
   it('shows the correct totals', async () => {
     mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-    renderLeaderboard();
+    const { container } = renderLeaderboard();
     await waitFor(() => {
-      expect(screen.getByText('3')).toBeInTheDocument();   // totalUsers
-      expect(screen.getByText('15')).toBeInTheDocument();  // totalSessions
-      expect(screen.getByText('120')).toBeInTheDocument(); // totalSets
+      const strip = container.querySelector('.lb-stats');
+      expect(strip).not.toBeNull();
+      expect(within(strip).getByText('3')).toBeInTheDocument();   // totalUsers
+      expect(within(strip).getByText('15')).toBeInTheDocument();  // totalSessions
+      expect(within(strip).getByText('120')).toBeInTheDocument(); // totalSets
     });
   });
 });
@@ -174,9 +178,11 @@ describe('Leaderboard — top lifters table', () => {
     mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
     renderLeaderboard();
     await waitFor(() => {
-      expect(screen.getByText('alice')).toBeInTheDocument();
-      expect(screen.getByText('bob')).toBeInTheDocument();
-      expect(screen.getByText('carol')).toBeInTheDocument();
+      const card = screen.getByText('Top Lifters').closest('.lb-card');
+      expect(card).not.toBeNull();
+      expect(within(card).getByText('alice')).toBeInTheDocument();
+      expect(within(card).getByText('bob')).toBeInTheDocument();
+      expect(within(card).getByText('carol')).toBeInTheDocument();
     });
   });
 

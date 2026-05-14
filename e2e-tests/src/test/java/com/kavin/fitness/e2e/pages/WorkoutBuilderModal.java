@@ -115,12 +115,25 @@ public class WorkoutBuilderModal {
         By cardioInputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
         wait.until(d -> d.findElements(cardioInputs).size() > idx * 3 + 2);
         List<WebElement> inputs = driver.findElements(cardioInputs);
-        WebElement hi = inputs.get(idx * 3);
-        WebElement mi = inputs.get(idx * 3 + 1);
-        WebElement si = inputs.get(idx * 3 + 2);
-        hi.clear(); hi.sendKeys(h);
-        mi.clear(); mi.sendKeys(m);
-        si.clear(); si.sendKeys(s);
+        setReactInputValue(inputs.get(idx * 3),     h);
+        setReactInputValue(inputs.get(idx * 3 + 1), m);
+        setReactInputValue(inputs.get(idx * 3 + 2), s);
+    }
+
+    /**
+     * Set a React-controlled input's value reliably.
+     * sendKeys can intermittently fail to trigger onChange on type=number
+     * inputs (esp. across rapid clear/sendKeys across adjacent inputs),
+     * leaving controlled state stale. This uses the native value setter
+     * and dispatches a bubbling 'input' event so React updates state.
+     */
+    private void setReactInputValue(WebElement el, String value) {
+        ((JavascriptExecutor) driver).executeScript(
+                "const el = arguments[0];" +
+                "const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;" +
+                "setter.call(el, arguments[1]);" +
+                "el.dispatchEvent(new Event('input', { bubbles: true }));",
+                el, value);
     }
 
     public void clickAddSet(int exerciseIdx) {
