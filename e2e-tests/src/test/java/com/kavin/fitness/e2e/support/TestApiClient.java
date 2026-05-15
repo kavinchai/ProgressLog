@@ -2,7 +2,6 @@ package com.kavin.fitness.e2e.support;
 
 import org.testng.Reporter;
 
-import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.URI;
@@ -13,12 +12,12 @@ import java.time.Duration;
 
 /**
  * Lightweight HTTP client that logs in to the backend and exposes helpers to
- * seed workouts, weight, steps, and meals. Holds the JWT cookie automatically
- * via a CookieManager so subsequent calls are authenticated.
+ * seed workouts, weight, steps, and meals. Holds the JWT cookie via a
+ * CookieManager scoped to this HttpClient instance — no JVM-wide side effects.
  *
- * Used by E2E tests that need known data on the server before driving the UI
- * (e.g. History/Progress/Leaderboard pages which would otherwise be empty for
- * a freshly created test user).
+ * Fail-fast: login() and each seed method throw on non-2xx responses so test
+ * setup fails with an actionable error instead of leaving the UI empty and
+ * producing a confusing "sidebar not visible" assertion failure downstream.
  */
 public class TestApiClient {
     private final String apiUrl;
@@ -28,21 +27,20 @@ public class TestApiClient {
         this.apiUrl = apiUrl;
         CookieManager cookieManager = new CookieManager();
         cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
-        CookieHandler.setDefault(cookieManager);
         this.http = HttpClient.newBuilder().cookieHandler(cookieManager).build();
     }
 
-    /** Login. Returns true on 2xx. Cookie is stored in the underlying CookieManager. */
-    public boolean login(String username, String password) {
+    /** Login. Throws if the response is not 2xx so test setup fails loudly. */
+    public void login(String username, String password) {
         String body = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
         HttpResponse<String> resp = post("/auth/login", body);
-        return resp.statusCode() >= 200 && resp.statusCode() < 300;
+        if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
+            throw new IllegalStateException("TestApiClient login failed: HTTP "
+                    + resp.statusCode() + " body=" + resp.body()
+                    + " (apiUrl=" + apiUrl + ", username=" + username + ")");
+        }
     }
 
-    /**
-     * POST a workout session with one lifting exercise.
-     * @param sessionDate ISO date string e.g. "2026-04-15"
-     */
     public void logLiftingWorkout(String sessionDate, String sessionName, String exerciseName,
                                   double weightLbs, int reps) {
         String body = "{"
@@ -52,13 +50,9 @@ public class TestApiClient {
                 + "\"exerciseName\":\"" + exerciseName + "\","
                 + "\"sets\":[{\"setNumber\":1,\"reps\":" + reps + ",\"weightLbs\":" + weightLbs + "}]"
                 + "}]}";
-        HttpResponse<String> r = post("/workouts", body);
-        if (r.statusCode() >= 300) {
-            Reporter.log("WARN: seed workout HTTP " + r.statusCode() + " body=" + r.body(), true);
-        }
+        assertOk(post("/workouts", body), "seed lifting workout " + exerciseName + " on " + sessionDate);
     }
 
-    /** POST a workout session with a single run exercise (distance in miles, duration in seconds). */
     public void logRunWorkout(String sessionDate, double distanceMiles, int durationSeconds) {
         String body = "{"
                 + "\"sessionName\":\"Cardio\","
@@ -68,37 +62,50 @@ public class TestApiClient {
                 + "\"sets\":[{\"setNumber\":1,\"reps\":0,\"weightLbs\":0,"
                 + "\"distanceMiles\":" + distanceMiles + ",\"durationSeconds\":" + durationSeconds + "}]"
                 + "}]}";
-        HttpResponse<String> r = post("/workouts", body);
-        if (r.statusCode() >= 300) {
-            Reporter.log("WARN: seed run HTTP " + r.statusCode() + " body=" + r.body(), true);
-        }
+        assertOk(post("/workouts", body), "seed run on " + sessionDate);
     }
 
     public void logWeight(String date, double weightLbs) {
         String body = "{\"logDate\":\"" + date + "\",\"weightLbs\":" + weightLbs + "}";
-        HttpResponse<String> r = post("/weight", body);
-        if (r.statusCode() >= 300) {
-            Reporter.log("WARN: seed weight HTTP " + r.statusCode() + " body=" + r.body(), true);
-        }
+        assertOk(post("/weight", body), "seed weight on " + date);
     }
 
     public void logSteps(String date, int steps) {
         String body = "{\"logDate\":\"" + date + "\",\"steps\":" + steps + "}";
-        HttpResponse<String> r = post("/steps", body);
-        if (r.statusCode() >= 300) {
-            Reporter.log("WARN: seed steps HTTP " + r.statusCode() + " body=" + r.body(), true);
+        assertOk(post("/steps", body), "seed steps on " + date);
+    }
+
+    /** Delete all workout sessions for a given date. No-op if none exist. */
+    public void deleteWorkoutsOnDate(String date) {
+        HttpResponse<String> list = get("/workouts?date=" + date);
+        if (list.statusCode() >= 300) {
+            Reporter.log("WARN: list workouts " + date + " -> HTTP " + list.statusCode(), true);
+            return;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"id\"\\s*:\\s*(\\d+)").matcher(list.body());
+        while (m.find()) {
+            HttpResponse<String> r = delete("/workouts/" + m.group(1));
+            if (r.statusCode() >= 300) {
+                Reporter.log("WARN: delete workout " + m.group(1) + " -> HTTP " + r.statusCode(), true);
+            }
         }
     }
 
-    /** Delete all workout sessions for a given date (idempotent — silent if none). */
-    public void deleteWorkoutsOnDate(String date) {
+    /** Returns the number of workout sessions on a given date — used to verify seeding. */
+    public int countWorkoutsOnDate(String date) {
         HttpResponse<String> list = get("/workouts?date=" + date);
-        if (list.statusCode() >= 300) return;
-        String body = list.body();
-        // Body is a JSON array of sessions; extract numeric "id" fields via a quick regex.
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"id\"\\s*:\\s*(\\d+)").matcher(body);
-        while (m.find()) {
-            delete("/workouts/" + m.group(1));
+        if (list.statusCode() >= 300) return -1;
+        int count = 0;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"id\"\\s*:\\s*\\d+").matcher(list.body());
+        while (m.find()) count++;
+        return count;
+    }
+
+    private static void assertOk(HttpResponse<String> resp, String label) {
+        if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
+            throw new IllegalStateException(
+                    "TestApiClient " + label + " failed: HTTP " + resp.statusCode()
+                            + " body=" + resp.body());
         }
     }
 
@@ -106,6 +113,7 @@ public class TestApiClient {
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(apiUrl + path))
+                    .timeout(Duration.ofSeconds(10))
                     .GET().build();
             return http.send(req, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
@@ -131,6 +139,7 @@ public class TestApiClient {
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(apiUrl + path))
+                    .timeout(Duration.ofSeconds(10))
                     .DELETE().build();
             return http.send(req, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {

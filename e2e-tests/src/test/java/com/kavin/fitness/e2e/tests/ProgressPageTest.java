@@ -3,6 +3,7 @@ package com.kavin.fitness.e2e.tests;
 import com.kavin.fitness.e2e.pages.ProgressPage;
 import com.kavin.fitness.e2e.support.BaseTest;
 import com.kavin.fitness.e2e.support.TestApiClient;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -13,11 +14,15 @@ import java.util.List;
  * Covers the /progress routes (Strength and Cardio tabs). Seeds workout
  * sessions with multiple weights across distinct dates so the page can
  * compute a PR and render the session-history table and chart.
+ *
+ * Seeding throws on failure (see TestApiClient) so backend/auth issues
+ * surface as actionable errors rather than empty-sidebar assertions.
  */
 public class ProgressPageTest extends BaseTest {
     private ProgressPage progress;
+    private TestApiClient api;
+    private final java.util.List<String> seededDates = new java.util.ArrayList<>();
 
-    /** Exercise name distinct from other test classes' to avoid collisions. */
     private static final String STRENGTH_NAME = "E2E Progress Lift";
     private static final String CARDIO_NAME = "Run";
 
@@ -29,34 +34,51 @@ public class ProgressPageTest extends BaseTest {
         String username = System.getProperty("test.user.username", "qaf_test_user");
         String password = System.getProperty("test.user.password", "qaf_test_password");
 
-        TestApiClient api = new TestApiClient(apiUrl);
-        if (api.login(username, password)) {
-            // Three lifting sessions on three different dates, ascending weight
-            // so the latest is the PR. Use dates far enough back to be outside
-            // 4W default range but within 6M/All so we have data to chart.
-            LocalDate now = LocalDate.now();
-            String[] dates = {
-                    now.minusDays(60).toString(),
-                    now.minusDays(30).toString(),
-                    now.minusDays(7).toString(),
-            };
-            double[] weights = {135.0, 155.0, 175.0};
-            for (int i = 0; i < dates.length; i++) {
-                api.deleteWorkoutsOnDate(dates[i]);
-                api.logLiftingWorkout(dates[i], "Progress E2E session",
-                        STRENGTH_NAME, weights[i], 5);
-            }
+        api = new TestApiClient(apiUrl);
+        api.login(username, password);
 
-            // A couple of runs for the Cardio tab.
-            String runDate1 = now.minusDays(14).toString();
-            String runDate2 = now.minusDays(3).toString();
-            api.deleteWorkoutsOnDate(runDate1);
-            api.deleteWorkoutsOnDate(runDate2);
-            api.logRunWorkout(runDate1, 3.0, 1500); // 3 mi in 25:00
-            api.logRunWorkout(runDate2, 5.0, 2400); // 5 mi in 40:00
+        LocalDate now = LocalDate.now();
+        String[] dates = {
+                now.minusDays(60).toString(),
+                now.minusDays(30).toString(),
+                now.minusDays(7).toString(),
+        };
+        double[] weights = {135.0, 155.0, 175.0};
+        for (int i = 0; i < dates.length; i++) {
+            api.deleteWorkoutsOnDate(dates[i]);
+            api.logLiftingWorkout(dates[i], "Progress E2E session",
+                    STRENGTH_NAME, weights[i], 5);
+            seededDates.add(dates[i]);
+        }
+
+        String runDate1 = now.minusDays(14).toString();
+        String runDate2 = now.minusDays(3).toString();
+        api.deleteWorkoutsOnDate(runDate1);
+        api.deleteWorkoutsOnDate(runDate2);
+        api.logRunWorkout(runDate1, 3.0, 1500);
+        api.logRunWorkout(runDate2, 5.0, 2400);
+        seededDates.add(runDate1);
+        seededDates.add(runDate2);
+
+        // Verify at least one strength session lands in the DB before driving
+        // the UI — surfaces auth/API issues with a clear message.
+        if (api.countWorkoutsOnDate(dates[2]) < 1) {
+            throw new IllegalStateException(
+                    "Expected seeded strength workout on " + dates[2] + " to exist; got 0");
         }
 
         navigateToToday();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void cleanup() {
+        try {
+            if (api != null) {
+                for (String date : seededDates) {
+                    api.deleteWorkoutsOnDate(date);
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     // ── Strength ─────────────────────────────────────────────────────────────
@@ -85,7 +107,8 @@ public class ProgressPageTest extends BaseTest {
     public void strengthSidebarListsSeededExercise() {
         step("verify sidebar visible with our seeded exercise");
         if (!progress.isStrengthSidebarVisible()) {
-            throw new AssertionError("Expected strength sidebar visible");
+            throw new AssertionError("Expected strength sidebar visible — "
+                    + "seeded data may not have been created (check TestApiClient errors)");
         }
         if (progress.getStrengthExerciseCount() == 0) {
             throw new AssertionError("Expected at least 1 strength exercise in sidebar");
@@ -165,7 +188,8 @@ public class ProgressPageTest extends BaseTest {
 
         step("verify cardio sidebar lists Run");
         if (!progress.isCardioSidebarVisible()) {
-            throw new AssertionError("Expected cardio sidebar visible");
+            throw new AssertionError("Expected cardio sidebar visible — "
+                    + "seeded run data may not have been created (check TestApiClient errors)");
         }
         if (progress.getCardioExerciseCount() == 0) {
             throw new AssertionError("Expected at least 1 cardio exercise in sidebar");
@@ -176,6 +200,5 @@ public class ProgressPageTest extends BaseTest {
     public void cardioRunIsSelectable() {
         step("click 'Run' in sidebar");
         progress.clickCardioExercise(CARDIO_NAME);
-        // No exception means the exercise was found and clicked.
     }
 }

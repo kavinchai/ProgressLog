@@ -128,34 +128,55 @@ public class TodayPage {
 
     // ── Workout ──────────────────────────────────────────────────────────────
 
+    private static final By WORKOUT_DELETE_BTN = By.xpath(
+            "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
+                    "]//button[contains(@class,'btn-danger') and text()='Delete']");
+    private static final By WORKOUT_START_BTN = By.xpath(
+            "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
+                    "]//button[contains(text(),'Start Workout')]");
+    private static final By WORKOUT_ADD_EXERCISE_BTN = By.xpath(
+            "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
+                    "]//button[contains(text(),'+ Exercise')]");
+
+    /**
+     * Wait for the workout section to finish its initial render. Either
+     * "Start Workout" (no session) or "Delete" (existing session) must be
+     * visible. Without this, downstream interactions race against React.
+     */
+    private void waitForWorkoutSectionReady() {
+        wait.until(d ->
+                !d.findElements(WORKOUT_START_BTN).isEmpty()
+                || !d.findElements(WORKOUT_DELETE_BTN).isEmpty());
+    }
+
     public void deleteWorkoutIfExists() {
-        By deleteBtn = By.xpath(
-                "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                        "]//button[contains(@class,'btn-danger') and text()='Delete']");
-        List<WebElement> btns = driver.findElements(deleteBtn);
-        if (!btns.isEmpty()) {
-            btns.get(0).click();
-            By startBtn = By.xpath(
-                    "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                            "]//button[contains(text(),'Start Workout')]");
-            wait.until(ExpectedConditions.visibilityOfElementLocated(startBtn));
+        waitForWorkoutSectionReady();
+        // Loop: an account can have multiple workout sessions per day if
+        // seeded directly via the API. Click Delete until none remain.
+        while (!driver.findElements(WORKOUT_DELETE_BTN).isEmpty()) {
+            try {
+                driver.findElements(WORKOUT_DELETE_BTN).get(0).click();
+            } catch (Exception ignored) {
+                // Stale element from a re-render — re-query on next iteration.
+                continue;
+            }
+            // After a delete, either another Delete remains (more sessions) or
+            // Start Workout appears (last one gone). Either way is "ready".
+            wait.until(d ->
+                    !d.findElements(WORKOUT_START_BTN).isEmpty()
+                    || !d.findElements(WORKOUT_DELETE_BTN).isEmpty());
         }
     }
 
     public void clickAddWorkout() {
-        By startXpath = By.xpath(
-                "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                        "]//button[contains(text(),'Start Workout')]");
-        By exerciseXpath = By.xpath(
-                "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                        "]//button[contains(text(),'+ Exercise')]");
+        waitForWorkoutSectionReady();
         wait.until(d -> {
-            List<WebElement> starts = d.findElements(startXpath);
+            List<WebElement> starts = d.findElements(WORKOUT_START_BTN);
             for (WebElement btn : starts) {
                 try { if (btn.isDisplayed() && btn.isEnabled()) { btn.click(); return true; } }
                 catch (Exception ignored) {}
             }
-            List<WebElement> exercises = d.findElements(exerciseXpath);
+            List<WebElement> exercises = d.findElements(WORKOUT_ADD_EXERCISE_BTN);
             for (WebElement btn : exercises) {
                 try { if (btn.isDisplayed() && btn.isEnabled()) { btn.click(); return true; } }
                 catch (Exception ignored) {}
