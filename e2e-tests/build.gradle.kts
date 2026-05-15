@@ -27,7 +27,7 @@ tasks.withType<Test> {
     }
     workingDir = projectDir
 
-    listOf("env.baseurl", "test.user.username", "test.user.password").forEach { key ->
+    listOf("env.baseurl", "env.apiurl", "test.user.username", "test.user.password", "headless").forEach { key ->
         System.getProperty(key)?.let { systemProperty(key, it) }
     }
 

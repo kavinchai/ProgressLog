@@ -11,8 +11,13 @@ public final class Drivers {
     public static WebDriver chrome() {
         WebDriverManager.chromedriver().setup();
         ChromeOptions options = new ChromeOptions();
+        // Headless by default (CI). Pass -Dheadless=false to see the browser
+        // when debugging locally.
+        boolean headless = !"false".equalsIgnoreCase(System.getProperty("headless"));
+        if (headless) {
+            options.addArguments("--headless=new");
+        }
         options.addArguments(
-                "--headless=new",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",

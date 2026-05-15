@@ -78,38 +78,33 @@ public class WorkoutBuilderModal {
     }
 
     public void enterWeight(int idx, String weight) {
-        WebElement input = driver.findElements(
-                By.cssSelector(".wbm-set-row input[placeholder='0']")).get(idx * 2);
-        input.clear();
-        input.sendKeys(weight);
+        By inputs = By.cssSelector(".wbm-set-row input[placeholder='0']");
+        wait.until(d -> d.findElements(inputs).size() > idx * 2);
+        typeIntoNumberInput(driver.findElements(inputs).get(idx * 2), weight);
     }
 
     public void enterReps(int idx, String reps) {
-        WebElement input = driver.findElements(
-                By.cssSelector(".wbm-set-row input[placeholder='0']")).get(idx * 2 + 1);
-        input.clear();
-        input.sendKeys(reps);
+        By inputs = By.cssSelector(".wbm-set-row input[placeholder='0']");
+        wait.until(d -> d.findElements(inputs).size() > idx * 2 + 1);
+        typeIntoNumberInput(driver.findElements(inputs).get(idx * 2 + 1), reps);
     }
 
     public void enterDistance(int idx, String distance) {
-        WebElement input = driver.findElements(
-                By.cssSelector(".wbm-set-row--cardio input[placeholder='0']")).get(idx * 3);
-        input.clear();
-        input.sendKeys(distance);
+        By inputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
+        wait.until(d -> d.findElements(inputs).size() > idx * 3);
+        typeIntoNumberInput(driver.findElements(inputs).get(idx * 3), distance);
     }
 
     public void enterRunMinutes(int idx, String minutes) {
-        WebElement input = driver.findElements(
-                By.cssSelector(".wbm-set-row--cardio input[placeholder='0']")).get(idx * 3 + 1);
-        input.clear();
-        input.sendKeys(minutes);
+        By inputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
+        wait.until(d -> d.findElements(inputs).size() > idx * 3 + 1);
+        typeIntoNumberInput(driver.findElements(inputs).get(idx * 3 + 1), minutes);
     }
 
     public void enterRunSeconds(int idx, String seconds) {
-        WebElement input = driver.findElements(
-                By.cssSelector(".wbm-set-row--cardio input[placeholder='0']")).get(idx * 3 + 2);
-        input.clear();
-        input.sendKeys(seconds);
+        By inputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
+        wait.until(d -> d.findElements(inputs).size() > idx * 3 + 2);
+        typeIntoNumberInput(driver.findElements(inputs).get(idx * 3 + 2), seconds);
     }
 
     public void enterDuration(int idx, String h, String m, String s) {
@@ -136,12 +131,14 @@ public class WorkoutBuilderModal {
     }
 
     public void clickAddSet(int exerciseIdx) {
+        wait.until(d -> d.findElements(ADD_SET_BTNS).size() > exerciseIdx);
         WebElement btn = driver.findElements(ADD_SET_BTNS).get(exerciseIdx);
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
     }
 
     public void toggleExerciseType(int exerciseIdx) {
+        wait.until(d -> d.findElements(TYPE_BTNS).size() > exerciseIdx);
         WebElement btn = driver.findElements(TYPE_BTNS).get(exerciseIdx);
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);

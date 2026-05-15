@@ -212,8 +212,9 @@ public class TodayPage {
     }
 
     public void clickEditExercise(int index) {
-        List<WebElement> editBtns = driver.findElements(By.cssSelector(".exercise-card .btn.btn-sm"));
-        editBtns.get(index).click();
+        By editBtns = By.cssSelector(".exercise-card .btn.btn-sm");
+        wait.until(d -> d.findElements(editBtns).size() > index);
+        driver.findElements(editBtns).get(index).click();
     }
 
     public boolean isTextVisible(String text) {
