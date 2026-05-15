@@ -2,6 +2,7 @@ package com.kavin.fitness.e2e.pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -114,26 +115,24 @@ public class WorkoutBuilderModal {
     public void enterDuration(int idx, String h, String m, String s) {
         By cardioInputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
         wait.until(d -> d.findElements(cardioInputs).size() > idx * 3 + 2);
-        List<WebElement> inputs = driver.findElements(cardioInputs);
-        setReactInputValue(inputs.get(idx * 3),     h);
-        setReactInputValue(inputs.get(idx * 3 + 1), m);
-        setReactInputValue(inputs.get(idx * 3 + 2), s);
+        // Re-query before each field to get a fresh reference after React re-renders.
+        typeIntoNumberInput(driver.findElements(cardioInputs).get(idx * 3),     h);
+        typeIntoNumberInput(driver.findElements(cardioInputs).get(idx * 3 + 1), m);
+        typeIntoNumberInput(driver.findElements(cardioInputs).get(idx * 3 + 2), s);
     }
 
     /**
-     * Set a React-controlled input's value reliably.
-     * sendKeys can intermittently fail to trigger onChange on type=number
-     * inputs (esp. across rapid clear/sendKeys across adjacent inputs),
-     * leaving controlled state stale. This uses the native value setter
-     * and dispatches a bubbling 'input' event so React updates state.
+     * Type into a React-controlled type=number input.
+     * Uses scroll+click to focus, then Ctrl+A to select all existing content,
+     * then sendKeys to type the value. This fires real keyboard events that
+     * React's onChange handles reliably in headless Chrome on Linux.
+     * Avoids clear() which can fight with React's controlled value reconciliation.
      */
-    private void setReactInputValue(WebElement el, String value) {
-        ((JavascriptExecutor) driver).executeScript(
-                "const el = arguments[0];" +
-                "const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;" +
-                "setter.call(el, arguments[1]);" +
-                "el.dispatchEvent(new Event('input', { bubbles: true }));",
-                el, value);
+    private void typeIntoNumberInput(WebElement el, String value) {
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", el);
+        el.click();
+        el.sendKeys(Keys.chord(Keys.CONTROL, "a"));
+        el.sendKeys(value);
     }
 
     public void clickAddSet(int exerciseIdx) {
