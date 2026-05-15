@@ -1,13 +1,14 @@
 package com.kavin.fitness.e2e.pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
-import java.util.List;
 
 public class EditExerciseModal {
     private final WebDriver driver;
@@ -36,27 +37,36 @@ public class EditExerciseModal {
     }
 
     public void editWeight(int setIdx, String weight) {
-        WebElement input = driver.findElements(
-                By.cssSelector(".modal-box .wbm-set-row .wbm-set-input")).get(setIdx * 2);
-        input.clear();
-        input.sendKeys(weight);
+        By inputs = By.cssSelector(".modal-box .wbm-set-row .wbm-set-input");
+        wait.until(d -> d.findElements(inputs).size() > setIdx * 2);
+        typeIntoNumberInput(driver.findElements(inputs).get(setIdx * 2), weight);
     }
 
     public void editDistance(int setIdx, String distance) {
-        WebElement input = driver.findElements(
-                By.cssSelector(".modal-box .wbm-set-row--cardio input[placeholder='0']")).get(setIdx * 3);
-        input.clear();
-        input.sendKeys(distance);
+        By inputs = By.cssSelector(".modal-box .wbm-set-row--cardio input[placeholder='0']");
+        wait.until(d -> d.findElements(inputs).size() > setIdx * 3);
+        typeIntoNumberInput(driver.findElements(inputs).get(setIdx * 3), distance);
     }
 
     public void editMinutes(int setIdx, String minutes) {
-        List<WebElement> inputs = driver.findElements(
-                By.cssSelector(".modal-box .wbm-set-row--cardio input[placeholder='0']"));
-        WebElement input = inputs.get(setIdx * 3 + 1);
-        input.clear();
-        input.sendKeys(minutes);
+        By inputs = By.cssSelector(".modal-box .wbm-set-row--cardio input[placeholder='0']");
+        wait.until(d -> d.findElements(inputs).size() > setIdx * 3 + 1);
+        typeIntoNumberInput(driver.findElements(inputs).get(setIdx * 3 + 1), minutes);
     }
 
     public void save() { driver.findElement(SAVE).click(); }
     public void deleteExercise() { driver.findElement(DELETE).click(); }
+
+    /**
+     * Type into a React-controlled type=number input. Same robust pattern as
+     * WorkoutBuilderModal.typeIntoNumberInput — scroll+click+Ctrl+A+type fires
+     * real keyboard events that React's onChange handles reliably in headless
+     * Chrome. Avoids clear() which can fight React's controlled value.
+     */
+    private void typeIntoNumberInput(WebElement el, String value) {
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", el);
+        el.click();
+        el.sendKeys(Keys.chord(Keys.CONTROL, "a"));
+        el.sendKeys(value);
+    }
 }

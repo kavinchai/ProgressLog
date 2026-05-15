@@ -99,8 +99,9 @@ public class NavigationTest extends BaseTest {
             }
         }
 
-        step("toggle back to original");
+        step("toggle back to original and verify");
         nav.clickDarkModeToggle();
+        wait.until(d -> nav.getDarkModeButtonText().equals(initial));
     }
 
     private void assertContains(List<String> list, String expected) {
