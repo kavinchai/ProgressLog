@@ -1,68 +1,120 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import express from 'express';
-import { randomUUID } from 'crypto';
-import { z } from 'zod';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import express from "express";
+import { randomUUID } from "crypto";
+import { z } from "zod";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.PROGRESSLOG_API_URL ?? 'http://localhost:8080/api';
+const API_BASE = process.env.PROGRESSLOG_API_URL ?? "http://localhost:8080/api";
 // Default/fallback API key (single-user env-var mode, e.g. kavinchai's Railway deployment).
 // Per-request keys via ?apiKey= query param take precedence and enable multi-user support.
 const DEFAULT_API_KEY = process.env.PROGRESSLOG_API_KEY;
-const PORT = parseInt(process.env.PORT ?? '3100', 10);
+const PORT = parseInt(process.env.PORT ?? "3100", 10);
 
 /** Resolve the API key for a given request.
  *  Priority: ?apiKey= query param → X-API-Key header → PROGRESSLOG_API_KEY env var */
 function resolveApiKey(req) {
-  return req.query?.apiKey || req.headers['x-api-key'] || DEFAULT_API_KEY || null;
+	return (
+		req.query?.apiKey || req.headers["x-api-key"] || DEFAULT_API_KEY || null
+	);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDuration(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return [h ? `${h}h` : '', m ? `${m}m` : '', s ? `${s}s` : '']
-    .filter(Boolean).join(' ') || '0s';
+	const h = Math.floor(seconds / 3600);
+	const m = Math.floor((seconds % 3600) / 60);
+	const s = seconds % 60;
+	return (
+		[h ? `${h}h` : "", m ? `${m}m` : "", s ? `${s}s` : ""]
+			.filter(Boolean)
+			.join(" ") || "0s"
+	);
 }
 
 function describeSet(s) {
-  if (s.distanceMiles != null || s.durationSeconds != null) {
-    const parts = [];
-    if (s.distanceMiles != null) parts.push(`${s.distanceMiles} mi`);
-    if (s.durationSeconds != null) parts.push(formatDuration(s.durationSeconds));
-    return parts.join(' in ');
-  }
-  return `${s.reps ?? 0} reps @ ${s.weightLbs ?? 0} lbs`;
+	if (s.distanceMiles != null || s.durationSeconds != null) {
+		const parts = [];
+		if (s.distanceMiles != null) parts.push(`${s.distanceMiles} mi`);
+		if (s.durationSeconds != null)
+			parts.push(formatDuration(s.durationSeconds));
+		return parts.join(" in ");
+	}
+	return `${s.reps ?? 0} reps @ ${s.weightLbs ?? 0} lbs`;
 }
 
 // ── API helper ──────────────────────────────────────────────────────────────
 
 function makeApi(apiKey) {
-  return async function api(method, path, body) {
-    const opts = {
-      method,
-      headers: {
-        'X-API-Key': apiKey,
-        'Content-Type': 'application/json',
-      },
-    };
-    if (body !== undefined) opts.body = JSON.stringify(body);
+	return async function api(method, path, body) {
+		const opts = {
+			method,
+			headers: {
+				"X-API-Key": apiKey,
+				"Content-Type": "application/json",
+			},
+		};
+		if (body !== undefined) opts.body = JSON.stringify(body);
 
-    const res = await fetch(`${API_BASE}${path}`, opts);
-    const text = await res.text();
-    if (!res.ok) {
-      throw new Error(`ProgressLog API ${method} ${path} → ${res.status}: ${text}`);
-    }
-    return text ? JSON.parse(text) : null;
-  };
+		const res = await fetch(`${API_BASE}${path}`, opts);
+		const text = await res.text();
+		if (!res.ok) {
+			throw new Error(
+				`ProgressLog API ${method} ${path} → ${res.status}: ${text}`,
+			);
+		}
+		return text ? JSON.parse(text) : null;
+	};
 }
 
 function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+	const d = new Date();
+	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+const DEDUP_TTL_MS = parseInt(process.env.MCP_DEDUP_TTL_MS ?? "30000", 10);
+const recentCalls = new Map();
+
+function canonicalize(value) {
+	if (Array.isArray(value)) return value.map(canonicalize);
+	if (value && typeof value === "object") {
+		return Object.keys(value)
+			.sort()
+			.reduce((acc, k) => {
+				acc[k] = canonicalize(value[k]);
+				return acc;
+			}, {});
+	}
+	return value;
+}
+
+function pruneRecentCalls(now) {
+	for (const [k, v] of recentCalls) {
+		if (v.expiresAt <= now) recentCalls.delete(k);
+	}
+}
+
+function withDedup(apiKey, toolName, handler) {
+	return async (args) => {
+		const now = Date.now();
+		pruneRecentCalls(now);
+		const key = JSON.stringify([apiKey, toolName, canonicalize(args)]);
+		const cached = recentCalls.get(key);
+		if (cached) {
+			console.log(
+				`[dedup] replaying ${toolName} (cached ${Math.round((now - cached.storedAt) / 1000)}s ago)`,
+			);
+			return cached.result;
+		}
+		const result = await handler(args);
+		recentCalls.set(key, {
+			result,
+			storedAt: now,
+			expiresAt: now + DEDUP_TTL_MS,
+		});
+		return result;
+	};
 }
 
 // ── MCP Server factory ─────────────────────────────────────────────────────
@@ -70,686 +122,1020 @@ function todayStr() {
 // one transport per server.
 
 function createMcpServer(apiKey) {
-  const api = makeApi(apiKey);
+	const api = makeApi(apiKey);
 
-  async function logExercisesToDate(date, sessionName, exercises) {
-    const existing = await api('GET', `/workouts?date=${encodeURIComponent(date)}`);
-    if (existing.length > 0) {
-      const sessionId = existing[0].id;
-      let result;
-      for (const exercise of exercises) {
-        result = await api('POST', `/workouts/${sessionId}/exercises`, exercise);
-      }
-      return result ?? await api('GET', `/workouts/${sessionId}`);
-    }
-    return await api('POST', '/workouts', {
-      sessionDate: date,
-      sessionName: sessionName ?? null,
-      exercises,
-    });
-  }
+	async function logExercisesToDate(date, sessionName, exercises) {
+		const existing = await api(
+			"GET",
+			`/workouts?date=${encodeURIComponent(date)}`,
+		);
+		if (existing.length > 0) {
+			const sessionId = existing[0].id;
+			let result;
+			for (const exercise of exercises) {
+				result = await api(
+					"POST",
+					`/workouts/${sessionId}/exercises`,
+					exercise,
+				);
+			}
+			return result ?? (await api("GET", `/workouts/${sessionId}`));
+		}
+		return await api("POST", "/workouts", {
+			sessionDate: date,
+			sessionName: sessionName ?? null,
+			exercises,
+		});
+	}
 
-  const mcp = new McpServer(
-    { name: 'progresslog', version: '1.0.0' },
-    { capabilities: { tools: {} } },
-  );
+	const mcp = new McpServer(
+		{ name: "progresslog", version: "1.0.0" },
+		{ capabilities: { tools: {} } },
+	);
 
-  // ── Tool: log_weight ──────────────────────────────────────────────────────
+	// ── Tool: log_weight ──────────────────────────────────────────────────────
 
-  mcp.tool(
-    'log_weight',
-    'Log body weight for a given date. Call this when the user mentions their weight.',
-    {
-      weightLbs: z.number().positive().describe('Weight in pounds'),
-      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-    },
-    async ({ weightLbs, date }) => {
-      const result = await api('POST', '/weight', {
-        logDate: date ?? todayStr(),
-        weightLbs,
-      });
-      return {
-        content: [{ type: 'text', text: `Logged weight: ${result.weightLbs} lbs on ${result.logDate}` }],
-      };
-    },
-  );
+	mcp.tool(
+		"log_weight",
+		"Log body weight for a given date. Call this when the user mentions their weight.",
+		{
+			weightLbs: z.number().positive().describe("Weight in pounds"),
+			date: z
+				.string()
+				.optional()
+				.describe("Date in YYYY-MM-DD format. Defaults to today."),
+		},
+		withDedup(apiKey, "log_weight", async ({ weightLbs, date }) => {
+			const result = await api("POST", "/weight", {
+				logDate: date ?? todayStr(),
+				weightLbs,
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: `Logged weight: ${result.weightLbs} lbs on ${result.logDate}`,
+					},
+				],
+			};
+		}),
+	);
 
-  // ── Tool: log_workout ─────────────────────────────────────────────────────
+	// ── Tool: log_workout ─────────────────────────────────────────────────────
 
-  mcp.tool(
-    'log_workout',
-    `Log a strength/lifting workout session. Use ONLY for exercises with reps and weight (e.g. Bench Press, Squat, Deadlift).
+	mcp.tool(
+		"log_workout",
+		`Log a strength/lifting workout session. Use ONLY for exercises with reps and weight (e.g. Bench Press, Squat, Deadlift).
 Do NOT use this for runs, cardio, or timed activities — use log_cardio or log_activity instead.
 Examples:
   "5x5 bench press at 135 lbs" → exercises: [{ exerciseName: "Bench Press", sets: [{setNumber:1,reps:5,weightLbs:135}, ...] }]
   "3 sets of 10 squats at 185 lbs" → exercises: [{ exerciseName: "Squat", sets: [{setNumber:1,reps:10,weightLbs:185}, ...] }]`,
-    {
-      sessionName: z.string().optional().describe('Optional label for the session, e.g. "Push Day", "Pull Day", "Legs".'),
-      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-      exercises: z.array(z.object({
-        exerciseName: z.string().describe('Name of the strength exercise, e.g. "Bench Press", "Squat", "Deadlift"'),
-        sets: z.array(z.object({
-          setNumber: z.number().int().positive().describe('Set number starting from 1'),
-          reps: z.number().int().min(0).describe('Reps performed'),
-          weightLbs: z.number().min(0).describe('Weight in pounds'),
-        })).describe('Array of sets for this exercise'),
-      })).min(1).describe('Array of strength exercises performed'),
-    },
-    async ({ sessionName, date, exercises }) => {
-      const targetDate = date ?? todayStr();
-      const mappedExercises = exercises.map(e => ({
-        exerciseName: e.exerciseName,
-        sets: e.sets.map(s => ({
-          setNumber: s.setNumber,
-          reps: s.reps,
-          weightLbs: s.weightLbs,
-        })),
-      }));
+		{
+			sessionName: z
+				.string()
+				.optional()
+				.describe(
+					'Optional label for the session, e.g. "Push Day", "Pull Day", "Legs".',
+				),
+			date: z
+				.string()
+				.optional()
+				.describe("Date in YYYY-MM-DD format. Defaults to today."),
+			exercises: z
+				.array(
+					z.object({
+						exerciseName: z
+							.string()
+							.describe(
+								'Name of the strength exercise, e.g. "Bench Press", "Squat", "Deadlift"',
+							),
+						sets: z
+							.array(
+								z.object({
+									setNumber: z
+										.number()
+										.int()
+										.positive()
+										.describe("Set number starting from 1"),
+									reps: z.number().int().min(0).describe("Reps performed"),
+									weightLbs: z.number().min(0).describe("Weight in pounds"),
+								}),
+							)
+							.describe("Array of sets for this exercise"),
+					}),
+				)
+				.min(1)
+				.describe("Array of strength exercises performed"),
+		},
+		withDedup(
+			apiKey,
+			"log_workout",
+			async ({ sessionName, date, exercises }) => {
+				const targetDate = date ?? todayStr();
+				const mappedExercises = exercises.map((e) => ({
+					exerciseName: e.exerciseName,
+					sets: e.sets.map((s) => ({
+						setNumber: s.setNumber,
+						reps: s.reps,
+						weightLbs: s.weightLbs,
+					})),
+				}));
 
-      const result = await logExercisesToDate(targetDate, sessionName ?? null, mappedExercises);
+				const result = await logExercisesToDate(
+					targetDate,
+					sessionName ?? null,
+					mappedExercises,
+				);
 
-      const summary = exercises.map(e => {
-        const setsDesc = e.sets.map(s => describeSet(s)).join(', ');
-        return `• ${e.exerciseName}: ${setsDesc}`;
-      }).join('\n');
+				const summary = exercises
+					.map((e) => {
+						const setsDesc = e.sets.map((s) => describeSet(s)).join(", ");
+						return `• ${e.exerciseName}: ${setsDesc}`;
+					})
+					.join("\n");
 
-      return {
-        content: [{ type: 'text', text: `Logged workout${sessionName ? ` "${sessionName}"` : ''} on ${result.sessionDate}:\n${summary}` }],
-      };
-    },
-  );
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Logged workout${sessionName ? ` "${sessionName}"` : ""} on ${result.sessionDate}:\n${summary}`,
+						},
+					],
+				};
+			},
+		),
+	);
 
-  // ── Tool: log_cardio ─────────────────────────────────────────────────────
+	// ── Tool: log_cardio ─────────────────────────────────────────────────────
 
-  mcp.tool(
-    'log_cardio',
-    `Log a run, bike ride, row, or any cardio activity where both distance and duration are known. Always use this (not log_workout) for any run or distance-based cardio.
+	mcp.tool(
+		"log_cardio",
+		`Log a run, bike ride, row, or any cardio activity where both distance and duration are known. Always use this (not log_workout) for any run or distance-based cardio.
 Do NOT use this for activities with no distance (use log_activity instead).
 Examples:
   "1.53 mile run in 14 mins" → activityName: "Run", distanceMiles: 1.53, durationSeconds: 840
   "10 mile bike ride in 45 mins" → activityName: "Cycling", distanceMiles: 10, durationSeconds: 2700`,
-    {
-      activityName: z.string().describe('Name of the activity, e.g. "Run", "Cycling", "Rowing"'),
-      distanceMiles: z.number().min(0).describe('Distance covered in miles'),
-      durationSeconds: z.number().int().min(1).describe('Total duration in seconds'),
-      sessionName: z.string().optional().describe('Optional session label. Defaults to "activityName distanceMiles mi".'),
-      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-    },
-    async ({ activityName, distanceMiles, durationSeconds, sessionName, date }) => {
-      const targetDate = date ?? todayStr();
-      const exercise = {
-        exerciseName: activityName,
-        sets: [{ setNumber: 1, reps: 0, weightLbs: 0, distanceMiles, durationSeconds }],
-      };
+		{
+			activityName: z
+				.string()
+				.describe('Name of the activity, e.g. "Run", "Cycling", "Rowing"'),
+			distanceMiles: z.number().min(0).describe("Distance covered in miles"),
+			durationSeconds: z
+				.number()
+				.int()
+				.min(1)
+				.describe("Total duration in seconds"),
+			sessionName: z
+				.string()
+				.optional()
+				.describe(
+					'Optional session label. Defaults to "activityName distanceMiles mi".',
+				),
+			date: z
+				.string()
+				.optional()
+				.describe("Date in YYYY-MM-DD format. Defaults to today."),
+		},
+		withDedup(
+			apiKey,
+			"log_cardio",
+			async ({
+				activityName,
+				distanceMiles,
+				durationSeconds,
+				sessionName,
+				date,
+			}) => {
+				const targetDate = date ?? todayStr();
+				const exercise = {
+					exerciseName: activityName,
+					sets: [
+						{
+							setNumber: 1,
+							reps: 0,
+							weightLbs: 0,
+							distanceMiles,
+							durationSeconds,
+						},
+					],
+				};
 
-      const result = await logExercisesToDate(targetDate, sessionName ?? `${activityName} ${distanceMiles} mi`, [exercise]);
+				const result = await logExercisesToDate(
+					targetDate,
+					sessionName ?? `${activityName} ${distanceMiles} mi`,
+					[exercise],
+				);
 
-      return {
-        content: [{ type: 'text', text: `Logged ${activityName}: ${distanceMiles} mi in ${formatDuration(durationSeconds)} on ${result.sessionDate}` }],
-      };
-    },
-  );
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Logged ${activityName}: ${distanceMiles} mi in ${formatDuration(durationSeconds)} on ${result.sessionDate}`,
+						},
+					],
+				};
+			},
+		),
+	);
 
-  // ── Tool: log_activity ────────────────────────────────────────────────────
+	// ── Tool: log_activity ────────────────────────────────────────────────────
 
-  mcp.tool(
-    'log_activity',
-    `Log a timed activity with no distance — martial arts, yoga, sports, classes, etc. Always use this (not log_workout) for any non-lifting, non-distance activity.
+	mcp.tool(
+		"log_activity",
+		`Log a timed activity with no distance — martial arts, yoga, sports, classes, etc. Always use this (not log_workout) for any non-lifting, non-distance activity.
 Only duration is recorded; reps and weight are not applicable.
 Examples:
   "1 hour Muay Thai" → activityName: "Muay Thai", durationSeconds: 3600
   "45 min yoga" → activityName: "Yoga", durationSeconds: 2700
   "30 min boxing" → activityName: "Boxing", durationSeconds: 1800`,
-    {
-      activityName: z.string().describe('Name of the activity, e.g. "Muay Thai", "Yoga", "Boxing", "Basketball", "Soccer"'),
-      durationSeconds: z.number().int().min(1).describe('Total duration of the activity in seconds'),
-      sessionName: z.string().optional().describe('Optional session label. Defaults to activityName.'),
-      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-    },
-    async ({ activityName, durationSeconds, sessionName, date }) => {
-      const targetDate = date ?? todayStr();
-      const exercise = {
-        exerciseName: activityName,
-        sets: [{ setNumber: 1, reps: 0, weightLbs: 0, durationSeconds }],
-      };
+		{
+			activityName: z
+				.string()
+				.describe(
+					'Name of the activity, e.g. "Muay Thai", "Yoga", "Boxing", "Basketball", "Soccer"',
+				),
+			durationSeconds: z
+				.number()
+				.int()
+				.min(1)
+				.describe("Total duration of the activity in seconds"),
+			sessionName: z
+				.string()
+				.optional()
+				.describe("Optional session label. Defaults to activityName."),
+			date: z
+				.string()
+				.optional()
+				.describe("Date in YYYY-MM-DD format. Defaults to today."),
+		},
+		withDedup(
+			apiKey,
+			"log_activity",
+			async ({ activityName, durationSeconds, sessionName, date }) => {
+				const targetDate = date ?? todayStr();
+				const exercise = {
+					exerciseName: activityName,
+					sets: [{ setNumber: 1, reps: 0, weightLbs: 0, durationSeconds }],
+				};
 
-      const result = await logExercisesToDate(targetDate, sessionName ?? activityName, [exercise]);
+				const result = await logExercisesToDate(
+					targetDate,
+					sessionName ?? activityName,
+					[exercise],
+				);
 
-      return {
-        content: [{ type: 'text', text: `Logged ${activityName}: ${formatDuration(durationSeconds)} on ${result.sessionDate}` }],
-      };
-    },
-  );
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Logged ${activityName}: ${formatDuration(durationSeconds)} on ${result.sessionDate}`,
+						},
+					],
+				};
+			},
+		),
+	);
 
-  // ── Tool: get_workout_by_date ─────────────────────────────────────────────
+	// ── Tool: get_workout_by_date ─────────────────────────────────────────────
 
-  mcp.tool(
-    'get_workout_by_date',
-    'Look up a workout session by date. Returns the session ID and full exercise details needed to retroactively edit a past session. Call this before edit_workout when the user wants to change a session from a specific date.',
-    {
-      date: z.string().describe('Date to look up in YYYY-MM-DD format'),
-    },
-    async ({ date }) => {
-      const sessions = await api('GET', `/workouts?date=${encodeURIComponent(date)}`);
-      if (!sessions.length) {
-        return { content: [{ type: 'text', text: `No workout found for ${date}.` }] };
-      }
-      const session = sessions[0];
-      const grouped = (session.exerciseSets ?? []).reduce((acc, s) => {
-        if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
-        acc[s.exerciseName].push(s);
-        return acc;
-      }, {});
-      const lines = Object.entries(grouped).map(([name, sets]) => {
-        const desc = sets.map(s => describeSet(s)).join(', ');
-        return `  • ${name}: ${desc}`;
-      });
-      const header = `Workout on ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ''} [session ID: ${session.id}]`;
-      return {
-        content: [{ type: 'text', text: `${header}\n${lines.join('\n') || '  No exercises logged'}` }],
-      };
-    },
-  );
+	mcp.tool(
+		"get_workout_by_date",
+		"Look up a workout session by date. Returns the session ID and full exercise details needed to retroactively edit a past session. Call this before edit_workout when the user wants to change a session from a specific date.",
+		{
+			date: z.string().describe("Date to look up in YYYY-MM-DD format"),
+		},
+		async ({ date }) => {
+			const sessions = await api(
+				"GET",
+				`/workouts?date=${encodeURIComponent(date)}`,
+			);
+			if (!sessions.length) {
+				return {
+					content: [{ type: "text", text: `No workout found for ${date}.` }],
+				};
+			}
+			const session = sessions[0];
+			const grouped = (session.exerciseSets ?? []).reduce((acc, s) => {
+				if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
+				acc[s.exerciseName].push(s);
+				return acc;
+			}, {});
+			const lines = Object.entries(grouped).map(([name, sets]) => {
+				const desc = sets.map((s) => describeSet(s)).join(", ");
+				return `  • ${name}: ${desc}`;
+			});
+			const header = `Workout on ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ""} [session ID: ${session.id}]`;
+			return {
+				content: [
+					{
+						type: "text",
+						text: `${header}\n${lines.join("\n") || "  No exercises logged"}`,
+					},
+				],
+			};
+		},
+	);
 
-  // ── Tool: edit_workout ─────────────────────────────────────────────────────
+	// ── Tool: edit_workout ─────────────────────────────────────────────────────
 
-  mcp.tool(
-    'edit_workout',
-    'Edit/update an existing workout session — replace its exercises and sets entirely, or rename it. Use get_workout_by_date or get_today_summary first to find the session ID. Preserves the original session date automatically.',
-    {
-      sessionId: z.number().int().positive().describe('The workout session ID to update (get from get_workout_by_date or get_today_summary)'),
-      sessionName: z.string().optional().describe('New name for the session'),
-      exercises: z.array(z.object({
-        exerciseName: z.string().describe('Name of the exercise'),
-        sets: z.array(z.object({
-          setNumber: z.number().int().positive().describe('Set number starting from 1'),
-          reps: z.number().int().min(0).describe('Number of reps'),
-          weightLbs: z.number().min(0).describe('Weight in pounds'),
-          distanceMiles: z.number().min(0).optional().describe('Distance in miles (for cardio)'),
-          durationSeconds: z.number().int().min(0).optional().describe('Duration in seconds (for cardio)'),
-        })).describe('Array of sets for this exercise'),
-      })).describe('Complete list of exercises — replaces all existing exercises'),
-    },
-    async ({ sessionId, sessionName, exercises }) => {
-      const existing = await api('GET', `/workouts/${sessionId}`);
-      const result = await api('PUT', `/workouts/${sessionId}`, {
-        sessionDate: existing.sessionDate,
-        sessionName: sessionName ?? null,
-        exercises,
-      });
+	mcp.tool(
+		"edit_workout",
+		"Edit/update an existing workout session — replace its exercises and sets entirely, or rename it. Use get_workout_by_date or get_today_summary first to find the session ID. Preserves the original session date automatically.",
+		{
+			sessionId: z
+				.number()
+				.int()
+				.positive()
+				.describe(
+					"The workout session ID to update (get from get_workout_by_date or get_today_summary)",
+				),
+			sessionName: z.string().optional().describe("New name for the session"),
+			exercises: z
+				.array(
+					z.object({
+						exerciseName: z.string().describe("Name of the exercise"),
+						sets: z
+							.array(
+								z.object({
+									setNumber: z
+										.number()
+										.int()
+										.positive()
+										.describe("Set number starting from 1"),
+									reps: z.number().int().min(0).describe("Number of reps"),
+									weightLbs: z.number().min(0).describe("Weight in pounds"),
+									distanceMiles: z
+										.number()
+										.min(0)
+										.optional()
+										.describe("Distance in miles (for cardio)"),
+									durationSeconds: z
+										.number()
+										.int()
+										.min(0)
+										.optional()
+										.describe("Duration in seconds (for cardio)"),
+								}),
+							)
+							.describe("Array of sets for this exercise"),
+					}),
+				)
+				.describe(
+					"Complete list of exercises — replaces all existing exercises",
+				),
+		},
+		async ({ sessionId, sessionName, exercises }) => {
+			const existing = await api("GET", `/workouts/${sessionId}`);
+			const result = await api("PUT", `/workouts/${sessionId}`, {
+				sessionDate: existing.sessionDate,
+				sessionName: sessionName ?? null,
+				exercises,
+			});
 
-      const grouped = (result.exerciseSets ?? []).reduce((acc, s) => {
-        if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
-        acc[s.exerciseName].push(s);
-        return acc;
-      }, {});
-      const lines = Object.entries(grouped).map(([name, sets]) => {
-        const desc = sets.map(s => describeSet(s)).join(', ');
-        return `• ${name}: ${desc}`;
-      });
+			const grouped = (result.exerciseSets ?? []).reduce((acc, s) => {
+				if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
+				acc[s.exerciseName].push(s);
+				return acc;
+			}, {});
+			const lines = Object.entries(grouped).map(([name, sets]) => {
+				const desc = sets.map((s) => describeSet(s)).join(", ");
+				return `• ${name}: ${desc}`;
+			});
 
-      return {
-        content: [{ type: 'text', text: `Updated workout${result.sessionName ? ` "${result.sessionName}"` : ''} (ID: ${result.id}):\n${lines.join('\n')}` }],
-      };
-    },
-  );
+			return {
+				content: [
+					{
+						type: "text",
+						text: `Updated workout${result.sessionName ? ` "${result.sessionName}"` : ""} (ID: ${result.id}):\n${lines.join("\n")}`,
+					},
+				],
+			};
+		},
+	);
 
-  // ── Tool: delete_workout ──────────────────────────────────────────────────
+	// ── Tool: delete_workout ──────────────────────────────────────────────────
 
-  mcp.tool(
-    'delete_workout',
-    'Delete an entire workout session. Use get_today_summary first to find the session ID.',
-    {
-      sessionId: z.number().int().positive().describe('The workout session ID to delete'),
-    },
-    async ({ sessionId }) => {
-      await api('DELETE', `/workouts/${sessionId}`);
-      return {
-        content: [{ type: 'text', text: `Deleted workout session ${sessionId}.` }],
-      };
-    },
-  );
+	mcp.tool(
+		"delete_workout",
+		"Delete an entire workout session. Use get_today_summary first to find the session ID.",
+		{
+			sessionId: z
+				.number()
+				.int()
+				.positive()
+				.describe("The workout session ID to delete"),
+		},
+		async ({ sessionId }) => {
+			await api("DELETE", `/workouts/${sessionId}`);
+			return {
+				content: [
+					{ type: "text", text: `Deleted workout session ${sessionId}.` },
+				],
+			};
+		},
+	);
 
-  // ── Tool: delete_exercise ─────────────────────────────────────────────────
+	// ── Tool: delete_exercise ─────────────────────────────────────────────────
 
-  mcp.tool(
-    'delete_exercise',
-    'Delete a specific exercise from an existing workout session (keeps other exercises). Use get_today_summary first to find the session ID.',
-    {
-      sessionId: z.number().int().positive().describe('The workout session ID'),
-      exerciseName: z.string().describe('Name of the exercise to remove'),
-    },
-    async ({ sessionId, exerciseName }) => {
-      await api('DELETE', `/workouts/${sessionId}/exercises?name=${encodeURIComponent(exerciseName)}`);
-      return {
-        content: [{ type: 'text', text: `Removed "${exerciseName}" from session ${sessionId}.` }],
-      };
-    },
-  );
+	mcp.tool(
+		"delete_exercise",
+		"Delete a specific exercise from an existing workout session (keeps other exercises). Use get_today_summary first to find the session ID.",
+		{
+			sessionId: z.number().int().positive().describe("The workout session ID"),
+			exerciseName: z.string().describe("Name of the exercise to remove"),
+		},
+		async ({ sessionId, exerciseName }) => {
+			await api(
+				"DELETE",
+				`/workouts/${sessionId}/exercises?name=${encodeURIComponent(exerciseName)}`,
+			);
+			return {
+				content: [
+					{
+						type: "text",
+						text: `Removed "${exerciseName}" from session ${sessionId}.`,
+					},
+				],
+			};
+		},
+	);
 
-  // ── Tool: log_meal ────────────────────────────────────────────────────────
+	// ── Tool: log_meal ────────────────────────────────────────────────────────
 
-  mcp.tool(
-    'log_meal',
-    'Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros.',
-    {
-      mealName: z.string().optional().describe('Name of the meal, e.g. "Breakfast", "Protein Shake"'),
-      calories: z.number().int().min(0).describe('Total calories'),
-      proteinGrams: z.number().int().min(0).describe('Protein in grams'),
-      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-      dayType: z.enum(['training', 'rest']).optional().describe('Whether this is a training or rest day. Defaults to "training".'),
-    },
-    async ({ mealName, calories, proteinGrams, date, dayType }) => {
-      const logDate = date ?? todayStr();
+	mcp.tool(
+		"log_meal",
+		"Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros.",
+		{
+			mealName: z
+				.string()
+				.optional()
+				.describe('Name of the meal, e.g. "Breakfast", "Protein Shake"'),
+			calories: z.number().int().min(0).describe("Total calories"),
+			proteinGrams: z.number().int().min(0).describe("Protein in grams"),
+			date: z
+				.string()
+				.optional()
+				.describe("Date in YYYY-MM-DD format. Defaults to today."),
+			dayType: z
+				.enum(["training", "rest"])
+				.optional()
+				.describe(
+					'Whether this is a training or rest day. Defaults to "training".',
+				),
+		},
+		withDedup(
+			apiKey,
+			"log_meal",
+			async ({ mealName, calories, proteinGrams, date, dayType }) => {
+				const logDate = date ?? todayStr();
 
-      // Step 1: Ensure a nutrition day log exists (upsert)
-      const dayLog = await api('POST', '/nutrition', {
-        logDate,
-        dayType: dayType ?? 'training',
-      });
+				// Step 1: Ensure a nutrition day log exists (upsert)
+				const dayLog = await api("POST", "/nutrition", {
+					logDate,
+					dayType: dayType ?? "training",
+				});
 
-      // Step 2: Add the meal to that day log
-      const result = await api('POST', `/nutrition/${dayLog.id}/meals`, {
-        mealName: mealName ?? null,
-        calories,
-        proteinGrams,
-      });
+				// Step 2: Add the meal to that day log
+				const result = await api("POST", `/nutrition/${dayLog.id}/meals`, {
+					mealName: mealName ?? null,
+					calories,
+					proteinGrams,
+				});
 
-      const totalCal = result.totalCalories ?? calories;
-      const totalProt = result.totalProtein ?? proteinGrams;
+				const totalCal = result.totalCalories ?? calories;
+				const totalProt = result.totalProtein ?? proteinGrams;
 
-      return {
-        content: [{
-          type: 'text',
-          text: `Logged meal${mealName ? ` "${mealName}"` : ''}: ${calories} kcal, ${proteinGrams}g protein on ${logDate}\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
-        }],
-      };
-    },
-  );
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Logged meal${mealName ? ` "${mealName}"` : ""}: ${calories} kcal, ${proteinGrams}g protein on ${logDate}\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
+						},
+					],
+				};
+			},
+		),
+	);
 
-  // ── Tool: log_steps ───────────────────────────────────────────────────────
+	// ── Tool: log_steps ───────────────────────────────────────────────────────
 
-  mcp.tool(
-    'log_steps',
-    'Log step count for a given date. Call this when the user mentions steps or walking. Creates or updates the step entry for the date.',
-    {
-      steps: z.number().int().min(0).describe('Number of steps'),
-      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-    },
-    async ({ steps, date }) => {
-      const logDate = date ?? todayStr();
-      const result = await api('POST', '/steps', { logDate, steps });
-      return {
-        content: [{ type: 'text', text: `Logged ${steps.toLocaleString()} steps on ${result.logDate}` }],
-      };
-    },
-  );
+	mcp.tool(
+		"log_steps",
+		"Log step count for a given date. Call this when the user mentions steps or walking. Creates or updates the step entry for the date.",
+		{
+			steps: z.number().int().min(0).describe("Number of steps"),
+			date: z
+				.string()
+				.optional()
+				.describe("Date in YYYY-MM-DD format. Defaults to today."),
+		},
+		withDedup(apiKey, "log_steps", async ({ steps, date }) => {
+			const logDate = date ?? todayStr();
+			const result = await api("POST", "/steps", { logDate, steps });
+			return {
+				content: [
+					{
+						type: "text",
+						text: `Logged ${steps.toLocaleString()} steps on ${result.logDate}`,
+					},
+				],
+			};
+		}),
+	);
 
-  // ── Tool: edit_steps ─────────────────────────────────────────────────────
+	// ── Tool: edit_steps ─────────────────────────────────────────────────────
 
-  mcp.tool(
-    'edit_steps',
-    'Update the step count for a date. Use this when the user wants to correct or change a previously logged step count.',
-    {
-      steps: z.number().int().min(0).describe('New step count to set'),
-      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-    },
-    async ({ steps, date }) => {
-      const logDate = date ?? todayStr();
-      await api('POST', '/steps', { logDate, steps });
-      return {
-        content: [{ type: 'text', text: `Updated steps to ${steps.toLocaleString()} on ${logDate}` }],
-      };
-    },
-  );
+	mcp.tool(
+		"edit_steps",
+		"Update the step count for a date. Use this when the user wants to correct or change a previously logged step count.",
+		{
+			steps: z.number().int().min(0).describe("New step count to set"),
+			date: z
+				.string()
+				.optional()
+				.describe("Date in YYYY-MM-DD format. Defaults to today."),
+		},
+		withDedup(apiKey, "edit_steps", async ({ steps, date }) => {
+			const logDate = date ?? todayStr();
+			await api("POST", "/steps", { logDate, steps });
+			return {
+				content: [
+					{
+						type: "text",
+						text: `Updated steps to ${steps.toLocaleString()} on ${logDate}`,
+					},
+				],
+			};
+		}),
+	);
 
-  // ── Tool: delete_steps ────────────────────────────────────────────────────
+	// ── Tool: delete_steps ────────────────────────────────────────────────────
 
-  mcp.tool(
-    'delete_steps',
-    'Remove/clear the step count for a given date. Use this when the user wants to delete or clear their step count for a day.',
-    {
-      date: z.string().optional().describe('Date in YYYY-MM-DD format. Defaults to today.'),
-    },
-    async ({ date }) => {
-      const logDate = date ?? todayStr();
-      const allLogs = await api('GET', '/steps');
-      const existing = allLogs.find(s => s.logDate === logDate);
-      if (!existing) {
-        return {
-          content: [{ type: 'text', text: `No steps logged for ${logDate}. Nothing to delete.` }],
-        };
-      }
-      await api('DELETE', `/steps/${existing.id}`);
-      return {
-        content: [{ type: 'text', text: `Cleared steps for ${logDate}` }],
-      };
-    },
-  );
+	mcp.tool(
+		"delete_steps",
+		"Remove/clear the step count for a given date. Use this when the user wants to delete or clear their step count for a day.",
+		{
+			date: z
+				.string()
+				.optional()
+				.describe("Date in YYYY-MM-DD format. Defaults to today."),
+		},
+		async ({ date }) => {
+			const logDate = date ?? todayStr();
+			const allLogs = await api("GET", "/steps");
+			const existing = allLogs.find((s) => s.logDate === logDate);
+			if (!existing) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: `No steps logged for ${logDate}. Nothing to delete.`,
+						},
+					],
+				};
+			}
+			await api("DELETE", `/steps/${existing.id}`);
+			return {
+				content: [{ type: "text", text: `Cleared steps for ${logDate}` }],
+			};
+		},
+	);
 
-  // ── Tool: get_today_summary ───────────────────────────────────────────────
+	// ── Tool: get_today_summary ───────────────────────────────────────────────
 
-  mcp.tool(
-    'get_today_summary',
-    'Get a summary of everything logged today — weight, workouts, and nutrition. Call this when the user asks what they\'ve logged or wants a recap.',
-    {},
-    async () => {
-      const today = todayStr();
-      const [weightData, workoutData, nutritionData, stepData] = await Promise.all([
-        api('GET', '/weight'),
-        api('GET', '/workouts'),
-        api('GET', '/nutrition'),
-        api('GET', '/steps'),
-      ]);
+	mcp.tool(
+		"get_today_summary",
+		"Get a summary of everything logged today — weight, workouts, and nutrition. Call this when the user asks what they've logged or wants a recap.",
+		{},
+		async () => {
+			const today = todayStr();
+			const [weightData, workoutData, nutritionData, stepData] =
+				await Promise.all([
+					api("GET", "/weight"),
+					api("GET", "/workouts"),
+					api("GET", "/nutrition"),
+					api("GET", "/steps"),
+				]);
 
-      const weight = weightData.find(w => w.logDate === today);
-      const workouts = workoutData.filter(w => w.sessionDate === today);
-      const nutrition = nutritionData.find(n => n.logDate === today);
-      const stepEntry = stepData.find(s => s.logDate === today);
+			const weight = weightData.find((w) => w.logDate === today);
+			const workouts = workoutData.filter((w) => w.sessionDate === today);
+			const nutrition = nutritionData.find((n) => n.logDate === today);
+			const stepEntry = stepData.find((s) => s.logDate === today);
 
-      const parts = [];
+			const parts = [];
 
-      parts.push(`📅 Summary for ${today}:\n`);
+			parts.push(`📅 Summary for ${today}:\n`);
 
-      if (weight) {
-        parts.push(`⚖️ Weight: ${weight.weightLbs} lbs`);
-      } else {
-        parts.push('⚖️ Weight: not logged');
-      }
+			if (weight) {
+				parts.push(`⚖️ Weight: ${weight.weightLbs} lbs`);
+			} else {
+				parts.push("⚖️ Weight: not logged");
+			}
 
-      if (workouts.length > 0) {
-        for (const workout of workouts) {
-          parts.push(`\n🏋️ Workout${workout.sessionName ? ` (${workout.sessionName})` : ''} [session ID: ${workout.id}]:`);
-          if (workout.exerciseSets?.length > 0) {
-            const grouped = {};
-            for (const s of workout.exerciseSets) {
-              if (!grouped[s.exerciseName]) grouped[s.exerciseName] = [];
-              grouped[s.exerciseName].push(s);
-            }
-            for (const [name, sets] of Object.entries(grouped)) {
-              const desc = sets.map(s => describeSet(s)).join(', ');
-              parts.push(`  • ${name}: ${desc}`);
-            }
-          } else {
-            parts.push('  No exercises logged');
-          }
-        }
-      } else {
-        parts.push('\n🏋️ Workout: not logged');
-      }
+			if (workouts.length > 0) {
+				for (const workout of workouts) {
+					parts.push(
+						`\n🏋️ Workout${workout.sessionName ? ` (${workout.sessionName})` : ""} [session ID: ${workout.id}]:`,
+					);
+					if (workout.exerciseSets?.length > 0) {
+						const grouped = {};
+						for (const s of workout.exerciseSets) {
+							if (!grouped[s.exerciseName]) grouped[s.exerciseName] = [];
+							grouped[s.exerciseName].push(s);
+						}
+						for (const [name, sets] of Object.entries(grouped)) {
+							const desc = sets.map((s) => describeSet(s)).join(", ");
+							parts.push(`  • ${name}: ${desc}`);
+						}
+					} else {
+						parts.push("  No exercises logged");
+					}
+				}
+			} else {
+				parts.push("\n🏋️ Workout: not logged");
+			}
 
-      if (stepEntry) {
-        parts.push(`\n👟 Steps: ${stepEntry.steps.toLocaleString()}`);
-      } else {
-        parts.push('\n👟 Steps: not logged');
-      }
+			if (stepEntry) {
+				parts.push(`\n👟 Steps: ${stepEntry.steps.toLocaleString()}`);
+			} else {
+				parts.push("\n👟 Steps: not logged");
+			}
 
-      if (nutrition) {
-        parts.push(`\n🍽️ Nutrition (${nutrition.dayType}):`);
-        parts.push(`  Calories: ${nutrition.totalCalories ?? 0} kcal`);
-        parts.push(`  Protein: ${nutrition.totalProtein ?? 0}g`);
-        if (nutrition.meals?.length > 0) {
-          parts.push('  Meals:');
-          for (const m of nutrition.meals) {
-            parts.push(`    • ${m.mealName || 'Meal'}: ${m.calories} kcal, ${m.proteinGrams}g protein`);
-          }
-        }
-      } else {
-        parts.push('\n🍽️ Nutrition: not logged');
-      }
+			if (nutrition) {
+				parts.push(`\n🍽️ Nutrition (${nutrition.dayType}):`);
+				parts.push(`  Calories: ${nutrition.totalCalories ?? 0} kcal`);
+				parts.push(`  Protein: ${nutrition.totalProtein ?? 0}g`);
+				if (nutrition.meals?.length > 0) {
+					parts.push("  Meals:");
+					for (const m of nutrition.meals) {
+						parts.push(
+							`    • ${m.mealName || "Meal"}: ${m.calories} kcal, ${m.proteinGrams}g protein`,
+						);
+					}
+				}
+			} else {
+				parts.push("\n🍽️ Nutrition: not logged");
+			}
 
-      return {
-        content: [{ type: 'text', text: parts.join('\n') }],
-      };
-    },
-  );
+			return {
+				content: [{ type: "text", text: parts.join("\n") }],
+			};
+		},
+	);
 
-  // ── Tool: get_personal_records ────────────────────────────────────────────
+	// ── Tool: get_personal_records ────────────────────────────────────────────
 
-  mcp.tool(
-    'get_personal_records',
-    'Get all personal records (PRs) for each exercise. Call this when the user asks about their PRs or best lifts.',
-    {},
-    async () => {
-      const prs = await api('GET', '/progress/prs');
-      if (!prs.length) {
-        return { content: [{ type: 'text', text: 'No personal records yet.' }] };
-      }
-      const lines = prs.map(pr =>
-        `• ${pr.exerciseName}: ${parseFloat(pr.maxWeightLbs)} lbs × ${pr.setCount} set${pr.setCount === 1 ? '' : 's'} (top set ${pr.maxRepsInSet} reps, ${pr.achievedDate})`
-      );
-      return {
-        content: [{ type: 'text', text: `🏆 Personal Records:\n${lines.join('\n')}` }],
-      };
-    },
-  );
+	mcp.tool(
+		"get_personal_records",
+		"Get all personal records (PRs) for each exercise. Call this when the user asks about their PRs or best lifts.",
+		{},
+		async () => {
+			const prs = await api("GET", "/progress/prs");
+			if (!prs.length) {
+				return {
+					content: [{ type: "text", text: "No personal records yet." }],
+				};
+			}
+			const lines = prs.map(
+				(pr) =>
+					`• ${pr.exerciseName}: ${parseFloat(pr.maxWeightLbs)} lbs × ${pr.setCount} set${pr.setCount === 1 ? "" : "s"} (top set ${pr.maxRepsInSet} reps, ${pr.achievedDate})`,
+			);
+			return {
+				content: [
+					{ type: "text", text: `🏆 Personal Records:\n${lines.join("\n")}` },
+				],
+			};
+		},
+	);
 
-  // ── Tool: get_all_workouts ────────────────────────────────────────────────
+	// ── Tool: get_all_workouts ────────────────────────────────────────────────
 
-  mcp.tool(
-    'get_all_workouts',
-    'Get all workout sessions ever logged, including exercises, sets, reps, and weights. Call this when the user asks for their workout history, all sessions, or wants to review past training.',
-    {
-      date: z.string().optional().describe('Filter to a specific date in YYYY-MM-DD format. Omit to get all sessions.'),
-    },
-    async ({ date }) => {
-      const sessions = await api('GET', date ? `/workouts?date=${encodeURIComponent(date)}` : '/workouts');
-      if (!sessions.length) {
-        return { content: [{ type: 'text', text: date ? `No workout found for ${date}.` : 'No workouts logged yet.' }] };
-      }
-      const lines = [];
-      for (const session of sessions) {
-        lines.push(`\n📅 ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ''} [ID: ${session.id}]`);
-        const grouped = (session.exerciseSets ?? []).reduce((acc, s) => {
-          if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
-          acc[s.exerciseName].push(s);
-          return acc;
-        }, {});
-        if (Object.keys(grouped).length === 0) {
-          lines.push('  No exercises logged');
-        } else {
-          for (const [name, sets] of Object.entries(grouped)) {
-            lines.push(`  • ${name}: ${sets.map(s => describeSet(s)).join(', ')}`);
-          }
-        }
-      }
-      return {
-        content: [{ type: 'text', text: `🏋️ Workout History (${sessions.length} session${sessions.length === 1 ? '' : 's'}):${lines.join('\n')}` }],
-      };
-    },
-  );
+	mcp.tool(
+		"get_all_workouts",
+		"Get all workout sessions ever logged, including exercises, sets, reps, and weights. Call this when the user asks for their workout history, all sessions, or wants to review past training.",
+		{
+			date: z
+				.string()
+				.optional()
+				.describe(
+					"Filter to a specific date in YYYY-MM-DD format. Omit to get all sessions.",
+				),
+		},
+		async ({ date }) => {
+			const sessions = await api(
+				"GET",
+				date ? `/workouts?date=${encodeURIComponent(date)}` : "/workouts",
+			);
+			if (!sessions.length) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: date
+								? `No workout found for ${date}.`
+								: "No workouts logged yet.",
+						},
+					],
+				};
+			}
+			const lines = [];
+			for (const session of sessions) {
+				lines.push(
+					`\n📅 ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ""} [ID: ${session.id}]`,
+				);
+				const grouped = (session.exerciseSets ?? []).reduce((acc, s) => {
+					if (!acc[s.exerciseName]) acc[s.exerciseName] = [];
+					acc[s.exerciseName].push(s);
+					return acc;
+				}, {});
+				if (Object.keys(grouped).length === 0) {
+					lines.push("  No exercises logged");
+				} else {
+					for (const [name, sets] of Object.entries(grouped)) {
+						lines.push(
+							`  • ${name}: ${sets.map((s) => describeSet(s)).join(", ")}`,
+						);
+					}
+				}
+			}
+			return {
+				content: [
+					{
+						type: "text",
+						text: `🏋️ Workout History (${sessions.length} session${sessions.length === 1 ? "" : "s"}):${lines.join("\n")}`,
+					},
+				],
+			};
+		},
+	);
 
-  // ── Tool: get_all_weight ──────────────────────────────────────────────────
+	// ── Tool: get_all_weight ──────────────────────────────────────────────────
 
-  mcp.tool(
-    'get_all_weight',
-    'Get the full weight log — every weight entry ever recorded. Call this when the user asks about their weight history, trends, or progress over time.',
-    {},
-    async () => {
-      const entries = await api('GET', '/weight');
-      if (!entries.length) {
-        return { content: [{ type: 'text', text: 'No weight entries logged yet.' }] };
-      }
-      const lines = entries
-        .sort((a, b) => a.logDate.localeCompare(b.logDate))
-        .map(e => `  ${e.logDate}: ${e.weightLbs} lbs`);
-      const weights = entries.map(e => e.weightLbs);
-      const min = Math.min(...weights);
-      const max = Math.max(...weights);
-      const avg = Math.round((weights.reduce((s, w) => s + w, 0) / weights.length) * 10) / 10;
-      return {
-        content: [{
-          type: 'text',
-          text: `⚖️ Weight History (${entries.length} entries):\n${lines.join('\n')}\n\nMin: ${min} lbs  |  Max: ${max} lbs  |  Avg: ${avg} lbs`,
-        }],
-      };
-    },
-  );
+	mcp.tool(
+		"get_all_weight",
+		"Get the full weight log — every weight entry ever recorded. Call this when the user asks about their weight history, trends, or progress over time.",
+		{},
+		async () => {
+			const entries = await api("GET", "/weight");
+			if (!entries.length) {
+				return {
+					content: [{ type: "text", text: "No weight entries logged yet." }],
+				};
+			}
+			const lines = entries
+				.sort((a, b) => a.logDate.localeCompare(b.logDate))
+				.map((e) => `  ${e.logDate}: ${e.weightLbs} lbs`);
+			const weights = entries.map((e) => e.weightLbs);
+			const min = Math.min(...weights);
+			const max = Math.max(...weights);
+			const avg =
+				Math.round((weights.reduce((s, w) => s + w, 0) / weights.length) * 10) /
+				10;
+			return {
+				content: [
+					{
+						type: "text",
+						text: `⚖️ Weight History (${entries.length} entries):\n${lines.join("\n")}\n\nMin: ${min} lbs  |  Max: ${max} lbs  |  Avg: ${avg} lbs`,
+					},
+				],
+			};
+		},
+	);
 
-  // ── Tool: get_all_stats ───────────────────────────────────────────────────
+	// ── Tool: get_all_stats ───────────────────────────────────────────────────
 
-  mcp.tool(
-    'get_all_stats',
-    'Get a full overview of all logged data — weight history, workout count, nutrition totals, steps, and strength progress. Call this when the user wants a complete summary or asks "how am I doing overall?".',
-    {},
-    async () => {
-      const [weightData, workoutData, nutritionData, stepData, strengthData] = await Promise.all([
-        api('GET', '/weight'),
-        api('GET', '/workouts'),
-        api('GET', '/nutrition'),
-        api('GET', '/steps'),
-        api('GET', '/progress/strength'),
-      ]);
+	mcp.tool(
+		"get_all_stats",
+		'Get a full overview of all logged data — weight history, workout count, nutrition totals, steps, and strength progress. Call this when the user wants a complete summary or asks "how am I doing overall?".',
+		{},
+		async () => {
+			const [weightData, workoutData, nutritionData, stepData, strengthData] =
+				await Promise.all([
+					api("GET", "/weight"),
+					api("GET", "/workouts"),
+					api("GET", "/nutrition"),
+					api("GET", "/steps"),
+					api("GET", "/progress/strength"),
+				]);
 
-      const parts = [];
+			const parts = [];
 
-      // Weight
-      if (weightData.length) {
-        const sorted = [...weightData].sort((a, b) => a.logDate.localeCompare(b.logDate));
-        const first = sorted[0];
-        const last = sorted[sorted.length - 1];
-        const delta = Math.round((last.weightLbs - first.weightLbs) * 10) / 10;
-        parts.push(`⚖️ Weight: ${weightData.length} entries | Current: ${last.weightLbs} lbs | Change: ${delta >= 0 ? '+' : ''}${delta} lbs (${first.logDate} → ${last.logDate})`);
-      } else {
-        parts.push('⚖️ Weight: no entries');
-      }
+			// Weight
+			if (weightData.length) {
+				const sorted = [...weightData].sort((a, b) =>
+					a.logDate.localeCompare(b.logDate),
+				);
+				const first = sorted[0];
+				const last = sorted[sorted.length - 1];
+				const delta = Math.round((last.weightLbs - first.weightLbs) * 10) / 10;
+				parts.push(
+					`⚖️ Weight: ${weightData.length} entries | Current: ${last.weightLbs} lbs | Change: ${delta >= 0 ? "+" : ""}${delta} lbs (${first.logDate} → ${last.logDate})`,
+				);
+			} else {
+				parts.push("⚖️ Weight: no entries");
+			}
 
-      // Workouts
-      parts.push(`\n🏋️ Workouts: ${workoutData.length} session${workoutData.length === 1 ? '' : 's'} logged`);
-      if (workoutData.length) {
-        const sorted = [...workoutData].sort((a, b) => a.sessionDate.localeCompare(b.sessionDate));
-        parts.push(`   First: ${sorted[0].sessionDate}  |  Last: ${sorted[sorted.length - 1].sessionDate}`);
-      }
+			// Workouts
+			parts.push(
+				`\n🏋️ Workouts: ${workoutData.length} session${workoutData.length === 1 ? "" : "s"} logged`,
+			);
+			if (workoutData.length) {
+				const sorted = [...workoutData].sort((a, b) =>
+					a.sessionDate.localeCompare(b.sessionDate),
+				);
+				parts.push(
+					`   First: ${sorted[0].sessionDate}  |  Last: ${sorted[sorted.length - 1].sessionDate}`,
+				);
+			}
 
-      // Strength PRs
-      if (strengthData.length) {
-        parts.push('\n🏆 Strength PRs:');
-        for (const ex of strengthData) {
-          const maxWeight = Math.max(...ex.data.map(d => d.maxWeightLbs));
-          parts.push(`   • ${ex.exerciseName}: ${maxWeight} lbs`);
-        }
-      }
+			// Strength PRs
+			if (strengthData.length) {
+				parts.push("\n🏆 Strength PRs:");
+				for (const ex of strengthData) {
+					const maxWeight = Math.max(...ex.data.map((d) => d.maxWeightLbs));
+					parts.push(`   • ${ex.exerciseName}: ${maxWeight} lbs`);
+				}
+			}
 
-      // Nutrition
-      if (nutritionData.length) {
-        const totalCal = nutritionData.reduce((s, n) => s + (n.totalCalories ?? 0), 0);
-        const totalProt = nutritionData.reduce((s, n) => s + (n.totalProtein ?? 0), 0);
-        const avgCal = Math.round(totalCal / nutritionData.length);
-        const avgProt = Math.round(totalProt / nutritionData.length);
-        parts.push(`\n🍽️ Nutrition: ${nutritionData.length} days logged | Avg: ${avgCal} kcal / ${avgProt}g protein per day`);
-      } else {
-        parts.push('\n🍽️ Nutrition: no entries');
-      }
+			// Nutrition
+			if (nutritionData.length) {
+				const totalCal = nutritionData.reduce(
+					(s, n) => s + (n.totalCalories ?? 0),
+					0,
+				);
+				const totalProt = nutritionData.reduce(
+					(s, n) => s + (n.totalProtein ?? 0),
+					0,
+				);
+				const avgCal = Math.round(totalCal / nutritionData.length);
+				const avgProt = Math.round(totalProt / nutritionData.length);
+				parts.push(
+					`\n🍽️ Nutrition: ${nutritionData.length} days logged | Avg: ${avgCal} kcal / ${avgProt}g protein per day`,
+				);
+			} else {
+				parts.push("\n🍽️ Nutrition: no entries");
+			}
 
-      // Steps
-      if (stepData.length) {
-        const totalSteps = stepData.reduce((s, e) => s + e.steps, 0);
-        const avgSteps = Math.round(totalSteps / stepData.length);
-        parts.push(`\n👟 Steps: ${stepData.length} days logged | Avg: ${avgSteps.toLocaleString()} steps/day | Total: ${totalSteps.toLocaleString()}`);
-      } else {
-        parts.push('\n👟 Steps: no entries');
-      }
+			// Steps
+			if (stepData.length) {
+				const totalSteps = stepData.reduce((s, e) => s + e.steps, 0);
+				const avgSteps = Math.round(totalSteps / stepData.length);
+				parts.push(
+					`\n👟 Steps: ${stepData.length} days logged | Avg: ${avgSteps.toLocaleString()} steps/day | Total: ${totalSteps.toLocaleString()}`,
+				);
+			} else {
+				parts.push("\n👟 Steps: no entries");
+			}
 
-      return {
-        content: [{ type: 'text', text: `📊 All-time Stats:\n\n${parts.join('\n')}` }],
-      };
-    },
-  );
+			return {
+				content: [
+					{ type: "text", text: `📊 All-time Stats:\n\n${parts.join("\n")}` },
+				],
+			};
+		},
+	);
 
-  // ── Tool: get_strength_progress ───────────────────────────────────────────
+	// ── Tool: get_strength_progress ───────────────────────────────────────────
 
-  mcp.tool(
-    'get_strength_progress',
-    'Get detailed strength progress for all exercises — weight progression, reps, dates, and trends over time. More detailed than PRs alone, showing full history. Call this when the user asks about lift progression, strength trends, or how a specific exercise has improved over time.',
-    {
-      exerciseName: z.string().optional().describe('Optional filter to a specific exercise name. Omit to get all exercises.'),
-    },
-    async ({ exerciseName }) => {
-      const allProgress = await api('GET', '/progress/strength');
-      
-      const filtered = exerciseName
-        ? allProgress.filter(p => p.exerciseName.toLowerCase().includes(exerciseName.toLowerCase()))
-        : allProgress;
+	mcp.tool(
+		"get_strength_progress",
+		"Get detailed strength progress for all exercises — weight progression, reps, dates, and trends over time. More detailed than PRs alone, showing full history. Call this when the user asks about lift progression, strength trends, or how a specific exercise has improved over time.",
+		{
+			exerciseName: z
+				.string()
+				.optional()
+				.describe(
+					"Optional filter to a specific exercise name. Omit to get all exercises.",
+				),
+		},
+		async ({ exerciseName }) => {
+			const allProgress = await api("GET", "/progress/strength");
 
-      if (!filtered.length) {
-        return { content: [{ type: 'text', text: exerciseName ? `No progress data found for "${exerciseName}".` : 'No strength progress data yet.' }] };
-      }
+			const filtered = exerciseName
+				? allProgress.filter((p) =>
+						p.exerciseName.toLowerCase().includes(exerciseName.toLowerCase()),
+					)
+				: allProgress;
 
-      const lines = [];
-      for (const exercise of filtered) {
-        lines.push(`\n💪 ${exercise.exerciseName}:`);
-        if (exercise.data && exercise.data.length > 0) {
-          // Show the most recent attempts first
-          const recent = exercise.data.slice(0, 10); // Show last 10 sessions
-          for (const session of recent) {
-            const date = session.sessionDate;
-            const weight = session.maxWeightLbs;
-            const reps = session.repScheme;
-            const sets = session.setCount;
-            lines.push(`  • ${date}: ${weight} lbs — ${sets} set${sets === 1 ? '' : 's'} (${reps})`);
-          }
-          if (exercise.data.length > 10) {
-            lines.push(`  ... and ${exercise.data.length - 10} more session${exercise.data.length - 10 === 1 ? '' : 's'}`);
-          }
-          // Show progression trend
-          const first = exercise.data[exercise.data.length - 1];
-          const last = exercise.data[0];
-          const trend = Math.round((last.maxWeightLbs - first.maxWeightLbs) * 10) / 10;
-          const trendSymbol = trend > 0 ? '📈' : trend < 0 ? '📉' : '➡️';
-          lines.push(`  ${trendSymbol} Total change: ${trend > 0 ? '+' : ''}${trend} lbs (${first.maxWeightLbs} → ${last.maxWeightLbs})`);
-        } else {
-          lines.push('  No data logged');
-        }
-      }
+			if (!filtered.length) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: exerciseName
+								? `No progress data found for "${exerciseName}".`
+								: "No strength progress data yet.",
+						},
+					],
+				};
+			}
 
-      return {
-        content: [{ type: 'text', text: `💪 Strength Progress:${lines.join('\n')}` }],
-      };
-    },
-  );
+			const lines = [];
+			for (const exercise of filtered) {
+				lines.push(`\n💪 ${exercise.exerciseName}:`);
+				if (exercise.data && exercise.data.length > 0) {
+					// Show the most recent attempts first
+					const recent = exercise.data.slice(0, 10); // Show last 10 sessions
+					for (const session of recent) {
+						const date = session.sessionDate;
+						const weight = session.maxWeightLbs;
+						const reps = session.repScheme;
+						const sets = session.setCount;
+						lines.push(
+							`  • ${date}: ${weight} lbs — ${sets} set${sets === 1 ? "" : "s"} (${reps})`,
+						);
+					}
+					if (exercise.data.length > 10) {
+						lines.push(
+							`  ... and ${exercise.data.length - 10} more session${exercise.data.length - 10 === 1 ? "" : "s"}`,
+						);
+					}
+					// Show progression trend
+					const first = exercise.data[exercise.data.length - 1];
+					const last = exercise.data[0];
+					const trend =
+						Math.round((last.maxWeightLbs - first.maxWeightLbs) * 10) / 10;
+					const trendSymbol = trend > 0 ? "📈" : trend < 0 ? "📉" : "➡️";
+					lines.push(
+						`  ${trendSymbol} Total change: ${trend > 0 ? "+" : ""}${trend} lbs (${first.maxWeightLbs} → ${last.maxWeightLbs})`,
+					);
+				} else {
+					lines.push("  No data logged");
+				}
+			}
 
-  // ── Tool: get_workouts_by_exercise ───────────────────────────────────────
+			return {
+				content: [
+					{ type: "text", text: `💪 Strength Progress:${lines.join("\n")}` },
+				],
+			};
+		},
+	);
 
-  mcp.tool(
-    'get_workouts_by_exercise',
-    'Find all workout sessions where a specific exercise was performed. Shows every date and session where that exercise appears. Call this when the user wants to see their history with a particular lift.',
-    {
-      exerciseName: z.string().describe('Name of the exercise to search for, e.g. "Bench Press", "Squat", "Deadlift"'),
-    },
-    async ({ exerciseName }) => {
-      const sessions = await api('GET', `/workouts/by-exercise/${encodeURIComponent(exerciseName)}`);
-      
-      if (!sessions.length) {
-        return { content: [{ type: 'text', text: `No workouts found for "${exerciseName}".` }] };
-      }
+	// ── Tool: get_workouts_by_exercise ───────────────────────────────────────
 
-      const lines = [];
-      for (const session of sessions) {
-        lines.push(`\n📅 ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ''} [ID: ${session.id}]`);
-        
-        // Find this exercise in the session
-        const exerciseSets = session.exerciseSets.filter(s => s.exerciseName.toLowerCase() === exerciseName.toLowerCase());
-        if (exerciseSets.length > 0) {
-          const grouped = exerciseSets.reduce((acc, s) => {
-            if (!acc[s.setNumber]) acc[s.setNumber] = [];
-            acc[s.setNumber].push(s);
-            return acc;
-          }, {});
-          
-          for (const setNum of Object.keys(grouped).sort((a, b) => parseInt(a) - parseInt(b))) {
-            const set = grouped[setNum][0];
-            lines.push(`  Set ${setNum}: ${describeSet(set)}`);
-          }
-        }
-      }
+	mcp.tool(
+		"get_workouts_by_exercise",
+		"Find all workout sessions where a specific exercise was performed. Shows every date and session where that exercise appears. Call this when the user wants to see their history with a particular lift.",
+		{
+			exerciseName: z
+				.string()
+				.describe(
+					'Name of the exercise to search for, e.g. "Bench Press", "Squat", "Deadlift"',
+				),
+		},
+		async ({ exerciseName }) => {
+			const sessions = await api(
+				"GET",
+				`/workouts/by-exercise/${encodeURIComponent(exerciseName)}`,
+			);
 
-      return {
-        content: [{ type: 'text', text: `🔍 All sessions with "${exerciseName}" (${sessions.length} session${sessions.length === 1 ? '' : 's'}):${lines.join('\n')}` }],
-      };
-    },
-  );
+			if (!sessions.length) {
+				return {
+					content: [
+						{ type: "text", text: `No workouts found for "${exerciseName}".` },
+					],
+				};
+			}
 
-  return mcp;
+			const lines = [];
+			for (const session of sessions) {
+				lines.push(
+					`\n📅 ${session.sessionDate}${session.sessionName ? ` — "${session.sessionName}"` : ""} [ID: ${session.id}]`,
+				);
+
+				// Find this exercise in the session
+				const exerciseSets = session.exerciseSets.filter(
+					(s) => s.exerciseName.toLowerCase() === exerciseName.toLowerCase(),
+				);
+				if (exerciseSets.length > 0) {
+					const grouped = exerciseSets.reduce((acc, s) => {
+						if (!acc[s.setNumber]) acc[s.setNumber] = [];
+						acc[s.setNumber].push(s);
+						return acc;
+					}, {});
+
+					for (const setNum of Object.keys(grouped).sort(
+						(a, b) => parseInt(a) - parseInt(b),
+					)) {
+						const set = grouped[setNum][0];
+						lines.push(`  Set ${setNum}: ${describeSet(set)}`);
+					}
+				}
+			}
+
+			return {
+				content: [
+					{
+						type: "text",
+						text: `🔍 All sessions with "${exerciseName}" (${sessions.length} session${sessions.length === 1 ? "" : "s"}):${lines.join("\n")}`,
+					},
+				],
+			};
+		},
+	);
+
+	return mcp;
 }
 
 // ── Express + Streamable HTTP transport ─────────────────────────────────────
@@ -759,15 +1145,18 @@ app.use(express.json());
 
 // CORS — required for Claude.ai to connect from the browser
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, mcp-session-id, x-api-key');
-  res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
-  next();
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+	res.setHeader(
+		"Access-Control-Allow-Headers",
+		"Content-Type, Accept, mcp-session-id, x-api-key",
+	);
+	res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
+	if (req.method === "OPTIONS") {
+		res.status(204).end();
+		return;
+	}
+	next();
 });
 
 // Session store: sessionId → { transport, server }
@@ -776,124 +1165,136 @@ app.use((req, res, next) => {
 const sessions = new Map();
 
 function cleanupSession(sessionId) {
-  const session = sessions.get(sessionId);
-  if (session) {
-    sessions.delete(sessionId);
-    session.transport.close().catch(() => {});
-    session.server.close().catch(() => {});
-  }
+	const session = sessions.get(sessionId);
+	if (session) {
+		sessions.delete(sessionId);
+		session.transport.close().catch(() => {});
+		session.server.close().catch(() => {});
+	}
 }
 
-app.post('/mcp', async (req, res) => {
-  const apiKey = resolveApiKey(req);
-  if (!apiKey) {
-    res.status(401).json({
-      jsonrpc: '2.0',
-      error: { code: -32001, message: 'API key required. Pass ?apiKey=<your-key> or X-API-Key header.' },
-      id: null,
-    });
-    return;
-  }
+app.post("/mcp", async (req, res) => {
+	const apiKey = resolveApiKey(req);
+	if (!apiKey) {
+		res.status(401).json({
+			jsonrpc: "2.0",
+			error: {
+				code: -32001,
+				message:
+					"API key required. Pass ?apiKey=<your-key> or X-API-Key header.",
+			},
+			id: null,
+		});
+		return;
+	}
 
-  // If the client already has a session, route to its transport.
-  const existingId = req.headers['mcp-session-id'];
-  if (existingId) {
-    const session = sessions.get(existingId);
-    if (!session) {
-      res.status(404).json({
-        jsonrpc: '2.0',
-        error: { code: -32001, message: 'Session not found. Start a new session by omitting mcp-session-id.' },
-        id: null,
-      });
-      return;
-    }
-    try {
-      await session.transport.handleRequest(req, res, req.body);
-    } catch (error) {
-      console.error('Error handling MCP POST (existing session):', error);
-      if (!res.headersSent) res.status(500).end();
-    }
-    return;
-  }
+	// If the client already has a session, route to its transport.
+	const existingId = req.headers["mcp-session-id"];
+	if (existingId) {
+		const session = sessions.get(existingId);
+		if (!session) {
+			res.status(404).json({
+				jsonrpc: "2.0",
+				error: {
+					code: -32001,
+					message:
+						"Session not found. Start a new session by omitting mcp-session-id.",
+				},
+				id: null,
+			});
+			return;
+		}
+		try {
+			await session.transport.handleRequest(req, res, req.body);
+		} catch (error) {
+			console.error("Error handling MCP POST (existing session):", error);
+			if (!res.headersSent) res.status(500).end();
+		}
+		return;
+	}
 
-  // New session (initialize request).
-  try {
-    const mcpServer = createMcpServer(apiKey);
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-    });
+	// New session (initialize request).
+	try {
+		const mcpServer = createMcpServer(apiKey);
+		const transport = new StreamableHTTPServerTransport({
+			sessionIdGenerator: () => randomUUID(),
+		});
 
-    await mcpServer.connect(transport);
-    await transport.handleRequest(req, res, req.body);
+		await mcpServer.connect(transport);
+		await transport.handleRequest(req, res, req.body);
 
-    const sessionId = transport.sessionId;
-    if (sessionId) {
-      sessions.set(sessionId, { transport, server: mcpServer });
-      transport.onclose = () => cleanupSession(sessionId);
-    } else {
-      // No session ID assigned — close immediately after response.
-      res.on('close', () => {
-        transport.close().catch(() => {});
-        mcpServer.close().catch(() => {});
-      });
-    }
-  } catch (error) {
-    console.error('Error handling MCP POST (new session):', error);
-    if (!res.headersSent) {
-      res.status(500).json({
-        jsonrpc: '2.0',
-        error: { code: -32603, message: 'Internal server error' },
-        id: null,
-      });
-    }
-  }
+		const sessionId = transport.sessionId;
+		if (sessionId) {
+			sessions.set(sessionId, { transport, server: mcpServer });
+			transport.onclose = () => cleanupSession(sessionId);
+		} else {
+			// No session ID assigned — close immediately after response.
+			res.on("close", () => {
+				transport.close().catch(() => {});
+				mcpServer.close().catch(() => {});
+			});
+		}
+	} catch (error) {
+		console.error("Error handling MCP POST (new session):", error);
+		if (!res.headersSent) {
+			res.status(500).json({
+				jsonrpc: "2.0",
+				error: { code: -32603, message: "Internal server error" },
+				id: null,
+			});
+		}
+	}
 });
 
 // GET — SSE stream. Claude.ai opens this after initialize to receive
 // server-initiated messages. Route to the existing session's transport.
-app.get('/mcp', async (req, res) => {
-  const sessionId = req.headers['mcp-session-id'];
-  if (!sessionId || !sessions.has(sessionId)) {
-    res.status(400).json({
-      jsonrpc: '2.0',
-      error: { code: -32001, message: 'Missing or invalid mcp-session-id. Initialize via POST first.' },
-      id: null,
-    });
-    return;
-  }
-  try {
-    await sessions.get(sessionId).transport.handleRequest(req, res);
-  } catch (error) {
-    console.error('Error handling MCP GET (SSE):', error);
-    if (!res.headersSent) res.status(500).end();
-  }
+app.get("/mcp", async (req, res) => {
+	const sessionId = req.headers["mcp-session-id"];
+	if (!sessionId || !sessions.has(sessionId)) {
+		res.status(400).json({
+			jsonrpc: "2.0",
+			error: {
+				code: -32001,
+				message:
+					"Missing or invalid mcp-session-id. Initialize via POST first.",
+			},
+			id: null,
+		});
+		return;
+	}
+	try {
+		await sessions.get(sessionId).transport.handleRequest(req, res);
+	} catch (error) {
+		console.error("Error handling MCP GET (SSE):", error);
+		if (!res.headersSent) res.status(500).end();
+	}
 });
 
 // DELETE — session teardown.
-app.delete('/mcp', async (req, res) => {
-  const sessionId = req.headers['mcp-session-id'];
-  if (sessionId && sessions.has(sessionId)) {
-    try {
-      await sessions.get(sessionId).transport.handleRequest(req, res);
-    } catch {
-      // ignore
-    }
-    cleanupSession(sessionId);
-  } else {
-    res.status(404).json({
-      jsonrpc: '2.0',
-      error: { code: -32001, message: 'Session not found.' },
-      id: null,
-    });
-  }
+app.delete("/mcp", async (req, res) => {
+	const sessionId = req.headers["mcp-session-id"];
+	if (sessionId && sessions.has(sessionId)) {
+		try {
+			await sessions.get(sessionId).transport.handleRequest(req, res);
+		} catch {
+			// ignore
+		}
+		cleanupSession(sessionId);
+	} else {
+		res.status(404).json({
+			jsonrpc: "2.0",
+			error: { code: -32001, message: "Session not found." },
+			id: null,
+		});
+	}
 });
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', server: 'progresslog-mcp' });
+app.get("/health", (req, res) => {
+	res.json({ status: "ok", server: "progresslog-mcp" });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`ProgressLog MCP server listening on port ${PORT}`);
-  console.log(`API target: ${API_BASE}`);
+app.listen(PORT, "0.0.0.0", () => {
+	console.log(`ProgressLog MCP server listening on port ${PORT}`);
+	console.log(`API target: ${API_BASE}`);
 });
