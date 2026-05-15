@@ -103,6 +103,24 @@ public class TodayPage {
                 By.xpath("//span[contains(@class,'meal-card-name') and contains(text(),'" + name + "')]")));
     }
 
+    /** Count of meal cards currently displayed. */
+    public int getMealCount() {
+        return driver.findElements(By.cssSelector(".meal-card-name")).size();
+    }
+
+    /**
+     * True iff at least one meal card has the default "Meal N" name that the
+     * UI assigns when a meal is saved without an explicit name.
+     */
+    public boolean hasDefaultNamedMeal() {
+        return driver.findElements(By.cssSelector(".meal-card-name")).stream()
+                .anyMatch(el -> el.getText().matches("Meal \\d+"));
+    }
+
+    public void waitForMealCount(int expected) {
+        wait.until(d -> d.findElements(By.cssSelector(".meal-card-name")).size() == expected);
+    }
+
     public void waitForNutritionTotal(String text) {
         wait.until(ExpectedConditions.textToBePresentInElementLocated(
                 By.cssSelector(".nutrition-totals"), text));

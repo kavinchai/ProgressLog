@@ -56,16 +56,23 @@ public class MealsTest extends BaseTest {
 
     @Test(priority = 3, dependsOnMethods = "addNewMealCreatesNutritionLog")
     public void addMealWithoutNameUsesDefaultNumbering() {
-        step("click Add Meal");
+        step("note meal count before adding");
+        int before = today.getMealCount();
+
+        step("click Add Meal, fill calories/protein only, save (no name)");
         today.clickAddMeal();
         modal.waitUntilVisible();
-
-        step("enter calories 500, protein 30, save (no name)");
         modal.enterCalories("500");
         modal.enterProtein("30");
         modal.save();
-
-        step("modal closes");
         waitForModalClosed();
+
+        step("verify a new meal card was added");
+        today.waitForMealCount(before + 1);
+
+        step("verify the unnamed meal renders with the default 'Meal N' name");
+        if (!today.hasDefaultNamedMeal()) {
+            throw new AssertionError("Expected a meal card with default 'Meal N' name");
+        }
     }
 }
