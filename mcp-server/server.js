@@ -617,6 +617,40 @@ Examples:
 		),
 	);
 
+	// ── Tool: delete_meal ─────────────────────────────────────────────────────
+
+	mcp.tool(
+		"delete_meal",
+		"Delete a single meal entry from a nutrition day log. Use this to fix a double-logged meal or remove a meal entered by mistake. Call get_today_summary first to find the log ID and meal ID.",
+		{
+			logId: z
+				.number()
+				.int()
+				.positive()
+				.describe(
+					"The nutrition day log ID (get from get_today_summary — shown as 'log ID')",
+				),
+			mealId: z
+				.number()
+				.int()
+				.positive()
+				.describe(
+					"The meal ID to delete (get from get_today_summary — shown as 'meal ID' next to each meal)",
+				),
+		},
+		async ({ logId, mealId }) => {
+			await api("DELETE", `/nutrition/${logId}/meals/${mealId}`);
+			return {
+				content: [
+					{
+						type: "text",
+						text: `Deleted meal ${mealId} from nutrition log ${logId}.`,
+					},
+				],
+			};
+		},
+	);
+
 	// ── Tool: log_steps ───────────────────────────────────────────────────────
 
 	mcp.tool(
@@ -762,14 +796,16 @@ Examples:
 			}
 
 			if (nutrition) {
-				parts.push(`\n🍽️ Nutrition (${nutrition.dayType}):`);
+				parts.push(
+					`\n🍽️ Nutrition (${nutrition.dayType}) [log ID: ${nutrition.id}]:`,
+				);
 				parts.push(`  Calories: ${nutrition.totalCalories ?? 0} kcal`);
 				parts.push(`  Protein: ${nutrition.totalProtein ?? 0}g`);
 				if (nutrition.meals?.length > 0) {
 					parts.push("  Meals:");
 					for (const m of nutrition.meals) {
 						parts.push(
-							`    • ${m.mealName || "Meal"}: ${m.calories} kcal, ${m.proteinGrams}g protein`,
+							`    • ${m.mealName || "Meal"} [meal ID: ${m.id}]: ${m.calories} kcal, ${m.proteinGrams}g protein`,
 						);
 					}
 				}
