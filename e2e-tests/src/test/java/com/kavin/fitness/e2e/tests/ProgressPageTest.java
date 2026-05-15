@@ -31,8 +31,8 @@ public class ProgressPageTest extends BaseTest {
         progress = new ProgressPage(driver);
 
         String apiUrl = System.getProperty("env.apiurl", "http://localhost:8080/api");
-        String username = System.getProperty("test.user.username", "qaf_test_user");
-        String password = System.getProperty("test.user.password", "qaf_test_password");
+        String username = System.getProperty("test.user.username", "qaf-test");
+        String password = System.getProperty("test.user.password", "qaf-test-password");
 
         api = new TestApiClient(apiUrl);
         api.login(username, password);
