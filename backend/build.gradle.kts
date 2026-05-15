@@ -50,4 +50,7 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Byte Buddy (used by Mockito to mock concrete classes) lags the JDK release cadence.
+    // The experimental flag lets it run on JDKs newer than the version it officially supports.
+    systemProperty("net.bytebuddy.experimental", "true")
 }

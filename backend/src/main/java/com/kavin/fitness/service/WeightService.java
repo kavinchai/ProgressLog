@@ -19,6 +19,9 @@ public class WeightService {
     @Autowired
     private WeightLogRepository weightLogRepository;
 
+    @Autowired
+    private DeletionJournalService deletionJournal;
+
     @Transactional(readOnly = true)
     public List<WeightLogDTO> getWeightLog(Long userId) {
         return weightLogRepository.findByUserIdOrderByLogDateAsc(userId)
@@ -30,6 +33,14 @@ public class WeightService {
         WeightLog log = weightLogRepository.findById(id)
                 .filter(w -> w.getUser().getId().equals(userId))
                 .orElseThrow(() -> new EntityNotFoundException("Weight log not found"));
+        WeightLogRequest snapshot = new WeightLogRequest();
+        snapshot.setLogDate(log.getLogDate());
+        snapshot.setWeightLbs(log.getWeightLbs());
+        deletionJournal.record(
+                log.getUser(),
+                DeletionJournalService.TYPE_WEIGHT_LOG,
+                String.format("%s lbs on %s", log.getWeightLbs().toPlainString(), log.getLogDate()),
+                snapshot);
         weightLogRepository.delete(log);
     }
 

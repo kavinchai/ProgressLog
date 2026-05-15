@@ -1108,6 +1108,70 @@ Examples:
 		},
 	);
 
+	// ── Tool: undo_last_action ────────────────────────────────────────────────
+
+	mcp.tool(
+		"undo_last_action",
+		"Reverse the most recent destructive action (delete_workout, delete_exercise, delete_meal, delete_steps, delete_weight, delete nutrition log). Restores the data from the deletion journal. The restored entity gets a fresh ID. Call this when the user says 'undo', 'put that back', 'I didn't mean to delete that', etc.",
+		{},
+		async () => {
+			try {
+				const result = await api("POST", "/undo");
+				return {
+					content: [
+						{
+							type: "text",
+							text: `↩️ Undid: ${result.summary}\n(Restored a ${result.entityType.replace(/_/g, " ")}.)`,
+						},
+					],
+				};
+			} catch (err) {
+				const msg = String(err.message ?? err);
+				if (msg.includes("404")) {
+					return {
+						content: [
+							{
+								type: "text",
+								text: "Nothing to undo. The deletion journal is empty (or all entries are already restored / older than 30 days).",
+							},
+						],
+					};
+				}
+				throw err;
+			}
+		},
+	);
+
+	// ── Tool: list_recent_actions ─────────────────────────────────────────────
+
+	mcp.tool(
+		"list_recent_actions",
+		"List the most recent destructive actions (up to 20) that are still undoable. Each entry shows the entity type, a human summary, and when it happened. Call this when the user asks 'what can I undo?' or 'what did I delete recently?'.",
+		{},
+		async () => {
+			const entries = await api("GET", "/undo/recent");
+			if (!entries.length) {
+				return {
+					content: [
+						{ type: "text", text: "No undoable actions in the last 30 days." },
+					],
+				};
+			}
+			const lines = entries.map((entry, index) => {
+				const when = new Date(entry.createdAt).toISOString().replace("T", " ").slice(0, 19);
+				return `  ${index + 1}. [${entry.entityType}] ${entry.summary}  (${when})`;
+			});
+			return {
+				content: [
+					{
+						type: "text",
+						text: `↩️ Undoable actions (most recent first):\n${lines.join("\n")}\n\nCall undo_last_action to reverse #1.`,
+					},
+				],
+			};
+		},
+	);
+
 	// ── Tool: get_workouts_by_exercise ───────────────────────────────────────
 
 	mcp.tool(

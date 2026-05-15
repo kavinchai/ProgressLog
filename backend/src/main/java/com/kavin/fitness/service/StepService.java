@@ -19,6 +19,9 @@ public class StepService {
     @Autowired
     private StepLogRepository stepLogRepository;
 
+    @Autowired
+    private DeletionJournalService deletionJournal;
+
     @Transactional(readOnly = true)
     public List<StepLogDTO> getStepLogs(Long userId) {
         return stepLogRepository.findByUserIdOrderByLogDateAsc(userId)
@@ -45,6 +48,14 @@ public class StepService {
         StepLog log = stepLogRepository.findById(id)
                 .filter(s -> s.getUser().getId().equals(userId))
                 .orElseThrow(() -> new EntityNotFoundException("Step log not found"));
+        StepLogRequest snapshot = new StepLogRequest();
+        snapshot.setLogDate(log.getLogDate());
+        snapshot.setSteps(log.getSteps());
+        deletionJournal.record(
+                log.getUser(),
+                DeletionJournalService.TYPE_STEP_LOG,
+                String.format("%,d steps on %s", log.getSteps(), log.getLogDate()),
+                snapshot);
         stepLogRepository.delete(log);
     }
 }
