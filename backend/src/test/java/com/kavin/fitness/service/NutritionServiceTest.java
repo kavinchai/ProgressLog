@@ -31,6 +31,7 @@ class NutritionServiceTest {
 
     @Mock NutritionLogRepository nutritionLogRepository;
     @Mock MealRepository mealRepository;
+    @Mock DeletionJournalService deletionJournal;
     @InjectMocks NutritionService nutritionService;
 
     private User user;

@@ -31,6 +31,7 @@ class WorkoutServiceTest {
 
     @Mock WorkoutSessionRepository workoutSessionRepository;
     @Mock ExerciseSetRepository exerciseSetRepository;
+    @Mock DeletionJournalService deletionJournal;
     @InjectMocks WorkoutService workoutService;
 
     private User user;

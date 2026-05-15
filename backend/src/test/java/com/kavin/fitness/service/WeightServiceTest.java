@@ -27,6 +27,7 @@ import static org.mockito.Mockito.*;
 class WeightServiceTest {
 
     @Mock WeightLogRepository weightLogRepository;
+    @Mock DeletionJournalService deletionJournal;
     @InjectMocks WeightService weightService;
 
     private User user;

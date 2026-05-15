@@ -3,6 +3,8 @@ package com.kavin.fitness.service;
 import com.kavin.fitness.dto.MealRequest;
 import com.kavin.fitness.dto.NutritionLogDTO;
 import com.kavin.fitness.dto.NutritionLogRequest;
+import com.kavin.fitness.dto.snapshot.MealSnapshot;
+import com.kavin.fitness.dto.snapshot.NutritionLogSnapshot;
 import com.kavin.fitness.model.Meal;
 import com.kavin.fitness.model.NutritionLog;
 import com.kavin.fitness.model.User;
@@ -21,6 +23,7 @@ public class NutritionService {
 
     @Autowired private NutritionLogRepository nutritionLogRepository;
     @Autowired private MealRepository         mealRepository;
+    @Autowired private DeletionJournalService deletionJournal;
 
     @Transactional(readOnly = true)
     public List<NutritionLogDTO> getNutritionLog(Long userId) {
@@ -75,16 +78,39 @@ public class NutritionService {
     @Transactional
     public void deleteLog(Long logId, Long userId) {
         NutritionLog log = resolveLog(logId, userId);
+        List<MealRequest> mealSnapshots = log.getMeals().stream()
+                .map(this::toMealRequest)
+                .collect(Collectors.toList());
+        deletionJournal.record(
+                log.getUser(),
+                DeletionJournalService.TYPE_NUTRITION_LOG,
+                String.format("Nutrition log %s (%s, %d meal%s)",
+                        log.getLogDate(),
+                        log.getDayType(),
+                        mealSnapshots.size(),
+                        mealSnapshots.size() == 1 ? "" : "s"),
+                new NutritionLogSnapshot(log.getLogDate(), log.getDayType(), mealSnapshots));
         nutritionLogRepository.delete(log);
     }
 
     /** Delete a meal. */
     @Transactional
     public void deleteMeal(Long logId, Long mealId, Long userId) {
-        resolveLog(logId, userId);
+        NutritionLog log = resolveLog(logId, userId);
         Meal meal = mealRepository.findById(mealId)
                 .filter(existingMeal -> existingMeal.getNutritionLog().getId().equals(logId))
                 .orElseThrow(() -> new EntityNotFoundException("Meal not found"));
+        deletionJournal.record(
+                log.getUser(),
+                DeletionJournalService.TYPE_MEAL,
+                String.format("Meal %s (%d kcal, %dg protein) on %s",
+                        meal.getMealName() != null && !meal.getMealName().isBlank()
+                                ? "\"" + meal.getMealName() + "\""
+                                : "(unnamed)",
+                        meal.getCalories(),
+                        meal.getProteinGrams(),
+                        log.getLogDate()),
+                new MealSnapshot(log.getId(), meal.getMealName(), meal.getCalories(), meal.getProteinGrams()));
         mealRepository.delete(meal);
     }
 
@@ -94,6 +120,14 @@ public class NutritionService {
         return nutritionLogRepository.findById(logId)
                 .filter(nutritionLog -> nutritionLog.getUser().getId().equals(userId))
                 .orElseThrow(() -> new EntityNotFoundException("Nutrition log not found"));
+    }
+
+    private MealRequest toMealRequest(Meal meal) {
+        MealRequest req = new MealRequest();
+        req.setMealName(meal.getMealName());
+        req.setCalories(meal.getCalories());
+        req.setProteinGrams(meal.getProteinGrams());
+        return req;
     }
 
     private NutritionLogDTO toDTO(NutritionLog log) {

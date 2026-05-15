@@ -3,6 +3,7 @@ package com.kavin.fitness.service;
 import com.kavin.fitness.dto.ExerciseRequest;
 import com.kavin.fitness.dto.WorkoutSessionDTO;
 import com.kavin.fitness.dto.WorkoutSessionRequest;
+import com.kavin.fitness.dto.snapshot.ExerciseSetsSnapshot;
 import com.kavin.fitness.model.ExerciseSet;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WorkoutSession;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +24,7 @@ public class WorkoutService {
 
     @Autowired private WorkoutSessionRepository workoutSessionRepository;
     @Autowired private ExerciseSetRepository exerciseSetRepository;
+    @Autowired private DeletionJournalService deletionJournal;
 
     @Transactional(readOnly = true)
     public List<String> getDistinctExerciseNames(Long userId) {
@@ -89,6 +92,11 @@ public class WorkoutService {
     @Transactional
     public void deleteSession(Long sessionId, Long userId) {
         WorkoutSession session = resolveSession(sessionId, userId);
+        deletionJournal.record(
+                session.getUser(),
+                DeletionJournalService.TYPE_WORKOUT_SESSION,
+                workoutSessionSummary(session),
+                buildSessionSnapshot(session));
         workoutSessionRepository.delete(session);
     }
 
@@ -128,6 +136,22 @@ public class WorkoutService {
     @Transactional
     public void deleteExercise(Long sessionId, Long userId, String exerciseName) {
         WorkoutSession session = resolveSession(sessionId, userId);
+
+        List<ExerciseSet> doomed = session.getExerciseSets().stream()
+                .filter(es -> es.getExerciseName().equalsIgnoreCase(exerciseName))
+                .toList();
+        if (!doomed.isEmpty()) {
+            deletionJournal.record(
+                    session.getUser(),
+                    DeletionJournalService.TYPE_EXERCISE_SET,
+                    String.format("\"%s\" (%d set%s) from workout on %s",
+                            doomed.get(0).getExerciseName(),
+                            doomed.size(),
+                            doomed.size() == 1 ? "" : "s",
+                            session.getSessionDate()),
+                    buildExerciseSetsSnapshot(session.getId(), doomed.get(0).getExerciseName(), doomed));
+        }
+
         session.getExerciseSets().removeIf(exerciseSet ->
                 exerciseSet.getExerciseName().equalsIgnoreCase(exerciseName));
         workoutSessionRepository.save(session);
@@ -171,6 +195,63 @@ public class WorkoutService {
         return workoutSessionRepository.findById(sessionId)
                 .filter(session -> session.getUser().getId().equals(userId))
                 .orElseThrow(() -> new EntityNotFoundException("Session not found"));
+    }
+
+    // ── snapshot helpers (deletion journal) ──────────────────────────────────
+
+    private String workoutSessionSummary(WorkoutSession session) {
+        long distinctExercises = session.getExerciseSets().stream()
+                .map(ExerciseSet::getExerciseName).distinct().count();
+        String label = session.getSessionName() != null && !session.getSessionName().isBlank()
+                ? "\"" + session.getSessionName() + "\""
+                : "session";
+        return String.format("Workout %s on %s (%d exercise%s)",
+                label,
+                session.getSessionDate(),
+                distinctExercises,
+                distinctExercises == 1 ? "" : "s");
+    }
+
+    private WorkoutSessionRequest buildSessionSnapshot(WorkoutSession session) {
+        WorkoutSessionRequest req = new WorkoutSessionRequest();
+        req.setSessionDate(session.getSessionDate());
+        req.setSessionName(session.getSessionName());
+        req.setExercises(buildExerciseRequests(session.getExerciseSets()));
+        return req;
+    }
+
+    private ExerciseSetsSnapshot buildExerciseSetsSnapshot(Long sessionId, String exerciseName, List<ExerciseSet> sets) {
+        List<ExerciseRequest.SetRequest> setRequests = sets.stream()
+                .sorted((a, b) -> Integer.compare(a.getSetNumber(), b.getSetNumber()))
+                .map(this::toSetRequest)
+                .toList();
+        return new ExerciseSetsSnapshot(sessionId, exerciseName, setRequests);
+    }
+
+    private List<ExerciseRequest> buildExerciseRequests(List<ExerciseSet> sets) {
+        java.util.LinkedHashMap<String, List<ExerciseRequest.SetRequest>> grouped = new java.util.LinkedHashMap<>();
+        for (ExerciseSet set : sets) {
+            grouped.computeIfAbsent(set.getExerciseName(), k -> new ArrayList<>())
+                    .add(toSetRequest(set));
+        }
+        return grouped.entrySet().stream()
+                .map(e -> {
+                    ExerciseRequest req = new ExerciseRequest();
+                    req.setExerciseName(e.getKey());
+                    req.setSets(e.getValue());
+                    return req;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private ExerciseRequest.SetRequest toSetRequest(ExerciseSet set) {
+        ExerciseRequest.SetRequest sr = new ExerciseRequest.SetRequest();
+        sr.setSetNumber(set.getSetNumber());
+        sr.setReps(set.getReps());
+        sr.setWeightLbs(set.getWeightLbs());
+        sr.setDistanceMiles(set.getDistanceMiles());
+        sr.setDurationSeconds(set.getDurationSeconds());
+        return sr;
     }
 
     private WorkoutSessionDTO toDTO(WorkoutSession session) {

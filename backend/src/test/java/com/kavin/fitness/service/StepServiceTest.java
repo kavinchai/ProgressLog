@@ -26,6 +26,7 @@ import static org.mockito.Mockito.*;
 class StepServiceTest {
 
     @Mock StepLogRepository stepLogRepository;
+    @Mock DeletionJournalService deletionJournal;
     @InjectMocks StepService stepService;
 
     private User user;
