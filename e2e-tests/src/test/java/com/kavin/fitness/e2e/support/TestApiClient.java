@@ -110,6 +110,41 @@ public class TestApiClient {
         }
     }
 
+    /** Delete the weight entry for a given date. No-op if none exists. */
+    public void deleteWeightOnDate(String date) {
+        deleteEntriesOnDate("/weight", date, "weight");
+    }
+
+    /** Delete the step entry for a given date. No-op if none exists. */
+    public void deleteStepsOnDate(String date) {
+        deleteEntriesOnDate("/steps", date, "steps");
+    }
+
+    /**
+     * Shared cleanup for date-keyed log endpoints. GET /{resource} returns all
+     * entries for the user; we filter by logDate and DELETE each match by id.
+     * Pattern relies on Jackson serializing DTO fields in declaration order
+     * (id, logDate, ...) — true for WeightLogDTO and StepLogDTO today.
+     */
+    private void deleteEntriesOnDate(String resource, String date, String label) {
+        HttpResponse<String> list = get(resource);
+        if (list.statusCode() >= 300) {
+            Reporter.log("WARN: list " + label + " -> HTTP " + list.statusCode(), true);
+            return;
+        }
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile(
+                "\"id\"\\s*:\\s*(\\d+)\\s*,\\s*\"logDate\"\\s*:\\s*\""
+                        + java.util.regex.Pattern.quote(date) + "\"");
+        java.util.regex.Matcher m = p.matcher(list.body());
+        while (m.find()) {
+            HttpResponse<String> r = delete(resource + "/" + m.group(1));
+            if (r.statusCode() >= 300) {
+                Reporter.log("WARN: delete " + label + " " + m.group(1)
+                        + " -> HTTP " + r.statusCode(), true);
+            }
+        }
+    }
+
     /** Returns the number of workout sessions on a given date — used to verify seeding. */
     public int countWorkoutsOnDate(String date) {
         HttpResponse<String> list = get("/workouts?date=" + date);

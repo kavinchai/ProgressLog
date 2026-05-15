@@ -68,12 +68,17 @@ public class HistoryPageTest extends BaseTest {
 
     @AfterClass(alwaysRun = true)
     public void cleanup() {
-        // Best-effort: clean up the seeded today workout so the next test
-        // class sees an empty Today page. Don't fail teardown on errors.
+        // Best-effort: clean up everything we seeded so the next test class
+        // sees an empty Today page. Leftover weight/steps bleed into the Today
+        // UI (e.g. WeightTest can't find "+ Add", WorkoutTimedTest's page-wide
+        // text check matches "180 lbs" via the "0 lbs" substring).
         try {
             if (api != null) {
                 api.deleteWorkoutsOnDate(todayDate);
                 api.deleteWorkoutsOnDate(pastDate);
+                api.deleteWeightOnDate(todayDate);
+                api.deleteWeightOnDate(pastDate);
+                api.deleteStepsOnDate(todayDate);
             }
         } catch (Exception ignored) {}
     }
