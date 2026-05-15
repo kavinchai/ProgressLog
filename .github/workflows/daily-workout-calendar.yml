@@ -25,7 +25,12 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install psycopg2-binary google-api-python-client google-auth
+        run: |
+          set -x
+          python --version
+          pip --version
+          pip install psycopg2-binary google-api-python-client google-auth
+          pip show psycopg2-binary google-api-python-client google-auth | grep -E '^(Name|Version):'
 
       - name: Post workout to Google Calendar
         env:
@@ -38,92 +43,158 @@ jobs:
         run: |
           python - <<'EOF'
           import os
+          import sys
           import json
-          import psycopg2
+          import traceback
           from datetime import date, timedelta
           from urllib.parse import urlparse
-          from google.oauth2 import service_account
-          from googleapiclient.discovery import build
+          from collections import OrderedDict
+
+          print("=" * 60)
+          print("[startup] python:", sys.version.replace("\n", " "))
+          print("[startup] cwd:", os.getcwd())
+          print("=" * 60)
+
+          # --- 1. Validate environment variables -----------------------------
+          required = [
+              'RAILWAY_DATABASE_URL',
+              'GOOGLE_SERVICE_ACCOUNT_JSON',
+              'GOOGLE_CALENDAR_ID',
+              'DB_USERNAME',
+          ]
+          print("[env] checking required environment variables...")
+          missing = []
+          for key in required:
+              val = os.environ.get(key, '')
+              if not val:
+                  missing.append(key)
+                  print(f"  [env] {key}: MISSING")
+              else:
+                  print(f"  [env] {key}: present (len={len(val)})")
+          if missing:
+              print(f"[fatal] missing required env vars: {missing}")
+              sys.exit(1)
 
           backfill = os.environ['BACKFILL'].lower() == 'true'
           target_date_str = os.environ['TARGET_DATE'].strip()
-
           if target_date_str:
-              target_date = date.fromisoformat(target_date_str)
+              try:
+                  target_date = date.fromisoformat(target_date_str)
+              except ValueError as e:
+                  print(f"[fatal] TARGET_DATE='{target_date_str}' is not ISO-8601: {e}")
+                  sys.exit(1)
           else:
               target_date = date.today() - timedelta(days=1)
 
-          print(f"[config] backfill={backfill}, target_date={target_date}, today={date.today()}")
+          print(f"[config] backfill={backfill}")
+          print(f"[config] target_date={target_date}")
+          print(f"[config] today={date.today()}")
+          print(f"[config] calendar_id={os.environ['GOOGLE_CALENDAR_ID']}")
+          print(f"[config] db_username={os.environ['DB_USERNAME']}")
 
-          # Connect to Railway Postgres
-          url = urlparse(os.environ['RAILWAY_DATABASE_URL'])
-          print(f"[db] connecting to {url.hostname}:{url.port}/{url.path.lstrip('/')}")
-          conn = psycopg2.connect(
-              host=url.hostname,
-              port=url.port,
-              database=url.path.lstrip('/'),
-              user=url.username,
-              password=url.password,
-              sslmode='require'
-          )
-          cur = conn.cursor()
+          # --- 2. Connect to Postgres ----------------------------------------
+          try:
+              import psycopg2
+          except Exception:
+              print("[fatal] failed to import psycopg2")
+              traceback.print_exc()
+              sys.exit(1)
 
-          # Verify user exists
+          try:
+              url = urlparse(os.environ['RAILWAY_DATABASE_URL'])
+              print(f"[db] parsed URL: host={url.hostname} port={url.port} db={url.path.lstrip('/')} user={url.username}")
+              print("[db] connecting (sslmode=require)...")
+              conn = psycopg2.connect(
+                  host=url.hostname,
+                  port=url.port,
+                  database=url.path.lstrip('/'),
+                  user=url.username,
+                  password=url.password,
+                  sslmode='require',
+                  connect_timeout=15,
+              )
+              cur = conn.cursor()
+              cur.execute("SELECT version(), current_database(), current_user")
+              v = cur.fetchone()
+              print(f"[db] connected. server={v[0]!r}")
+              print(f"[db] current_database={v[1]} current_user={v[2]}")
+          except Exception:
+              print("[fatal] database connection failed")
+              traceback.print_exc()
+              sys.exit(1)
+
+          # --- 3. Look up user ------------------------------------------------
           db_username = os.environ['DB_USERNAME']
-          cur.execute("SELECT id, username FROM users WHERE username = %s", (db_username,))
-          user = cur.fetchone()
+          try:
+              cur.execute("SELECT id, username FROM users WHERE username = %s", (db_username,))
+              user = cur.fetchone()
+          except Exception:
+              print("[fatal] users lookup query failed")
+              traceback.print_exc()
+              cur.close(); conn.close()
+              sys.exit(1)
+
           if not user:
-              print(f"[error] No user found with username '{db_username}' — check DB_USERNAME secret.")
-              cur.close()
-              conn.close()
-              exit(1)
+              print(f"[fatal] no user found with username '{db_username}'. Listing first 10 known users for debugging:")
+              cur.execute("SELECT id, username FROM users ORDER BY id LIMIT 10")
+              for u in cur.fetchall():
+                  print(f"  → id={u[0]} username={u[1]}")
+              cur.close(); conn.close()
+              sys.exit(1)
           print(f"[db] found user: id={user[0]}, username={user[1]}")
 
-          if backfill:
-              print("[db] running backfill query for all sessions...")
-              cur.execute("""
-                  SELECT ws.id,
-                         ws.session_date,
-                         COALESCE(ws.session_name, 'Workout') AS session_name,
-                         es.exercise_name,
-                         es.set_number,
-                         es.reps,
-                         es.weight_lbs
-                  FROM workout_session ws
-                  JOIN users u ON u.id = ws.user_id
-                  LEFT JOIN exercise_set es ON es.session_id = ws.id
-                  WHERE u.username = %s
-                  ORDER BY ws.session_date, ws.id, es.exercise_name, es.set_number
-              """, (db_username,))
-          else:
-              print(f"[db] querying sessions for date: {target_date}")
-              cur.execute("""
-                  SELECT ws.id,
-                         ws.session_date,
-                         COALESCE(ws.session_name, 'Workout') AS session_name,
-                         es.exercise_name,
-                         es.set_number,
-                         es.reps,
-                         es.weight_lbs
-                  FROM workout_session ws
-                  JOIN users u ON u.id = ws.user_id
-                  LEFT JOIN exercise_set es ON es.session_id = ws.id
-                  WHERE u.username = %s
-                    AND ws.session_date = %s
-                  ORDER BY ws.id, es.exercise_name, es.set_number
-              """, (db_username, target_date))
+          # --- 4. Query workout rows -----------------------------------------
+          try:
+              if backfill:
+                  print("[db] running backfill query for all sessions...")
+                  cur.execute("""
+                      SELECT ws.id,
+                             ws.session_date,
+                             COALESCE(ws.session_name, 'Workout') AS session_name,
+                             es.exercise_name,
+                             es.set_number,
+                             es.reps,
+                             es.weight_lbs
+                      FROM workout_session ws
+                      JOIN users u ON u.id = ws.user_id
+                      LEFT JOIN exercise_set es ON es.session_id = ws.id
+                      WHERE u.username = %s
+                      ORDER BY ws.session_date, ws.id, es.exercise_name, es.set_number
+                  """, (db_username,))
+              else:
+                  print(f"[db] querying sessions for date: {target_date}")
+                  cur.execute("""
+                      SELECT ws.id,
+                             ws.session_date,
+                             COALESCE(ws.session_name, 'Workout') AS session_name,
+                             es.exercise_name,
+                             es.set_number,
+                             es.reps,
+                             es.weight_lbs
+                      FROM workout_session ws
+                      JOIN users u ON u.id = ws.user_id
+                      LEFT JOIN exercise_set es ON es.session_id = ws.id
+                      WHERE u.username = %s
+                        AND ws.session_date = %s
+                      ORDER BY ws.id, es.exercise_name, es.set_number
+                  """, (db_username, target_date))
+              rows = cur.fetchall()
+          except Exception:
+              print("[fatal] workout query failed")
+              traceback.print_exc()
+              cur.close(); conn.close()
+              sys.exit(1)
 
-          rows = cur.fetchall()
           print(f"[db] rows returned: {len(rows)}")
           cur.close()
           conn.close()
+          print("[db] connection closed")
 
           if not rows:
-              print("No workout sessions found, skipping.")
-              exit(0)
+              print("[done] no workout sessions found, exiting cleanly.")
+              sys.exit(0)
 
-          # Group rows into sessions: {session_id: {date, name, exercises: {name: [sets]}}}
-          from collections import OrderedDict
+          # --- 5. Group rows into sessions -----------------------------------
           sessions = OrderedDict()
           for session_id, session_date, session_name, exercise_name, set_number, reps, weight_lbs in rows:
               if session_id not in sessions:
@@ -138,6 +209,12 @@ jobs:
                       exs[exercise_name] = []
                   exs[exercise_name].append((set_number, reps, float(weight_lbs)))
 
+          print(f"[group] grouped into {len(sessions)} session(s):")
+          for sid, s in sessions.items():
+              ex_count = len(s['exercises'])
+              set_count = sum(len(v) for v in s['exercises'].values())
+              print(f"  → id={sid} date={s['date']} name={s['name']!r} exercises={ex_count} sets={set_count}")
+
           def build_description(exercises):
               if not exercises:
                   return ''
@@ -148,15 +225,52 @@ jobs:
                       lines.append(f'  Set {set_number}: {weight:g} lbs × {reps}')
               return '\n'.join(lines)
 
-          # Authenticate with Google Calendar
-          sa_info = json.loads(os.environ['GOOGLE_SERVICE_ACCOUNT_JSON'])
-          creds = service_account.Credentials.from_service_account_info(
-              sa_info,
-              scopes=['https://www.googleapis.com/auth/calendar']
-          )
-          service = build('calendar', 'v3', credentials=creds)
+          # --- 6. Authenticate with Google Calendar --------------------------
+          try:
+              from google.oauth2 import service_account
+              from googleapiclient.discovery import build
+              from googleapiclient.errors import HttpError
+          except Exception:
+              print("[fatal] failed to import google libraries")
+              traceback.print_exc()
+              sys.exit(1)
+
+          try:
+              raw_sa = os.environ['GOOGLE_SERVICE_ACCOUNT_JSON']
+              print(f"[gcal] service account JSON length: {len(raw_sa)}")
+              sa_info = json.loads(raw_sa)
+              print(f"[gcal] service account type:         {sa_info.get('type')}")
+              print(f"[gcal] service account project_id:   {sa_info.get('project_id')}")
+              print(f"[gcal] service account client_email: {sa_info.get('client_email')}")
+              print(f"[gcal] service account client_id:    {sa_info.get('client_id')}")
+              creds = service_account.Credentials.from_service_account_info(
+                  sa_info,
+                  scopes=['https://www.googleapis.com/auth/calendar']
+              )
+              service = build('calendar', 'v3', credentials=creds, cache_discovery=False)
+              print("[gcal] discovery client built successfully")
+          except Exception:
+              print("[fatal] failed to build Google Calendar client")
+              traceback.print_exc()
+              sys.exit(1)
+
           calendar_id = os.environ['GOOGLE_CALENDAR_ID']
 
+          # Verify we can actually see the calendar
+          try:
+              meta = service.calendars().get(calendarId=calendar_id).execute()
+              print(f"[gcal] calendar verified: id={meta.get('id')} summary={meta.get('summary')!r} timeZone={meta.get('timeZone')}")
+          except HttpError as e:
+              print(f"[fatal] cannot access calendar '{calendar_id}': HTTP {e.status_code}")
+              print(f"[fatal] response: {e.content!r}")
+              print("[hint] make sure the calendar is shared with the service account client_email above with 'Make changes to events' permission.")
+              sys.exit(1)
+          except Exception:
+              print(f"[fatal] cannot access calendar '{calendar_id}'")
+              traceback.print_exc()
+              sys.exit(1)
+
+          # --- 7. Create events ----------------------------------------------
           def event_exists(session_date, session_name):
               day_str = str(session_date)
               result = service.events().list(
@@ -171,24 +285,45 @@ jobs:
                   for e in result.get('items', [])
               )
 
+          created_count = 0
+          skipped_count = 0
+          failed_count = 0
           for session_id, session in sessions.items():
               session_date = session['date']
               session_name = session['name']
-              if event_exists(session_date, session_name):
-                  print(f"[skip] event already exists: {session_name} on {session_date}")
-                  continue
-              description = build_description(session['exercises'])
-              event = {
-                  'summary': session_name,
-                  'description': description,
-                  'start': {'date': str(session_date)},
-                  'end':   {'date': str(session_date)},
-              }
-              created = service.events().insert(
-                  calendarId=calendar_id,
-                  body=event
-              ).execute()
-              print(f"[created] {session_name} on {session_date} → {created.get('htmlLink')}")
-              if description:
-                  print(description)
+              try:
+                  if event_exists(session_date, session_name):
+                      print(f"[skip] event already exists: {session_name} on {session_date}")
+                      skipped_count += 1
+                      continue
+                  description = build_description(session['exercises'])
+                  event = {
+                      'summary': session_name,
+                      'description': description,
+                      'start': {'date': str(session_date)},
+                      'end':   {'date': str(session_date)},
+                  }
+                  print(f"[create] inserting event for session_id={session_id} date={session_date} name={session_name!r}")
+                  created = service.events().insert(
+                      calendarId=calendar_id,
+                      body=event
+                  ).execute()
+                  print(f"[created] {session_name} on {session_date} → {created.get('htmlLink')}")
+                  if description:
+                      for line in description.splitlines():
+                          print(f"    {line}")
+                  created_count += 1
+              except HttpError as e:
+                  failed_count += 1
+                  print(f"[error] HTTP {e.status_code} processing session_id={session_id}: {e.content!r}")
+              except Exception:
+                  failed_count += 1
+                  print(f"[error] unexpected failure processing session_id={session_id}")
+                  traceback.print_exc()
+
+          print("=" * 60)
+          print(f"[summary] created={created_count} skipped={skipped_count} failed={failed_count} total_sessions={len(sessions)}")
+          print("=" * 60)
+          if failed_count:
+              sys.exit(1)
           EOF
