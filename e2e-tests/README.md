@@ -14,8 +14,8 @@ End-to-end UI tests using Selenium WebDriver with TestNG, organized via page obj
 Tests read configuration from system properties (passed via `-D` flags):
 
 - `env.baseurl` — frontend URL (default: `http://localhost:5173`)
-- `test.user.username` — test account username (default: `qaf_test_user`)
-- `test.user.password` — test account password (default: `qaf_test_password`)
+- `test.user.username` — test account username (default: `qaf-test`)
+- `test.user.password` — test account password (default: `qaf-test-password`)
 
 ## Running Tests
 

@@ -28,6 +28,7 @@ services:
       DB_PASSWORD: fitness_dev_password
       JWT_SECRET: devjwtsecretmustbe32charsminimum!!
       JWT_EXPIRATION_MS: 86400000
+      COOKIE_SECURE: "false"
     depends_on:
       postgres:
         condition: service_healthy

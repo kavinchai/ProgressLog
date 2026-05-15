@@ -20,14 +20,17 @@ import java.time.Duration;
  * producing a confusing "sidebar not visible" assertion failure downstream.
  */
 public class TestApiClient {
+    private static final String JWT_COOKIE = "jwt";
+
     private final String apiUrl;
     private final HttpClient http;
+    private final CookieManager cookieManager;
 
     public TestApiClient(String apiUrl) {
         this.apiUrl = apiUrl;
-        CookieManager cookieManager = new CookieManager();
-        cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
-        this.http = HttpClient.newBuilder().cookieHandler(cookieManager).build();
+        this.cookieManager = new CookieManager();
+        this.cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
+        this.http = HttpClient.newBuilder().cookieHandler(this.cookieManager).build();
     }
 
     /** Login. Throws if the response is not 2xx so test setup fails loudly. */
@@ -38,6 +41,22 @@ public class TestApiClient {
             throw new IllegalStateException("TestApiClient login failed: HTTP "
                     + resp.statusCode() + " body=" + resp.body()
                     + " (apiUrl=" + apiUrl + ", username=" + username + ")");
+        }
+
+        // The CookieManager refuses to store a Secure cookie when apiUrl is http://,
+        // so a 2xx login can still leave the client unauthenticated. Detect that
+        // here instead of letting the next call die with a confusing 401.
+        boolean hasJwt = cookieManager.getCookieStore().getCookies().stream()
+                .anyMatch(c -> JWT_COOKIE.equals(c.getName()) && !c.getValue().isEmpty());
+        if (!hasJwt) {
+            String setCookie = resp.headers().firstValue("set-cookie").orElse("<none>");
+            throw new IllegalStateException(
+                    "TestApiClient login returned HTTP " + resp.statusCode()
+                            + " but no '" + JWT_COOKIE + "' cookie was stored. "
+                            + "This usually means the backend issued a Secure cookie "
+                            + "while apiUrl is http:// (set COOKIE_SECURE=false for "
+                            + "the dev/CI backend). Set-Cookie header: " + setCookie
+                            + " (apiUrl=" + apiUrl + ")");
         }
     }
 
