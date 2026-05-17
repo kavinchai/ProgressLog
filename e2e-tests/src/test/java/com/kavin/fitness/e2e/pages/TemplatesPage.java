@@ -89,6 +89,7 @@ public class TemplatesPage {
         for (WebElement card : cards) {
             if (card.getText().contains(name)) {
                 card.findElement(By.cssSelector(".btn-danger")).click();
+                confirmDeleteAndDismiss();
                 return;
             }
         }
@@ -136,5 +137,20 @@ public class TemplatesPage {
     public boolean isEmptyMessageVisible() {
         List<WebElement> els = driver.findElements(EMPTY_MESSAGE);
         return !els.isEmpty() && els.get(0).isDisplayed();
+    }
+
+    /**
+     * After clicking a delete button that opens a ConfirmDeleteModal,
+     * click "Confirm Delete", wait for success, then click "Done".
+     */
+    private void confirmDeleteAndDismiss() {
+        By confirmBtn = By.xpath(
+                "//div[contains(@class,'modal')]//button[contains(text(),'Confirm Delete')]");
+        wait.until(ExpectedConditions.elementToBeClickable(confirmBtn)).click();
+        By doneBtn = By.xpath(
+                "//div[contains(@class,'modal')]//button[text()='Done']");
+        wait.until(ExpectedConditions.elementToBeClickable(doneBtn)).click();
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                By.cssSelector(".modal-title")));
     }
 }
