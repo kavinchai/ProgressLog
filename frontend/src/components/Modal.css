@@ -189,4 +189,16 @@
   .modal-form-row {
     grid-template-columns: 1fr;
   }
+
+  .modal-actions {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .modal-actions > .btn,
+  .modal-actions > .btn-primary,
+  .modal-actions > .btn-ghost {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
 }

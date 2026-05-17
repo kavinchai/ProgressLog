@@ -68,6 +68,30 @@ a:hover {
 
 	.btn-actions {
 		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.btn {
+		padding: 10px 16px;
+		font-size: var(--fs);
+		min-height: 40px;
+	}
+
+	.btn-sm {
+		padding: 8px 14px;
+		font-size: var(--fs-sm);
+		min-height: 36px;
+	}
+
+	.btn-primary:not(.btn),
+	.btn-ghost {
+		padding: 10px 18px;
+		min-height: 40px;
+	}
+
+	.page-tab {
+		padding: 8px 14px;
+		min-height: 36px;
 	}
 }
 
