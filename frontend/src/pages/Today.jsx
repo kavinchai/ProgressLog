@@ -13,6 +13,7 @@ import DayInfoModal        from '../components/DayInfoModal';
 import MealModal           from '../components/MealModal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
+import ConfirmDeleteModal  from '../components/ConfirmDeleteModal';
 import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 import { mergeWorkoutSessions } from '../utils/stats';
 import useWeightUnit from '../hooks/useWeightUnit';
@@ -132,6 +133,7 @@ export default function Today() {
   const [prefillExercises,setPrefillExercises] = useState(null);
   const [appendBlankExercise, setAppendBlankExercise] = useState(false);
   const [templateMenuOpen,setTemplateMenuOpen] = useState(false);
+  const [confirmDelete,    setConfirmDelete]    = useState(null);
   const templateBtnRef = useRef(null);
 
   const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
@@ -258,7 +260,7 @@ export default function Today() {
                   onClick={() => { setEditingEntry(todayWeightEntry); setModal('weight'); }}>
                   Edit
                 </button>
-                <button className="btn btn-sm btn-danger" onClick={deleteWeight}>Delete</button>
+                <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Weight Entry', message: 'Are you sure you want to delete this weight entry?', onDelete: () => api.delete(`/weight/${todayWeightEntry.id}`).then(refetchWeight), onUndone: refetchWeight })}>Delete</button>
               </>
             )}
             {!todayWeightEntry && (
@@ -290,7 +292,7 @@ export default function Today() {
               </button>
             )}
             {!editingSteps && todayStepEntry && (
-              <button className="btn btn-sm btn-danger" onClick={() => saveSteps(null)}>Delete</button>
+              <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Steps', message: 'Are you sure you want to delete this step entry?', onDelete: () => api.delete(`/steps/${todayStepEntry.id}`).then(refetchSteps), onUndone: refetchSteps })}>Delete</button>
             )}
           </div>
         </div>
@@ -361,7 +363,7 @@ export default function Today() {
               </button>
             )}
             {todayWorkoutEntry && (
-              <button className="btn btn-sm btn-danger" onClick={deleteWorkoutSession}>Delete</button>
+              <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Workout', message: 'Are you sure you want to delete this workout session?', onDelete: () => api.delete(`/workouts/${todayWorkoutEntry.id}`).then(refetchWorkouts), onUndone: refetchWorkouts })}>Delete</button>
             )}
             {!todayWorkoutEntry && (
               <button className="btn btn-sm btn-primary" onClick={() => openWorkoutModal()}>
@@ -450,7 +452,7 @@ export default function Today() {
                   onClick={() => { setEditingEntry(todayNutritionEntry); setModal('dayinfo'); }}>
                   Edit Day
                 </button>
-                <button className="btn btn-sm btn-danger" onClick={deleteNutritionDay}>Delete</button>
+                <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Nutrition Log', message: 'Are you sure you want to delete this nutrition log and all its meals?', onDelete: () => api.delete(`/nutrition/${todayNutritionEntry.id}`).then(refetchNutrition), onUndone: refetchNutrition })}>Delete</button>
               </>
             )}
             <button className="btn btn-sm btn-primary" onClick={openAddMeal}>
@@ -554,6 +556,15 @@ export default function Today() {
           exerciseSets={editExercise.sets}
           onClose={() => setEditExercise(null)}
           onSaved={refetchWorkouts}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmDeleteModal
+          title={confirmDelete.title}
+          message={confirmDelete.message}
+          onClose={() => setConfirmDelete(null)}
+          onDelete={confirmDelete.onDelete}
+          onUndone={() => { confirmDelete.onUndone(); setConfirmDelete(null); }}
         />
       )}
     </div>

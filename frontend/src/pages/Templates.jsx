@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import api from '../api';
 import useTemplates from '../hooks/useTemplates';
 import TemplateBuilderModal from '../components/TemplateBuilderModal';
+import ConfirmDeleteModal  from '../components/ConfirmDeleteModal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import { localDateStr } from '../utils/date';
 import './Templates.css';
@@ -14,19 +15,18 @@ export default function Templates() {
   const [showNew,       setShowNew]       = useState(false);
   const [editTemplate,  setEditTemplate]  = useState(null);
   const [useTemplate,   setUseTemplate]   = useState(null);
-  const [deleting,      setDeleting]      = useState(null);
   const [importing,     setImporting]     = useState(false);
   const [importError,   setImportError]   = useState('');
+  const [confirmDelete, setConfirmDelete]  = useState(null);
   const fileInputRef = useRef(null);
 
-  async function handleDelete(template) {
-    setDeleting(template.id);
-    try {
-      await api.delete(`/templates/${template.id}`);
-      refetch();
-    } finally {
-      setDeleting(null);
-    }
+  function handleDelete(template) {
+    setConfirmDelete({
+      title: 'Delete Template',
+      message: `Are you sure you want to delete the template "${template.name}"?`,
+      onDelete: () => api.delete(`/templates/${template.id}`).then(refetch),
+      onUndone: refetch,
+    });
   }
 
   function handleExport() {
@@ -111,12 +111,8 @@ export default function Templates() {
               <div className="template-card-actions">
                 <button className="btn btn-sm btn-primary" onClick={() => setUseTemplate(t)}>Use</button>
                 <button className="btn btn-sm" onClick={() => setEditTemplate(t)}>Edit</button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDelete(t)}
-                  disabled={deleting === t.id}
-                >
-                  {deleting === t.id ? '...' : 'Delete'}
+                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(t)}>
+                  Delete
                 </button>
               </div>
             </div>
@@ -145,6 +141,15 @@ export default function Templates() {
           prefillExercises={useTemplate.exercises}
           onClose={() => setUseTemplate(null)}
           onSaved={() => setUseTemplate(null)}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmDeleteModal
+          title={confirmDelete.title}
+          message={confirmDelete.message}
+          onClose={() => setConfirmDelete(null)}
+          onDelete={confirmDelete.onDelete}
+          onUndone={() => { confirmDelete.onUndone(); setConfirmDelete(null); }}
         />
       )}
     </div>
