@@ -526,6 +526,7 @@ describe('Today — delete actions', () => {
     render(<Today />);
 
     await userEvent.click(screen.getByRole('button', { name: /^Delete$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/weight/1');
@@ -541,6 +542,7 @@ describe('Today — delete actions', () => {
     // The workout section has a Delete button for the session
     const deleteBtns = screen.getAllByRole('button', { name: /^Delete$/i });
     await userEvent.click(deleteBtns[0]);
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/workouts/10');
@@ -558,6 +560,7 @@ describe('Today — delete actions', () => {
     // the nutrition section's Delete is the second one
     const deleteBtns = screen.getAllByRole('button', { name: /^Delete$/i });
     await userEvent.click(deleteBtns[1]);
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/nutrition/5');

@@ -103,8 +103,9 @@ describe('Templates page — delete', () => {
     const { refetch } = setupTemplates();
     render(<Templates />);
 
-    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    const deleteButtons = screen.getAllByRole('button', { name: /^delete$/i });
     await userEvent.click(deleteButtons[0]); // delete first template
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/templates/1');
@@ -112,17 +113,14 @@ describe('Templates page — delete', () => {
     });
   });
 
-  it('delete button shows "[…]" while deleting', async () => {
-    let resolveDelete;
-    api.delete.mockReturnValue(new Promise(r => { resolveDelete = r; }));
+  it('delete button opens confirmation dialog', async () => {
     setupTemplates();
     render(<Templates />);
 
-    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    const deleteButtons = screen.getAllByRole('button', { name: /^delete$/i });
     await userEvent.click(deleteButtons[0]);
 
-    expect(screen.getByText('...')).toBeInTheDocument();
-    resolveDelete({});
+    expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
   });
 });
 

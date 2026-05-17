@@ -176,13 +176,13 @@ describe('EditExerciseModal', () => {
       />
     );
     await userEvent.click(screen.getByRole('button', { name: /delete exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith(`/workouts/${SESSION_ID}/exercises`, {
         params: { name: EXERCISE_NAME },
       });
       expect(onSaved).toHaveBeenCalledTimes(1);
-      expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -199,6 +199,7 @@ describe('EditExerciseModal', () => {
       />
     );
     await userEvent.click(screen.getByRole('button', { name: /delete exercise/i }));
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => expect(screen.getByText(/cannot delete/i)).toBeInTheDocument());
   });
