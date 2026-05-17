@@ -6,6 +6,8 @@ import DayInfoModal from './DayInfoModal';
 import MealModal from './MealModal';
 import WorkoutBuilderModal from './WorkoutBuilderModal';
 import EditExerciseModal from './EditExerciseModal';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
+import api from '../api';
 import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 
 export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEntry, stepEntry, onRefetchW, onRefetchN, onRefetchWo, onRefetchS, showDelete = true }) {
@@ -16,6 +18,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
   const [editExercise, setEditExercise] = useState(null);
   const [editingSteps, setEditingSteps] = useState(false);
   const [stepsValue,   setStepsValue]   = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const {
     renamingSession, setRenamingSession, renameValue, setRenameValue,
@@ -48,7 +51,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
             {weightEntry ? (
               <>
                 <button className="btn btn-sm" onClick={() => setModal('weight-edit')}>Edit</button>
-                {showDelete && <button className="btn btn-sm btn-danger" onClick={deleteWeight}>Delete</button>}
+                {showDelete && <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Weight Entry', message: 'Are you sure you want to delete this weight entry?', onDelete: () => api.delete(`/weight/${weightEntry.id}`).then(onRefetchW), onUndone: onRefetchW })}>Delete</button>}
               </>
             ) : (
               <button className="btn btn-sm btn-primary" onClick={() => setModal('weight-add')}>+ Add</button>
@@ -68,7 +71,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
             {nutritionEntry && (
               <>
                 <button className="btn btn-sm" onClick={() => setModal('dayinfo')}>Edit Day</button>
-                {showDelete && <button className="btn btn-sm btn-danger" onClick={deleteNutritionDay}>Delete</button>}
+                {showDelete && <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Nutrition Log', message: 'Are you sure you want to delete this nutrition log and all its meals?', onDelete: () => api.delete(`/nutrition/${nutritionEntry.id}`).then(onRefetchN), onUndone: onRefetchN })}>Delete</button>}
               </>
             )}
             <button className="btn btn-sm btn-primary" onClick={openAddMeal}>+ Meal</button>
@@ -118,7 +121,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
               </button>
             )}
             {!editingSteps && stepEntry && showDelete && (
-              <button className="btn btn-sm btn-danger" onClick={() => saveSteps(null)}>Delete</button>
+              <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Steps', message: 'Are you sure you want to delete this step entry?', onDelete: () => api.delete(`/steps/${stepEntry.id}`).then(onRefetchS), onUndone: onRefetchS })}>Delete</button>
             )}
           </div>
         </div>
@@ -179,7 +182,7 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
               </>
             )}
             {showDelete && workoutEntry && (
-              <button className="btn btn-sm btn-danger" onClick={deleteWorkoutSession}>Delete</button>
+              <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Workout', message: 'Are you sure you want to delete this workout session?', onDelete: () => api.delete(`/workouts/${workoutEntry.id}`).then(onRefetchWo), onUndone: onRefetchWo })}>Delete</button>
             )}
             <button className="btn btn-sm btn-primary" onClick={() => setModal('workout-add')}>+ Add</button>
           </div>
@@ -259,6 +262,15 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
           exerciseSets={editExercise.sets}
           onClose={() => setEditExercise(null)}
           onSaved={onRefetchWo}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmDeleteModal
+          title={confirmDelete.title}
+          message={confirmDelete.message}
+          onClose={() => setConfirmDelete(null)}
+          onDelete={confirmDelete.onDelete}
+          onUndone={() => { confirmDelete.onUndone(); setConfirmDelete(null); }}
         />
       )}
     </div>

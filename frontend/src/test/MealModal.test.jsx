@@ -142,16 +142,16 @@ describe('MealModal — editing an existing meal', () => {
     });
   });
 
-  it('delete button calls DELETE and then onSaved + onClose', async () => {
+  it('delete button calls DELETE and then onSaved', async () => {
     api.delete.mockResolvedValue({});
 
     render(<MealModal logId={LOG_ID} existing={existing} onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /delete/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/${existing.id}`);
       expect(onSaved).toHaveBeenCalledTimes(1);
-      expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -159,7 +159,8 @@ describe('MealModal — editing an existing meal', () => {
     api.delete.mockRejectedValue({ response: { data: { message: 'Not found' } } });
 
     render(<MealModal logId={LOG_ID} existing={existing} onClose={onClose} onSaved={onSaved} />);
-    await userEvent.click(screen.getByRole('button', { name: /delete/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => expect(screen.getByText(/not found/i)).toBeInTheDocument());
     expect(onSaved).not.toHaveBeenCalled();
