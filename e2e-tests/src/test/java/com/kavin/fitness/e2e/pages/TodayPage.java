@@ -66,6 +66,7 @@ public class TodayPage {
         driver.findElement(By.xpath(
                 "(//div[contains(@class,'section-box')])[" + STEPS_IDX +
                         "]//button[contains(@class,'btn-danger')]")).click();
+        confirmDeleteAndDismiss();
     }
 
     public void enterSteps(String value) {
@@ -160,6 +161,7 @@ public class TodayPage {
                 // Stale element from a re-render — re-query on next iteration.
                 continue;
             }
+            confirmDeleteAndDismiss();
             // After a delete, either another Delete remains (more sessions) or
             // Start Workout appears (last one gone). Either way is "ready".
             wait.until(d ->
@@ -264,5 +266,20 @@ public class TodayPage {
         return !driver.findElements(By.xpath(
                 "//span[contains(@class,'exercise-card-name') and contains(text(),'" + name + "')]"))
                 .isEmpty();
+    }
+
+    /**
+     * After clicking a delete button that opens a ConfirmDeleteModal,
+     * click "Confirm Delete", wait for success, then click "Done".
+     */
+    private void confirmDeleteAndDismiss() {
+        By confirmBtn = By.xpath(
+                "//div[contains(@class,'modal')]//button[contains(text(),'Confirm Delete')]");
+        wait.until(ExpectedConditions.elementToBeClickable(confirmBtn)).click();
+        By doneBtn = By.xpath(
+                "//div[contains(@class,'modal')]//button[text()='Done']");
+        wait.until(ExpectedConditions.elementToBeClickable(doneBtn)).click();
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                By.cssSelector(".modal-title")));
     }
 }

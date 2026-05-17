@@ -55,7 +55,20 @@ public class EditExerciseModal {
     }
 
     public void save() { driver.findElement(SAVE).click(); }
-    public void deleteExercise() { driver.findElement(DELETE).click(); }
+
+    /**
+     * Delete the exercise via the inline confirmation flow:
+     * click "Delete Exercise" → click "Confirm Delete" → click "Done".
+     */
+    public void deleteExercise() {
+        driver.findElement(DELETE).click();
+        By confirmBtn = By.xpath(
+                "//div[contains(@class,'modal')]//button[contains(text(),'Confirm Delete')]");
+        wait.until(ExpectedConditions.elementToBeClickable(confirmBtn)).click();
+        By doneBtn = By.xpath(
+                "//div[contains(@class,'modal')]//button[text()='Done']");
+        wait.until(ExpectedConditions.elementToBeClickable(doneBtn)).click();
+    }
 
     /**
      * Type into a React-controlled type=number input. Same robust pattern as
