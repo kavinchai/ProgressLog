@@ -6,67 +6,26 @@ const normalizedMap = Object.fromEntries(
   Object.entries(exerciseMap).map(([k, v]) => [k.toLowerCase(), v])
 );
 
-// Maps our muscle group names to the body-muscles library's individual muscle IDs
-const GROUP_TO_MUSCLE_IDS = {
-  chest: [
-    'chest-upper-left', 'chest-upper-right',
-    'chest-lower-left', 'chest-lower-right',
-  ],
-  back: [
-    'lats-upper-left', 'lats-mid-left', 'lats-lower-left',
-    'lats-upper-right', 'lats-mid-right', 'lats-lower-right',
-    'lower-back-erectors-left', 'lower-back-ql-left',
-    'lower-back-erectors-right', 'lower-back-ql-right',
-    'spine',
-  ],
-  shoulders: [
-    'shoulder-front-left', 'shoulder-front-right',
-    'shoulder-side-left', 'shoulder-side-right',
-    'deltoid-rear-left', 'deltoid-rear-right',
-    'traps-upper-left', 'traps-upper-right',
-    'traps-mid-left', 'traps-mid-right',
-    'traps-lower-left', 'traps-lower-right',
-  ],
-  biceps: ['biceps-left', 'biceps-right'],
-  triceps: [
-    'triceps-long-left', 'triceps-lateral-left',
-    'triceps-long-right', 'triceps-lateral-right',
-  ],
-  forearms: [
-    'forearm-left', 'forearm-right',
-    'forearm-flexors-left', 'forearm-extensors-left',
-    'forearm-flexors-right', 'forearm-extensors-right',
-  ],
-  core: [
-    'abs-upper-left', 'abs-upper-right',
-    'abs-lower-left', 'abs-lower-right',
-    'serratus-anterior-left', 'serratus-anterior-right',
-    'obliques-left', 'obliques-right',
-  ],
-  quads: [
-    'quads-left', 'quads-right',
-    'hip-flexor-left', 'hip-flexor-right',
-    'adductors-left', 'adductors-right',
-  ],
-  hamstrings: [
-    'hamstrings-medial-left', 'hamstrings-lateral-left',
-    'hamstrings-medial-right', 'hamstrings-lateral-right',
-  ],
-  glutes: [
-    'gluteus-medius-left', 'gluteus-maximus-left',
-    'gluteus-medius-right', 'gluteus-maximus-right',
-  ],
-  calves: [
-    'calves-gastroc-medial-left', 'calves-gastroc-lateral-left', 'calves-soleus-left',
-    'calves-gastroc-medial-right', 'calves-gastroc-lateral-right', 'calves-soleus-right',
-  ],
+// Maps our muscle group names to react-muscle-highlighter slug names
+const GROUP_TO_SLUGS = {
+  chest: ['chest'],
+  back: ['upper-back', 'lower-back'],
+  shoulders: ['deltoids', 'trapezius'],
+  biceps: ['biceps'],
+  triceps: ['triceps'],
+  forearms: ['forearm'],
+  core: ['abs', 'obliques'],
+  quads: ['quadriceps', 'adductors', 'knees'],
+  hamstrings: ['hamstring'],
+  glutes: ['gluteal'],
+  calves: ['calves', 'tibialis'],
 };
 
-// Reverse map: library muscle ID → our group name
-const MUSCLE_ID_TO_GROUP = {};
-for (const [group, ids] of Object.entries(GROUP_TO_MUSCLE_IDS)) {
-  for (const id of ids) {
-    MUSCLE_ID_TO_GROUP[id] = group;
+// Reverse map: slug → our group name
+const SLUG_TO_GROUP = {};
+for (const [group, slugs] of Object.entries(GROUP_TO_SLUGS)) {
+  for (const slug of slugs) {
+    SLUG_TO_GROUP[slug] = group;
   }
 }
 
@@ -118,15 +77,45 @@ export function getHeatLevel(count) {
   return 'high';
 }
 
-export function getGroupForMuscleId(muscleId) {
-  return MUSCLE_ID_TO_GROUP[muscleId] ?? null;
+export function getGroupForSlug(slug) {
+  return SLUG_TO_GROUP[slug] ?? null;
 }
 
+// Kept for backward compatibility with tests referencing the old name
+export const getGroupForMuscleId = getGroupForSlug;
+
+export function buildBodyData(muscleStats, selectedMuscle) {
+  const data = [];
+  for (const [group, stats] of Object.entries(muscleStats)) {
+    const slugs = GROUP_TO_SLUGS[group];
+    if (!slugs || stats.count === 0) continue;
+
+    const color = stats.count >= 3
+      ? 'rgba(255, 107, 53, 0.9)'   // high intensity — solid orange
+      : 'rgba(255, 107, 53, 0.35)'; // low intensity — light orange
+
+    const isSelected = selectedMuscle === group;
+
+    for (const slug of slugs) {
+      const entry = { slug, color };
+      if (isSelected) {
+        entry.styles = {
+          stroke: '#ff6b35',
+          strokeWidth: 2,
+        };
+      }
+      data.push(entry);
+    }
+  }
+  return data;
+}
+
+// Legacy export kept for backward compatibility with tests
 export function buildBodyState(muscleStats, selectedMuscle) {
   const state = {};
   for (const [group, data] of Object.entries(muscleStats)) {
-    const ids = GROUP_TO_MUSCLE_IDS[group];
-    if (!ids) continue;
+    const slugs = GROUP_TO_SLUGS[group];
+    if (!slugs) continue;
 
     let intensity = 0;
     if (data.count >= 3) intensity = 8;
@@ -134,8 +123,8 @@ export function buildBodyState(muscleStats, selectedMuscle) {
 
     const isSelected = selectedMuscle === group;
 
-    for (const id of ids) {
-      state[id] = { intensity, selected: isSelected };
+    for (const slug of slugs) {
+      state[slug] = { intensity, selected: isSelected };
     }
   }
   return state;

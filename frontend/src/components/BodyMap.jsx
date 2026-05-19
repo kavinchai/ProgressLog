@@ -1,67 +1,42 @@
-import { useRef, useEffect, useCallback } from 'react';
-import { BodyChart, ViewSide } from 'body-muscles';
-import { getGroupForMuscleId, buildBodyState } from '../utils/muscleMapping';
+import { useCallback, useMemo } from 'react';
+import Body from 'react-muscle-highlighter';
+import { getGroupForSlug, buildBodyData } from '../utils/muscleMapping';
 import './BodyMap.css';
 
 export default function BodyMap({ muscleStats, onSelectMuscle, selectedMuscle }) {
-  const frontRef = useRef(null);
-  const backRef = useRef(null);
-  const frontChartRef = useRef(null);
-  const backChartRef = useRef(null);
-
-  const handleMuscleClick = useCallback((muscleId) => {
-    const group = getGroupForMuscleId(muscleId);
+  const handleBodyPartPress = useCallback((part) => {
+    const group = getGroupForSlug(part.slug);
     if (!group) return;
     onSelectMuscle(selectedMuscle === group ? null : group);
   }, [selectedMuscle, onSelectMuscle]);
 
-  useEffect(() => {
-    const bodyState = buildBodyState(muscleStats, selectedMuscle);
-
-    if (!frontChartRef.current && frontRef.current) {
-      frontChartRef.current = new BodyChart(frontRef.current, {
-        view: ViewSide.FRONT,
-        bodyState,
-        onMuscleClick: (id) => handleMuscleClick(id),
-        showViewLabel: false,
-        enableTransitions: true,
-      });
-    }
-
-    if (!backChartRef.current && backRef.current) {
-      backChartRef.current = new BodyChart(backRef.current, {
-        view: ViewSide.BACK,
-        bodyState,
-        onMuscleClick: (id) => handleMuscleClick(id),
-        showViewLabel: false,
-        enableTransitions: true,
-      });
-    }
-
-    return () => {
-      frontChartRef.current?.destroy();
-      backChartRef.current?.destroy();
-      frontChartRef.current = null;
-      backChartRef.current = null;
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const bodyState = buildBodyState(muscleStats, selectedMuscle);
-    frontChartRef.current?.update({
-      bodyState,
-      onMuscleClick: (id) => handleMuscleClick(id),
-    });
-    backChartRef.current?.update({
-      bodyState,
-      onMuscleClick: (id) => handleMuscleClick(id),
-    });
-  }, [muscleStats, selectedMuscle, handleMuscleClick]);
+  const bodyData = useMemo(
+    () => buildBodyData(muscleStats, selectedMuscle),
+    [muscleStats, selectedMuscle]
+  );
 
   return (
     <div className="body-map-container">
-      <div className="body-map-view" ref={frontRef} data-testid="body-map-front" />
-      <div className="body-map-view" ref={backRef} data-testid="body-map-back" />
+      <div className="body-map-view" data-testid="body-map-front">
+        <Body
+          data={bodyData}
+          side="front"
+          gender="male"
+          onBodyPartPress={handleBodyPartPress}
+          defaultFill="#d1d5db"
+          border="#9ca3af"
+        />
+      </div>
+      <div className="body-map-view" data-testid="body-map-back">
+        <Body
+          data={bodyData}
+          side="back"
+          gender="male"
+          onBodyPartPress={handleBodyPartPress}
+          defaultFill="#d1d5db"
+          border="#9ca3af"
+        />
+      </div>
     </div>
   );
 }

@@ -1,21 +1,27 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import BodyMap from '../components/BodyMap';
 
 vi.mock('../components/BodyMap.css', () => ({}));
 
-const mockUpdate = vi.fn();
-const mockDestroy = vi.fn();
+let capturedProps = [];
 
-vi.mock('body-muscles', () => ({
-  BodyChart: vi.fn().mockImplementation(() => ({
-    update: mockUpdate,
-    destroy: mockDestroy,
-  })),
-  ViewSide: { FRONT: 'FRONT', BACK: 'BACK' },
+vi.mock('react-muscle-highlighter', () => ({
+  default: (props) => {
+    capturedProps.push(props);
+    return (
+      <svg data-testid={`body-${props.side}`}>
+        {(props.data || []).map((d, i) => (
+          <path
+            key={i}
+            data-slug={d.slug}
+            onClick={() => props.onBodyPartPress?.({ slug: d.slug })}
+          />
+        ))}
+      </svg>
+    );
+  },
 }));
-
-import { BodyChart } from 'body-muscles';
 
 const emptyStats = {
   chest: { count: 0, exercises: [] },
@@ -33,6 +39,7 @@ const emptyStats = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  capturedProps = [];
 });
 
 describe('BodyMap', () => {
@@ -42,57 +49,56 @@ describe('BodyMap', () => {
     expect(screen.getByTestId('body-map-back')).toBeInTheDocument();
   });
 
-  it('creates two BodyChart instances (front and back)', () => {
+  it('renders two Body components (front and back)', () => {
     render(<BodyMap muscleStats={emptyStats} onSelectMuscle={() => {}} selectedMuscle={null} />);
-    expect(BodyChart).toHaveBeenCalledTimes(2);
-    const calls = BodyChart.mock.calls;
-    expect(calls[0][1].view).toBe('FRONT');
-    expect(calls[1][1].view).toBe('BACK');
+    expect(screen.getByTestId('body-front')).toBeInTheDocument();
+    expect(screen.getByTestId('body-back')).toBeInTheDocument();
   });
 
-  it('passes bodyState to both chart instances', () => {
+  it('passes side="front" and side="back" to the Body components', () => {
     render(<BodyMap muscleStats={emptyStats} onSelectMuscle={() => {}} selectedMuscle={null} />);
-    const calls = BodyChart.mock.calls;
-    expect(calls[0][1].bodyState).toBeDefined();
-    expect(calls[1][1].bodyState).toBeDefined();
+    expect(capturedProps[0].side).toBe('front');
+    expect(capturedProps[1].side).toBe('back');
   });
 
-  it('registers onMuscleClick callback on both charts', () => {
+  it('passes bodyData to both Body components', () => {
     render(<BodyMap muscleStats={emptyStats} onSelectMuscle={() => {}} selectedMuscle={null} />);
-    const calls = BodyChart.mock.calls;
-    expect(typeof calls[0][1].onMuscleClick).toBe('function');
-    expect(typeof calls[1][1].onMuscleClick).toBe('function');
+    expect(capturedProps[0].data).toBeDefined();
+    expect(capturedProps[1].data).toBeDefined();
   });
 
-  it('calls onSelectMuscle with the muscle group when a mapped muscle is clicked', () => {
+  it('passes onBodyPartPress callback to both Body components', () => {
+    render(<BodyMap muscleStats={emptyStats} onSelectMuscle={() => {}} selectedMuscle={null} />);
+    expect(typeof capturedProps[0].onBodyPartPress).toBe('function');
+    expect(typeof capturedProps[1].onBodyPartPress).toBe('function');
+  });
+
+  it('calls onSelectMuscle with the muscle group when a mapped slug is clicked', () => {
     const onSelect = vi.fn();
-    render(<BodyMap muscleStats={emptyStats} onSelectMuscle={onSelect} selectedMuscle={null} />);
-    const clickHandler = BodyChart.mock.calls[0][1].onMuscleClick;
-    clickHandler('chest-upper-left');
+    const stats = { ...emptyStats, chest: { count: 1, exercises: [] } };
+    render(<BodyMap muscleStats={stats} onSelectMuscle={onSelect} selectedMuscle={null} />);
+    const chestPath = screen.getAllByRole('generic').find(el => el.tagName === 'path' && el.dataset.slug === 'chest')
+      || document.querySelector('[data-slug="chest"]');
+    fireEvent.click(chestPath);
     expect(onSelect).toHaveBeenCalledWith('chest');
   });
 
   it('calls onSelectMuscle with null when clicking the already selected muscle group', () => {
     const onSelect = vi.fn();
-    render(<BodyMap muscleStats={emptyStats} onSelectMuscle={onSelect} selectedMuscle="chest" />);
-    const clickHandler = BodyChart.mock.calls[0][1].onMuscleClick;
-    clickHandler('chest-upper-left');
+    const stats = { ...emptyStats, chest: { count: 1, exercises: [] } };
+    render(<BodyMap muscleStats={stats} onSelectMuscle={onSelect} selectedMuscle="chest" />);
+    const chestPath = document.querySelector('[data-slug="chest"]');
+    fireEvent.click(chestPath);
     expect(onSelect).toHaveBeenCalledWith(null);
   });
 
-  it('does not call onSelectMuscle for unmapped muscle IDs (e.g. head)', () => {
+  it('does not call onSelectMuscle for unmapped slugs (e.g. head)', () => {
     const onSelect = vi.fn();
+    // head is not in our GROUP_TO_SLUGS mapping, so even if rendered it should not trigger
+    capturedProps = [];
     render(<BodyMap muscleStats={emptyStats} onSelectMuscle={onSelect} selectedMuscle={null} />);
-    const clickHandler = BodyChart.mock.calls[0][1].onMuscleClick;
-    clickHandler('head');
+    // Manually call the callback with an unmapped slug
+    capturedProps[0].onBodyPartPress({ slug: 'head' });
     expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it('destroys charts on unmount', () => {
-    const { unmount } = render(
-      <BodyMap muscleStats={emptyStats} onSelectMuscle={() => {}} selectedMuscle={null} />
-    );
-    unmount();
-    expect(mockDestroy).toHaveBeenCalledTimes(2);
   });
 });
