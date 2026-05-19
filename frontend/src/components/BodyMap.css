@@ -1,28 +1,38 @@
 .body-map-container {
-  display: flex;
-  gap: var(--space-sm);
-  justify-content: center;
-  align-items: flex-start;
-  width: 100%;
+	display: flex;
+	gap: var(--space-sm);
+	justify-content: center;
+	align-items: flex-start;
+	width: 100%;
 }
 
 .body-map-view {
-  flex: 1;
-  min-width: 0;
-  max-width: 220px;
+	flex: 1;
+	min-width: 0;
+	max-width: 220px;
 }
 
 .body-map-view svg {
-  width: 100%;
-  height: auto;
+	width: 100%;
+	height: auto;
+}
+
+.body-map-view svg path {
+	transition:
+		filter 0.15s ease,
+		fill 0.15s ease;
+}
+
+.body-map-view svg path:hover {
+	filter: brightness(0.85) saturate(6);
 }
 
 @media (max-width: 640px) {
-  .body-map-container {
-    gap: 4px;
-  }
+	.body-map-container {
+		gap: 4px;
+	}
 
-  .body-map-view {
-    max-width: 160px;
-  }
+	.body-map-view {
+		max-width: 160px;
+	}
 }
