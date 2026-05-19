@@ -6,12 +6,15 @@ import useSteps from "../hooks/useSteps";
 import DayDetail from "../components/DayDetail";
 import Modal from "../components/Modal";
 import WeightLineChart from "../components/WeightLineChart";
+import BodyMap from "../components/BodyMap";
+import MuscleDetailPanel from "../components/MuscleDetailPanel";
 import {
 	localDateStr,
 	formatDateShort as formatDate,
 	avg,
 } from "../utils/date";
 import { buildDayRows } from "../utils/stats";
+import { buildMuscleGroupStats } from "../utils/muscleMapping";
 import useWeightUnit from "../hooks/useWeightUnit";
 import "./WeeklyStats.css";
 import "./TotalStats.css";
@@ -68,6 +71,7 @@ export default function TotalStats() {
 	const [rangeKey, setRangeKey] = useState("90d");
 	const [logMonth, setLogMonth] = useState(null);
 	const [picker, setPicker] = useState(null);
+	const [selectedMuscle, setSelectedMuscle] = useState(null);
 
 	const today = localDateStr(new Date());
 
@@ -142,6 +146,11 @@ export default function TotalStats() {
 	const avgSteps = avg(monthRows.map((row) => row.steps));
 	const totalWorkouts = monthRows.filter((row) => row.workout).length;
 
+	const monthWorkouts = (workoutData ?? []).filter((s) =>
+		s.sessionDate.startsWith(activeMonth),
+	);
+	const muscleStats = buildMuscleGroupStats(monthWorkouts);
+
 	const [activeYear, activeMonthNum] = activeMonth.split("-");
 	const allYears = [...new Set(allMonths.map((m) => m.slice(0, 4)))].sort();
 	const monthsWithData = new Set(
@@ -182,6 +191,9 @@ export default function TotalStats() {
 					all time
 				</span>
 			</div>
+
+			<div className="weekly-content-layout">
+				<div className="weekly-main-col">
 
 			{/* Summary */}
 			<div className="section-box total-summary-box">
@@ -459,6 +471,36 @@ export default function TotalStats() {
 					</div>
 				</div>
 			)}
+				</div>
+
+				{/* Right column — muscle body map */}
+				<div className="weekly-bodymap-col">
+					<div className="section-box weekly-bodymap-section">
+						<div className="section-header">
+							<span className="section-title">Muscle Map</span>
+							<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
+								{monthLabel(activeMonth)}
+							</span>
+						</div>
+						<div className="section-body">
+							<BodyMap
+								muscleStats={muscleStats}
+								onSelectMuscle={setSelectedMuscle}
+								selectedMuscle={selectedMuscle}
+							/>
+							<MuscleDetailPanel
+								muscle={selectedMuscle}
+								exercises={
+									selectedMuscle
+										? (muscleStats[selectedMuscle]?.exercises ?? [])
+										: []
+								}
+								periodLabel="this month"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }

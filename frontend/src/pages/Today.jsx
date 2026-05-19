@@ -14,10 +14,14 @@ import MealModal           from '../components/MealModal';
 import WorkoutBuilderModal from '../components/WorkoutBuilderModal';
 import EditExerciseModal   from '../components/EditExerciseModal';
 import ConfirmDeleteModal  from '../components/ConfirmDeleteModal';
+import BodyMap from '../components/BodyMap';
+import MuscleDetailPanel from '../components/MuscleDetailPanel';
 import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 import { mergeWorkoutSessions } from '../utils/stats';
+import { buildMuscleGroupStats } from '../utils/muscleMapping';
 import useWeightUnit from '../hooks/useWeightUnit';
 import { localDateStr, formatDateFull as fmtDate } from '../utils/date';
+import '../pages/WeeklyStats.css';
 import './Today.css';
 
 const TODAY = localDateStr(new Date());
@@ -134,6 +138,7 @@ export default function Today() {
   const [appendBlankExercise, setAppendBlankExercise] = useState(false);
   const [templateMenuOpen,setTemplateMenuOpen] = useState(false);
   const [confirmDelete,    setConfirmDelete]    = useState(null);
+  const [selectedMuscle,   setSelectedMuscle]   = useState(null);
   const templateBtnRef = useRef(null);
 
   const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
@@ -165,6 +170,8 @@ export default function Today() {
   const exerciseGroups = todayWorkoutEntry?.exerciseSets?.length
     ? groupByExercise(todayWorkoutEntry.exerciseSets)
     : [];
+
+  const muscleStats = buildMuscleGroupStats(todayWorkoutSessions);
 
   // PR comparison: lexicographic (weight, setCount, maxRepsInSet). Higher is better.
   // Returns >0 if a beats b, <0 if a loses to b, 0 if tied.
@@ -248,6 +255,9 @@ export default function Today() {
           {todayNutritionEntry?.dayType ?? 'training'}
         </button>
       </div>
+
+      <div className="weekly-content-layout">
+        <div className="weekly-main-col">
 
       {/* WEIGHT */}
       <div className="section-box">
@@ -516,6 +526,31 @@ export default function Today() {
           ) : (
             <span className="muted">No entry for today.</span>
           )}
+        </div>
+      </div>
+
+        </div>
+
+        {/* Right column — muscle body map */}
+        <div className="weekly-bodymap-col">
+          <div className="section-box weekly-bodymap-section">
+            <div className="section-header">
+              <span className="section-title">Muscle Map</span>
+              <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>today</span>
+            </div>
+            <div className="section-body">
+              <BodyMap
+                muscleStats={muscleStats}
+                onSelectMuscle={setSelectedMuscle}
+                selectedMuscle={selectedMuscle}
+              />
+              <MuscleDetailPanel
+                muscle={selectedMuscle}
+                exercises={selectedMuscle ? (muscleStats[selectedMuscle]?.exercises ?? []) : []}
+                periodLabel="today"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
