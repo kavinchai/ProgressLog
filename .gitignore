@@ -61,6 +61,9 @@ e2e-tests/test-results/
 e2e-tests/test-output/
 e2e-tests/bin/
 
+# ── CI test reports ────────────────────────────────
+frontend/test-results.xml
+
 # ── Misc ────────────────────────────────────────────
 *.tmp
 *.bak

@@ -24,7 +24,19 @@ jobs:
 
       - name: Run frontend tests
         working-directory: frontend
-        run: npm test
+        run: npm test -- --reporter=default --reporter=junit --outputFile.junit=test-results.xml
+
+      - name: Summarize frontend failures
+        if: failure()
+        run: python3 "$GITHUB_WORKSPACE/.github/scripts/parse-junit.py" "Frontend tests" "frontend/test-results.xml"
+
+      - name: Upload frontend test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: frontend/test-results.xml
+          if-no-files-found: ignore
 
   backend-tests:
     name: Backend Tests
@@ -60,6 +72,10 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         run: gradle test --no-daemon
+
+      - name: Summarize backend failures
+        if: failure()
+        run: python3 "$GITHUB_WORKSPACE/.github/scripts/parse-junit.py" "Backend tests" "backend/build/test-results/test/*.xml"
 
       - name: Upload test report
         if: always()
@@ -141,28 +157,9 @@ jobs:
             -Dtest.user.username="$TEST_USERNAME" \
             -Dtest.user.password="$TEST_PASSWORD"
 
-      - name: Summarize E2E test failures
+      - name: Summarize E2E failures
         if: failure()
-        working-directory: e2e-tests
-        run: |
-          echo "── failing tests (from build/test-results/test/*.xml) ──"
-          shopt -s nullglob globstar
-          xml_files=(build/test-results/test/**/*.xml)
-          if [ ${#xml_files[@]} -eq 0 ]; then
-            echo "No JUnit XML results found under build/test-results/test/."
-          else
-            # Grep each XML for <failure ...> / <error ...> with up to 20 lines of context
-            # so the message attribute and stack-trace body land in the log.
-            for f in "${xml_files[@]}"; do
-              if grep -qE '<(failure|error)[ />]' "$f"; then
-                echo
-                echo "── $f ──"
-                grep -nE -A 20 '<(failure|error)[ />]' "$f" | sed 's/^/  /'
-              fi
-            done
-          fi
-          echo
-          echo "Full HTML report is in the 'e2e-test-reports' artifact (build/reports/tests/test/index.html)."
+        run: python3 "$GITHUB_WORKSPACE/.github/scripts/parse-junit.py" "E2E tests" "e2e-tests/build/test-results/test/**/*.xml"
 
       - name: Dump container logs on failure
         if: failure()
