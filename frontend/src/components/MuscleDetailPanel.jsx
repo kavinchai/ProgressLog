@@ -1,6 +1,6 @@
 import './MuscleDetailPanel.css';
 
-export default function MuscleDetailPanel({ muscle, exercises }) {
+export default function MuscleDetailPanel({ muscle, exercises, periodLabel = 'this week' }) {
   if (!muscle) return null;
 
   return (
@@ -13,7 +13,7 @@ export default function MuscleDetailPanel({ muscle, exercises }) {
       </div>
       <div className="muscle-detail-body">
         {exercises.length === 0 ? (
-          <p className="muscle-detail-empty">No exercises targeted this muscle group this week.</p>
+          <p className="muscle-detail-empty">No exercises targeted this muscle group {periodLabel}.</p>
         ) : (
           <div className="muscle-exercise-list">
             {exercises.map((ex, i) => (
