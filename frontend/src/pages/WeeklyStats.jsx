@@ -25,9 +25,11 @@ export default function WeeklyStats() {
 	const [selectedMuscle, setSelectedMuscle] = useState(null);
 	const { unit, toDisplay } = useWeightUnit();
 
-	const muscleStats = buildMuscleGroupStats(workoutData);
-
 	const days = getCurrentWeek();
+	const daySet = new Set(days);
+	const weekWorkouts = (workoutData ?? []).filter(s => daySet.has(s.sessionDate));
+	const muscleStats = buildMuscleGroupStats(weekWorkouts);
+
 	const today = localDateStr(new Date());
 
 	const rows = buildDayRows(
