@@ -76,7 +76,10 @@ export function getMuscleGroups() {
 
 export function getExerciseMuscles(exerciseName) {
   if (!exerciseName) return [];
-  return normalizedMap[exerciseName.toLowerCase()] ?? [];
+  const key = exerciseName.toLowerCase().trim();
+  return normalizedMap[key]
+    ?? normalizedMap[key.replace(/s$/, '')]
+    ?? [];
 }
 
 export function buildMuscleGroupStats(workoutData) {
