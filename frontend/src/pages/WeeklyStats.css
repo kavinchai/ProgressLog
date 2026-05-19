@@ -1,6 +1,26 @@
 .weekly-page {
-  max-width: 860px;
   width: 100%;
+}
+
+/* Two-column layout: existing stats left, body map right */
+.weekly-content-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.weekly-main-col {
+  min-width: 0;
+}
+
+.weekly-bodymap-col {
+  position: sticky;
+  top: var(--space-lg);
+}
+
+.weekly-bodymap-section {
+  overflow: visible;
 }
 
 .weekly-header {
@@ -201,6 +221,17 @@
   font-weight: var(--fw-semibold);
 }
 
+/* ── Tablet — stack body map below ── */
+@media (max-width: 960px) {
+  .weekly-content-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-bodymap-col {
+    position: static;
+  }
+}
+
 /* ── Mobile ── */
 @media (max-width: 640px) {
   /* Tighten page header */
@@ -278,6 +309,15 @@
   .day-exercise-row {
     flex-wrap: wrap;
     gap: 6px;
+  }
+
+  .weekly-content-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .weekly-bodymap-col {
+    position: static;
   }
 }
 

@@ -1,0 +1,70 @@
+.body-map-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.body-map-svg {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+}
+
+/* Body outline */
+.body-outline {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.2;
+}
+
+/* Labels */
+.body-label {
+  font-family: var(--font);
+  font-size: 8px;
+  font-weight: var(--fw-semibold);
+  fill: var(--muted);
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Muscle regions */
+.muscle-region path {
+  stroke: var(--border-strong);
+  stroke-width: 0.8;
+  transition: fill var(--transition-normal), opacity var(--transition-normal);
+}
+
+/* Heat levels */
+.heat-none path {
+  fill: transparent;
+}
+
+.heat-low path {
+  fill: var(--accent);
+  opacity: 0.3;
+}
+
+.heat-high path {
+  fill: var(--accent);
+  opacity: 0.85;
+}
+
+/* Hover */
+.muscle-region:hover path {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  filter: brightness(1.1);
+}
+
+/* Selected */
+.muscle-selected path {
+  stroke: var(--accent-deep);
+  stroke-width: 2;
+}
+
+/* Tooltip label on hover */
+.muscle-region {
+  cursor: pointer;
+}

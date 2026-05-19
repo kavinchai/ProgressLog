@@ -1,0 +1,68 @@
+.muscle-detail-panel {
+  margin-top: var(--space-sm);
+}
+
+.muscle-detail-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.muscle-detail-title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--fg);
+  text-transform: capitalize;
+}
+
+.muscle-detail-count {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-weight: var(--fw-semibold);
+}
+
+.muscle-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.muscle-detail-empty {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-style: italic;
+}
+
+.muscle-exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.muscle-exercise-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.muscle-exercise-name {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--fg);
+}
+
+.muscle-exercise-sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.muscle-set-detail {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+}
