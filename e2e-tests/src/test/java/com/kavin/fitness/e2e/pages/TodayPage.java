@@ -23,8 +23,11 @@ public class TodayPage {
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
-    /** nth-child offset: today-page-header is 1st child, section-boxes start at 2nd */
-    private int cssNth(int sectionIdx) { return sectionIdx + 1; }
+    /**
+     * Section-boxes (Weight, Steps, Workout, Nutrition) are direct children
+     * of .weekly-main-col, occupying positions 1..4 in that order.
+     */
+    private int cssNth(int sectionIdx) { return sectionIdx; }
 
     private WebElement sectionBtnContains(int sectionIdx, String text) {
         return driver.findElement(By.xpath(
