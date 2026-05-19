@@ -23,7 +23,7 @@ export default function BodyMap({ muscleStats, onSelectMuscle, selectedMuscle })
         view: ViewSide.FRONT,
         bodyState,
         onMuscleClick: (id) => handleMuscleClick(id),
-        showViewLabel: true,
+        showViewLabel: false,
         enableTransitions: true,
       });
     }
@@ -33,7 +33,7 @@ export default function BodyMap({ muscleStats, onSelectMuscle, selectedMuscle })
         view: ViewSide.BACK,
         bodyState,
         onMuscleClick: (id) => handleMuscleClick(id),
-        showViewLabel: true,
+        showViewLabel: false,
         enableTransitions: true,
       });
     }
