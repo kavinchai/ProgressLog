@@ -4,6 +4,8 @@ import {
   getExerciseMuscles,
   buildMuscleGroupStats,
   getHeatLevel,
+  getGroupForMuscleId,
+  buildBodyState,
 } from '../utils/muscleMapping';
 
 describe('getMuscleGroups', () => {
@@ -180,5 +182,52 @@ describe('getHeatLevel', () => {
     expect(getHeatLevel(3)).toBe('high');
     expect(getHeatLevel(5)).toBe('high');
     expect(getHeatLevel(10)).toBe('high');
+  });
+});
+
+describe('getGroupForMuscleId', () => {
+  it('maps library muscle IDs to our muscle groups', () => {
+    expect(getGroupForMuscleId('chest-upper-left')).toBe('chest');
+    expect(getGroupForMuscleId('biceps-right')).toBe('biceps');
+    expect(getGroupForMuscleId('quads-left')).toBe('quads');
+    expect(getGroupForMuscleId('gluteus-maximus-right')).toBe('glutes');
+    expect(getGroupForMuscleId('lats-upper-left')).toBe('back');
+  });
+
+  it('returns null for unmapped muscle IDs', () => {
+    expect(getGroupForMuscleId('head')).toBeNull();
+    expect(getGroupForMuscleId('foot-left')).toBeNull();
+    expect(getGroupForMuscleId('unknown-muscle')).toBeNull();
+  });
+});
+
+describe('buildBodyState', () => {
+  const emptyStats = Object.fromEntries(
+    getMuscleGroups().map(g => [g, { count: 0, exercises: [] }])
+  );
+
+  it('returns body state with intensity 0 for untrained muscles', () => {
+    const state = buildBodyState(emptyStats, null);
+    expect(state['chest-upper-left'].intensity).toBe(0);
+    expect(state['chest-upper-left'].selected).toBe(false);
+  });
+
+  it('returns low intensity for 1-2 exercise count', () => {
+    const stats = { ...emptyStats, chest: { count: 2, exercises: [] } };
+    const state = buildBodyState(stats, null);
+    expect(state['chest-upper-left'].intensity).toBe(3);
+  });
+
+  it('returns high intensity for 3+ exercise count', () => {
+    const stats = { ...emptyStats, chest: { count: 4, exercises: [] } };
+    const state = buildBodyState(stats, null);
+    expect(state['chest-upper-left'].intensity).toBe(8);
+  });
+
+  it('marks selected muscle group IDs as selected', () => {
+    const state = buildBodyState(emptyStats, 'chest');
+    expect(state['chest-upper-left'].selected).toBe(true);
+    expect(state['chest-lower-right'].selected).toBe(true);
+    expect(state['biceps-left'].selected).toBe(false);
   });
 });
