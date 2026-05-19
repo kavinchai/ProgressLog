@@ -4,7 +4,8 @@ import {
   getExerciseMuscles,
   buildMuscleGroupStats,
   getHeatLevel,
-  getGroupForMuscleId,
+  getGroupForSlug,
+  buildBodyData,
   buildBodyState,
 } from '../utils/muscleMapping';
 
@@ -185,49 +186,101 @@ describe('getHeatLevel', () => {
   });
 });
 
-describe('getGroupForMuscleId', () => {
-  it('maps library muscle IDs to our muscle groups', () => {
-    expect(getGroupForMuscleId('chest-upper-left')).toBe('chest');
-    expect(getGroupForMuscleId('biceps-right')).toBe('biceps');
-    expect(getGroupForMuscleId('quads-left')).toBe('quads');
-    expect(getGroupForMuscleId('gluteus-maximus-right')).toBe('glutes');
-    expect(getGroupForMuscleId('lats-upper-left')).toBe('back');
+describe('getGroupForSlug', () => {
+  it('maps library slugs to our muscle groups', () => {
+    expect(getGroupForSlug('chest')).toBe('chest');
+    expect(getGroupForSlug('biceps')).toBe('biceps');
+    expect(getGroupForSlug('quadriceps')).toBe('quads');
+    expect(getGroupForSlug('gluteal')).toBe('glutes');
+    expect(getGroupForSlug('upper-back')).toBe('back');
+    expect(getGroupForSlug('deltoids')).toBe('shoulders');
+    expect(getGroupForSlug('abs')).toBe('core');
   });
 
-  it('returns null for unmapped muscle IDs', () => {
-    expect(getGroupForMuscleId('head')).toBeNull();
-    expect(getGroupForMuscleId('foot-left')).toBeNull();
-    expect(getGroupForMuscleId('unknown-muscle')).toBeNull();
+  it('returns null for unmapped slugs', () => {
+    expect(getGroupForSlug('head')).toBeNull();
+    expect(getGroupForSlug('feet')).toBeNull();
+    expect(getGroupForSlug('unknown-muscle')).toBeNull();
   });
 });
 
-describe('buildBodyState', () => {
+describe('buildBodyData', () => {
+  const emptyStats = Object.fromEntries(
+    getMuscleGroups().map(g => [g, { count: 0, exercises: [] }])
+  );
+
+  it('returns empty array for untrained muscles', () => {
+    const data = buildBodyData(emptyStats, null);
+    expect(data).toEqual([]);
+  });
+
+  it('returns low opacity color for 1-2 exercise count', () => {
+    const stats = { ...emptyStats, chest: { count: 2, exercises: [] } };
+    const data = buildBodyData(stats, null);
+    const chestEntry = data.find(d => d.slug === 'chest');
+    expect(chestEntry).toBeDefined();
+    expect(chestEntry.color).toBe('rgba(255, 107, 53, 0.35)');
+  });
+
+  it('returns high opacity color for 3+ exercise count', () => {
+    const stats = { ...emptyStats, chest: { count: 4, exercises: [] } };
+    const data = buildBodyData(stats, null);
+    const chestEntry = data.find(d => d.slug === 'chest');
+    expect(chestEntry).toBeDefined();
+    expect(chestEntry.color).toBe('rgba(255, 107, 53, 0.9)');
+  });
+
+  it('adds stroke styles for the selected muscle group', () => {
+    const stats = { ...emptyStats, chest: { count: 1, exercises: [] } };
+    const data = buildBodyData(stats, 'chest');
+    const chestEntry = data.find(d => d.slug === 'chest');
+    expect(chestEntry.styles).toBeDefined();
+    expect(chestEntry.styles.stroke).toBe('#ff6b35');
+    expect(chestEntry.styles.strokeWidth).toBe(2);
+  });
+
+  it('does not add stroke styles for non-selected muscle groups', () => {
+    const stats = { ...emptyStats, chest: { count: 1, exercises: [] }, biceps: { count: 1, exercises: [] } };
+    const data = buildBodyData(stats, 'chest');
+    const bicepsEntry = data.find(d => d.slug === 'biceps');
+    expect(bicepsEntry.styles).toBeUndefined();
+  });
+
+  it('maps muscle groups to correct slugs', () => {
+    const stats = { ...emptyStats, back: { count: 1, exercises: [] } };
+    const data = buildBodyData(stats, null);
+    const slugs = data.map(d => d.slug);
+    expect(slugs).toContain('upper-back');
+    expect(slugs).toContain('lower-back');
+  });
+});
+
+describe('buildBodyState (legacy)', () => {
   const emptyStats = Object.fromEntries(
     getMuscleGroups().map(g => [g, { count: 0, exercises: [] }])
   );
 
   it('returns body state with intensity 0 for untrained muscles', () => {
     const state = buildBodyState(emptyStats, null);
-    expect(state['chest-upper-left'].intensity).toBe(0);
-    expect(state['chest-upper-left'].selected).toBe(false);
+    expect(state['chest'].intensity).toBe(0);
+    expect(state['chest'].selected).toBe(false);
   });
 
   it('returns low intensity for 1-2 exercise count', () => {
     const stats = { ...emptyStats, chest: { count: 2, exercises: [] } };
     const state = buildBodyState(stats, null);
-    expect(state['chest-upper-left'].intensity).toBe(3);
+    expect(state['chest'].intensity).toBe(3);
   });
 
   it('returns high intensity for 3+ exercise count', () => {
     const stats = { ...emptyStats, chest: { count: 4, exercises: [] } };
     const state = buildBodyState(stats, null);
-    expect(state['chest-upper-left'].intensity).toBe(8);
+    expect(state['chest'].intensity).toBe(8);
   });
 
-  it('marks selected muscle group IDs as selected', () => {
+  it('marks selected muscle group slugs as selected', () => {
     const state = buildBodyState(emptyStats, 'chest');
-    expect(state['chest-upper-left'].selected).toBe(true);
-    expect(state['chest-lower-right'].selected).toBe(true);
-    expect(state['biceps-left'].selected).toBe(false);
+    expect(state['chest'].selected).toBe(true);
+    expect(state['biceps'].selected).toBe(false);
   });
 });

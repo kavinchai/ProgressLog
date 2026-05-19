@@ -17,26 +17,6 @@
   height: auto;
 }
 
-/* Override body-muscles library colors to orange opacity scheme */
-/* intensity 0 (untrained) — keep default gray, no override needed */
-
-/* intensity 3 (low / 1-2 exercises) — light orange */
-.body-map-view path[fill="#eab308"] {
-  fill: #ff6b35 !important;
-  fill-opacity: 0.35 !important;
-}
-
-/* intensity 8 (high / 3+ exercises) — solid orange */
-.body-map-view path[fill="#dc2626"] {
-  fill: #ff6b35 !important;
-  fill-opacity: 0.9 !important;
-}
-
-/* selected state glow in orange */
-.body-map-view path[stroke="#ffffff"] {
-  stroke: #ff6b35 !important;
-}
-
 @media (max-width: 640px) {
   .body-map-container {
     gap: 4px;
