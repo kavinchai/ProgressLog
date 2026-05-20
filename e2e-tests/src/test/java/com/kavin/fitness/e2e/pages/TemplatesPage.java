@@ -1,142 +1,107 @@
 package com.kavin.fitness.e2e.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.StaleElementReferenceException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
-import java.util.List;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class TemplatesPage {
-    private final WebDriver driver;
-    private final WebDriverWait wait;
+    private final Page page;
 
-    private static final By PAGE_TITLE = By.cssSelector(".templates-title");
-    private static final By NEW_BTN = By.xpath(
-            "//button[contains(@class,'btn-primary') and text()='+ New']");
-    private static final By TEMPLATE_CARDS = By.cssSelector(".template-card");
-    private static final By TEMPLATE_NAMES = By.cssSelector(".template-card-name");
-    private static final By EMPTY_MESSAGE = By.cssSelector(".templates-empty");
+    private static final String PAGE_TITLE = ".templates-title";
+    private static final String NEW_BTN = "button.btn-primary:has-text(\"+ New\")";
+    private static final String TEMPLATE_CARDS = ".template-card";
+    private static final String TEMPLATE_NAMES = ".template-card-name";
+    private static final String EMPTY_MESSAGE = ".templates-empty";
 
-    private static final By MODAL_TITLE = By.cssSelector(".modal-title");
-    private static final By TEMPLATE_NAME_INPUT = By.cssSelector(
-            ".modal-box input[placeholder*='Push Day' i]");
-    private static final By MODAL_SAVE = By.xpath(
-            "//div[contains(@class,'modal')]//button[contains(@class,'btn-primary') " +
-                    "and (text()='Save' or contains(text(),'Saving'))]");
-    private static final By MODAL_CANCEL = By.xpath(
-            "//div[contains(@class,'modal')]//button[contains(@class,'btn-ghost')]");
+    private static final String MODAL_TITLE = ".modal-title";
+    private static final String TEMPLATE_NAME_INPUT = ".modal-box input[placeholder*='Push Day' i]";
+    private static final String MODAL_SAVE =
+            ".modal-box >> button.btn-primary:has-text(\"Save\"), .modal-box >> button.btn-primary:has-text(\"Saving\")";
+    private static final String MODAL_CANCEL = ".modal-box >> button.btn-ghost";
 
-    public TemplatesPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    public TemplatesPage(Page page) {
+        this.page = page;
     }
 
     public void open(String baseUrl) {
-        driver.get(baseUrl + "/templates");
-        wait.until(ExpectedConditions.visibilityOfElementLocated(PAGE_TITLE));
+        page.navigate(baseUrl + "/templates");
+        page.locator(PAGE_TITLE).waitFor();
     }
 
     public String getPageTitle() {
-        return driver.findElement(PAGE_TITLE).getText();
+        return page.locator(PAGE_TITLE).innerText();
     }
 
     public void clickNewTemplate() {
-        driver.findElement(NEW_BTN).click();
+        page.locator(NEW_BTN).click();
     }
 
     public void waitForModalVisible(String expectedTitle) {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(MODAL_TITLE));
-        String actual = driver.findElement(MODAL_TITLE).getText();
+        page.locator(MODAL_TITLE).waitFor();
+        String actual = page.locator(MODAL_TITLE).innerText();
         if (!actual.contains(expectedTitle)) {
             throw new AssertionError("Expected modal title '" + expectedTitle + "' but got: " + actual);
         }
     }
 
     public void enterTemplateName(String name) {
-        WebElement el = driver.findElement(TEMPLATE_NAME_INPUT);
-        el.clear();
-        el.sendKeys(name);
+        page.locator(TEMPLATE_NAME_INPUT).fill(name);
     }
 
     public void clickModalSave() {
-        driver.findElement(MODAL_SAVE).click();
+        page.locator(MODAL_SAVE).first().click();
     }
 
     public void clickModalCancel() {
-        driver.findElement(MODAL_CANCEL).click();
+        page.locator(MODAL_CANCEL).click();
     }
 
     public int getTemplateCount() {
-        return driver.findElements(TEMPLATE_CARDS).size();
+        return page.locator(TEMPLATE_CARDS).count();
     }
 
     public boolean isTemplateVisible(String name) {
-        return driver.findElements(TEMPLATE_NAMES).stream()
-                .anyMatch(el -> el.getText().contains(name));
+        return page.locator(TEMPLATE_NAMES, new Page.LocatorOptions().setHasText(name)).count() > 0;
     }
 
     public void waitForTemplateVisible(String name) {
-        wait.until(d -> d.findElements(TEMPLATE_NAMES).stream()
-                .anyMatch(el -> el.getText().contains(name)));
+        page.locator(TEMPLATE_NAMES, new Page.LocatorOptions().setHasText(name)).first().waitFor();
     }
 
     public void clickDeleteTemplate(String name) {
-        List<WebElement> cards = driver.findElements(TEMPLATE_CARDS);
-        for (WebElement card : cards) {
-            if (card.getText().contains(name)) {
-                card.findElement(By.cssSelector(".btn-danger")).click();
-                confirmDeleteAndDismiss();
-                return;
-            }
+        Locator card = page.locator(TEMPLATE_CARDS, new Page.LocatorOptions().setHasText(name));
+        if (card.count() == 0) {
+            throw new AssertionError("Template '" + name + "' not found");
         }
-        throw new AssertionError("Template '" + name + "' not found");
+        card.first().locator(".btn-danger").click();
+        confirmDeleteAndDismiss();
     }
 
     public void clickEditTemplate(String name) {
-        List<WebElement> cards = driver.findElements(TEMPLATE_CARDS);
-        for (WebElement card : cards) {
-            if (card.getText().contains(name)) {
-                List<WebElement> btns = card.findElements(By.cssSelector(".btn.btn-sm"));
-                for (WebElement btn : btns) {
-                    if ("Edit".equals(btn.getText())) {
-                        btn.click();
-                        return;
-                    }
-                }
-            }
+        Locator card = page.locator(TEMPLATE_CARDS, new Page.LocatorOptions().setHasText(name));
+        if (card.count() == 0) {
+            throw new AssertionError("Template '" + name + "' not found");
         }
-        throw new AssertionError("Template '" + name + "' not found");
+        card.first().locator("button.btn.btn-sm", new Locator.LocatorOptions().setHasText("Edit")).click();
     }
 
     public void clickUseTemplate(String name) {
-        List<WebElement> cards = driver.findElements(TEMPLATE_CARDS);
-        for (WebElement card : cards) {
-            if (card.getText().contains(name)) {
-                card.findElement(By.cssSelector(".btn-primary")).click();
-                return;
-            }
+        Locator card = page.locator(TEMPLATE_CARDS, new Page.LocatorOptions().setHasText(name));
+        if (card.count() == 0) {
+            throw new AssertionError("Template '" + name + "' not found");
         }
-        throw new AssertionError("Template '" + name + "' not found");
+        card.first().locator(".btn-primary").click();
     }
 
     public void waitForTemplateRemoved(String name) {
-        wait.until(d -> {
-            try {
-                return d.findElements(TEMPLATE_NAMES).stream()
-                        .noneMatch(el -> el.getText().contains(name));
-            } catch (StaleElementReferenceException e) {
-                return false;
-            }
-        });
+        page.locator(TEMPLATE_NAMES, new Page.LocatorOptions().setHasText(name))
+                .first()
+                .waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
     }
 
     public boolean isEmptyMessageVisible() {
-        List<WebElement> els = driver.findElements(EMPTY_MESSAGE);
-        return !els.isEmpty() && els.get(0).isDisplayed();
+        Locator el = page.locator(EMPTY_MESSAGE);
+        return el.count() > 0 && el.first().isVisible();
     }
 
     /**
@@ -144,13 +109,9 @@ public class TemplatesPage {
      * click "Confirm Delete", wait for success, then click "Done".
      */
     private void confirmDeleteAndDismiss() {
-        By confirmBtn = By.xpath(
-                "//div[contains(@class,'modal')]//button[contains(text(),'Confirm Delete')]");
-        wait.until(ExpectedConditions.elementToBeClickable(confirmBtn)).click();
-        By doneBtn = By.xpath(
-                "//div[contains(@class,'modal')]//button[text()='Done']");
-        wait.until(ExpectedConditions.elementToBeClickable(doneBtn)).click();
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(
-                By.cssSelector(".modal-title")));
+        page.locator(".modal-box >> button:has-text(\"Confirm Delete\")").click();
+        page.locator(".modal-box >> button:has-text(\"Done\")").click();
+        page.locator(MODAL_TITLE).first().waitFor(
+                new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
     }
 }

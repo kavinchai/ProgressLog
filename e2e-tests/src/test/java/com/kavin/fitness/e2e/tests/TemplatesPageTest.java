@@ -10,7 +10,7 @@ public class TemplatesPageTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        templates = new TemplatesPage(driver);
+        templates = new TemplatesPage(page);
         templates.open(baseUrl);
     }
 

@@ -1,44 +1,31 @@
 package com.kavin.fitness.e2e.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
-import java.util.List;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 
 public class WorkoutBuilderModal {
-    private final WebDriver driver;
-    private final WebDriverWait wait;
+    private final Page page;
 
-    private static final By TITLE = By.cssSelector(".modal-title");
-    private static final By SESSION_NAME = By.cssSelector("input[placeholder*='push, pull, legs' i]");
-    private static final By ADD_EXERCISE = By.xpath(
-            "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ exercise')]");
-    private static final By ADD_RUN = By.xpath(
-            "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ run')]");
-    private static final By ADD_TIMED = By.xpath(
-            "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ timed')]");
-    private static final By SAVE = By.xpath(
-            "//div[contains(@class,'modal')]//button[translate(text()," +
-                    "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']");
-    private static final By EXERCISE_NAME_INPUTS = By.cssSelector("input[placeholder*='exercise name' i]");
-    private static final By ADD_SET_BTNS = By.xpath(
-            "//button[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ set')]");
-    private static final By TYPE_BTNS = By.cssSelector(".wbm-type-toggle");
+    private static final String TITLE = ".modal-title";
+    private static final String SESSION_NAME = "input[placeholder*='push, pull, legs' i]";
+    private static final String ADD_EXERCISE =
+            ".modal-box >> button:has-text(/^\\s*\\+\\s*exercise\\s*$/i)";
+    private static final String ADD_RUN =
+            ".modal-box >> button:has-text(/^\\s*\\+\\s*run\\s*$/i)";
+    private static final String ADD_TIMED =
+            ".modal-box >> button:has-text(/^\\s*\\+\\s*timed\\s*$/i)";
+    private static final String SAVE = ".modal-box >> button:has-text(/^\\s*save\\s*$/i)";
+    private static final String EXERCISE_NAME_INPUTS = "input[placeholder*='exercise name' i]";
+    private static final String ADD_SET_BTNS = "button:has-text(/^\\s*\\+\\s*set\\s*$/i)";
+    private static final String TYPE_BTNS = ".wbm-type-toggle";
 
-    public WorkoutBuilderModal(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    public WorkoutBuilderModal(Page page) {
+        this.page = page;
     }
 
     public WorkoutBuilderModal waitUntilVisible() {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(TITLE));
-        String actual = driver.findElement(TITLE).getText();
+        page.locator(TITLE).waitFor();
+        String actual = page.locator(TITLE).innerText();
         if (!actual.contains("Log Workout") && !actual.contains("Edit Workout")) {
             throw new AssertionError("Expected 'Log Workout' or 'Edit Workout' modal but got: " + actual);
         }
@@ -46,107 +33,67 @@ public class WorkoutBuilderModal {
     }
 
     public void enterSessionName(String name) {
-        WebElement el = driver.findElement(SESSION_NAME);
-        el.clear();
-        el.sendKeys(name);
+        page.locator(SESSION_NAME).fill(name);
     }
 
     public void clickAddExercise() {
-        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_EXERCISE));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        page.locator(ADD_EXERCISE).first().click();
     }
 
     public void clickAddRun() {
-        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_RUN));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        page.locator(ADD_RUN).first().click();
     }
 
     public void clickAddTimed() {
-        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(ADD_TIMED));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        page.locator(ADD_TIMED).first().click();
     }
 
     public void waitForExerciseCount(int count) {
-        wait.until(d -> d.findElements(EXERCISE_NAME_INPUTS).size() >= count);
+        Locator inputs = page.locator(EXERCISE_NAME_INPUTS);
+        // Poll until enough rows exist. The locator's nth helper waits implicitly.
+        inputs.nth(count - 1).waitFor();
     }
 
     public void enterExerciseName(int idx, String name) {
-        wait.until(d -> d.findElements(EXERCISE_NAME_INPUTS).size() > idx);
-        WebElement el = driver.findElements(EXERCISE_NAME_INPUTS).get(idx);
-        el.clear();
-        el.sendKeys(name);
+        page.locator(EXERCISE_NAME_INPUTS).nth(idx).fill(name);
     }
 
     public void enterWeight(int idx, String weight) {
-        By inputs = By.cssSelector(".wbm-set-row input[placeholder='0']");
-        wait.until(d -> d.findElements(inputs).size() > idx * 2);
-        typeIntoNumberInput(driver.findElements(inputs).get(idx * 2), weight);
+        page.locator(".wbm-set-row input[placeholder='0']").nth(idx * 2).fill(weight);
     }
 
     public void enterReps(int idx, String reps) {
-        By inputs = By.cssSelector(".wbm-set-row input[placeholder='0']");
-        wait.until(d -> d.findElements(inputs).size() > idx * 2 + 1);
-        typeIntoNumberInput(driver.findElements(inputs).get(idx * 2 + 1), reps);
+        page.locator(".wbm-set-row input[placeholder='0']").nth(idx * 2 + 1).fill(reps);
     }
 
     public void enterDistance(int idx, String distance) {
-        By inputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
-        wait.until(d -> d.findElements(inputs).size() > idx * 3);
-        typeIntoNumberInput(driver.findElements(inputs).get(idx * 3), distance);
+        page.locator(".wbm-set-row--cardio input[placeholder='0']").nth(idx * 3).fill(distance);
     }
 
     public void enterRunMinutes(int idx, String minutes) {
-        By inputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
-        wait.until(d -> d.findElements(inputs).size() > idx * 3 + 1);
-        typeIntoNumberInput(driver.findElements(inputs).get(idx * 3 + 1), minutes);
+        page.locator(".wbm-set-row--cardio input[placeholder='0']").nth(idx * 3 + 1).fill(minutes);
     }
 
     public void enterRunSeconds(int idx, String seconds) {
-        By inputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
-        wait.until(d -> d.findElements(inputs).size() > idx * 3 + 2);
-        typeIntoNumberInput(driver.findElements(inputs).get(idx * 3 + 2), seconds);
+        page.locator(".wbm-set-row--cardio input[placeholder='0']").nth(idx * 3 + 2).fill(seconds);
     }
 
     public void enterDuration(int idx, String h, String m, String s) {
-        By cardioInputs = By.cssSelector(".wbm-set-row--cardio input[placeholder='0']");
-        wait.until(d -> d.findElements(cardioInputs).size() > idx * 3 + 2);
-        // Re-query before each field to get a fresh reference after React re-renders.
-        typeIntoNumberInput(driver.findElements(cardioInputs).get(idx * 3),     h);
-        typeIntoNumberInput(driver.findElements(cardioInputs).get(idx * 3 + 1), m);
-        typeIntoNumberInput(driver.findElements(cardioInputs).get(idx * 3 + 2), s);
-    }
-
-    /**
-     * Type into a React-controlled type=number input.
-     * Uses scroll+click to focus, then Ctrl+A to select all existing content,
-     * then sendKeys to type the value. This fires real keyboard events that
-     * React's onChange handles reliably in headless Chrome on Linux.
-     * Avoids clear() which can fight with React's controlled value reconciliation.
-     */
-    private void typeIntoNumberInput(WebElement el, String value) {
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", el);
-        el.click();
-        el.sendKeys(Keys.chord(Keys.CONTROL, "a"));
-        el.sendKeys(value);
+        Locator cardioInputs = page.locator(".wbm-set-row--cardio input[placeholder='0']");
+        cardioInputs.nth(idx * 3).fill(h);
+        cardioInputs.nth(idx * 3 + 1).fill(m);
+        cardioInputs.nth(idx * 3 + 2).fill(s);
     }
 
     public void clickAddSet(int exerciseIdx) {
-        wait.until(d -> d.findElements(ADD_SET_BTNS).size() > exerciseIdx);
-        WebElement btn = driver.findElements(ADD_SET_BTNS).get(exerciseIdx);
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        page.locator(ADD_SET_BTNS).nth(exerciseIdx).click();
     }
 
     public void toggleExerciseType(int exerciseIdx) {
-        wait.until(d -> d.findElements(TYPE_BTNS).size() > exerciseIdx);
-        WebElement btn = driver.findElements(TYPE_BTNS).get(exerciseIdx);
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        page.locator(TYPE_BTNS).nth(exerciseIdx).click();
     }
 
     public void save() {
-        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(SAVE));
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        page.locator(SAVE).first().click();
     }
 }

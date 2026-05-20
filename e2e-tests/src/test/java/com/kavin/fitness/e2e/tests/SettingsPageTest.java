@@ -10,7 +10,7 @@ public class SettingsPageTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        settings = new SettingsPage(driver);
+        settings = new SettingsPage(page);
         settings.open(baseUrl);
     }
 
@@ -78,7 +78,7 @@ public class SettingsPageTest extends BaseTest {
         settings.open(baseUrl);
 
         step("verify goals persisted");
-        wait.until(d -> !"".equals(settings.getTrainingCalories()));
+        page.waitForCondition(() -> !"".equals(settings.getTrainingCalories()));
         String training = settings.getTrainingCalories();
         String rest = settings.getRestCalories();
         String protein = settings.getProteinTarget();

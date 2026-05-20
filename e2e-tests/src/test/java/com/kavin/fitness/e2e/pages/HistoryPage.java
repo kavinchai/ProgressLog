@@ -1,156 +1,132 @@
 package com.kavin.fitness.e2e.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
-import java.util.List;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 
 public class HistoryPage {
-    private final WebDriver driver;
-    private final WebDriverWait wait;
+    private final Page page;
 
-    private static final By PAGE_TABS = By.cssSelector(".page-tabs .page-tab");
-    private static final By ACTIVE_TAB = By.cssSelector(".page-tabs .page-tab-active");
-    private static final By WEEKLY_TITLE = By.xpath(
-            "//span[contains(@class,'weekly-title') and contains(text(),'Weekly')]");
-    private static final By TOTAL_TITLE = By.xpath(
-            "//span[contains(@class,'weekly-title') and contains(text(),'Total')]");
-    private static final By WEEKLY_TABLE = By.cssSelector(".weekly-table");
-    private static final By WEEKLY_ROWS = By.cssSelector(".weekly-table tbody .weekly-row");
-    private static final By TODAY_ROW = By.cssSelector(".weekly-table tbody .today-row");
-    private static final By CALENDAR = By.cssSelector(".calendar-grid");
-    private static final By CALENDAR_CELLS = By.cssSelector(".calendar-cell:not(.calendar-cell-pad)");
-    private static final By MONTH_NAV = By.cssSelector(".month-nav");
-    private static final By MONTH_PICKER = By.cssSelector(".month-picker");
-    private static final By DAY_MODAL_TITLE = By.cssSelector(".modal-title");
-    private static final By RANGE_BUTTONS = By.cssSelector(".range-selector .btn");
+    private static final String PAGE_TABS = ".page-tabs .page-tab";
+    private static final String ACTIVE_TAB = ".page-tabs .page-tab-active";
+    private static final String WEEKLY_TITLE = "span.weekly-title:has-text(\"Weekly\")";
+    private static final String TOTAL_TITLE = "span.weekly-title:has-text(\"Total\")";
+    private static final String WEEKLY_TABLE = ".weekly-table";
+    private static final String WEEKLY_ROWS = ".weekly-table tbody .weekly-row";
+    private static final String TODAY_ROW = ".weekly-table tbody .today-row";
+    private static final String CALENDAR = ".calendar-grid";
+    private static final String CALENDAR_CELLS = ".calendar-cell:not(.calendar-cell-pad)";
+    private static final String MONTH_NAV = ".month-nav";
+    private static final String MONTH_PICKER = ".month-picker";
+    private static final String DAY_MODAL_TITLE = ".modal-title";
+    private static final String RANGE_BUTTONS = ".range-selector .btn";
 
-    public HistoryPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    public HistoryPage(Page page) {
+        this.page = page;
     }
 
     public void openWeekly(String baseUrl) {
-        driver.get(baseUrl + "/history/weekly");
-        wait.until(ExpectedConditions.visibilityOfElementLocated(WEEKLY_TITLE));
+        page.navigate(baseUrl + "/history/weekly");
+        page.locator(WEEKLY_TITLE).waitFor();
     }
 
     public void openTotal(String baseUrl) {
-        driver.get(baseUrl + "/history/total");
-        wait.until(ExpectedConditions.visibilityOfElementLocated(TOTAL_TITLE));
+        page.navigate(baseUrl + "/history/total");
+        page.locator(TOTAL_TITLE).waitFor();
     }
 
-    public List<String> getTabLabels() {
-        return driver.findElements(PAGE_TABS).stream().map(WebElement::getText).toList();
+    public java.util.List<String> getTabLabels() {
+        return page.locator(PAGE_TABS).allInnerTexts();
     }
 
     public String getActiveTabLabel() {
-        List<WebElement> els = driver.findElements(ACTIVE_TAB);
-        return els.isEmpty() ? "" : els.get(0).getText();
+        Locator el = page.locator(ACTIVE_TAB);
+        return el.count() == 0 ? "" : el.first().innerText();
     }
 
     public void clickTab(String label) {
-        driver.findElement(By.xpath(
-                "//nav[contains(@class,'page-tabs')]//a[text()='" + label + "']")).click();
+        page.locator("nav.page-tabs a", new Page.LocatorOptions().setHasText(label)).click();
     }
 
     // ── Weekly ───────────────────────────────────────────────────────────────
 
     public boolean isWeeklyTableVisible() {
-        return !driver.findElements(WEEKLY_TABLE).isEmpty();
+        return page.locator(WEEKLY_TABLE).count() > 0;
     }
 
     public int getWeeklyRowCount() {
-        return driver.findElements(WEEKLY_ROWS).size();
+        return page.locator(WEEKLY_ROWS).count();
     }
 
     public boolean hasTodayRow() {
-        return !driver.findElements(TODAY_ROW).isEmpty();
+        return page.locator(TODAY_ROW).count() > 0;
     }
 
     public void clickFirstWeeklyRow() {
-        driver.findElements(WEEKLY_ROWS).get(0).click();
+        page.locator(WEEKLY_ROWS).first().click();
     }
 
     public boolean isExpandedRowVisible() {
-        return !driver.findElements(By.cssSelector(".weekly-table tbody .detail-row")).isEmpty();
+        return page.locator(".weekly-table tbody .detail-row").count() > 0;
     }
 
     public boolean dayDetailContains(String text) {
-        return !driver.findElements(By.xpath(
-                "//tr[contains(@class,'detail-row')]//*[contains(text(),'" + text + "')]"))
-                .isEmpty();
+        return page.locator("tr.detail-row :text(\"" + text + "\")").count() > 0;
     }
 
     // ── Total ────────────────────────────────────────────────────────────────
 
     public boolean isCalendarVisible() {
-        return !driver.findElements(CALENDAR).isEmpty();
+        return page.locator(CALENDAR).count() > 0;
     }
 
     public int getCalendarCellCount() {
-        return driver.findElements(CALENDAR_CELLS).size();
+        return page.locator(CALENDAR_CELLS).count();
     }
 
     public boolean isMonthNavVisible() {
-        return !driver.findElements(MONTH_NAV).isEmpty();
+        return page.locator(MONTH_NAV).count() > 0;
     }
 
     public void clickCalendarDay(String isoDate) {
-        WebElement cell = wait.until(ExpectedConditions.elementToBeClickable(
-                By.cssSelector("[data-testid='calendar-day-" + isoDate + "']")));
-        cell.click();
+        page.locator("[data-testid='calendar-day-" + isoDate + "']").click();
     }
 
     public void waitForDayModal() {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(DAY_MODAL_TITLE));
+        page.locator(DAY_MODAL_TITLE).waitFor();
     }
 
     public boolean dayModalContains(String text) {
-        return !driver.findElements(By.xpath(
-                "//div[contains(@class,'modal-box')]//*[contains(text(),'" + text + "')]"))
-                .isEmpty();
+        return page.locator(".modal-box :text(\"" + text + "\")").count() > 0;
     }
 
     public void closeDayModal() {
-        WebElement closeBtn = driver.findElement(By.cssSelector(".modal-box .modal-close"));
-        closeBtn.click();
+        page.locator(".modal-box .modal-close").click();
     }
 
     public boolean isRangeButtonVisible(String label) {
-        return driver.findElements(RANGE_BUTTONS).stream()
-                .anyMatch(el -> el.getText().equals(label));
+        return page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label)).count() > 0;
     }
 
     public void clickRangeButton(String label) {
-        for (WebElement btn : driver.findElements(RANGE_BUTTONS)) {
-            if (btn.getText().equals(label)) {
-                btn.click();
-                return;
-            }
+        Locator btn = page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label));
+        if (btn.count() == 0) {
+            throw new AssertionError("Range button '" + label + "' not found");
         }
-        throw new AssertionError("Range button '" + label + "' not found");
+        btn.first().click();
     }
 
     public boolean isRangeButtonActive(String label) {
-        for (WebElement btn : driver.findElements(RANGE_BUTTONS)) {
-            if (btn.getText().equals(label)) {
-                return btn.getAttribute("class").contains("range-active");
-            }
-        }
-        return false;
+        Locator btn = page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label));
+        if (btn.count() == 0) return false;
+        String classes = btn.first().getAttribute("class");
+        return classes != null && classes.contains("range-active");
     }
 
     public void clickMonthPickerToggle() {
-        WebElement label = driver.findElement(By.cssSelector(".month-nav-label .btn"));
-        label.click();
+        page.locator(".month-nav-label .btn").click();
     }
 
     public boolean isMonthPickerVisible() {
-        return !driver.findElements(MONTH_PICKER).isEmpty();
+        return page.locator(MONTH_PICKER).count() > 0;
     }
 }

@@ -15,8 +15,8 @@ public class WeightTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        today = new TodayPage(driver);
-        modal = new WeightModal(driver);
+        today = new TodayPage(page);
+        modal = new WeightModal(page);
 
         // Ensure today has no weight entry before we start — addNewWeightEntry
         // expects the "+ Add" button, which the UI only renders when no entry

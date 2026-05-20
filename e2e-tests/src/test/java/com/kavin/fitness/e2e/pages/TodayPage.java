@@ -1,115 +1,101 @@
 package com.kavin.fitness.e2e.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
-import java.time.Duration;
 import java.util.List;
 
 public class TodayPage {
-    private final WebDriver driver;
-    private final WebDriverWait wait;
+    private final Page page;
 
+    // 0-based here; section-box index used by tests is 1-based to match the
+    // original Selenium suite. Subtract one before .nth() lookups.
     private static final int WEIGHT_IDX = 1;
     private static final int STEPS_IDX = 2;
     private static final int WORKOUT_IDX = 3;
     private static final int NUTRITION_IDX = 4;
 
-    public TodayPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    public TodayPage(Page page) {
+        this.page = page;
     }
 
-    /**
-     * Section-boxes (Weight, Steps, Workout, Nutrition) are direct children
-     * of .weekly-main-col, occupying positions 1..4 in that order.
-     */
-    private int cssNth(int sectionIdx) { return sectionIdx; }
-
-    private WebElement sectionBtnContains(int sectionIdx, String text) {
-        return driver.findElement(By.xpath(
-                "(//div[contains(@class,'section-box')])[" + sectionIdx +
-                        "]//button[contains(text(),'" + text + "')]"));
+    private Locator section(int sectionIdx) {
+        return page.locator(".section-box").nth(sectionIdx - 1);
     }
 
-    private WebElement sectionBtnExact(int sectionIdx, String text) {
-        return driver.findElement(By.xpath(
-                "(//div[contains(@class,'section-box')])[" + sectionIdx +
-                        "]//button[text()='" + text + "']"));
+    private Locator sectionBtnContains(int sectionIdx, String text) {
+        return section(sectionIdx).locator("button", new Locator.LocatorOptions().setHasText(text));
+    }
+
+    private Locator sectionBtnExact(int sectionIdx, String text) {
+        return section(sectionIdx).locator("button:text-is(\"" + text + "\")");
     }
 
     // ── Weight ───────────────────────────────────────────────────────────────
 
-    public void clickAddWeight() { sectionBtnContains(WEIGHT_IDX, "+ Add").click(); }
-    public void clickEditWeight() { sectionBtnExact(WEIGHT_IDX, "Edit").click(); }
+    public void clickAddWeight() {
+        sectionBtnContains(WEIGHT_IDX, "+ Add").first().click();
+    }
+
+    public void clickEditWeight() {
+        sectionBtnExact(WEIGHT_IDX, "Edit").first().click();
+    }
 
     public void waitForWeightValue(String expected) {
-        wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                By.cssSelector(".section-box:nth-child(" + cssNth(WEIGHT_IDX) + ") .today-data-value"),
-                expected));
+        section(WEIGHT_IDX).locator(".today-data-value",
+                new Locator.LocatorOptions().setHasText(expected)).waitFor();
     }
 
     // ── Steps ────────────────────────────────────────────────────────────────
 
     public void clickAddSteps() {
-        List<WebElement> addBtns = driver.findElements(By.xpath(
-                "(//div[contains(@class,'section-box')])[" + STEPS_IDX +
-                        "]//button[contains(text(),'+ Add')]"));
-        if (!addBtns.isEmpty()) {
-            addBtns.get(0).click();
+        Locator addBtns = sectionBtnContains(STEPS_IDX, "+ Add");
+        if (addBtns.count() > 0) {
+            addBtns.first().click();
         } else {
-            sectionBtnExact(STEPS_IDX, "Edit").click();
+            sectionBtnExact(STEPS_IDX, "Edit").first().click();
         }
     }
 
     public void clickDeleteSteps() {
-        driver.findElement(By.xpath(
-                "(//div[contains(@class,'section-box')])[" + STEPS_IDX +
-                        "]//button[contains(@class,'btn-danger')]")).click();
+        section(STEPS_IDX).locator("button.btn-danger").click();
         confirmDeleteAndDismiss();
     }
 
     public void enterSteps(String value) {
-        WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector(".today-steps-edit input[type='number']")));
-        input.clear();
-        input.sendKeys(value);
+        page.locator(".today-steps-edit input[type='number']").fill(value);
     }
 
     public void saveSteps() {
-        driver.findElement(By.cssSelector(".today-steps-edit .btn-primary")).click();
+        page.locator(".today-steps-edit .btn-primary").click();
     }
 
     public void waitForStepsValue(String expected) {
         if ("--".equals(expected)) {
-            wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                    By.cssSelector(".section-box:nth-child(" + cssNth(STEPS_IDX) + ") .section-body"),
-                    "No steps logged"));
+            section(STEPS_IDX).locator(".section-body",
+                    new Locator.LocatorOptions().setHasText("No steps logged")).waitFor();
         } else {
-            wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                    By.cssSelector(".section-box:nth-child(" + cssNth(STEPS_IDX) + ") .today-data-value"),
-                    expected));
+            section(STEPS_IDX).locator(".today-data-value",
+                    new Locator.LocatorOptions().setHasText(expected)).waitFor();
         }
     }
 
     // ── Nutrition / Meals ────────────────────────────────────────────────────
 
     public void clickAddMeal() {
-        driver.findElement(By.xpath(
-                "//button[contains(text(),'+ Add Meal') or contains(text(),'+ Meal')]")).click();
+        page.locator("button", new Page.LocatorOptions()
+                .setHasText(java.util.regex.Pattern.compile("\\+ (Add )?Meal"))).first().click();
     }
 
     public void waitForMealDisplayed(String name) {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//span[contains(@class,'meal-card-name') and contains(text(),'" + name + "')]")));
+        page.locator("span.meal-card-name",
+                new Page.LocatorOptions().setHasText(name)).first().waitFor();
     }
 
     /** Count of meal cards currently displayed. */
     public int getMealCount() {
-        return driver.findElements(By.cssSelector(".meal-card-name")).size();
+        return page.locator(".meal-card-name").count();
     }
 
     /**
@@ -117,127 +103,107 @@ public class TodayPage {
      * UI assigns when a meal is saved without an explicit name.
      */
     public boolean hasDefaultNamedMeal() {
-        return driver.findElements(By.cssSelector(".meal-card-name")).stream()
-                .anyMatch(el -> el.getText().matches("Meal \\d+"));
+        return page.locator(".meal-card-name",
+                new Page.LocatorOptions().setHasText(
+                        java.util.regex.Pattern.compile("Meal \\d+"))).count() > 0;
     }
 
     public void waitForMealCount(int expected) {
-        wait.until(d -> d.findElements(By.cssSelector(".meal-card-name")).size() == expected);
+        // No direct count wait; poll via the locator size.
+        page.waitForCondition(() -> page.locator(".meal-card-name").count() == expected);
     }
 
     public void waitForNutritionTotal(String text) {
-        wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                By.cssSelector(".nutrition-totals"), text));
+        page.locator(".nutrition-totals",
+                new Page.LocatorOptions().setHasText(text)).waitFor();
     }
 
     // ── Workout ──────────────────────────────────────────────────────────────
 
-    private static final By WORKOUT_DELETE_BTN = By.xpath(
-            "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                    "]//button[contains(@class,'btn-danger') and text()='Delete']");
-    private static final By WORKOUT_START_BTN = By.xpath(
-            "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                    "]//button[contains(text(),'Start Workout')]");
-    private static final By WORKOUT_ADD_EXERCISE_BTN = By.xpath(
-            "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                    "]//button[contains(text(),'+ Exercise')]");
+    private Locator workoutDeleteBtn() {
+        return section(WORKOUT_IDX).locator("button.btn-danger:text-is(\"Delete\")");
+    }
 
-    /**
-     * Wait for the workout section to finish its initial render. Either
-     * "Start Workout" (no session) or "Delete" (existing session) must be
-     * visible. Without this, downstream interactions race against React.
-     */
+    private Locator workoutStartBtn() {
+        return section(WORKOUT_IDX).locator("button",
+                new Locator.LocatorOptions().setHasText("Start Workout"));
+    }
+
+    private Locator workoutAddExerciseBtn() {
+        return section(WORKOUT_IDX).locator("button",
+                new Locator.LocatorOptions().setHasText("+ Exercise"));
+    }
+
+    /** Wait until the workout section has rendered its initial state. */
     private void waitForWorkoutSectionReady() {
-        wait.until(d ->
-                !d.findElements(WORKOUT_START_BTN).isEmpty()
-                || !d.findElements(WORKOUT_DELETE_BTN).isEmpty());
+        page.waitForCondition(() ->
+                workoutStartBtn().count() > 0 || workoutDeleteBtn().count() > 0);
     }
 
     public void deleteWorkoutIfExists() {
         waitForWorkoutSectionReady();
-        // Loop: an account can have multiple workout sessions per day if
-        // seeded directly via the API. Click Delete until none remain.
-        while (!driver.findElements(WORKOUT_DELETE_BTN).isEmpty()) {
+        // Loop because an account can have multiple workout sessions per day.
+        while (workoutDeleteBtn().count() > 0) {
             try {
-                driver.findElements(WORKOUT_DELETE_BTN).get(0).click();
+                workoutDeleteBtn().first().click();
             } catch (Exception ignored) {
-                // Stale element from a re-render — re-query on next iteration.
                 continue;
             }
             confirmDeleteAndDismiss();
-            // After a delete, either another Delete remains (more sessions) or
-            // Start Workout appears (last one gone). Either way is "ready".
-            wait.until(d ->
-                    !d.findElements(WORKOUT_START_BTN).isEmpty()
-                    || !d.findElements(WORKOUT_DELETE_BTN).isEmpty());
+            page.waitForCondition(() ->
+                    workoutStartBtn().count() > 0 || workoutDeleteBtn().count() > 0);
         }
     }
 
     public void clickAddWorkout() {
         waitForWorkoutSectionReady();
-        wait.until(d -> {
-            List<WebElement> starts = d.findElements(WORKOUT_START_BTN);
-            for (WebElement btn : starts) {
-                try { if (btn.isDisplayed() && btn.isEnabled()) { btn.click(); return true; } }
-                catch (Exception ignored) {}
-            }
-            List<WebElement> exercises = d.findElements(WORKOUT_ADD_EXERCISE_BTN);
-            for (WebElement btn : exercises) {
-                try { if (btn.isDisplayed() && btn.isEnabled()) { btn.click(); return true; } }
-                catch (Exception ignored) {}
-            }
-            return false;
-        });
+        if (workoutStartBtn().count() > 0) {
+            workoutStartBtn().first().click();
+        } else if (workoutAddExerciseBtn().count() > 0) {
+            workoutAddExerciseBtn().first().click();
+        } else {
+            throw new AssertionError("Neither Start Workout nor + Exercise visible in workout section");
+        }
     }
 
     public void renameWorkoutSession(String newName) {
         sectionBtnExact(WORKOUT_IDX, "Rename").click();
-        WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector(".section-box:nth-child(" + cssNth(WORKOUT_IDX) + ") input[type='text']")));
-        input.clear();
-        input.sendKeys(newName);
-        driver.findElement(By.xpath(
-                "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                        "]//button[contains(@class,'btn-primary') and text()='Save']")).click();
+        Locator input = section(WORKOUT_IDX).locator("input[type='text']");
+        input.fill(newName);
+        section(WORKOUT_IDX).locator("button.btn-primary:text-is(\"Save\")").click();
     }
 
     public void waitForSessionName(String name) {
-        wait.until(ExpectedConditions.textToBePresentInElementLocated(
-                By.cssSelector(".section-box:nth-child(" + cssNth(WORKOUT_IDX) +
-                        ") .section-title .muted"),
-                name));
+        section(WORKOUT_IDX).locator(".section-title .muted",
+                new Locator.LocatorOptions().setHasText(name)).waitFor();
     }
 
     // ── Exercises ────────────────────────────────────────────────────────────
 
     public void waitForExercise(String name) {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//span[contains(@class,'exercise-card-name') and contains(text(),'" + name + "')]")));
+        page.locator("span.exercise-card-name",
+                new Page.LocatorOptions().setHasText(name)).first().waitFor();
     }
 
     public void waitForExerciseDetail(String exerciseName, String detail) {
         try {
-            wait.until(d -> {
-                List<WebElement> cards = d.findElements(
-                        By.xpath("//div[contains(@class,'exercise-card')]"));
-                for (WebElement card : cards) {
-                    String cardText = card.getText();
-                    if (cardText.contains(exerciseName) && cardText.contains(detail)) return true;
+            page.waitForCondition(() -> {
+                List<Locator> cards = page.locator(".exercise-card").all();
+                for (Locator card : cards) {
+                    String text = card.innerText();
+                    if (text.contains(exerciseName) && text.contains(detail)) return true;
                 }
                 return false;
             });
-        } catch (org.openqa.selenium.TimeoutException e) {
-            // Dump card contents to make diagnosis possible — we couldn't find the
-            // expected detail, so the test author needs to see what's actually rendered.
+        } catch (com.microsoft.playwright.TimeoutError e) {
             System.err.println(">>> waitForExerciseDetail FAILED — expected name='" + exerciseName
                     + "' detail='" + detail + "'. Dumping all exercise-card text:");
-            List<WebElement> cards = driver.findElements(
-                    By.xpath("//div[contains(@class,'exercise-card')]"));
+            List<Locator> cards = page.locator(".exercise-card").all();
             if (cards.isEmpty()) {
                 System.err.println("    (no exercise-card elements on page)");
             } else {
                 for (int i = 0; i < cards.size(); i++) {
-                    String text = cards.get(i).getText().replace("\n", " | ");
+                    String text = cards.get(i).innerText().replace("\n", " | ");
                     System.err.println("    card[" + i + "]: " + text);
                 }
             }
@@ -246,29 +212,26 @@ public class TodayPage {
     }
 
     public void assertExerciseDoesNotShowWeight(String name) {
-        List<WebElement> items = driver.findElements(By.xpath(
-                "//div[contains(@class,'exercise-card')]" +
-                        "[.//span[contains(text(),'" + name + "')]]" +
-                        "[.//span[contains(text(),'lbs')]]"));
-        if (!items.isEmpty()) {
+        // exercise-card containing both the name and an 'lbs' label = bad.
+        int matches = page.locator(".exercise-card",
+                new Page.LocatorOptions().setHasText(name))
+                .locator(":text(\"lbs\")").count();
+        if (matches > 0) {
             throw new AssertionError("Expected no weight display for " + name + " but found one");
         }
     }
 
     public void clickEditExercise(int index) {
-        By editBtns = By.cssSelector(".exercise-card .btn.btn-sm");
-        wait.until(d -> d.findElements(editBtns).size() > index);
-        driver.findElements(editBtns).get(index).click();
+        page.locator(".exercise-card .btn.btn-sm").nth(index).click();
     }
 
     public boolean isTextVisible(String text) {
-        return !driver.findElements(By.xpath("//*[contains(text(),'" + text + "')]")).isEmpty();
+        return page.locator(":text(\"" + text + "\")").count() > 0;
     }
 
     public boolean isExerciseVisible(String name) {
-        return !driver.findElements(By.xpath(
-                "//span[contains(@class,'exercise-card-name') and contains(text(),'" + name + "')]"))
-                .isEmpty();
+        return page.locator("span.exercise-card-name",
+                new Page.LocatorOptions().setHasText(name)).count() > 0;
     }
 
     /**
@@ -276,13 +239,9 @@ public class TodayPage {
      * click "Confirm Delete", wait for success, then click "Done".
      */
     private void confirmDeleteAndDismiss() {
-        By confirmBtn = By.xpath(
-                "//div[contains(@class,'modal')]//button[contains(text(),'Confirm Delete')]");
-        wait.until(ExpectedConditions.elementToBeClickable(confirmBtn)).click();
-        By doneBtn = By.xpath(
-                "//div[contains(@class,'modal')]//button[text()='Done']");
-        wait.until(ExpectedConditions.elementToBeClickable(doneBtn)).click();
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(
-                By.cssSelector(".modal-title")));
+        page.locator(".modal-box >> button:has-text(\"Confirm Delete\")").click();
+        page.locator(".modal-box >> button:has-text(\"Done\")").click();
+        page.locator(".modal-title").first().waitFor(
+                new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
     }
 }

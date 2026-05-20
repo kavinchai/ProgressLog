@@ -16,7 +16,7 @@ public class LeaderboardPageTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        leaderboard = new LeaderboardPage(driver);
+        leaderboard = new LeaderboardPage(page);
         leaderboard.open(baseUrl);
     }
 

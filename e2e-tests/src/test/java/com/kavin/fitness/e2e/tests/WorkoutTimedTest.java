@@ -14,9 +14,9 @@ public class WorkoutTimedTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        today = new TodayPage(driver);
-        workout = new WorkoutBuilderModal(driver);
-        editModal = new EditExerciseModal(driver);
+        today = new TodayPage(page);
+        workout = new WorkoutBuilderModal(page);
+        editModal = new EditExerciseModal(page);
         navigateToToday();
         today.deleteWorkoutIfExists();
     }

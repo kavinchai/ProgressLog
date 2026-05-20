@@ -1,170 +1,158 @@
 package com.kavin.fitness.e2e.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
-import java.time.Duration;
 import java.util.List;
 
 public class ProgressPage {
-    private final WebDriver driver;
-    private final WebDriverWait wait;
+    private final Page page;
 
-    private static final By PAGE_TABS = By.cssSelector(".page-tabs .page-tab");
-    private static final By ACTIVE_TAB = By.cssSelector(".page-tabs .page-tab-active");
-    private static final By STRENGTH_HEADER = By.xpath("//div[contains(@class,'strength-header')]/h1");
-    private static final By CARDIO_HEADER = By.xpath("//div[contains(@class,'cardio-header')]/h1");
-    private static final By STRENGTH_SIDEBAR = By.cssSelector("[data-testid='strength-sidebar']");
-    private static final By CARDIO_SIDEBAR = By.cssSelector("[data-testid='cardio-sidebar']");
-    private static final By STRENGTH_SIDEBAR_ITEMS = By.cssSelector(".strength-sidebar-item");
-    private static final By CARDIO_SIDEBAR_ITEMS = By.cssSelector(".cardio-sidebar-item");
-    private static final By STRENGTH_RANGE_BTNS = By.cssSelector(".strength-range-btn");
-    private static final By SESSION_TABLE = By.cssSelector("[data-testid='session-history-table']");
-    private static final By STRENGTH_EMPTY = By.cssSelector(".strength-empty");
-    private static final By CARDIO_EMPTY = By.cssSelector(".cardio-empty");
-    private static final By LOADING = By.cssSelector(".loading-state");
+    private static final String PAGE_TABS = ".page-tabs .page-tab";
+    private static final String ACTIVE_TAB = ".page-tabs .page-tab-active";
+    private static final String STRENGTH_HEADER = ".strength-header h1";
+    private static final String CARDIO_HEADER = ".cardio-header h1";
+    private static final String STRENGTH_SIDEBAR = "[data-testid='strength-sidebar']";
+    private static final String CARDIO_SIDEBAR = "[data-testid='cardio-sidebar']";
+    private static final String STRENGTH_SIDEBAR_ITEMS = ".strength-sidebar-item";
+    private static final String CARDIO_SIDEBAR_ITEMS = ".cardio-sidebar-item";
+    private static final String STRENGTH_RANGE_BTNS = ".strength-range-btn";
+    private static final String SESSION_TABLE = "[data-testid='session-history-table']";
+    private static final String STRENGTH_EMPTY = ".strength-empty";
+    private static final String CARDIO_EMPTY = ".cardio-empty";
+    private static final String LOADING = ".loading-state";
 
-    public ProgressPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+    public ProgressPage(Page page) {
+        this.page = page;
     }
 
     public void openStrength(String baseUrl) {
-        driver.get(baseUrl + "/progress/strength");
+        page.navigate(baseUrl + "/progress/strength");
         waitForLoaded();
     }
 
     public void openCardio(String baseUrl) {
-        driver.get(baseUrl + "/progress/cardio");
+        page.navigate(baseUrl + "/progress/cardio");
         waitForLoaded();
     }
 
-    /** Wait until the loading spinner is gone (whichever tab we landed on). */
     private void waitForLoaded() {
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(LOADING));
+        Locator loading = page.locator(LOADING);
+        if (loading.count() > 0) {
+            loading.first().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+        }
     }
 
     public List<String> getTabLabels() {
-        return driver.findElements(PAGE_TABS).stream().map(WebElement::getText).toList();
+        return page.locator(PAGE_TABS).allInnerTexts();
     }
 
     public String getActiveTabLabel() {
-        List<WebElement> els = driver.findElements(ACTIVE_TAB);
-        return els.isEmpty() ? "" : els.get(0).getText();
+        Locator el = page.locator(ACTIVE_TAB);
+        return el.count() == 0 ? "" : el.first().innerText();
     }
 
     public void clickTab(String label) {
-        driver.findElement(By.xpath(
-                "//nav[contains(@class,'page-tabs')]//a[text()='" + label + "']")).click();
+        page.locator("nav.page-tabs a", new Page.LocatorOptions().setHasText(label)).click();
         waitForLoaded();
     }
 
     // ── Strength ─────────────────────────────────────────────────────────────
 
     public boolean isStrengthHeaderVisible() {
-        return !driver.findElements(STRENGTH_HEADER).isEmpty();
+        return page.locator(STRENGTH_HEADER).count() > 0;
     }
 
     public boolean isStrengthSidebarVisible() {
-        return !driver.findElements(STRENGTH_SIDEBAR).isEmpty();
+        return page.locator(STRENGTH_SIDEBAR).count() > 0;
     }
 
     public boolean isStrengthEmptyStateVisible() {
-        return !driver.findElements(STRENGTH_EMPTY).isEmpty();
+        return page.locator(STRENGTH_EMPTY).count() > 0;
     }
 
     public int getStrengthExerciseCount() {
-        return driver.findElements(STRENGTH_SIDEBAR_ITEMS).size();
+        return page.locator(STRENGTH_SIDEBAR_ITEMS).count();
     }
 
     public void clickStrengthExercise(String name) {
-        for (WebElement btn : driver.findElements(STRENGTH_SIDEBAR_ITEMS)) {
-            if (btn.findElement(By.cssSelector(".strength-sidebar-item-name")).getText().equals(name)) {
-                btn.click();
-                return;
-            }
+        Locator item = page.locator(STRENGTH_SIDEBAR_ITEMS, new Page.LocatorOptions().setHas(
+                page.locator(".strength-sidebar-item-name", new Page.LocatorOptions().setHasText(name))));
+        if (item.count() == 0) {
+            throw new AssertionError("Strength exercise '" + name + "' not in sidebar");
         }
-        throw new AssertionError("Strength exercise '" + name + "' not in sidebar");
+        item.first().click();
     }
 
     public boolean isStrengthExerciseActive(String name) {
-        for (WebElement btn : driver.findElements(STRENGTH_SIDEBAR_ITEMS)) {
-            if (btn.findElement(By.cssSelector(".strength-sidebar-item-name")).getText().equals(name)) {
-                return btn.getAttribute("class").contains("strength-sidebar-item-active");
-            }
-        }
-        return false;
+        Locator item = page.locator(STRENGTH_SIDEBAR_ITEMS, new Page.LocatorOptions().setHas(
+                page.locator(".strength-sidebar-item-name", new Page.LocatorOptions().setHasText(name))));
+        if (item.count() == 0) return false;
+        String classes = item.first().getAttribute("class");
+        return classes != null && classes.contains("strength-sidebar-item-active");
     }
 
     public boolean isSessionTableVisible() {
-        return !driver.findElements(SESSION_TABLE).isEmpty();
+        return page.locator(SESSION_TABLE).count() > 0;
     }
 
     public int getSessionRowCount() {
-        return driver.findElements(By.cssSelector("[data-testid='session-history-table'] tbody tr")).size();
+        return page.locator("[data-testid='session-history-table'] tbody tr").count();
     }
 
     public String getCurrentMaxValue() {
-        List<WebElement> els = driver.findElements(By.cssSelector(
-                "[data-testid='stat-current-max'] .strength-stat-value"));
-        return els.isEmpty() ? "" : els.get(0).getText();
+        Locator el = page.locator("[data-testid='stat-current-max'] .strength-stat-value");
+        return el.count() == 0 ? "" : el.first().innerText();
     }
 
     public boolean hasPRRow() {
-        return !driver.findElements(By.cssSelector(".strength-pr-row")).isEmpty();
+        return page.locator(".strength-pr-row").count() > 0;
     }
 
     public boolean hasPRBadge() {
-        return !driver.findElements(By.cssSelector(".strength-pr-tag")).isEmpty();
+        return page.locator(".strength-pr-tag").count() > 0;
     }
 
     public void clickStrengthRange(String label) {
-        for (WebElement btn : driver.findElements(STRENGTH_RANGE_BTNS)) {
-            if (btn.getText().equals(label)) {
-                btn.click();
-                return;
-            }
+        Locator btn = page.locator(STRENGTH_RANGE_BTNS, new Page.LocatorOptions().setHasText(label));
+        if (btn.count() == 0) {
+            throw new AssertionError("Strength range '" + label + "' not found");
         }
-        throw new AssertionError("Strength range '" + label + "' not found");
+        btn.first().click();
     }
 
     public boolean isStrengthRangeActive(String label) {
-        for (WebElement btn : driver.findElements(STRENGTH_RANGE_BTNS)) {
-            if (btn.getText().equals(label)) {
-                return btn.getAttribute("class").contains("strength-range-btn-active");
-            }
-        }
-        return false;
+        Locator btn = page.locator(STRENGTH_RANGE_BTNS, new Page.LocatorOptions().setHasText(label));
+        if (btn.count() == 0) return false;
+        String classes = btn.first().getAttribute("class");
+        return classes != null && classes.contains("strength-range-btn-active");
     }
 
     // ── Cardio ───────────────────────────────────────────────────────────────
 
     public boolean isCardioHeaderVisible() {
-        return !driver.findElements(CARDIO_HEADER).isEmpty();
+        return page.locator(CARDIO_HEADER).count() > 0;
     }
 
     public boolean isCardioSidebarVisible() {
-        return !driver.findElements(CARDIO_SIDEBAR).isEmpty();
+        return page.locator(CARDIO_SIDEBAR).count() > 0;
     }
 
     public boolean isCardioEmptyStateVisible() {
-        return !driver.findElements(CARDIO_EMPTY).isEmpty();
+        return page.locator(CARDIO_EMPTY).count() > 0;
     }
 
     public int getCardioExerciseCount() {
-        return driver.findElements(CARDIO_SIDEBAR_ITEMS).size();
+        return page.locator(CARDIO_SIDEBAR_ITEMS).count();
     }
 
     public void clickCardioExercise(String name) {
-        for (WebElement btn : driver.findElements(CARDIO_SIDEBAR_ITEMS)) {
-            if (btn.findElement(By.cssSelector(".cardio-sidebar-item-name")).getText().equals(name)) {
-                btn.click();
-                return;
-            }
+        Locator item = page.locator(CARDIO_SIDEBAR_ITEMS, new Page.LocatorOptions().setHas(
+                page.locator(".cardio-sidebar-item-name", new Page.LocatorOptions().setHasText(name))));
+        if (item.count() == 0) {
+            throw new AssertionError("Cardio exercise '" + name + "' not in sidebar");
         }
-        throw new AssertionError("Cardio exercise '" + name + "' not in sidebar");
+        item.first().click();
     }
 }

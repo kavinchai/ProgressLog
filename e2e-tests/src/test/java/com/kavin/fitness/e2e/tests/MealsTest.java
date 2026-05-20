@@ -12,8 +12,8 @@ public class MealsTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        today = new TodayPage(driver);
-        modal = new MealModal(driver);
+        today = new TodayPage(page);
+        modal = new MealModal(page);
         navigateToToday();
     }
 

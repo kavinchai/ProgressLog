@@ -12,7 +12,7 @@ public class NavigationTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        nav = new NavigationPage(driver);
+        nav = new NavigationPage(page);
         navigateToToday();
     }
 
@@ -31,7 +31,7 @@ public class NavigationTest extends BaseTest {
     @Test(priority = 2)
     public void todayLinkIsActiveOnTodayPage() {
         step("navigate to /today and verify active link");
-        driver.get(baseUrl + "/today");
+        page.navigate(baseUrl + "/today");
         waitForPageLoad();
         nav.waitForSidebar();
         String active = nav.getActiveLinkLabel();
@@ -101,7 +101,7 @@ public class NavigationTest extends BaseTest {
 
         step("toggle back to original and verify");
         nav.clickDarkModeToggle();
-        wait.until(d -> nav.getDarkModeButtonText().equals(initial));
+        page.waitForCondition(() -> nav.getDarkModeButtonText().equals(initial));
     }
 
     private void assertContains(List<String> list, String expected) {

@@ -30,7 +30,7 @@ public class HistoryPageTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        history = new HistoryPage(driver);
+        history = new HistoryPage(page);
 
         LocalDate now = LocalDate.now();
         todayDate = now.toString();

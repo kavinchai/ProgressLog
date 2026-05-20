@@ -12,8 +12,8 @@ public class WorkoutSessionRenameTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        today = new TodayPage(driver);
-        workout = new WorkoutBuilderModal(driver);
+        today = new TodayPage(page);
+        workout = new WorkoutBuilderModal(page);
         navigateToToday();
         today.deleteWorkoutIfExists();
     }
@@ -53,6 +53,6 @@ public class WorkoutSessionRenameTest extends BaseTest {
         today.deleteWorkoutIfExists();
 
         step("verify workout is deleted (Start Workout button visible)");
-        wait.until(d -> today.isTextVisible("Start Workout"));
+        page.waitForCondition(() -> today.isTextVisible("Start Workout"));
     }
 }

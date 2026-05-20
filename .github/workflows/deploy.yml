@@ -130,6 +130,10 @@ jobs:
             exit 1
           fi
 
+      - name: Install Playwright Chromium
+        working-directory: e2e-tests
+        run: gradle installPlaywright --no-daemon
+
       - name: Run E2E tests
         working-directory: e2e-tests
         env:

@@ -4,7 +4,6 @@ import com.kavin.fitness.e2e.pages.TemplatesPage;
 import com.kavin.fitness.e2e.pages.TodayPage;
 import com.kavin.fitness.e2e.pages.WorkoutBuilderModal;
 import com.kavin.fitness.e2e.support.BaseTest;
-import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -25,9 +24,9 @@ public class TemplateUsageTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        templates = new TemplatesPage(driver);
-        workout   = new WorkoutBuilderModal(driver);
-        today     = new TodayPage(driver);
+        templates = new TemplatesPage(page);
+        workout   = new WorkoutBuilderModal(page);
+        today     = new TodayPage(page);
 
         // Make sure today's workout slot is empty so "Use" creates a clean session
         navigateToToday();
@@ -38,7 +37,7 @@ public class TemplateUsageTest extends BaseTest {
     @AfterClass(alwaysRun = true)
     public void cleanup() {
         // Best-effort cleanup so re-runs work. Don't fail the suite if anything
-        // here throws — the @AfterClass on BaseTest still runs to quit driver.
+        // here throws — the @AfterClass on BaseTest still runs to release the browser.
         try {
             templates.open(baseUrl);
             if (templates.isTemplateVisible(TEMPLATE_NAME)) {
@@ -59,9 +58,9 @@ public class TemplateUsageTest extends BaseTest {
         // "+ Exercise" button inside the modal to add a row, then fill fields.
         step("add a lifting exercise to the template");
         clickAddExerciseInModal();
-        enterFirstExerciseName(EXERCISE_NAME);
-        enterFirstWeight("100");
-        enterFirstReps("5");
+        page.locator("input[placeholder*='exercise name' i]").first().fill(EXERCISE_NAME);
+        page.locator(".wbm-set-row input[placeholder='0']").nth(0).fill("100");
+        page.locator(".wbm-set-row input[placeholder='0']").nth(1).fill("5");
 
         step("save template");
         templates.clickModalSave();
@@ -78,11 +77,7 @@ public class TemplateUsageTest extends BaseTest {
         workout.waitUntilVisible();
 
         step("verify the exercise name from the template is prefilled");
-        // The first exercise-name input on the WorkoutBuilderModal should match
-        // what we put on the template.
-        String prefilled = driver.findElements(
-                By.cssSelector("input[placeholder*='exercise name' i]"))
-                .get(0).getAttribute("value");
+        String prefilled = page.locator("input[placeholder*='exercise name' i]").first().inputValue();
         if (!EXERCISE_NAME.equals(prefilled)) {
             throw new AssertionError(
                     "Expected exercise name '" + EXERCISE_NAME + "' prefilled, got: '" + prefilled + "'");
@@ -104,34 +99,8 @@ public class TemplateUsageTest extends BaseTest {
         today.deleteWorkoutIfExists();
     }
 
-    // ── helpers ─ shared selectors that are simpler inline than a new page object ──
-
     private void clickAddExerciseInModal() {
-        // The button text is "+ Exercise" — case-insensitive XPath.
-        driver.findElement(By.xpath(
-                "//div[contains(@class,'modal')]" +
-                "//button[contains(translate(text()," +
-                "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'+ exercise')]"))
-                .click();
-        wait.until(d -> !d.findElements(
-                By.cssSelector("input[placeholder*='exercise name' i]")).isEmpty());
-    }
-
-    private void enterFirstExerciseName(String name) {
-        var el = driver.findElements(By.cssSelector("input[placeholder*='exercise name' i]")).get(0);
-        el.clear();
-        el.sendKeys(name);
-    }
-
-    private void enterFirstWeight(String weight) {
-        var el = driver.findElements(By.cssSelector(".wbm-set-row input[placeholder='0']")).get(0);
-        el.clear();
-        el.sendKeys(weight);
-    }
-
-    private void enterFirstReps(String reps) {
-        var el = driver.findElements(By.cssSelector(".wbm-set-row input[placeholder='0']")).get(1);
-        el.clear();
-        el.sendKeys(reps);
+        page.locator(".modal-box >> button:has-text(/^\\s*\\+\\s*exercise\\s*$/i)").first().click();
+        page.locator("input[placeholder*='exercise name' i]").first().waitFor();
     }
 }

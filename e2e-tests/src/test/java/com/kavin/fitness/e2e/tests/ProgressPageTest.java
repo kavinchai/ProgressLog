@@ -28,7 +28,7 @@ public class ProgressPageTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        progress = new ProgressPage(driver);
+        progress = new ProgressPage(page);
 
         String apiUrl = System.getProperty("env.apiurl", "http://localhost:8080/api");
         String username = System.getProperty("test.user.username", "qaf-test");

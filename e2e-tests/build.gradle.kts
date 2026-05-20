@@ -15,10 +15,17 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.seleniumhq.selenium:selenium-java:4.33.0")
-    testImplementation("io.github.bonigarcia:webdrivermanager:6.1.0")
+    testImplementation("com.microsoft.playwright:playwright:1.52.0")
     testImplementation("org.testng:testng:7.10.2")
     testImplementation("org.slf4j:slf4j-simple:2.0.12")
+}
+
+// Download the Playwright-managed Chromium build and required system libs.
+// Run once per CI cache miss before the test task.
+tasks.register<JavaExec>("installPlaywright") {
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.microsoft.playwright.CLI")
+    args = listOf("install", "--with-deps", "chromium")
 }
 
 tasks.withType<Test> {
@@ -27,7 +34,7 @@ tasks.withType<Test> {
     }
     workingDir = projectDir
 
-    listOf("env.baseurl", "env.apiurl", "test.user.username", "test.user.password", "headless").forEach { key ->
+    listOf("env.baseurl", "env.apiurl", "test.user.username", "test.user.password", "headed").forEach { key ->
         System.getProperty(key)?.let { systemProperty(key, it) }
     }
 

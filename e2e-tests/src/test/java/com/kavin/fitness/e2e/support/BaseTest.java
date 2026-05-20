@@ -1,10 +1,11 @@
 package com.kavin.fitness.e2e.support;
 
 import com.kavin.fitness.e2e.pages.LoginPage;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.LoadState;
 import org.testng.Reporter;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -13,11 +14,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 
 public abstract class BaseTest {
-    protected WebDriver driver;
-    protected WebDriverWait wait;
+    protected Playwright playwright;
+    protected Browser browser;
+    protected BrowserContext context;
+    protected Page page;
     protected String baseUrl;
 
     @BeforeClass(alwaysRun = true)
@@ -29,12 +31,16 @@ public abstract class BaseTest {
 
         ensureTestUserExists(apiUrl, username, password);
 
-        driver = Drivers.chrome();
-        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        playwright = Browsers.newPlaywright();
+        browser = Browsers.chromium(playwright);
+        context = browser.newContext(new Browser.NewContextOptions()
+                .setViewportSize(1920, 1080));
+        page = context.newPage();
+        page.setDefaultTimeout(10_000);
 
         Reporter.log("Logging in as " + username, true);
-        new LoginPage(driver).open(baseUrl).login(username, password);
-        wait.until(d -> !d.getCurrentUrl().contains("/login"));
+        new LoginPage(page).open(baseUrl).login(username, password);
+        page.waitForURL(url -> !url.contains("/login"));
         waitForPageLoad();
     }
 
@@ -59,18 +65,17 @@ public abstract class BaseTest {
 
     @AfterClass(alwaysRun = true)
     public void tearDown() {
-        if (driver != null) {
-            driver.quit();
-        }
+        if (context != null) context.close();
+        if (browser != null) browser.close();
+        if (playwright != null) playwright.close();
     }
 
     protected void waitForPageLoad() {
-        wait.until(d -> "complete".equals(
-                ((JavascriptExecutor) d).executeScript("return document.readyState")));
+        page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
     protected void navigateToToday() {
-        driver.get(baseUrl + "/");
+        page.navigate(baseUrl + "/");
         waitForPageLoad();
     }
 
@@ -80,7 +85,8 @@ public abstract class BaseTest {
     }
 
     protected void waitForModalClosed() {
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(
-                org.openqa.selenium.By.cssSelector(".modal-title")));
+        page.locator(".modal-title").first().waitFor(
+                new com.microsoft.playwright.Locator.WaitForOptions()
+                        .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN));
     }
 }

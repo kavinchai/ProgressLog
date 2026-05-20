@@ -1,117 +1,95 @@
 package com.kavin.fitness.e2e.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
-import java.util.List;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 
 public class SettingsPage {
-    private final WebDriver driver;
-    private final WebDriverWait wait;
+    private final Page page;
 
-    private static final By PAGE_TITLE = By.cssSelector(".settings-title");
-    private static final By GOALS_SECTION = By.xpath(
-            "//h2[contains(@class,'settings-card-title') and text()='Goals']");
-    private static final By PREFERENCES_SECTION = By.xpath(
-            "//h2[contains(@class,'settings-card-title') and text()='Preferences']");
-    private static final By INTEGRATIONS_SECTION = By.xpath(
-            "//h2[contains(@class,'settings-card-title') and text()='Integrations']");
-    private static final By TRAINING_INPUT = By.cssSelector("#calorieTargetTraining");
-    private static final By REST_INPUT = By.cssSelector("#calorieTargetRest");
-    private static final By PROTEIN_INPUT = By.cssSelector("#proteinTarget");
-    private static final By SAVE_GOALS = By.xpath(
-            "//button[contains(@class,'btn-primary') and contains(text(),'Save Goals')]");
-    private static final By SAVED_MESSAGE = By.cssSelector(".settings-saved");
-    private static final By UNIT_TOGGLE = By.cssSelector(".unit-toggle");
-    private static final By ACTIVE_UNIT = By.cssSelector(".unit-toggle-label.active");
-    private static final By CLAUDE_SETUP_BTN = By.xpath(
-            "//button[contains(text(),'Claude integration')]");
+    private static final String PAGE_TITLE = ".settings-title";
+    private static final String GOALS_SECTION = "h2.settings-card-title:has-text(\"Goals\")";
+    private static final String PREFERENCES_SECTION = "h2.settings-card-title:has-text(\"Preferences\")";
+    private static final String INTEGRATIONS_SECTION = "h2.settings-card-title:has-text(\"Integrations\")";
+    private static final String TRAINING_INPUT = "#calorieTargetTraining";
+    private static final String REST_INPUT = "#calorieTargetRest";
+    private static final String PROTEIN_INPUT = "#proteinTarget";
+    private static final String SAVE_GOALS = "button.btn-primary:has-text(\"Save Goals\")";
+    private static final String SAVED_MESSAGE = ".settings-saved";
+    private static final String UNIT_TOGGLE = ".unit-toggle";
+    private static final String ACTIVE_UNIT = ".unit-toggle-label.active";
+    private static final String CLAUDE_SETUP_BTN = "button:has-text(\"Claude integration\")";
 
-    public SettingsPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    public SettingsPage(Page page) {
+        this.page = page;
     }
 
     public void open(String baseUrl) {
-        driver.get(baseUrl + "/settings");
-        wait.until(ExpectedConditions.visibilityOfElementLocated(PAGE_TITLE));
+        page.navigate(baseUrl + "/settings");
+        page.locator(PAGE_TITLE).waitFor();
     }
 
     public String getPageTitle() {
-        return driver.findElement(PAGE_TITLE).getText();
+        return page.locator(PAGE_TITLE).innerText();
     }
 
     public boolean isGoalsSectionVisible() {
-        return !driver.findElements(GOALS_SECTION).isEmpty();
+        return page.locator(GOALS_SECTION).count() > 0;
     }
 
     public boolean isPreferencesSectionVisible() {
-        return !driver.findElements(PREFERENCES_SECTION).isEmpty();
+        return page.locator(PREFERENCES_SECTION).count() > 0;
     }
 
     public boolean isIntegrationsSectionVisible() {
-        return !driver.findElements(INTEGRATIONS_SECTION).isEmpty();
+        return page.locator(INTEGRATIONS_SECTION).count() > 0;
     }
 
     public void enterTrainingCalories(String value) {
-        WebElement el = driver.findElement(TRAINING_INPUT);
-        el.clear();
-        el.sendKeys(value);
+        page.locator(TRAINING_INPUT).fill(value);
     }
 
     public void enterRestCalories(String value) {
-        WebElement el = driver.findElement(REST_INPUT);
-        el.clear();
-        el.sendKeys(value);
+        page.locator(REST_INPUT).fill(value);
     }
 
     public void enterProteinTarget(String value) {
-        WebElement el = driver.findElement(PROTEIN_INPUT);
-        el.clear();
-        el.sendKeys(value);
+        page.locator(PROTEIN_INPUT).fill(value);
     }
 
     public String getTrainingCalories() {
-        return driver.findElement(TRAINING_INPUT).getAttribute("value");
+        return page.locator(TRAINING_INPUT).inputValue();
     }
 
     public String getRestCalories() {
-        return driver.findElement(REST_INPUT).getAttribute("value");
+        return page.locator(REST_INPUT).inputValue();
     }
 
     public String getProteinTarget() {
-        return driver.findElement(PROTEIN_INPUT).getAttribute("value");
+        return page.locator(PROTEIN_INPUT).inputValue();
     }
 
     public void clickSaveGoals() {
-        driver.findElement(SAVE_GOALS).click();
+        page.locator(SAVE_GOALS).click();
     }
 
     public void waitForSavedMessage() {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(SAVED_MESSAGE));
+        page.locator(SAVED_MESSAGE).waitFor();
     }
 
     public String getActiveWeightUnit() {
-        List<WebElement> active = driver.findElements(ACTIVE_UNIT);
-        return active.isEmpty() ? "" : active.get(0).getText();
+        Locator active = page.locator(ACTIVE_UNIT);
+        return active.count() == 0 ? "" : active.first().innerText();
     }
 
     public void clickUnitToggle() {
-        driver.findElement(UNIT_TOGGLE).click();
+        page.locator(UNIT_TOGGLE).click();
     }
 
     public void waitForActiveUnit(String unit) {
-        wait.until(d -> {
-            List<WebElement> labels = d.findElements(ACTIVE_UNIT);
-            return !labels.isEmpty() && labels.get(0).getText().equals(unit);
-        });
+        page.locator(ACTIVE_UNIT + ":has-text(\"" + unit + "\")").waitFor();
     }
 
     public boolean isClaudeSetupButtonVisible() {
-        return !driver.findElements(CLAUDE_SETUP_BTN).isEmpty();
+        return page.locator(CLAUDE_SETUP_BTN).count() > 0;
     }
 }

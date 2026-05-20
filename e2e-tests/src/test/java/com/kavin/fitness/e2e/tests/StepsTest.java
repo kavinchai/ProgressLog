@@ -10,7 +10,7 @@ public class StepsTest extends BaseTest {
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
-        today = new TodayPage(driver);
+        today = new TodayPage(page);
         navigateToToday();
     }
 

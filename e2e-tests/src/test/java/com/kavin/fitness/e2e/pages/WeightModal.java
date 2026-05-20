@@ -1,31 +1,21 @@
 package com.kavin.fitness.e2e.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
+import com.microsoft.playwright.Page;
 
 public class WeightModal {
-    private final WebDriver driver;
-    private final WebDriverWait wait;
+    private final Page page;
 
-    private static final By TITLE = By.cssSelector(".modal-title");
-    private static final By INPUT = By.cssSelector(".modal-box input[type='number']");
-    private static final By SAVE = By.xpath(
-            "//div[contains(@class,'modal')]//button[translate(text()," +
-                    "'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='save']");
+    private static final String TITLE = ".modal-title";
+    private static final String INPUT = ".modal-box input[type='number']";
+    private static final String SAVE = ".modal-box >> button:has-text(\"Save\")";
 
-    public WeightModal(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    public WeightModal(Page page) {
+        this.page = page;
     }
 
     public WeightModal waitUntilVisibleWithTitle(String expectedTitle) {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(TITLE));
-        String actual = driver.findElement(TITLE).getText();
+        page.locator(TITLE).waitFor();
+        String actual = page.locator(TITLE).innerText();
         if (!actual.contains(expectedTitle)) {
             throw new AssertionError("Expected modal title to contain '" + expectedTitle + "' but got: " + actual);
         }
@@ -33,16 +23,14 @@ public class WeightModal {
     }
 
     public String getInputValue() {
-        return driver.findElement(INPUT).getAttribute("value");
+        return page.locator(INPUT).inputValue();
     }
 
     public void enterWeight(String weight) {
-        WebElement input = driver.findElement(INPUT);
-        input.clear();
-        input.sendKeys(weight);
+        page.locator(INPUT).fill(weight);
     }
 
     public void save() {
-        driver.findElement(SAVE).click();
+        page.locator(SAVE).first().click();
     }
 }
