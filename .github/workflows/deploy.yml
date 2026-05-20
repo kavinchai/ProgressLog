@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -49,13 +49,13 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: "temurin"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.10'
+          gradle-version: "8.10"
 
       - name: Run backend tests
         working-directory: backend
@@ -69,7 +69,7 @@ jobs:
           path: backend/build/reports/
 
   e2e-tests:
-    name: E2E Tests (Selenium)
+    name: E2E Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,13 +77,13 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: "temurin"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.10'
+          gradle-version: "8.10"
 
       - name: Start dev environment (docker compose)
         run: docker compose up -d --build
