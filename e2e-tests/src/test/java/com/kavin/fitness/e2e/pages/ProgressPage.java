@@ -1,5 +1,6 @@
 package com.kavin.fitness.e2e.pages;
 
+import com.kavin.fitness.e2e.support.Clicks;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -57,8 +58,9 @@ public class ProgressPage {
     }
 
     public void clickTab(String label) {
-        driver.findElement(By.xpath(
-                "//nav[contains(@class,'page-tabs')]//a[text()='" + label + "']")).click();
+        WebElement tab = driver.findElement(By.xpath(
+                "//nav[contains(@class,'page-tabs')]//a[text()='" + label + "']"));
+        Clicks.js(driver, tab);
         waitForLoaded();
     }
 
@@ -83,7 +85,7 @@ public class ProgressPage {
     public void clickStrengthExercise(String name) {
         for (WebElement btn : driver.findElements(STRENGTH_SIDEBAR_ITEMS)) {
             if (btn.findElement(By.cssSelector(".strength-sidebar-item-name")).getText().equals(name)) {
-                btn.click();
+                Clicks.js(driver, btn);
                 return;
             }
         }
@@ -124,7 +126,7 @@ public class ProgressPage {
     public void clickStrengthRange(String label) {
         for (WebElement btn : driver.findElements(STRENGTH_RANGE_BTNS)) {
             if (btn.getText().equals(label)) {
-                btn.click();
+                Clicks.js(driver, btn);
                 return;
             }
         }
@@ -161,7 +163,7 @@ public class ProgressPage {
     public void clickCardioExercise(String name) {
         for (WebElement btn : driver.findElements(CARDIO_SIDEBAR_ITEMS)) {
             if (btn.findElement(By.cssSelector(".cardio-sidebar-item-name")).getText().equals(name)) {
-                btn.click();
+                Clicks.js(driver, btn);
                 return;
             }
         }

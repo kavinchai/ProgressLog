@@ -1,5 +1,6 @@
 package com.kavin.fitness.e2e.pages;
 
+import com.kavin.fitness.e2e.support.Clicks;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -41,8 +42,9 @@ public class NavigationPage {
     }
 
     public void clickSidebarLink(String label) {
-        driver.findElement(By.xpath(
-                "//nav[contains(@class,'sidebar-nav')]//a[text()='" + label + "']")).click();
+        WebElement link = driver.findElement(By.xpath(
+                "//nav[contains(@class,'sidebar-nav')]//a[text()='" + label + "']"));
+        Clicks.js(driver, link);
     }
 
     public void waitForUrlContains(String path) {
@@ -58,10 +60,10 @@ public class NavigationPage {
     }
 
     public void clickDarkModeToggle() {
-        driver.findElement(SIDEBAR_DARKMODE).click();
+        Clicks.js(driver, driver.findElement(SIDEBAR_DARKMODE));
     }
 
     public void clickLogout() {
-        driver.findElement(SIDEBAR_LOGOUT).click();
+        Clicks.js(driver, driver.findElement(SIDEBAR_LOGOUT));
     }
 }

@@ -1,5 +1,6 @@
 package com.kavin.fitness.e2e.pages;
 
+import com.kavin.fitness.e2e.support.Clicks;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -54,8 +55,9 @@ public class HistoryPage {
     }
 
     public void clickTab(String label) {
-        driver.findElement(By.xpath(
-                "//nav[contains(@class,'page-tabs')]//a[text()='" + label + "']")).click();
+        WebElement tab = driver.findElement(By.xpath(
+                "//nav[contains(@class,'page-tabs')]//a[text()='" + label + "']"));
+        Clicks.js(driver, tab);
     }
 
     // ── Weekly ───────────────────────────────────────────────────────────────
@@ -73,7 +75,7 @@ public class HistoryPage {
     }
 
     public void clickFirstWeeklyRow() {
-        driver.findElements(WEEKLY_ROWS).get(0).click();
+        Clicks.js(driver, driver.findElements(WEEKLY_ROWS).get(0));
     }
 
     public boolean isExpandedRowVisible() {
@@ -103,7 +105,7 @@ public class HistoryPage {
     public void clickCalendarDay(String isoDate) {
         WebElement cell = wait.until(ExpectedConditions.elementToBeClickable(
                 By.cssSelector("[data-testid='calendar-day-" + isoDate + "']")));
-        cell.click();
+        Clicks.js(driver, cell);
     }
 
     public void waitForDayModal() {
@@ -129,7 +131,7 @@ public class HistoryPage {
     public void clickRangeButton(String label) {
         for (WebElement btn : driver.findElements(RANGE_BUTTONS)) {
             if (btn.getText().equals(label)) {
-                btn.click();
+                Clicks.js(driver, btn);
                 return;
             }
         }
@@ -147,7 +149,7 @@ public class HistoryPage {
 
     public void clickMonthPickerToggle() {
         WebElement label = driver.findElement(By.cssSelector(".month-nav-label .btn"));
-        label.click();
+        Clicks.js(driver, label);
     }
 
     public boolean isMonthPickerVisible() {

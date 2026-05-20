@@ -1,5 +1,6 @@
 package com.kavin.fitness.e2e.pages;
 
+import com.kavin.fitness.e2e.support.Clicks;
 import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
@@ -45,7 +46,7 @@ public class TemplatesPage {
     }
 
     public void clickNewTemplate() {
-        driver.findElement(NEW_BTN).click();
+        Clicks.js(driver, driver.findElement(NEW_BTN));
     }
 
     public void waitForModalVisible(String expectedTitle) {
@@ -63,11 +64,11 @@ public class TemplatesPage {
     }
 
     public void clickModalSave() {
-        driver.findElement(MODAL_SAVE).click();
+        Clicks.js(driver, driver.findElement(MODAL_SAVE));
     }
 
     public void clickModalCancel() {
-        driver.findElement(MODAL_CANCEL).click();
+        Clicks.js(driver, driver.findElement(MODAL_CANCEL));
     }
 
     public int getTemplateCount() {
@@ -88,7 +89,7 @@ public class TemplatesPage {
         List<WebElement> cards = driver.findElements(TEMPLATE_CARDS);
         for (WebElement card : cards) {
             if (card.getText().contains(name)) {
-                card.findElement(By.cssSelector(".btn-danger")).click();
+                Clicks.js(driver, card.findElement(By.cssSelector(".btn-danger")));
                 confirmDeleteAndDismiss();
                 return;
             }
@@ -103,7 +104,7 @@ public class TemplatesPage {
                 List<WebElement> btns = card.findElements(By.cssSelector(".btn.btn-sm"));
                 for (WebElement btn : btns) {
                     if ("Edit".equals(btn.getText())) {
-                        btn.click();
+                        Clicks.js(driver, btn);
                         return;
                     }
                 }
@@ -116,7 +117,7 @@ public class TemplatesPage {
         List<WebElement> cards = driver.findElements(TEMPLATE_CARDS);
         for (WebElement card : cards) {
             if (card.getText().contains(name)) {
-                card.findElement(By.cssSelector(".btn-primary")).click();
+                Clicks.js(driver, card.findElement(By.cssSelector(".btn-primary")));
                 return;
             }
         }

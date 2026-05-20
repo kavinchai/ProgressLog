@@ -1,5 +1,6 @@
 package com.kavin.fitness.e2e.pages;
 
+import com.kavin.fitness.e2e.support.Clicks;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -43,8 +44,8 @@ public class TodayPage {
 
     // ── Weight ───────────────────────────────────────────────────────────────
 
-    public void clickAddWeight() { sectionBtnContains(WEIGHT_IDX, "+ Add").click(); }
-    public void clickEditWeight() { sectionBtnExact(WEIGHT_IDX, "Edit").click(); }
+    public void clickAddWeight() { Clicks.js(driver, sectionBtnContains(WEIGHT_IDX, "+ Add")); }
+    public void clickEditWeight() { Clicks.js(driver, sectionBtnExact(WEIGHT_IDX, "Edit")); }
 
     public void waitForWeightValue(String expected) {
         wait.until(ExpectedConditions.textToBePresentInElementLocated(
@@ -59,16 +60,16 @@ public class TodayPage {
                 "(//div[contains(@class,'section-box')])[" + STEPS_IDX +
                         "]//button[contains(text(),'+ Add')]"));
         if (!addBtns.isEmpty()) {
-            addBtns.get(0).click();
+            Clicks.js(driver, addBtns.get(0));
         } else {
-            sectionBtnExact(STEPS_IDX, "Edit").click();
+            Clicks.js(driver, sectionBtnExact(STEPS_IDX, "Edit"));
         }
     }
 
     public void clickDeleteSteps() {
-        driver.findElement(By.xpath(
+        Clicks.js(driver, driver.findElement(By.xpath(
                 "(//div[contains(@class,'section-box')])[" + STEPS_IDX +
-                        "]//button[contains(@class,'btn-danger')]")).click();
+                        "]//button[contains(@class,'btn-danger')]")));
         confirmDeleteAndDismiss();
     }
 
@@ -80,7 +81,7 @@ public class TodayPage {
     }
 
     public void saveSteps() {
-        driver.findElement(By.cssSelector(".today-steps-edit .btn-primary")).click();
+        Clicks.js(driver, driver.findElement(By.cssSelector(".today-steps-edit .btn-primary")));
     }
 
     public void waitForStepsValue(String expected) {
@@ -98,8 +99,8 @@ public class TodayPage {
     // ── Nutrition / Meals ────────────────────────────────────────────────────
 
     public void clickAddMeal() {
-        driver.findElement(By.xpath(
-                "//button[contains(text(),'+ Add Meal') or contains(text(),'+ Meal')]")).click();
+        Clicks.js(driver, driver.findElement(By.xpath(
+                "//button[contains(text(),'+ Add Meal') or contains(text(),'+ Meal')]")));
     }
 
     public void waitForMealDisplayed(String name) {
@@ -159,7 +160,7 @@ public class TodayPage {
         // seeded directly via the API. Click Delete until none remain.
         while (!driver.findElements(WORKOUT_DELETE_BTN).isEmpty()) {
             try {
-                driver.findElements(WORKOUT_DELETE_BTN).get(0).click();
+                Clicks.js(driver, driver.findElements(WORKOUT_DELETE_BTN).get(0));
             } catch (Exception ignored) {
                 // Stale element from a re-render — re-query on next iteration.
                 continue;
@@ -178,12 +179,12 @@ public class TodayPage {
         wait.until(d -> {
             List<WebElement> starts = d.findElements(WORKOUT_START_BTN);
             for (WebElement btn : starts) {
-                try { if (btn.isDisplayed() && btn.isEnabled()) { btn.click(); return true; } }
+                try { if (btn.isDisplayed() && btn.isEnabled()) { Clicks.js(d, btn); return true; } }
                 catch (Exception ignored) {}
             }
             List<WebElement> exercises = d.findElements(WORKOUT_ADD_EXERCISE_BTN);
             for (WebElement btn : exercises) {
-                try { if (btn.isDisplayed() && btn.isEnabled()) { btn.click(); return true; } }
+                try { if (btn.isDisplayed() && btn.isEnabled()) { Clicks.js(d, btn); return true; } }
                 catch (Exception ignored) {}
             }
             return false;
@@ -191,14 +192,14 @@ public class TodayPage {
     }
 
     public void renameWorkoutSession(String newName) {
-        sectionBtnExact(WORKOUT_IDX, "Rename").click();
+        Clicks.js(driver, sectionBtnExact(WORKOUT_IDX, "Rename"));
         WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector(".section-box:nth-child(" + cssNth(WORKOUT_IDX) + ") input[type='text']")));
         input.clear();
         input.sendKeys(newName);
-        driver.findElement(By.xpath(
+        Clicks.js(driver, driver.findElement(By.xpath(
                 "(//div[contains(@class,'section-box')])[" + WORKOUT_IDX +
-                        "]//button[contains(@class,'btn-primary') and text()='Save']")).click();
+                        "]//button[contains(@class,'btn-primary') and text()='Save']")));
     }
 
     public void waitForSessionName(String name) {
@@ -258,7 +259,7 @@ public class TodayPage {
     public void clickEditExercise(int index) {
         By editBtns = By.cssSelector(".exercise-card .btn.btn-sm");
         wait.until(d -> d.findElements(editBtns).size() > index);
-        driver.findElements(editBtns).get(index).click();
+        Clicks.js(driver, driver.findElements(editBtns).get(index));
     }
 
     public boolean isTextVisible(String text) {

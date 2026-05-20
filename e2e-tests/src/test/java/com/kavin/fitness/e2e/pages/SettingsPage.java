@@ -1,5 +1,6 @@
 package com.kavin.fitness.e2e.pages;
 
+import com.kavin.fitness.e2e.support.Clicks;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -88,7 +89,7 @@ public class SettingsPage {
     }
 
     public void clickSaveGoals() {
-        driver.findElement(SAVE_GOALS).click();
+        Clicks.js(driver, driver.findElement(SAVE_GOALS));
     }
 
     public void waitForSavedMessage() {
@@ -101,7 +102,7 @@ public class SettingsPage {
     }
 
     public void clickUnitToggle() {
-        driver.findElement(UNIT_TOGGLE).click();
+        Clicks.js(driver, driver.findElement(UNIT_TOGGLE));
     }
 
     public void waitForActiveUnit(String unit) {
