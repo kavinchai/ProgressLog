@@ -15,7 +15,7 @@ public class SettingsPage {
     private static final String PROTEIN_INPUT = "#proteinTarget";
     private static final String SAVE_GOALS = "button.btn-primary:has-text(\"Save Goals\")";
     private static final String SAVED_MESSAGE = ".settings-saved";
-    private static final String UNIT_TOGGLE = ".unit-toggle";
+    private static final String UNIT_TOGGLE = ".unit-toggle[aria-label='Toggle weight unit']";
     private static final String ACTIVE_UNIT = ".unit-toggle-label.active";
     private static final String CLAUDE_SETUP_BTN = "button:has-text(\"Claude integration\")";
 

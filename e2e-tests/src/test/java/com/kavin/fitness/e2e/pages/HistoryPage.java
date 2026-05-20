@@ -117,13 +117,14 @@ public class HistoryPage {
 
     public boolean isRangeButtonActive(String label) {
         Locator btn = page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label));
-        if (btn.count() == 0) return false;
+        if (btn.count() == 0)
+            return false;
         String classes = btn.first().getAttribute("class");
         return classes != null && classes.contains("range-active");
     }
 
     public void clickMonthPickerToggle() {
-        page.locator(".month-nav-label .btn").click();
+        page.locator(".month-nav-label .btn").first().click();
     }
 
     public boolean isMonthPickerVisible() {

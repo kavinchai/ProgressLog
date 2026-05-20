@@ -100,7 +100,7 @@ public class TemplateUsageTest extends BaseTest {
     }
 
     private void clickAddExerciseInModal() {
-        page.locator(".modal-box >> button:has-text(/^\\s*\\+\\s*exercise\\s*$/i)").first().click();
+        page.locator(".modal-box >> button:has-text(\"+ Exercise\")").first().click();
         page.locator("input[placeholder*='exercise name' i]").first().waitFor();
     }
 }

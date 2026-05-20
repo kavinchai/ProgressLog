@@ -6,8 +6,8 @@ public class EditExerciseModal {
     private final Page page;
 
     private static final String TITLE = ".modal-title";
-    private static final String SAVE = ".modal-box >> button:has-text(/^\\s*save\\s*$/i)";
-    private static final String DELETE = ".modal-box >> button:has-text(/delete/i)";
+    private static final String SAVE = ".modal-box >> button:text-is(\"Save\")";
+    private static final String DELETE = ".modal-box >> button:has-text(\"Delete\")";
 
     public EditExerciseModal(Page page) {
         this.page = page;

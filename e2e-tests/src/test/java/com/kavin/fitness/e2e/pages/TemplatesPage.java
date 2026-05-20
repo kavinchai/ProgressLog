@@ -15,8 +15,7 @@ public class TemplatesPage {
 
     private static final String MODAL_TITLE = ".modal-title";
     private static final String TEMPLATE_NAME_INPUT = ".modal-box input[placeholder*='Push Day' i]";
-    private static final String MODAL_SAVE =
-            ".modal-box >> button.btn-primary:has-text(\"Save\"), .modal-box >> button.btn-primary:has-text(\"Saving\")";
+    private static final String MODAL_SAVE = ".modal-box >> button.btn-primary:has-text(\"Save\")";
     private static final String MODAL_CANCEL = ".modal-box >> button.btn-ghost";
 
     public TemplatesPage(Page page) {

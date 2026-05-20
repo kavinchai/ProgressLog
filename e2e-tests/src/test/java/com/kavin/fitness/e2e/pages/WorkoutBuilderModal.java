@@ -8,15 +8,13 @@ public class WorkoutBuilderModal {
 
     private static final String TITLE = ".modal-title";
     private static final String SESSION_NAME = "input[placeholder*='push, pull, legs' i]";
-    private static final String ADD_EXERCISE =
-            ".modal-box >> button:has-text(/^\\s*\\+\\s*exercise\\s*$/i)";
-    private static final String ADD_RUN =
-            ".modal-box >> button:has-text(/^\\s*\\+\\s*run\\s*$/i)";
-    private static final String ADD_TIMED =
-            ".modal-box >> button:has-text(/^\\s*\\+\\s*timed\\s*$/i)";
-    private static final String SAVE = ".modal-box >> button:has-text(/^\\s*save\\s*$/i)";
+    private static final String ADD_EXERCISE = ".modal-box >> button:has-text(\"+ Exercise\")";
+    private static final String ADD_RUN = ".modal-box >> button:has-text(\"+ Run\")";
+    private static final String ADD_TIMED = ".modal-box >> button:has-text(\"+ Timed\")";
+    // Exact match — saves it from also catching a "Saving..." in-progress label.
+    private static final String SAVE = ".modal-box >> button:text-is(\"Save\")";
     private static final String EXERCISE_NAME_INPUTS = "input[placeholder*='exercise name' i]";
-    private static final String ADD_SET_BTNS = "button:has-text(/^\\s*\\+\\s*set\\s*$/i)";
+    private static final String ADD_SET_BTNS = "button:has-text(\"+ Set\")";
     private static final String TYPE_BTNS = ".wbm-type-toggle";
 
     public WorkoutBuilderModal(Page page) {
@@ -49,9 +47,7 @@ public class WorkoutBuilderModal {
     }
 
     public void waitForExerciseCount(int count) {
-        Locator inputs = page.locator(EXERCISE_NAME_INPUTS);
-        // Poll until enough rows exist. The locator's nth helper waits implicitly.
-        inputs.nth(count - 1).waitFor();
+        page.locator(EXERCISE_NAME_INPUTS).nth(count - 1).waitFor();
     }
 
     public void enterExerciseName(int idx, String name) {
