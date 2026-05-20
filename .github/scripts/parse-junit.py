@@ -54,10 +54,17 @@ def first_frame(stack):
 
 
 def collect(globs):
+    """Walk every matching JUnit XML and return (failures, skips).
+
+    Skips are surfaced because TestNG's @BeforeClass/@BeforeMethod failures
+    cascade as <skipped> entries on the dependent @Test methods, not <failure>.
+    Without this, a broken setup looks like fewer failures, not more.
+    """
     files = []
     for g in globs:
         files.extend(glob.glob(g, recursive=True))
     fails = []
+    skips = []
     for f in files:
         try:
             tree = ET.parse(f)
@@ -73,29 +80,53 @@ def collect(globs):
                         "message": clip(child.get("message") or child.text or ""),
                         "frame": first_frame(child.text or ""),
                     })
-    return fails
+                elif child.tag == "skipped":
+                    skips.append({
+                        "classname": tc.get("classname", ""),
+                        "name": tc.get("name", ""),
+                        "message": clip(child.get("message") or child.text or ""),
+                    })
+    return fails, skips
 
 
-def render(label, fails):
+def render(label, fails, skips):
     out = [f"## {label}"]
-    if not fails:
+    if not fails and not skips:
         out.append("")
-        out.append("No failing tests recorded in JUnit XML.")
+        out.append("No failing or skipped tests recorded in JUnit XML.")
         return "\n".join(out) + "\n"
 
-    out.append("")
-    out.append(f"**{len(fails)} test failure(s)** - copy the block below for an AI fix request:")
-    out.append("")
-    out.append("```")
-    for f in fails:
-        label_line = f"{f['classname']}.{f['name']}" if f['classname'] else f['name']
-        out.append(f"FAIL {label_line}")
-        if f["message"]:
-            out.append(f"     {f['kind']}: {f['message']}")
-        if f["frame"]:
-            out.append(f"     at {f['frame']}")
+    if fails:
         out.append("")
-    out.append("```")
+        out.append(f"**{len(fails)} test failure(s)** - copy the block below for an AI fix request:")
+        out.append("")
+        out.append("```")
+        for f in fails:
+            label_line = f"{f['classname']}.{f['name']}" if f['classname'] else f['name']
+            out.append(f"FAIL {label_line}")
+            if f["message"]:
+                out.append(f"     {f['kind']}: {f['message']}")
+            if f["frame"]:
+                out.append(f"     at {f['frame']}")
+            out.append("")
+        out.append("```")
+
+    if skips:
+        # Skipped tests usually mean a @BeforeClass/@BeforeMethod threw, so they
+        # point at *real* problems hidden under the failure count. Show them in
+        # a separate block to keep the AI-fix block above clean.
+        out.append("")
+        out.append(f"**{len(skips)} test(s) skipped** - usually a setup/before-class failure:")
+        out.append("")
+        out.append("```")
+        for s in skips:
+            label_line = f"{s['classname']}.{s['name']}" if s['classname'] else s['name']
+            out.append(f"SKIP {label_line}")
+            if s["message"]:
+                out.append(f"     reason: {s['message']}")
+            out.append("")
+        out.append("```")
+
     return "\n".join(out).rstrip() + "\n"
 
 
@@ -105,8 +136,8 @@ def main():
         sys.exit(2)
 
     label = sys.argv[1]
-    fails = collect(sys.argv[2:])
-    rendered = render(label, fails)
+    fails, skips = collect(sys.argv[2:])
+    rendered = render(label, fails, skips)
 
     print(rendered)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
