@@ -4,6 +4,10 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.logging.LogType;
+import org.openqa.selenium.logging.LoggingPreferences;
+
+import java.util.logging.Level;
 
 public final class Drivers {
     private Drivers() {}
@@ -23,6 +27,14 @@ public final class Drivers {
                 "--disable-gpu",
                 "--window-size=1920,1080"
         );
+
+        // Capture browser console output so FailureDiagnostics can include
+        // runtime errors in the per-test failure dump. Without this the
+        // BROWSER log channel returns empty.
+        LoggingPreferences logPrefs = new LoggingPreferences();
+        logPrefs.enable(LogType.BROWSER, Level.ALL);
+        options.setCapability("goog:loggingPrefs", logPrefs);
+
         return new ChromeDriver(options);
     }
 }

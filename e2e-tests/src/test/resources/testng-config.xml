@@ -1,5 +1,8 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="WorkoutApp E2E Tests" verbose="1">
+    <listeners>
+        <listener class-name="com.kavin.fitness.e2e.support.FailureDiagnostics"/>
+    </listeners>
     <test name="E2E">
         <packages>
             <package name="com.kavin.fitness.e2e.tests"/>

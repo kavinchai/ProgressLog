@@ -159,6 +159,8 @@ jobs:
 
       - name: Summarize E2E failures
         if: failure()
+        env:
+          DIAGNOSTICS_DIR: e2e-tests/build/reports/diagnostics
         run: python3 "$GITHUB_WORKSPACE/.github/scripts/parse-junit.py" "E2E tests" "e2e-tests/build/test-results/test/**/*.xml"
 
       - name: Dump container logs on failure

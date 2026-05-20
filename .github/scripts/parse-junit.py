@@ -12,6 +12,12 @@ source frame.
 
 Usage:
   parse-junit.py <label> <glob> [<glob> ...]
+
+Environment:
+  DIAGNOSTICS_DIR   If set, the parser looks for <Class>.<method>.txt files
+                    here (written by the FailureDiagnostics TestNG listener)
+                    and inlines them into the failure summary so the dump is
+                    pasteable into an AI chat without unzipping the artifact.
 """
 import glob
 import os
@@ -89,7 +95,25 @@ def collect(globs):
     return fails, skips
 
 
-def render(label, fails, skips):
+def load_diagnostic(diag_dir, classname, name):
+    """Read the matching FailureDiagnostics TXT dump if present.
+
+    The Java side sanitizes the test name by replacing non-[a-zA-Z0-9._-] chars
+    with underscores; mirror that here so the lookup matches.
+    """
+    if not diag_dir or not classname:
+        return ""
+    raw = f"{classname}.{name}"
+    sanitized = re.sub(r"[^a-zA-Z0-9._-]", "_", raw)
+    path = os.path.join(diag_dir, sanitized + ".txt")
+    try:
+        with open(path, encoding="utf-8") as fp:
+            return fp.read().strip()
+    except OSError:
+        return ""
+
+
+def render(label, fails, skips, diag_dir=None):
     out = [f"## {label}"]
     if not fails and not skips:
         out.append("")
@@ -110,6 +134,25 @@ def render(label, fails, skips):
                 out.append(f"     at {f['frame']}")
             out.append("")
         out.append("```")
+
+        # If FailureDiagnostics produced per-test dumps, inline each one. These
+        # blocks are sized to be copy-pasted directly into an AI chat: URL,
+        # title, console errors, visible interactives, exception message.
+        diag_blocks = []
+        for f in fails:
+            dump = load_diagnostic(diag_dir, f["classname"], f["name"])
+            if dump:
+                diag_blocks.append(dump)
+        if diag_blocks:
+            out.append("")
+            out.append("<details>")
+            out.append(f"<summary><strong>Failure context dumps ({len(diag_blocks)})</strong> - paste into an AI chat for debugging</summary>")
+            out.append("")
+            out.append("```")
+            out.append("\n\n---\n\n".join(diag_blocks))
+            out.append("```")
+            out.append("")
+            out.append("</details>")
 
     if skips:
         # Skipped tests usually mean a @BeforeClass/@BeforeMethod threw, so they
@@ -137,7 +180,7 @@ def main():
 
     label = sys.argv[1]
     fails, skips = collect(sys.argv[2:])
-    rendered = render(label, fails, skips)
+    rendered = render(label, fails, skips, diag_dir=os.environ.get("DIAGNOSTICS_DIR"))
 
     print(rendered)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
