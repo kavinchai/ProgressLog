@@ -34,6 +34,9 @@ backend/out/
 *.ear
 hs_err_pid*
 
+#  ── MCP Server ──────────────────────────
+mcp-server/node_modules/
+
 # ── Docker ──────────────────────────────────────────
 # (docker-compose.yml is intentionally tracked)
 
