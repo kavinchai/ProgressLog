@@ -1,4 +1,5 @@
 import muscleGroupData from '../data/muscleGroups.json';
+import { detectType } from './workout';
 
 const { muscleGroups, exerciseMap } = muscleGroupData;
 
@@ -53,8 +54,10 @@ export function buildMuscleGroupStats(workoutData) {
     const exerciseNames = [...new Set(sets.map(s => s.exerciseName))];
 
     for (const name of exerciseNames) {
-      const muscles = getExerciseMuscles(name);
       const exerciseSets = sets.filter(s => s.exerciseName === name);
+      if (detectType(exerciseSets) === 'timed') continue;
+
+      const muscles = getExerciseMuscles(name);
 
       for (const muscle of muscles) {
         if (stats[muscle]) {

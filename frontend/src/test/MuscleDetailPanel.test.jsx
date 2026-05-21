@@ -51,4 +51,30 @@ describe('MuscleDetailPanel', () => {
     expect(screen.getByText('Bench Press')).toBeInTheDocument();
     expect(screen.getByText('Dumbbell Fly')).toBeInTheDocument();
   });
+
+  it('displays distance and duration for run exercises instead of weight x reps', () => {
+    const exercises = [
+      { name: 'Run', sets: [
+        { exerciseName: 'Run', distanceMiles: 3.1, durationSeconds: 1500, setNumber: 1 },
+      ]},
+    ];
+    render(<MuscleDetailPanel muscle="quads" exercises={exercises} />);
+    expect(screen.getByText(/3\.1\s*mi/i)).toBeInTheDocument();
+    expect(screen.getByText(/25m\s*0s/i)).toBeInTheDocument();
+    expect(screen.queryByText(/lbs/i)).not.toBeInTheDocument();
+  });
+
+  it('renders multiple run sets with distance and duration each', () => {
+    const exercises = [
+      { name: 'Run', sets: [
+        { exerciseName: 'Run', distanceMiles: 1.0, durationSeconds: 480, setNumber: 1 },
+        { exerciseName: 'Run', distanceMiles: 2.0, durationSeconds: 960, setNumber: 2 },
+      ]},
+    ];
+    render(<MuscleDetailPanel muscle="quads" exercises={exercises} />);
+    expect(screen.getByText(/1\s*mi/i)).toBeInTheDocument();
+    expect(screen.getByText(/2\s*mi/i)).toBeInTheDocument();
+    expect(screen.getByText(/8m\s*0s/i)).toBeInTheDocument();
+    expect(screen.getByText(/16m\s*0s/i)).toBeInTheDocument();
+  });
 });

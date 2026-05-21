@@ -167,6 +167,57 @@ describe('buildMuscleGroupStats', () => {
       expect(s.count).toBe(0);
     });
   });
+
+  it('excludes timed-only activities (no distance) from muscle group counts', () => {
+    const workoutData = [
+      {
+        id: 1,
+        sessionDate: '2026-05-05',
+        exerciseSets: [
+          { exerciseName: 'Plank', durationSeconds: 60, setNumber: 1 },
+          { exerciseName: 'Plank', durationSeconds: 60, setNumber: 2 },
+        ],
+      },
+    ];
+    const stats = buildMuscleGroupStats(workoutData);
+    expect(stats.core.count).toBe(0);
+    expect(stats.core.exercises).toEqual([]);
+  });
+
+  it('includes run activities (with distance) in muscle group counts', () => {
+    const workoutData = [
+      {
+        id: 1,
+        sessionDate: '2026-05-05',
+        exerciseSets: [
+          { exerciseName: 'Run', distanceMiles: 3.1, durationSeconds: 1500, setNumber: 1 },
+        ],
+      },
+    ];
+    const stats = buildMuscleGroupStats(workoutData);
+    expect(stats.quads.count).toBe(1);
+    expect(stats.hamstrings.count).toBe(1);
+    expect(stats.calves.count).toBe(1);
+    expect(stats.glutes.count).toBe(1);
+    expect(stats.quads.exercises).toHaveLength(1);
+    expect(stats.quads.exercises[0].name).toBe('Run');
+  });
+
+  it('counts lifting exercises but excludes timed exercises in the same session', () => {
+    const workoutData = [
+      {
+        id: 1,
+        sessionDate: '2026-05-05',
+        exerciseSets: [
+          { exerciseName: 'Bench Press', weightLbs: '135', reps: 8, setNumber: 1 },
+          { exerciseName: 'Plank', durationSeconds: 45, setNumber: 1 },
+        ],
+      },
+    ];
+    const stats = buildMuscleGroupStats(workoutData);
+    expect(stats.chest.count).toBe(1);
+    expect(stats.core.count).toBe(0);
+  });
 });
 
 describe('getHeatLevel', () => {
