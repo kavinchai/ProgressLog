@@ -18,6 +18,16 @@ public class LeaderboardPage {
         this.page = page;
     }
 
+    private boolean awaitVisible(String selector) {
+        try {
+            page.locator(selector).first().waitFor(
+                    new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void open(String baseUrl) {
         page.navigate(baseUrl + "/leaderboard");
         page.locator(PAGE).waitFor();
@@ -29,7 +39,7 @@ public class LeaderboardPage {
     }
 
     public boolean isHeroVisible() {
-        return page.locator(HERO_TITLE).count() > 0;
+        return awaitVisible(HERO_TITLE);
     }
 
     public String getHeroTitle() {
@@ -37,7 +47,7 @@ public class LeaderboardPage {
     }
 
     public boolean hasExerciseTabs() {
-        return page.locator(EX_TABS).count() > 0;
+        return awaitVisible(EX_TABS);
     }
 
     public String getActiveExerciseTabLabel() {
@@ -51,6 +61,6 @@ public class LeaderboardPage {
 
     /** Leaderboard requires opted-in users — for a fresh test user this is empty. */
     public boolean isEmptyMessageVisible() {
-        return page.locator(EMPTY).count() > 0;
+        return awaitVisible(EMPTY);
     }
 }

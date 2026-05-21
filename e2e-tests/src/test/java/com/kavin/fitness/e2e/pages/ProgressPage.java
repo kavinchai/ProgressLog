@@ -27,6 +27,16 @@ public class ProgressPage {
         this.page = page;
     }
 
+    private boolean awaitVisible(String selector) {
+        try {
+            page.locator(selector).first().waitFor(
+                    new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void openStrength(String baseUrl) {
         page.navigate(baseUrl + "/progress/strength");
         waitForLoaded();
@@ -61,15 +71,15 @@ public class ProgressPage {
     // ── Strength ─────────────────────────────────────────────────────────────
 
     public boolean isStrengthHeaderVisible() {
-        return page.locator(STRENGTH_HEADER).count() > 0;
+        return awaitVisible(STRENGTH_HEADER);
     }
 
     public boolean isStrengthSidebarVisible() {
-        return page.locator(STRENGTH_SIDEBAR).count() > 0;
+        return awaitVisible(STRENGTH_SIDEBAR);
     }
 
     public boolean isStrengthEmptyStateVisible() {
-        return page.locator(STRENGTH_EMPTY).count() > 0;
+        return awaitVisible(STRENGTH_EMPTY);
     }
 
     public int getStrengthExerciseCount() {
@@ -94,7 +104,7 @@ public class ProgressPage {
     }
 
     public boolean isSessionTableVisible() {
-        return page.locator(SESSION_TABLE).count() > 0;
+        return awaitVisible(SESSION_TABLE);
     }
 
     public int getSessionRowCount() {
@@ -107,11 +117,11 @@ public class ProgressPage {
     }
 
     public boolean hasPRRow() {
-        return page.locator(".strength-pr-row").count() > 0;
+        return awaitVisible(".strength-pr-row");
     }
 
     public boolean hasPRBadge() {
-        return page.locator(".strength-pr-tag").count() > 0;
+        return awaitVisible(".strength-pr-tag");
     }
 
     public void clickStrengthRange(String label) {
@@ -132,15 +142,15 @@ public class ProgressPage {
     // ── Cardio ───────────────────────────────────────────────────────────────
 
     public boolean isCardioHeaderVisible() {
-        return page.locator(CARDIO_HEADER).count() > 0;
+        return awaitVisible(CARDIO_HEADER);
     }
 
     public boolean isCardioSidebarVisible() {
-        return page.locator(CARDIO_SIDEBAR).count() > 0;
+        return awaitVisible(CARDIO_SIDEBAR);
     }
 
     public boolean isCardioEmptyStateVisible() {
-        return page.locator(CARDIO_EMPTY).count() > 0;
+        return awaitVisible(CARDIO_EMPTY);
     }
 
     public int getCardioExerciseCount() {

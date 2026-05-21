@@ -23,6 +23,16 @@ public class SettingsPage {
         this.page = page;
     }
 
+    private boolean awaitVisible(String selector) {
+        try {
+            page.locator(selector).first().waitFor(
+                    new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void open(String baseUrl) {
         page.navigate(baseUrl + "/settings");
         page.locator(PAGE_TITLE).waitFor();
@@ -33,15 +43,15 @@ public class SettingsPage {
     }
 
     public boolean isGoalsSectionVisible() {
-        return page.locator(GOALS_SECTION).count() > 0;
+        return awaitVisible(GOALS_SECTION);
     }
 
     public boolean isPreferencesSectionVisible() {
-        return page.locator(PREFERENCES_SECTION).count() > 0;
+        return awaitVisible(PREFERENCES_SECTION);
     }
 
     public boolean isIntegrationsSectionVisible() {
-        return page.locator(INTEGRATIONS_SECTION).count() > 0;
+        return awaitVisible(INTEGRATIONS_SECTION);
     }
 
     public void enterTrainingCalories(String value) {
@@ -90,6 +100,6 @@ public class SettingsPage {
     }
 
     public boolean isClaudeSetupButtonVisible() {
-        return page.locator(CLAUDE_SETUP_BTN).count() > 0;
+        return awaitVisible(CLAUDE_SETUP_BTN);
     }
 }

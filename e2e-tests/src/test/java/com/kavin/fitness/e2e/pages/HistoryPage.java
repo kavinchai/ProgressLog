@@ -24,6 +24,16 @@ public class HistoryPage {
         this.page = page;
     }
 
+    private boolean awaitVisible(String selector) {
+        try {
+            page.locator(selector).first().waitFor(
+                    new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void openWeekly(String baseUrl) {
         page.navigate(baseUrl + "/history/weekly");
         page.locator(WEEKLY_TITLE).waitFor();
@@ -50,7 +60,7 @@ public class HistoryPage {
     // ── Weekly ───────────────────────────────────────────────────────────────
 
     public boolean isWeeklyTableVisible() {
-        return page.locator(WEEKLY_TABLE).count() > 0;
+        return awaitVisible(WEEKLY_TABLE);
     }
 
     public int getWeeklyRowCount() {
@@ -58,7 +68,7 @@ public class HistoryPage {
     }
 
     public boolean hasTodayRow() {
-        return page.locator(TODAY_ROW).count() > 0;
+        return awaitVisible(TODAY_ROW);
     }
 
     public void clickFirstWeeklyRow() {
@@ -66,17 +76,17 @@ public class HistoryPage {
     }
 
     public boolean isExpandedRowVisible() {
-        return page.locator(".weekly-table tbody .detail-row").count() > 0;
+        return awaitVisible(".weekly-table tbody .detail-row");
     }
 
     public boolean dayDetailContains(String text) {
-        return page.locator("tr.detail-row :text(\"" + text + "\")").count() > 0;
+        return awaitVisible("tr.detail-row :text(\"" + text + "\")");
     }
 
     // ── Total ────────────────────────────────────────────────────────────────
 
     public boolean isCalendarVisible() {
-        return page.locator(CALENDAR).count() > 0;
+        return awaitVisible(CALENDAR);
     }
 
     public int getCalendarCellCount() {
@@ -84,7 +94,7 @@ public class HistoryPage {
     }
 
     public boolean isMonthNavVisible() {
-        return page.locator(MONTH_NAV).count() > 0;
+        return awaitVisible(MONTH_NAV);
     }
 
     public void clickCalendarDay(String isoDate) {
@@ -96,7 +106,7 @@ public class HistoryPage {
     }
 
     public boolean dayModalContains(String text) {
-        return page.locator(".modal-box :text(\"" + text + "\")").count() > 0;
+        return awaitVisible(".modal-box :text(\"" + text + "\")");
     }
 
     public void closeDayModal() {
@@ -104,7 +114,13 @@ public class HistoryPage {
     }
 
     public boolean isRangeButtonVisible(String label) {
-        return page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label)).count() > 0;
+        try {
+            page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label))
+                    .first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void clickRangeButton(String label) {
@@ -128,6 +144,6 @@ public class HistoryPage {
     }
 
     public boolean isMonthPickerVisible() {
-        return page.locator(MONTH_PICKER).count() > 0;
+        return awaitVisible(MONTH_PICKER);
     }
 }

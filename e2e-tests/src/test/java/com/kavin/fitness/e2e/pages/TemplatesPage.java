@@ -60,7 +60,13 @@ public class TemplatesPage {
     }
 
     public boolean isTemplateVisible(String name) {
-        return page.locator(TEMPLATE_NAMES, new Page.LocatorOptions().setHasText(name)).count() > 0;
+        try {
+            page.locator(TEMPLATE_NAMES, new Page.LocatorOptions().setHasText(name))
+                    .first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void waitForTemplateVisible(String name) {
