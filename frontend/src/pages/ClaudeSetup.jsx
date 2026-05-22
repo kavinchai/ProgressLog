@@ -25,7 +25,7 @@ export default function ClaudeSetup() {
     try {
       const res = await api.post('/auth/api-key');
       setApiKey(res.data.apiKey);
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('handleGenerate failed:', err); }
     finally { setApiKeyGenerating(false); }
   }
 
@@ -46,7 +46,7 @@ export default function ClaudeSetup() {
       document.body.appendChild(el);
       el.focus();
       el.select();
-      try { document.execCommand('copy'); setCopied(which); setTimeout(() => setCopied(null), 2000); } catch { /* ignore */ }
+      try { document.execCommand('copy'); setCopied(which); setTimeout(() => setCopied(null), 2000); } catch (err) { console.warn('clipboard fallback failed:', err); }
       document.body.removeChild(el);
     }
   }

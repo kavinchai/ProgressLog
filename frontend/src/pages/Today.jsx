@@ -236,7 +236,7 @@ export default function Today() {
         dayType: next,
       });
       refetchNutrition();
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('toggleDayType failed:', err); }
   }
 
   async function openAddMeal() {

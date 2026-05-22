@@ -1376,8 +1376,8 @@ app.delete("/mcp", async (req, res) => {
 	if (sessionId && sessions.has(sessionId)) {
 		try {
 			await sessions.get(sessionId).transport.handleRequest(req, res);
-		} catch {
-			// ignore
+		} catch (err) {
+			console.warn('MCP DELETE session teardown failed:', err);
 		}
 		cleanupSession(sessionId);
 	} else {

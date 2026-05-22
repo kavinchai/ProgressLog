@@ -7,17 +7,17 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
 
   async function deleteWeight() {
     if (!weightEntry) return;
-    try { await api.delete(`/weight/${weightEntry.id}`); onRefetchW(); } catch { /* ignore */ }
+    try { await api.delete(`/weight/${weightEntry.id}`); onRefetchW(); } catch (err) { console.warn('deleteWeight failed:', err); }
   }
 
   async function deleteNutritionDay() {
     if (!nutritionEntry) return;
-    try { await api.delete(`/nutrition/${nutritionEntry.id}`); onRefetchN(); } catch { /* ignore */ }
+    try { await api.delete(`/nutrition/${nutritionEntry.id}`); onRefetchN(); } catch (err) { console.warn('deleteNutritionDay failed:', err); }
   }
 
   async function deleteWorkoutSession() {
     if (!workoutEntry) return;
-    try { await api.delete(`/workouts/${workoutEntry.id}`); onRefetchWo(); } catch { /* ignore */ }
+    try { await api.delete(`/workouts/${workoutEntry.id}`); onRefetchWo(); } catch (err) { console.warn('deleteWorkoutSession failed:', err); }
   }
 
   async function submitRename() {
@@ -25,7 +25,7 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
     try {
       await api.patch(`/workouts/${workoutEntry.id}/name`, { sessionName: renameValue.trim() || null });
       onRefetchWo();
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('submitRename failed:', err); }
     setRenamingSession(false);
   }
 
@@ -37,7 +37,7 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
         await api.delete(`/steps/${stepEntry.id}`);
       }
       onRefetchS();
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('saveSteps failed:', err); }
   }
 
   // Creates the nutrition day log if it doesn't exist yet, returns the log id.
