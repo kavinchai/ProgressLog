@@ -64,9 +64,9 @@ public class LeaderboardPage {
         return awaitVisible(EMPTY);
     }
 
-    /** Returns true if any leaderboard table cell contains the given username. */
+    /** Returns true if the given username appears anywhere on the leaderboard (table or podium card). */
     public boolean isUsernameOnBoard(String username) {
-        return page.locator(".lb-name:has-text(\"" + username + "\")").count() > 0;
+        return page.locator(".lb-name:has-text(\"" + username + "\"), .lb-podium-user:has-text(\"" + username + "\")").count() > 0;
     }
 
     /** Returns the total lifter count shown in the stats banner, or 0 if not present. */

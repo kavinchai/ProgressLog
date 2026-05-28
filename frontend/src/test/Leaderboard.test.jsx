@@ -283,7 +283,7 @@ describe('Leaderboard — exercise board content', () => {
     mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
     renderLeaderboard();
     await waitFor(() =>
-      expect(screen.getByText('175 lbs')).toBeInTheDocument()
+      expect(screen.getByText('175 lbs × 4 reps')).toBeInTheDocument()
     );
   });
 
@@ -298,7 +298,7 @@ describe('Leaderboard — exercise board content', () => {
     await user.click(screen.getByRole('button', { name: /squats/i }));
 
     await waitFor(() =>
-      expect(screen.getByText('200 lbs')).toBeInTheDocument()
+      expect(screen.getByText('200 lbs × 3 reps')).toBeInTheDocument()
     );
   });
 
