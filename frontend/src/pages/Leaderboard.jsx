@@ -8,6 +8,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
 import api from '../api';
+import featuredConfig from '../config/featuredExercises.json';
 import './Leaderboard.css';
 
 function ChartTooltip({ active, payload, label, formatter }) {
@@ -62,10 +63,17 @@ export default function Leaderboard() {
         if (cancelled) return;
         const d = res.data;
         setData(d);
-        const strengthList = (d?.exercises ?? []).filter((e) => e.type === 'strength');
-        const cardioList   = (d?.exercises ?? []).filter((e) => e.type === 'cardio');
-        if (strengthList.length) setSelectedStrength(strengthList[0].exerciseName);
-        if (cardioList.length)   setSelectedCardio(cardioList[0].exerciseName);
+        const allStrength = (d?.exercises ?? []).filter((e) => e.type === 'strength');
+        const featured = featuredConfig.strength ?? [];
+        let firstStrength = allStrength[0]?.exerciseName ?? null;
+        if (featured.length) {
+          const nameSet = new Set(featured.map((n) => n.toLowerCase()));
+          const match = allStrength.find((e) => nameSet.has(e.exerciseName.toLowerCase()));
+          if (match) firstStrength = match.exerciseName;
+        }
+        if (firstStrength) setSelectedStrength(firstStrength);
+        const cardioList = (d?.exercises ?? []).filter((e) => e.type === 'cardio');
+        if (cardioList.length) setSelectedCardio(cardioList[0].exerciseName);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -75,10 +83,16 @@ export default function Leaderboard() {
     return () => { cancelled = true; };
   }, []);
 
-  const strengthExercises = useMemo(
-    () => (data?.exercises ?? []).filter((e) => e.type === 'strength'),
-    [data],
-  );
+  const strengthExercises = useMemo(() => {
+    const all = (data?.exercises ?? []).filter((e) => e.type === 'strength');
+    const featured = featuredConfig.strength ?? [];
+    if (!featured.length) return all;
+    const nameSet = new Set(featured.map((n) => n.toLowerCase()));
+    const filtered = all.filter((e) => nameSet.has(e.exerciseName.toLowerCase()));
+    return featured
+      .map((name) => filtered.find((e) => e.exerciseName.toLowerCase() === name.toLowerCase()))
+      .filter(Boolean);
+  }, [data]);
   const cardioExercises = useMemo(
     () => (data?.exercises ?? []).filter((e) => e.type === 'cardio'),
     [data],
@@ -322,107 +336,47 @@ function ExerciseBoard({ exercise }) {
     return dist > 0 ? dur / dist : 0;
   };
 
-  const primaryValue = (e) => {
+  const primaryLabel = (e) => {
     switch (metric) {
-      case 'weight':   return Number(e.bestWeight ?? 0);
-      case 'time':     return Number(e.totalDurationSeconds ?? 0);
-      case 'distance': return Number(e.totalDistance ?? 0);
-      case 'count':    return Number(e.bestReps ?? 0);
-      case 'pace':     return paceSecondsPerMile(e);
-      default:         return 0;
+      case 'weight':   return `${Number(e.bestWeight ?? 0)} lbs × ${e.bestReps ?? 0} reps`;
+      case 'time':     return formatDuration(e.totalDurationSeconds);
+      case 'distance': return `${Number(e.totalDistance ?? 0).toFixed(2)} mi`;
+      case 'count':    return `${e.bestReps}`;
+      case 'pace':     return formatPaceSeconds(paceSecondsPerMile(e));
+      default:         return '';
     }
   };
 
-  const formatValue = (v) => {
-    switch (metric) {
-      case 'weight':   return `${v} lbs`;
-      case 'time':     return formatDuration(Math.round(v));
-      case 'distance': return `${v.toFixed(2)} mi`;
-      case 'count':    return `${v}`;
-      case 'pace':     return formatPaceSeconds(v);
-      default:         return `${v}`;
-    }
+  const secondaryLabel = (e) => {
+    if (metric === 'weight')   return formatDate(e.achievedDate);
+    if (metric === 'time')     return e.totalDistance != null ? `${Number(e.totalDistance).toFixed(2)} mi` : '';
+    if (metric === 'distance') return formatDuration(e.totalDurationSeconds);
+    if (metric === 'pace')     return e.totalDistance != null ? `${Number(e.totalDistance).toFixed(2)} mi total` : '';
+    return formatDate(e.achievedDate);
   };
 
-  const columnLabel = {
-    weight:   'Best Set',
-    time:     'Time',
-    distance: 'Distance',
-    count:    'Runs',
-    pace:     'Avg Pace',
-  }[metric] ?? 'Score';
-
-  const chartData = exercise.entries.map((e) => ({
-    name:  e.username,
-    value: primaryValue(e),
-  }));
-
-  if (!chartData.length) {
+  if (!exercise.entries.length) {
     return <div className="lb-empty">No entries yet for this category.</div>;
   }
 
-  // For pace-based categories, lower is better — invert chart bar so larger bars = faster runners.
-  // For time-based, longer is the achievement (longest run time), so don't reverse.
-  const reverseXAxis = metric === 'pace';
+  const medalEmoji = (rank) => {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return `#${rank}`;
+  };
 
   return (
-    <>
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={chartData} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>
-          <CartesianGrid strokeDasharray="2 4" stroke="var(--border-dim)" horizontal={false} />
-          <XAxis type="number" reversed={reverseXAxis}
-                 tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
-                 axisLine={false}
-                 tickLine={false}
-                 tickFormatter={(v) => formatValue(v)} />
-          <YAxis type="category" dataKey="name" width={84}
-                 orientation={reverseXAxis ? 'right' : 'left'}
-                 tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
-                 axisLine={false}
-                 tickLine={false} />
-          <Tooltip content={<ChartTooltip formatter={formatValue} />} />
-          <Bar dataKey="value"
-               name={columnLabel}
-               fill="var(--accent)"
-               radius={reverseXAxis ? [4, 0, 0, 4] : [0, 4, 4, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-
-      <table className="lb-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>User</th>
-            <th className="lb-num">{columnLabel}</th>
-            {metric === 'weight'   && <th className="lb-num lb-hide-sm">Reps</th>}
-            {metric === 'time'     && <th className="lb-num lb-hide-sm">Distance</th>}
-            {metric === 'distance' && <th className="lb-num lb-hide-sm">Duration</th>}
-            {metric === 'pace'     && <th className="lb-num lb-hide-sm">Total Distance</th>}
-            <th className="lb-num lb-hide-sm">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {exercise.entries.map((e) => (
-            <tr key={`${e.rank}-${e.username}`}>
-              <td className={rankClass(e.rank)}>{e.rank}</td>
-              <td className="lb-name">{e.username}</td>
-              <td className="lb-num">
-                {metric === 'weight'   && `${Number(e.bestWeight ?? 0)} lbs`}
-                {metric === 'time'     && formatDuration(e.totalDurationSeconds)}
-                {metric === 'distance' && `${Number(e.totalDistance ?? 0).toFixed(2)} mi`}
-                {metric === 'count'    && `${e.bestReps}`}
-                {metric === 'pace'     && formatPaceSeconds(paceSecondsPerMile(e))}
-              </td>
-              {metric === 'weight'   && <td className="lb-num lb-hide-sm">{e.bestReps}</td>}
-              {metric === 'time'     && <td className="lb-num lb-hide-sm">{e.totalDistance != null ? `${Number(e.totalDistance).toFixed(2)} mi` : '—'}</td>}
-              {metric === 'distance' && <td className="lb-num lb-hide-sm">{formatDuration(e.totalDurationSeconds)}</td>}
-              {metric === 'pace'     && <td className="lb-num lb-hide-sm">{e.totalDistance != null ? `${Number(e.totalDistance).toFixed(2)} mi` : '—'}</td>}
-              <td className="lb-num lb-hide-sm">{formatDate(e.achievedDate)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
+    <div className="lb-podium">
+      {exercise.entries.map((e) => (
+        <div key={`${e.rank}-${e.username}`} className={`lb-podium-card lb-podium-rank-${Math.min(e.rank, 4)}`}>
+          <span className="lb-podium-medal">{medalEmoji(e.rank)}</span>
+          <span className="lb-podium-user">{e.username}</span>
+          <span className="lb-podium-value">{primaryLabel(e)}</span>
+          <span className="lb-podium-date">{secondaryLabel(e)}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 

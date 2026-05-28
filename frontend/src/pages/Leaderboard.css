@@ -235,6 +235,74 @@
   color: var(--accent-fg);
 }
 
+/* ── Podium / ranked cards ─────────────────────────────────────────────── */
+.lb-podium {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lb-podium-card {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  border: 1px solid var(--border-dim);
+  transition: border-color var(--transition-fast);
+}
+.lb-podium-card:hover {
+  border-color: var(--border-strong);
+}
+
+.lb-podium-rank-1 {
+  background: linear-gradient(90deg, rgba(212,160,23,0.08) 0%, var(--bg) 60%);
+  border-color: rgba(212,160,23,0.25);
+}
+.lb-podium-rank-2 {
+  background: linear-gradient(90deg, rgba(160,160,160,0.06) 0%, var(--bg) 60%);
+  border-color: rgba(160,160,160,0.2);
+}
+.lb-podium-rank-3 {
+  background: linear-gradient(90deg, rgba(182,116,63,0.06) 0%, var(--bg) 60%);
+  border-color: rgba(182,116,63,0.2);
+}
+
+.lb-podium-medal {
+  font-size: var(--fs-lg);
+  text-align: center;
+}
+.lb-podium-rank-4 .lb-podium-medal {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-weight: var(--fw-semibold);
+}
+
+.lb-podium-user {
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-podium-value {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lb-podium-date {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* ── Leaderboard table ─────────────────────────────────────────────────── */
 .lb-table {
   width: 100%;
@@ -351,6 +419,12 @@
   .lb-table td { padding: 8px 6px; font-size: var(--fs-xs); }
   .lb-rank     { width: 32px; }
   .lb-hide-sm  { display: none; }
+
+  .lb-podium-card {
+    grid-template-columns: 32px 1fr auto;
+    padding: 10px 12px;
+  }
+  .lb-podium-date { display: none; }
 }
 
 @media (max-width: 400px) {
