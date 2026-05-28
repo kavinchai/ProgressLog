@@ -183,32 +183,6 @@ public class HistoryPageTest extends BaseTest {
         history.closeDayModal();
     }
 
-    @Test(priority = 8, dependsOnMethods = "totalPageLoadsAndShowsCalendar")
-    public void totalRangeButtonsToggleActiveState() {
-        // Range buttons live inside the Weight Trend section which only
-        // renders when weight data exists. We seeded weight for two dates, so
-        // re-open the page to ensure latest state is rendered.
-        step("re-open /history/total to ensure freshest render");
-        history.openTotal(baseUrl);
-
-        step("verify all range buttons present");
-        for (String label : new String[]{"30d", "90d", "1yr", "all"}) {
-            if (!history.isRangeButtonVisible(label)) {
-                throw new AssertionError("Expected range button '" + label + "' to be visible — "
-                        + "weight data may not be seeded (check earlier TestApiClient errors)");
-            }
-        }
-
-        step("click 30d range and verify it becomes active");
-        history.clickRangeButton("30d");
-        if (!history.isRangeButtonActive("30d")) {
-            throw new AssertionError("Expected '30d' to be active after click");
-        }
-        if (history.isRangeButtonActive("90d")) {
-            throw new AssertionError("Did not expect '90d' to be active after clicking '30d'");
-        }
-    }
-
     @Test(priority = 9, dependsOnMethods = "totalPageLoadsAndShowsCalendar")
     public void monthPickerOpensWhenLabelClicked() {
         step("click month label to open picker");

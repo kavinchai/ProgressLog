@@ -18,8 +18,6 @@ public class HistoryPage {
     private static final String MONTH_NAV = ".month-nav";
     private static final String MONTH_PICKER = ".month-picker";
     private static final String DAY_MODAL_TITLE = ".modal-title";
-    private static final String RANGE_BUTTONS = ".range-selector .btn";
-
     public HistoryPage(Page page) {
         this.page = page;
     }
@@ -111,32 +109,6 @@ public class HistoryPage {
 
     public void closeDayModal() {
         page.locator(".modal-box .modal-close").click();
-    }
-
-    public boolean isRangeButtonVisible(String label) {
-        try {
-            page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label))
-                    .first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public void clickRangeButton(String label) {
-        Locator btn = page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label));
-        if (btn.count() == 0) {
-            throw new AssertionError("Range button '" + label + "' not found");
-        }
-        btn.first().click();
-    }
-
-    public boolean isRangeButtonActive(String label) {
-        Locator btn = page.locator(RANGE_BUTTONS, new Page.LocatorOptions().setHasText(label));
-        if (btn.count() == 0)
-            return false;
-        String classes = btn.first().getAttribute("class");
-        return classes != null && classes.contains("range-active");
     }
 
     public void clickMonthPickerToggle() {
