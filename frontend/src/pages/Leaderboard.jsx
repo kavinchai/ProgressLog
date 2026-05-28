@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import {
   ResponsiveContainer,
-  BarChart, Bar,
   LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts';
 import api from '../api';
 import featuredConfig from '../config/featuredExercises.json';
@@ -23,13 +22,6 @@ function ChartTooltip({ active, payload, label, formatter }) {
       ))}
     </div>
   );
-}
-
-function rankClass(rank) {
-  if (rank === 1) return 'lb-rank lb-rank-1';
-  if (rank === 2) return 'lb-rank lb-rank-2';
-  if (rank === 3) return 'lb-rank lb-rank-3';
-  return 'lb-rank';
 }
 
 function formatDate(iso) {
@@ -103,14 +95,6 @@ export default function Leaderboard() {
     const sel  = exerciseTab === 'cardio' ? selectedCardio  : selectedStrength;
     return list.find((e) => e.exerciseName === sel) ?? list[0] ?? null;
   }, [exerciseTab, strengthExercises, cardioExercises, selectedStrength, selectedCardio]);
-
-  const topLiftersChartData = useMemo(() => {
-    if (!data?.topLifters) return [];
-    return data.topLifters.map((u) => ({
-      name:   u.username,
-      volume: Number(u.totalVolumeLbs ?? 0),
-    }));
-  }, [data]);
 
   const activityChartData = useMemo(() => {
     if (!data?.activity) return [];
@@ -235,60 +219,34 @@ export default function Leaderboard() {
                 <span className="lb-card-sub">By total volume (weight × reps)</span>
               </div>
 
-              {topLiftersChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={topLiftersChartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-                    <CartesianGrid strokeDasharray="2 4" stroke="var(--border-dim)" vertical={false} />
-                    <XAxis dataKey="name"
-                           tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
-                           axisLine={{ stroke: 'var(--border-dim)' }}
-                           tickLine={false} />
-                    <YAxis tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
-                           axisLine={false}
-                           tickLine={false}
-                           width={56}
-                           tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v} />
-                    <Tooltip content={<ChartTooltip formatter={(v) => `${Math.round(v).toLocaleString()} lbs`} />} />
-                    <Bar dataKey="volume" name="Volume" fill="var(--accent)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              {data.topLifters.length > 0 ? (
+                <div className="lb-podium">
+                  {data.topLifters.map((u) => {
+                    const medal = u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : `#${u.rank}`;
+                    return (
+                      <div key={u.username} className={`lb-podium-card lb-podium-rank-${Math.min(u.rank, 4)}`}>
+                        <span className="lb-podium-medal">{medal}</span>
+                        <span className="lb-podium-user">{u.username}</span>
+                        <span className="lb-podium-value">{Math.round(u.totalVolumeLbs).toLocaleString()} lbs</span>
+                        <span className="lb-podium-date">{u.totalSets} sets · {u.sessionCount} sessions</span>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <div className="lb-empty">No volume data yet.</div>
               )}
-
-              <table className="lb-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>User</th>
-                    <th className="lb-num">Volume</th>
-                    <th className="lb-num lb-hide-sm">Sets</th>
-                    <th className="lb-num lb-hide-sm">Sessions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.topLifters.map((u) => (
-                    <tr key={u.username}>
-                      <td className={rankClass(u.rank)}>{u.rank}</td>
-                      <td className="lb-name">{u.username}</td>
-                      <td className="lb-num">{Math.round(u.totalVolumeLbs).toLocaleString()} lbs</td>
-                      <td className="lb-num lb-hide-sm">{u.totalSets}</td>
-                      <td className="lb-num lb-hide-sm">{u.sessionCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
 
-            {/* Community activity */}
+            {/* Community activity — Sessions */}
             <div className="lb-card">
               <div className="lb-card-head">
-                <h2 className="lb-card-title">Community Activity</h2>
+                <h2 className="lb-card-title">Sessions</h2>
                 <span className="lb-card-sub">Last 30 days</span>
               </div>
 
               {activityChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={activityChartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
                     <CartesianGrid strokeDasharray="2 4" stroke="var(--border-dim)" vertical={false} />
                     <XAxis dataKey="date"
@@ -301,18 +259,44 @@ export default function Leaderboard() {
                            tickLine={false}
                            width={36} />
                     <Tooltip content={<ChartTooltip />} />
-                    <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--font)' }} />
                     <Line type="monotone" dataKey="sessions" name="Sessions"
                           stroke="var(--accent)" strokeWidth={1.8}
-                          dot={false} activeDot={{ r: 4 }} />
-                    <Line type="monotone" dataKey="sets" name="Sets"
-                          stroke="var(--success)" strokeWidth={1.5}
-                          strokeDasharray="3 3"
                           dot={false} activeDot={{ r: 4 }} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="lb-empty">No activity yet.</div>
+                <div className="lb-empty">No session data yet.</div>
+              )}
+            </div>
+
+            {/* Community activity — Sets */}
+            <div className="lb-card">
+              <div className="lb-card-head">
+                <h2 className="lb-card-title">Sets</h2>
+                <span className="lb-card-sub">Last 30 days</span>
+              </div>
+
+              {activityChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={activityChartData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                    <CartesianGrid strokeDasharray="2 4" stroke="var(--border-dim)" vertical={false} />
+                    <XAxis dataKey="date"
+                           interval={Math.max(0, Math.floor(activityChartData.length / 8))}
+                           tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
+                           axisLine={{ stroke: 'var(--border-dim)' }}
+                           tickLine={false} />
+                    <YAxis tick={{ fontFamily: 'var(--font)', fontSize: 11, fill: 'var(--muted)' }}
+                           axisLine={false}
+                           tickLine={false}
+                           width={36} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Line type="monotone" dataKey="sets" name="Sets"
+                          stroke="var(--success)" strokeWidth={1.8}
+                          dot={false} activeDot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="lb-empty">No set data yet.</div>
               )}
             </div>
           </div>
