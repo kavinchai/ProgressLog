@@ -62,7 +62,7 @@ beforeEach(() => {
   useAuthStore.setState({ authenticated: true, username: 'alice' });
   // Route-specific API GET mocks: email + privacy endpoints
   api.get.mockImplementation((url) => {
-    if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: false } });
+    if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: false, shareCalendar: false } });
     return Promise.resolve({ data: { email: 'alice@example.com' } });
   });
   // Default empty data sets for export/import section
@@ -512,7 +512,10 @@ describe('Settings — privacy / data sharing', () => {
     await userEvent.click(toggle);
 
     await waitFor(() =>
-      expect(api.put).toHaveBeenCalledWith('/profile/privacy', { shareData: true })
+      expect(api.put).toHaveBeenCalledWith(
+        '/profile/privacy',
+        { shareData: true, shareCalendar: false },
+      )
     );
   });
 
@@ -531,7 +534,7 @@ describe('Settings — privacy / data sharing', () => {
 
   it('shows shareData as On when API returns true', async () => {
     api.get.mockImplementation((url) => {
-      if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: true } });
+      if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: true, shareCalendar: false } });
       return Promise.resolve({ data: { email: 'alice@example.com' } });
     });
     setupProfile();
@@ -540,6 +543,48 @@ describe('Settings — privacy / data sharing', () => {
     await waitFor(() => {
       const onLabel = screen.getAllByText(/^on$/i);
       expect(onLabel.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('shows the Share Calendar label', async () => {
+    setupProfile();
+    renderSettings();
+    await waitFor(() =>
+      expect(screen.getByText(/share on community calendar/i)).toBeInTheDocument()
+    );
+  });
+
+  it('clicking the calendar toggle PUTs shareCalendar=true while preserving shareData', async () => {
+    api.put.mockResolvedValue({ data: { shareData: false, shareCalendar: true } });
+    setupProfile();
+    renderSettings();
+
+    await waitFor(() =>
+      expect(screen.getByText(/share on community calendar/i)).toBeInTheDocument()
+    );
+
+    const toggle = screen.getByRole('button', { name: /toggle calendar sharing/i });
+    await userEvent.click(toggle);
+
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith(
+        '/profile/privacy',
+        { shareData: false, shareCalendar: true },
+      )
+    );
+  });
+
+  it('shows shareCalendar as On when API returns true', async () => {
+    api.get.mockImplementation((url) => {
+      if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: false, shareCalendar: true } });
+      return Promise.resolve({ data: { email: 'alice@example.com' } });
+    });
+    setupProfile();
+    renderSettings();
+
+    await waitFor(() => {
+      const toggle = screen.getByRole('button', { name: /toggle calendar sharing/i });
+      expect(toggle).toHaveAttribute('aria-pressed', 'true');
     });
   });
 });

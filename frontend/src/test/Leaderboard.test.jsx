@@ -3,8 +3,11 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import Leaderboard from '../pages/Leaderboard';
+import { localDateStr } from '../utils/date';
 
 vi.mock('../pages/Leaderboard.css', () => ({}));
+vi.mock('../pages/SharedCalendar.css', () => ({}));
+vi.mock('../pages/TotalStats.css', () => ({}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }) => <div>{children}</div>,
@@ -348,5 +351,56 @@ describe('Leaderboard — API', () => {
     await waitFor(() =>
       expect(mockApiGet).toHaveBeenCalledWith('/leaderboard')
     );
+  });
+});
+
+// ── Shared-calendar sub-navigation ────────────────────────────────────────────
+
+describe('Leaderboard — sub-tabs', () => {
+  it('renders Leaderboard and Shared Calendar sub-tabs', async () => {
+    mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
+    renderLeaderboard();
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /^leaderboard$/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /^shared calendar$/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('clicking Shared Calendar fetches /shared-calendar and shows calendar entries', async () => {
+    const user = userEvent.setup();
+    const today = localDateStr(new Date());
+    mockApiGet.mockImplementation((url) => {
+      if (url === '/shared-calendar') {
+        return Promise.resolve({
+          data: {
+            totalUsers: 1,
+            entries: [
+              { username: 'dana', sessionDate: today,
+                sets: [
+                  { exerciseName: 'Pull-ups', setNumber: 1, reps: 10, weightLbs: 0 },
+                ] },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: LEADERBOARD_DATA });
+    });
+
+    renderLeaderboard();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /^shared calendar$/i })).toBeInTheDocument()
+    );
+
+    await user.click(screen.getByRole('button', { name: /^shared calendar$/i }));
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenCalledWith('/shared-calendar');
+      expect(screen.getByText('dana')).toBeInTheDocument();
+      expect(screen.getByText(/pull-ups/i)).toBeInTheDocument();
+    });
   });
 });

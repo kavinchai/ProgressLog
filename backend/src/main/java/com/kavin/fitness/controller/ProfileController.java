@@ -137,18 +137,20 @@ public class ProfileController {
     @GetMapping("/privacy")
     public ResponseEntity<PrivacyDTO> getPrivacy(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userResolver.resolve(userDetails);
-        return ResponseEntity.ok(new PrivacyDTO(user.isShareData()));
+        return ResponseEntity.ok(new PrivacyDTO(user.isShareData(), user.isShareCalendar()));
     }
 
     @PutMapping("/privacy")
     public ResponseEntity<PrivacyDTO> updatePrivacy(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody PrivacyDTO dto) {
-        log.info("PUT privacy user={} shareData={}", userDetails.getUsername(), dto.isShareData());
+        log.info("PUT privacy user={} shareData={} shareCalendar={}",
+                userDetails.getUsername(), dto.isShareData(), dto.isShareCalendar());
         User user = userResolver.resolve(userDetails);
         user.setShareData(dto.isShareData());
+        user.setShareCalendar(dto.isShareCalendar());
         userRepository.save(user);
-        return ResponseEntity.ok(new PrivacyDTO(user.isShareData()));
+        return ResponseEntity.ok(new PrivacyDTO(user.isShareData(), user.isShareCalendar()));
     }
 
 }

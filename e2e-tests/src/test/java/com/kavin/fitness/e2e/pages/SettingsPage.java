@@ -136,4 +136,23 @@ public class SettingsPage {
                     .setTimeout(5000));
         }
     }
+
+    // ── Share-calendar toggle ───────────────────────────────────────────────
+
+    private static final String CALENDAR_TOGGLE       = "div.unit-toggle[aria-label='Toggle calendar sharing']";
+    private static final String CALENDAR_ACTIVE_LABEL = CALENDAR_TOGGLE + " .unit-toggle-label.active";
+
+    public String getShareCalendarState() {
+        Locator active = page.locator(CALENDAR_ACTIVE_LABEL);
+        return active.count() == 0 ? "" : active.first().innerText();
+    }
+
+    public void clickShareCalendarToggle() {
+        page.locator(CALENDAR_TOGGLE).click();
+    }
+
+    public void waitForShareCalendarState(String expectedLabel) {
+        page.locator(CALENDAR_ACTIVE_LABEL + ":has-text(\"" + expectedLabel + "\")").waitFor(
+                new Locator.WaitForOptions().setTimeout(5000));
+    }
 }

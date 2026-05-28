@@ -42,4 +42,7 @@ public class User {
 
     @Column(name = "share_data", nullable = false)
     private boolean shareData = false;
+
+    @Column(name = "share_calendar", nullable = false)
+    private boolean shareCalendar = false;
 }
