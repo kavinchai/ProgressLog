@@ -61,6 +61,7 @@ export default function Settings() {
 
   // ── Privacy state ────────────────────────────────────────────────────────
   const [shareData,        setShareData]        = useState(false);
+  const [shareCalendar,    setShareCalendar]    = useState(false);
   const [privacyLoading,   setPrivacyLoading]   = useState(true);
   const [privacySaving,    setPrivacySaving]    = useState(false);
   const [privacyError,     setPrivacyError]     = useState(null);
@@ -75,7 +76,10 @@ export default function Settings() {
   // ── Load privacy on mount ───────────────────────────────────────────────
   useEffect(() => {
     api.get('/profile/privacy')
-      .then((res) => setShareData(Boolean(res.data.shareData)))
+      .then((res) => {
+        setShareData(Boolean(res.data.shareData));
+        setShareCalendar(Boolean(res.data.shareCalendar));
+      })
       .catch(() => setPrivacyError('Could not load privacy setting.'))
       .finally(() => setPrivacyLoading(false));
   }, []);
@@ -86,9 +90,24 @@ export default function Settings() {
     setPrivacyError(null);
     setShareData(next); // optimistic
     try {
-      await api.put('/profile/privacy', { shareData: next });
+      await api.put('/profile/privacy', { shareData: next, shareCalendar });
     } catch (err) {
       setShareData(!next); // revert
+      setPrivacyError(err.response?.data?.message ?? 'Failed to update privacy.');
+    } finally {
+      setPrivacySaving(false);
+    }
+  }
+
+  async function handleShareCalendarToggle() {
+    const next = !shareCalendar;
+    setPrivacySaving(true);
+    setPrivacyError(null);
+    setShareCalendar(next); // optimistic
+    try {
+      await api.put('/profile/privacy', { shareData, shareCalendar: next });
+    } catch (err) {
+      setShareCalendar(!next); // revert
       setPrivacyError(err.response?.data?.message ?? 'Failed to update privacy.');
     } finally {
       setPrivacySaving(false);
@@ -464,7 +483,7 @@ export default function Settings() {
         <header className="settings-card-head">
           <h2 className="settings-card-title">Privacy</h2>
           <p className="settings-card-desc">
-            Choose whether your workout data appears in the public community leaderboard.
+            Choose whether your workout data appears in public community views.
             Only your username, exercise names, and aggregated stats are shown.
           </p>
         </header>
@@ -472,26 +491,48 @@ export default function Settings() {
           {privacyLoading ? (
             <p className="settings-loading">Loading…</p>
           ) : (
-            <div className="settings-field">
-              <label>Share Data on Leaderboard</label>
-              <div className="settings-input-row">
-                <div
-                  className="unit-toggle"
-                  onClick={privacySaving ? undefined : handleShareDataToggle}
-                  role="button"
-                  aria-label="Toggle data sharing"
-                  aria-pressed={shareData}
-                >
-                  <span className={`unit-toggle-label${!shareData ? ' active' : ''}`}>Off</span>
-                  <div className={`toggle-track${shareData ? ' on' : ''}`}>
-                    <div className="toggle-thumb" />
+            <>
+              <div className="settings-field">
+                <label>Share Data on Leaderboard</label>
+                <div className="settings-input-row">
+                  <div
+                    className="unit-toggle"
+                    onClick={privacySaving ? undefined : handleShareDataToggle}
+                    role="button"
+                    aria-label="Toggle data sharing"
+                    aria-pressed={shareData}
+                  >
+                    <span className={`unit-toggle-label${!shareData ? ' active' : ''}`}>Off</span>
+                    <div className={`toggle-track${shareData ? ' on' : ''}`}>
+                      <div className="toggle-thumb" />
+                    </div>
+                    <span className={`unit-toggle-label${shareData ? ' active' : ''}`}>On</span>
                   </div>
-                  <span className={`unit-toggle-label${shareData ? ' active' : ''}`}>On</span>
+                  {privacySaving && <span className="settings-saved">Saving…</span>}
                 </div>
-                {privacySaving && <span className="settings-saved">Saving…</span>}
               </div>
+
+              <div className="settings-field">
+                <label>Share on Community Calendar</label>
+                <div className="settings-input-row">
+                  <div
+                    className="unit-toggle"
+                    onClick={privacySaving ? undefined : handleShareCalendarToggle}
+                    role="button"
+                    aria-label="Toggle calendar sharing"
+                    aria-pressed={shareCalendar}
+                  >
+                    <span className={`unit-toggle-label${!shareCalendar ? ' active' : ''}`}>Off</span>
+                    <div className={`toggle-track${shareCalendar ? ' on' : ''}`}>
+                      <div className="toggle-thumb" />
+                    </div>
+                    <span className={`unit-toggle-label${shareCalendar ? ' active' : ''}`}>On</span>
+                  </div>
+                </div>
+              </div>
+
               {privacyError && <p className="settings-error">{privacyError}</p>}
-            </div>
+            </>
           )}
         </div>
       </section>

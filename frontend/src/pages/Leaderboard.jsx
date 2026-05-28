@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import api from '../api';
 import featuredConfig from '../config/featuredExercises.json';
+import SharedCalendar from './SharedCalendar';
 import './Leaderboard.css';
 
 function ChartTooltip({ active, payload, label, formatter }) {
@@ -44,6 +45,7 @@ export default function Leaderboard() {
 
   const authenticated = useAuthStore((s) => s.authenticated);
 
+  const [view,                 setView]                 = useState('leaderboard');
   const [exerciseTab,          setExerciseTab]          = useState('strength');
   const [selectedStrength,     setSelectedStrength]     = useState(null);
   const [selectedCardio,       setSelectedCardio]       = useState(null);
@@ -125,23 +127,43 @@ export default function Leaderboard() {
       )}
 
       <section className="lb-hero">
-        <h1>Community Leaderboard</h1>
+        <h1>{view === 'calendar' ? 'Community Calendar' : 'Community Leaderboard'}</h1>
         <p>
-          Live rankings powered by lifters who chose to share their data.
-          Compete on volume, climb the per-exercise boards, and see what the community is hitting this month.
+          {view === 'calendar'
+            ? 'Workouts from lifters who opted into the community calendar.'
+            : 'Live rankings powered by lifters who chose to share their data. Compete on volume, climb the per-exercise boards, and see what the community is hitting this month.'}
         </p>
       </section>
 
-      {loading && <div className="lb-loading">Loading leaderboard…</div>}
-      {error   && <div className="lb-empty">{error}</div>}
+      <nav className="lb-subnav">
+        <button
+          type="button"
+          className={'lb-subnav-btn' + (view === 'leaderboard' ? ' lb-subnav-btn-active' : '')}
+          onClick={() => setView('leaderboard')}
+        >
+          Leaderboard
+        </button>
+        <button
+          type="button"
+          className={'lb-subnav-btn' + (view === 'calendar' ? ' lb-subnav-btn-active' : '')}
+          onClick={() => setView('calendar')}
+        >
+          Shared Calendar
+        </button>
+      </nav>
 
-      {!loading && !error && data && data.totalUsers === 0 && (
+      {view === 'calendar' && <SharedCalendar />}
+
+      {view === 'leaderboard' && loading && <div className="lb-loading">Loading leaderboard…</div>}
+      {view === 'leaderboard' && error   && <div className="lb-empty">{error}</div>}
+
+      {view === 'leaderboard' && !loading && !error && data && data.totalUsers === 0 && (
         <div className="lb-empty">
           No one has opted in to sharing yet. Sign in and toggle <b>Share Data</b> in Settings to get on the board.
         </div>
       )}
 
-      {!loading && !error && data && data.totalUsers > 0 && (
+      {view === 'leaderboard' && !loading && !error && data && data.totalUsers > 0 && (
         <>
           <div className="lb-stats">
             <div className="lb-stat">

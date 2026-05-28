@@ -33,4 +33,10 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
            "WHERE s.user.id = :userId " +
            "ORDER BY s.sessionDate ASC")
     List<WorkoutSession> findByUserIdWithSetsOrderByDateAsc(@Param("userId") Long userId);
+
+    @Query("SELECT DISTINCT s FROM WorkoutSession s " +
+           "LEFT JOIN FETCH s.exerciseSets " +
+           "WHERE s.user.id IN :userIds " +
+           "ORDER BY s.sessionDate DESC")
+    List<WorkoutSession> findByUserIdInWithSetsOrderByDateDesc(@Param("userIds") List<Long> userIds);
 }

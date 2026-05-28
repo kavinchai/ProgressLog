@@ -172,6 +172,40 @@
 }
 
 /* ── Exercise type tabs (Strength / Cardio) ────────────────────────────── */
+.lb-subnav {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 0 var(--space-md);
+  border-bottom: 1px solid var(--border-dim);
+  margin: 0 auto var(--space-md);
+  max-width: 480px;
+}
+
+.lb-subnav-btn {
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  font-family: var(--font);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.lb-subnav-btn:hover {
+  color: var(--fg);
+  background: var(--hover-bg);
+}
+
+.lb-subnav-btn-active {
+  color: var(--accent);
+  background: var(--accent-light);
+  font-weight: var(--fw-semibold);
+}
+
 .lb-ex-tabs {
   display: inline-flex;
   align-items: center;

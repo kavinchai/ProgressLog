@@ -204,8 +204,15 @@ public class TestApiClient {
     }
 
     public void setShareData(boolean shareData) {
-        assertOk(put("/profile/privacy", "{\"shareData\":" + shareData + "}"),
+        assertOk(put("/profile/privacy",
+                        "{\"shareData\":" + shareData + ",\"shareCalendar\":false}"),
                 "set shareData=" + shareData);
+    }
+
+    public void setShareCalendar(boolean shareCalendar) {
+        assertOk(put("/profile/privacy",
+                        "{\"shareData\":false,\"shareCalendar\":" + shareCalendar + "}"),
+                "set shareCalendar=" + shareCalendar);
     }
 
     public HttpResponse<String> delete(String path) {

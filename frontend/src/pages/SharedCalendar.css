@@ -1,0 +1,124 @@
+.sc-wrap {
+  width: 100%;
+}
+
+.sc-loading,
+.sc-error,
+.sc-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.sc-error {
+  color: var(--danger, #d33);
+}
+
+.sc-stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 12px 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sc-view-tabs-row {
+  display: flex;
+  justify-content: center;
+}
+
+.sc-view-tabs {
+  margin: 4px 0 8px;
+}
+
+.sc-view-tabs button.page-tab {
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+.sc-view-tabs button.page-tab.page-tab-active {
+  background: var(--accent-light);
+}
+
+.sc-range-label {
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  margin-bottom: 8px;
+}
+
+.sc-day-cell {
+  cursor: default;
+  align-items: stretch;
+  text-align: left;
+}
+
+.sc-day-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.sc-day-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--accent-light, rgba(0,0,0,0.04));
+  font-size: 11px;
+  overflow: hidden;
+}
+
+.sc-day-user {
+  font-weight: 600;
+  color: var(--accent, var(--fg));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sc-exercise {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.2;
+}
+
+.sc-exercise-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.sc-exercise-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-exercise-weight {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sc-exercise-reps {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

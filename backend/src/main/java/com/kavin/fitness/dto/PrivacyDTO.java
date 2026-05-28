@@ -8,4 +8,5 @@ import lombok.Setter;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class PrivacyDTO {
     private boolean shareData;
+    private boolean shareCalendar;
 }
