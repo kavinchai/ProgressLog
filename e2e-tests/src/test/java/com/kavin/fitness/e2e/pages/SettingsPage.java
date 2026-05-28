@@ -102,4 +102,38 @@ public class SettingsPage {
     public boolean isClaudeSetupButtonVisible() {
         return awaitVisible(CLAUDE_SETUP_BTN);
     }
+
+    // ── Privacy / share-data toggle ─────────────────────────────────────────
+
+    private static final String PRIVACY_SECTION = "h2.settings-card-title:has-text(\"Privacy\")";
+    private static final String SHARE_DATA_TOGGLE = "div.unit-toggle[aria-label='Toggle data sharing']";
+    private static final String SHARE_DATA_ACTIVE_LABEL = SHARE_DATA_TOGGLE + " .unit-toggle-label.active";
+    private static final String PRIVACY_SAVING = ".settings-saved:has-text(\"Saving\")";
+
+    public boolean isPrivacySectionVisible() {
+        return awaitVisible(PRIVACY_SECTION);
+    }
+
+    public String getShareDataState() {
+        Locator active = page.locator(SHARE_DATA_ACTIVE_LABEL);
+        return active.count() == 0 ? "" : active.first().innerText();
+    }
+
+    public void clickShareDataToggle() {
+        page.locator(SHARE_DATA_TOGGLE).click();
+    }
+
+    public void waitForShareDataState(String expectedLabel) {
+        page.locator(SHARE_DATA_ACTIVE_LABEL + ":has-text(\"" + expectedLabel + "\")").waitFor(
+                new Locator.WaitForOptions().setTimeout(5000));
+    }
+
+    public void waitForPrivacySaveComplete() {
+        Locator saving = page.locator(PRIVACY_SAVING);
+        if (saving.count() > 0) {
+            saving.first().waitFor(new Locator.WaitForOptions()
+                    .setState(com.microsoft.playwright.options.WaitForSelectorState.HIDDEN)
+                    .setTimeout(5000));
+        }
+    }
 }

@@ -189,6 +189,25 @@ public class TestApiClient {
         }
     }
 
+    public HttpResponse<String> put(String path, String json) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(apiUrl + path))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(10))
+                    .PUT(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+            return http.send(req, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            throw new RuntimeException("PUT " + path + " failed: " + e.getMessage(), e);
+        }
+    }
+
+    public void setShareData(boolean shareData) {
+        assertOk(put("/profile/privacy", "{\"shareData\":" + shareData + "}"),
+                "set shareData=" + shareData);
+    }
+
     public HttpResponse<String> delete(String path) {
         try {
             HttpRequest req = HttpRequest.newBuilder()

@@ -63,4 +63,20 @@ public class LeaderboardPage {
     public boolean isEmptyMessageVisible() {
         return awaitVisible(EMPTY);
     }
+
+    /** Returns true if any leaderboard table cell contains the given username. */
+    public boolean isUsernameOnBoard(String username) {
+        return page.locator(".lb-name:has-text(\"" + username + "\")").count() > 0;
+    }
+
+    /** Returns the total lifter count shown in the stats banner, or 0 if not present. */
+    public int getTotalUsersCount() {
+        Locator stats = page.locator(".lb-stat-value");
+        if (stats.count() == 0) return 0;
+        try {
+            return Integer.parseInt(stats.first().innerText().replace(",", ""));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
 }
