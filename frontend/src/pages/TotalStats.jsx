@@ -5,7 +5,6 @@ import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import DayDetail from "../components/DayDetail";
 import Modal from "../components/Modal";
-import WeightLineChart from "../components/WeightLineChart";
 import BodyMap from "../components/BodyMap";
 import MuscleDetailPanel from "../components/MuscleDetailPanel";
 import {
@@ -38,9 +37,6 @@ function emptyRow(date) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const RANGE_OPTIONS = ["30d", "90d", "1yr", "all"];
-const RANGE_DAYS = { "30d": 30, "90d": 90, "1yr": 365, all: Infinity };
-
 const MONTH_NAMES = [
 	"January",
 	"February",
@@ -68,7 +64,6 @@ export default function TotalStats() {
 	const { unit, toDisplay } = useWeightUnit();
 
 	const [selectedDay, setSelectedDay] = useState(null);
-	const [rangeKey, setRangeKey] = useState("90d");
 	const [logMonth, setLogMonth] = useState(null);
 	const [picker, setPicker] = useState(null);
 	const [selectedMuscle, setSelectedMuscle] = useState(null);
@@ -90,17 +85,6 @@ export default function TotalStats() {
 		nutritionData,
 		workoutData,
 		stepData,
-	);
-
-	const cutoff =
-		RANGE_DAYS[rangeKey] === Infinity
-			? null
-			: localDateStr(new Date(Date.now() - RANGE_DAYS[rangeKey] * 86400000));
-	const weightBarDates = [...allDates]
-		.reverse()
-		.filter((d) => !cutoff || d >= cutoff);
-	const weightBarWeights = weightBarDates.map(
-		(d) => rows.find((row) => row.date === d)?.weight ?? null,
 	);
 
 	const allMonths = [...new Set(allDates.map((d) => d.slice(0, 7)))].sort();
@@ -440,37 +424,6 @@ export default function TotalStats() {
 				</Modal>
 			)}
 
-			{/* Weight trend */}
-			{weightBarWeights.some((w) => w != null) && (
-				<div className="section-box">
-					<div className="section-header">
-						<span className="section-title">Weight Trend</span>
-						<div className="range-selector">
-							{RANGE_OPTIONS.map((r) => (
-								<button
-									key={r}
-									className={
-										"btn btn-sm" + (rangeKey === r ? " range-active" : "")
-									}
-									onClick={() => setRangeKey(r)}
-								>
-									{r}
-								</button>
-							))}
-						</div>
-					</div>
-					<div className="section-body">
-						<WeightLineChart
-							unit={unit}
-							data={weightBarDates.map((date, i) => ({
-								label: formatDate(date),
-								weight: toDisplay(weightBarWeights[i]),
-							}))}
-							height={220}
-						/>
-					</div>
-				</div>
-			)}
 				</div>
 
 				{/* Right column — muscle body map */}

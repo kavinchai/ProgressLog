@@ -4,7 +4,6 @@ import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import DayDetail from "../components/DayDetail";
-import WeightLineChart from "../components/WeightLineChart";
 import BodyMap from "../components/BodyMap";
 import MuscleDetailPanel from "../components/MuscleDetailPanel";
 import { localDateStr, shortDate, avg, getCurrentWeek } from "../utils/date";
@@ -174,23 +173,6 @@ export default function WeeklyStats() {
 						</div>
 					</div>
 
-					{/* Weight trend */}
-					{weights.some((w) => w != null) && (
-						<div className="section-box">
-							<div className="section-header">
-								<span className="section-title">Weight Trend</span>
-							</div>
-							<div className="section-body">
-								<WeightLineChart
-									unit={unit}
-									data={days.map((date, i) => ({
-										label: shortDate(date),
-										weight: toDisplay(weights[i]),
-									}))}
-								/>
-							</div>
-						</div>
-					)}
 				</div>
 
 				{/* Right column — muscle body map */}
