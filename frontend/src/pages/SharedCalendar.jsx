@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api';
-import { getCurrentWeek, localDateStr } from '../utils/date';
+import Modal from '../components/Modal';
+import { getCurrentWeek, localDateStr, formatDateShort } from '../utils/date';
+import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 import './TotalStats.css';
 import './SharedCalendar.css';
 
@@ -62,14 +64,51 @@ function mergeByUser(entries) {
   }
   return order.map((username) => {
     const { sessionNames, sets } = byUser.get(username);
-    const label = sessionNames.length > 0
-      ? [...new Set(sessionNames)].join(' · ')
+    const uniqueNames = [...new Set(sessionNames)];
+    const label = uniqueNames.length > 0
+      ? uniqueNames.join(' · ')
       : [...new Set(sets.map(s => s.exerciseName))].join(' · ');
-    return { username, label };
+    return { username, label, sessionNames: uniqueNames, sets };
   });
 }
 
-function DayCell({ date, entries, isToday }) {
+function SetLine({ set, type }) {
+  if (type === 'run') {
+    const dist = set.distanceMiles != null ? `${Number(set.distanceMiles).toFixed(2)} mi` : '--';
+    const dur = formatDuration(set.durationSeconds);
+    const pace = calcPace(set.distanceMiles, set.durationSeconds);
+    return <span>{dist} · {dur}{pace ? ` (${pace})` : ''}</span>;
+  }
+  if (type === 'timed') return <span>{formatDuration(set.durationSeconds)}</span>;
+  const reps = set.reps ?? '--';
+  return <span>{reps} reps{set.weightLbs != null ? ` @ ${set.weightLbs} lbs` : ''}</span>;
+}
+
+function WorkoutDetails({ sets }) {
+  const groups = groupByExercise(sets);
+  if (groups.length === 0) {
+    return <div className="muted">No exercises recorded.</div>;
+  }
+  return (
+    <div className="sc-detail-list">
+      {groups.map((g) => {
+        const type = detectType(g.sets);
+        return (
+          <div key={`${g.name}-${g.weight}`} className="sc-detail-exercise">
+            <div className="sc-detail-name">{g.name}</div>
+            <ul className="sc-detail-sets">
+              {g.sets.map((s, i) => (
+                <li key={i}><SetLine set={s} type={type} /></li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DayCell({ date, entries, isToday, onSelectEntry }) {
   const merged = mergeByUser(entries);
   return (
     <div
@@ -81,10 +120,16 @@ function DayCell({ date, entries, isToday }) {
         {merged.map((m) => {
           const { bg, fg } = userColor(m.username);
           return (
-            <div key={m.username} className="sc-day-entry" style={{ '--sc-user-bg': bg, '--sc-user-fg': fg }}>
+            <button
+              key={m.username}
+              type="button"
+              className="sc-day-entry"
+              style={{ '--sc-user-bg': bg, '--sc-user-fg': fg }}
+              onClick={() => onSelectEntry({ date, ...m })}
+            >
               <span className="sc-day-user">{m.username}</span>
               {m.label && <span className="sc-day-activities">{m.label}</span>}
-            </div>
+            </button>
           );
         })}
       </div>
@@ -97,6 +142,7 @@ export default function SharedCalendar() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
   const [view,    setView]    = useState('week');
+  const [selectedEntry, setSelectedEntry] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -178,11 +224,26 @@ export default function SharedCalendar() {
                   date={date}
                   entries={entriesByDate.get(date) ?? []}
                   isToday={date === today}
+                  onSelectEntry={setSelectedEntry}
                 />
               )
           ))}
         </div>
       </div>
+
+      {selectedEntry && (
+        <Modal
+          title={`${selectedEntry.username} — ${formatDateShort(selectedEntry.date)}`}
+          onClose={() => setSelectedEntry(null)}
+        >
+          {selectedEntry.sessionNames.length > 0 && (
+            <div className="sc-detail-session-names">
+              {selectedEntry.sessionNames.join(' · ')}
+            </div>
+          )}
+          <WorkoutDetails sets={selectedEntry.sets} />
+        </Modal>
+      )}
     </div>
   );
 }

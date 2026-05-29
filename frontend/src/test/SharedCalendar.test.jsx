@@ -7,6 +7,7 @@ import { getCurrentWeek, localDateStr } from '../utils/date';
 
 vi.mock('../pages/SharedCalendar.css', () => ({}));
 vi.mock('../pages/TotalStats.css', () => ({}));
+vi.mock('../components/Modal.css', () => ({}));
 
 const mockApiGet = vi.fn();
 vi.mock('../api', () => ({ default: { get: (...args) => mockApiGet(...args) } }));
@@ -193,6 +194,42 @@ describe('SharedCalendar', () => {
     expect(screen.getAllByText(/overhead press/i).length).toBe(1);
     // Username appears once, not three times.
     expect(screen.getAllByText('qaf-test').length).toBe(1);
+  });
+
+  it('clicking a user entry opens a modal showing the workout details', async () => {
+    const user = userEvent.setup();
+    mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
+    renderCalendar();
+    await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: /alice/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument();
+    });
+    // Workout details are visible — exercise name + per-set reps@weight
+    expect(screen.getByText('Bench Press')).toBeInTheDocument();
+    expect(screen.getByText('Squats')).toBeInTheDocument();
+    // Alice has 3 Bench Press sets: 5, 5, 4 reps @ 185 lbs
+    expect(screen.getAllByText(/5 reps @ 185 lbs/i).length).toBe(2);
+    expect(screen.getByText(/4 reps @ 185 lbs/i)).toBeInTheDocument();
+  });
+
+  it('closing the modal hides the workout details', async () => {
+    const user = userEvent.setup();
+    mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
+    renderCalendar();
+    await waitFor(() => expect(screen.getByText('bob')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: /bob/i }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('button', { name: /close/i }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /close/i })).not.toBeInTheDocument(),
+    );
   });
 
   it('shows an error message when the fetch fails', async () => {
