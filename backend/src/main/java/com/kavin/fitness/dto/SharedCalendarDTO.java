@@ -18,6 +18,7 @@ public class SharedCalendarDTO {
     public static class Entry {
         private String     username;
         private LocalDate  sessionDate;
+        private String     sessionName;
         private List<Set>  sets;
     }
 

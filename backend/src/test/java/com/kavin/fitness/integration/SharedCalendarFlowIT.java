@@ -80,6 +80,7 @@ class SharedCalendarFlowIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$.entries[?(@.username == 'calendar_alice')]", hasSize(1)))
                 .andExpect(jsonPath("$.entries[?(@.username == 'calendar_bob')]", hasSize(0)))
                 .andExpect(jsonPath("$.entries[0].sessionDate").value(today))
+                .andExpect(jsonPath("$.entries[0].sessionName").value("Test"))
                 .andExpect(jsonPath("$.entries[0].sets", hasSize(1)))
                 .andExpect(jsonPath("$.entries[0].sets[0].exerciseName").value("Bench Press"))
                 .andExpect(jsonPath("$.entries[0].sets[0].reps").value(5))

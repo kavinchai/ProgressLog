@@ -53,12 +53,20 @@ function mergeByUser(entries) {
   const byUser = new Map();
   for (const e of entries) {
     if (!byUser.has(e.username)) {
-      byUser.set(e.username, []);
+      byUser.set(e.username, { sessionNames: [], sets: [] });
       order.push(e.username);
     }
-    for (const s of e.sets ?? []) byUser.get(e.username).push(s);
+    const u = byUser.get(e.username);
+    if (e.sessionName) u.sessionNames.push(e.sessionName);
+    for (const s of e.sets ?? []) u.sets.push(s);
   }
-  return order.map((username) => ({ username, sets: byUser.get(username) }));
+  return order.map((username) => {
+    const { sessionNames, sets } = byUser.get(username);
+    const label = sessionNames.length > 0
+      ? [...new Set(sessionNames)].join(' · ')
+      : [...new Set(sets.map(s => s.exerciseName))].join(' · ');
+    return { username, label };
+  });
 }
 
 function DayCell({ date, entries, isToday }) {
@@ -72,11 +80,10 @@ function DayCell({ date, entries, isToday }) {
       <div className="sc-day-entries">
         {merged.map((m) => {
           const { bg, fg } = userColor(m.username);
-          const names = [...new Set((m.sets ?? []).map(s => s.exerciseName))].join(' · ');
           return (
             <div key={m.username} className="sc-day-entry" style={{ '--sc-user-bg': bg, '--sc-user-fg': fg }}>
               <span className="sc-day-user">{m.username}</span>
-              {names && <span className="sc-day-activities">{names}</span>}
+              {m.label && <span className="sc-day-activities">{m.label}</span>}
             </div>
           );
         })}

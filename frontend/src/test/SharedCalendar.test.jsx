@@ -115,6 +115,22 @@ describe('SharedCalendar', () => {
     });
   });
 
+  it('shows session name when present instead of exercise names', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        totalUsers: 1,
+        entries: [
+          { username: 'carol', sessionDate: TODAY, sessionName: 'Push Day',
+            sets: [{ exerciseName: 'Bench Press', setNumber: 1, reps: 5, weightLbs: 135 }] },
+        ],
+      },
+    });
+    renderCalendar();
+    await waitFor(() => expect(screen.getByText('carol')).toBeInTheDocument());
+    expect(screen.getByText('Push Day')).toBeInTheDocument();
+    expect(screen.queryByText(/bench press/i)).not.toBeInTheDocument();
+  });
+
   it('switching to Month view renders a 42-cell month grid', async () => {
     const user = userEvent.setup();
     mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });

@@ -70,6 +70,17 @@ public class SharedCalendarPage {
         return page.locator(DAY_USER + ":has-text(\"" + username + "\")").count() > 0;
     }
 
+    /** Returns true if the given session name appears in any day-cell activity label. */
+    public boolean isSessionNameOnCalendar(String sessionName) {
+        try {
+            page.locator(".sc-day-activities:has-text(\"" + sessionName + "\")")
+                    .first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public int dayEntryCount() {
         return page.locator(DAY_ENTRY).count();
     }

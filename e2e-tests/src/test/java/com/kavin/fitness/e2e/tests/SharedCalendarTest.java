@@ -85,6 +85,11 @@ public class SharedCalendarTest extends BaseTest {
             throw new AssertionError("Expected user '" + testUsername
                     + "' on shared calendar after enabling shareCalendar");
         }
+
+        step("verify session name appears on the calendar cell");
+        if (!calendar.isSessionNameOnCalendar("Shared Calendar Test")) {
+            throw new AssertionError("Expected session name 'Shared Calendar Test' to appear on the calendar");
+        }
     }
 
     @Test(priority = 4, dependsOnMethods = "enablingToggleShowsUserOnCalendar")

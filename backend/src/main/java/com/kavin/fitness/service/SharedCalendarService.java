@@ -37,6 +37,7 @@ public class SharedCalendarService {
                 .map(s -> new SharedCalendarDTO.Entry(
                         userIdToName.getOrDefault(s.getUser().getId(), "unknown"),
                         s.getSessionDate(),
+                        s.getSessionName(),
                         toSets(s.getExerciseSets())
                 ))
                 .collect(Collectors.toList());
