@@ -216,3 +216,58 @@ describe('Login — signup mode', () => {
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });
 });
+
+// ── Forgot password mode ──────────────────────────────────────────────────────
+
+describe('Login — forgot password mode', () => {
+  async function openForgot() {
+    renderLogin();
+    await userEvent.click(screen.getByRole('button', { name: /forgot password/i }));
+  }
+
+  it('login mode shows a "Forgot password?" link', () => {
+    renderLogin();
+    expect(screen.getByRole('button', { name: /forgot password/i })).toBeInTheDocument();
+  });
+
+  it('clicking the link shows username + email fields and a Send button', async () => {
+    await openForgot();
+    expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send reset link/i })).toBeInTheDocument();
+  });
+
+  it('submits username + email to /auth/forgot-password', async () => {
+    api.post.mockResolvedValue({ status: 204 });
+
+    await openForgot();
+    await userEvent.type(screen.getByLabelText(/username/i), 'alice');
+    await userEvent.type(screen.getByLabelText(/email/i), 'alice@example.com');
+    await userEvent.click(screen.getByRole('button', { name: /send reset link/i }));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith(
+      '/auth/forgot-password',
+      { username: 'alice', email: 'alice@example.com' }
+    ));
+  });
+
+  it('shows a generic confirmation after submit (does not reveal account existence)', async () => {
+    api.post.mockResolvedValue({ status: 204 });
+
+    await openForgot();
+    await userEvent.type(screen.getByLabelText(/username/i), 'alice');
+    await userEvent.type(screen.getByLabelText(/email/i), 'alice@example.com');
+    await userEvent.click(screen.getByRole('button', { name: /send reset link/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/if an account matches.*check your email/i)).toBeInTheDocument();
+    });
+  });
+
+  it('back-to-login button returns to login mode', async () => {
+    await openForgot();
+    await userEvent.click(screen.getByRole('button', { name: /back to sign in/i }));
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+  });
+});

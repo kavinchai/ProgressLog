@@ -119,6 +119,19 @@
   background: var(--danger-light);
 }
 
+.login-info {
+  font-size: var(--fs-sm);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+.login-forgot-btn {
+  margin-top: 4px;
+}
+
 .login-switch-btn {
   margin-top: 16px;
   font-family: var(--font);

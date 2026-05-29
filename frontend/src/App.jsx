@@ -6,6 +6,7 @@ import Navbar from './components/layout/Navbar';
 import SplashPage from './pages/SplashPage';
 import Community from './pages/Community';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Today from './pages/Today';
 import History from './pages/History';
 import Progress from './pages/Progress';
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/"        element={<Community />} />
           <Route path="/splash"  element={<SplashPage />} />
           <Route path="/login"   element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/leaderboard" element={<Navigate to="/" replace />} />
           <Route path="*"        element={<Navigate to="/" replace />} />
         </Routes>
@@ -65,6 +67,7 @@ export default function App() {
           <Route path="/cardio"    element={<Navigate to="/progress/cardio" replace />} />
           <Route path="/community"   element={<Community />} />
           <Route path="/leaderboard" element={<Navigate to="/community" replace />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/settings"     element={<Settings />} />
           <Route path="/claude-setup" element={<ClaudeSetup />} />
           <Route path="*"             element={<Navigate to="/today" replace />} />

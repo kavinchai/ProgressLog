@@ -1,13 +1,16 @@
 package com.kavin.fitness.controller;
 
 import com.kavin.fitness.dto.ApiKeyResponse;
+import com.kavin.fitness.dto.ForgotPasswordRequest;
 import com.kavin.fitness.dto.LoginRequest;
 import com.kavin.fitness.dto.LoginResponse;
 import com.kavin.fitness.dto.RegisterRequest;
+import com.kavin.fitness.dto.ResetPasswordRequest;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
 import com.kavin.fitness.security.CookieUtil;
 import com.kavin.fitness.security.JwtUtil;
+import com.kavin.fitness.service.PasswordResetService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +38,7 @@ public class AuthController {
     @Autowired private UserRepository userRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private CookieUtil cookieUtil;
+    @Autowired private PasswordResetService passwordResetService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
@@ -74,6 +78,20 @@ public class AuthController {
         log.info("Registration successful for user={}", user.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new LoginResponse(user.getUsername()));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        log.info("Password reset requested for username={}", request.getUsername());
+        passwordResetService.requestReset(request.getUsername(), request.getEmail());
+        // Always 204 — do not reveal whether the username exists.
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/logout")
