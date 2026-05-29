@@ -29,7 +29,7 @@ public class LeaderboardPage {
     }
 
     public void open(String baseUrl) {
-        page.navigate(baseUrl + "/leaderboard");
+        page.navigate(baseUrl + "/community");
         page.locator(PAGE).waitFor();
         // Loading spinner may never appear if data is cached; tolerate either.
         Locator loading = page.locator(LOADING);

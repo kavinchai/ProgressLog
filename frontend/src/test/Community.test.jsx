@@ -2,10 +2,10 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import Leaderboard from '../pages/Leaderboard';
+import Community from '../pages/Community';
 import { localDateStr } from '../utils/date';
 
-vi.mock('../pages/Leaderboard.css', () => ({}));
+vi.mock('../pages/Community.css', () => ({}));
 vi.mock('../pages/SharedCalendar.css', () => ({}));
 vi.mock('../pages/TotalStats.css', () => ({}));
 
@@ -26,7 +26,7 @@ const mockApiGet = vi.fn();
 vi.mock('../api', () => ({ default: { get: (...args) => mockApiGet(...args) } }));
 
 function renderLeaderboard() {
-  return render(<MemoryRouter><Leaderboard /></MemoryRouter>);
+  return render(<MemoryRouter><Community /></MemoryRouter>);
 }
 
 const LEADERBOARD_DATA = {

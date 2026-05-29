@@ -4,7 +4,7 @@ import useAuthStore from './store/authStore';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
 import SplashPage from './pages/SplashPage';
-import Leaderboard from './pages/Leaderboard';
+import Community from './pages/Community';
 import Login from './pages/Login';
 import Today from './pages/Today';
 import History from './pages/History';
@@ -40,9 +40,10 @@ export default function App() {
     return (
       <BrowserRouter>
         <Routes>
-          <Route path="/"        element={<Leaderboard />} />
+          <Route path="/"        element={<Community />} />
           <Route path="/splash"  element={<SplashPage />} />
           <Route path="/login"   element={<Login />} />
+          <Route path="/leaderboard" element={<Navigate to="/" replace />} />
           <Route path="*"        element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
@@ -62,7 +63,8 @@ export default function App() {
           <Route path="/total"     element={<Navigate to="/history/total" replace />} />
           <Route path="/strength"  element={<Navigate to="/progress/strength" replace />} />
           <Route path="/cardio"    element={<Navigate to="/progress/cardio" replace />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/community"   element={<Community />} />
+          <Route path="/leaderboard" element={<Navigate to="/community" replace />} />
           <Route path="/settings"     element={<Settings />} />
           <Route path="/claude-setup" element={<ClaudeSetup />} />
           <Route path="*"             element={<Navigate to="/today" replace />} />

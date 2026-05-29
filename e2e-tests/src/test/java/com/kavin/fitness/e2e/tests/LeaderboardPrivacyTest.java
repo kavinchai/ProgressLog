@@ -111,9 +111,9 @@ public class LeaderboardPrivacyTest extends BaseTest {
         settings.waitForShareDataState("On");
         settings.waitForPrivacySaveComplete();
 
-        step("use sidebar to navigate to Leaderboard (client-side routing)");
-        nav.clickSidebarLink("Leaderboard");
-        nav.waitForUrlContains("/leaderboard");
+        step("use sidebar to navigate to Community (client-side routing)");
+        nav.clickSidebarLink("Community");
+        nav.waitForUrlContains("/community");
         waitForPageLoad();
 
         boolean onBoardAfterOn = leaderboard.isUsernameOnBoard(testUsername);
@@ -131,9 +131,9 @@ public class LeaderboardPrivacyTest extends BaseTest {
         settings.waitForShareDataState("Off");
         settings.waitForPrivacySaveComplete();
 
-        step("use sidebar to navigate back to Leaderboard");
-        nav.clickSidebarLink("Leaderboard");
-        nav.waitForUrlContains("/leaderboard");
+        step("use sidebar to navigate back to Community");
+        nav.clickSidebarLink("Community");
+        nav.waitForUrlContains("/community");
         waitForPageLoad();
 
         boolean onBoardAfterOff = leaderboard.isUsernameOnBoard(testUsername);

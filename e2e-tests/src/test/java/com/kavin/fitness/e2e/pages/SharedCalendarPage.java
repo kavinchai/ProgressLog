@@ -30,7 +30,7 @@ public class SharedCalendarPage {
     }
 
     public void open(String baseUrl) {
-        page.navigate(baseUrl + "/leaderboard");
+        page.navigate(baseUrl + "/community");
         page.locator(".lb-page").waitFor();
     }
 

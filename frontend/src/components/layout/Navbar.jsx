@@ -9,7 +9,7 @@ const navItems = [
   { to: '/today',       label: 'Today' },
   { to: '/history',     label: 'History' },
   { to: '/progress',    label: 'Progress' },
-  { to: '/leaderboard', label: 'Leaderboard' },
+  { to: '/community',   label: 'Community' },
   { to: '/settings',    label: 'Settings' },
 ];
 

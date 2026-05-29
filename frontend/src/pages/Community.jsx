@@ -9,7 +9,7 @@ import {
 import api from '../api';
 import featuredConfig from '../config/featuredExercises.json';
 import SharedCalendar from './SharedCalendar';
-import './Leaderboard.css';
+import './Community.css';
 
 function ChartTooltip({ active, payload, label, formatter }) {
   if (!active || !payload?.length) return null;
@@ -38,7 +38,7 @@ function formatDuration(seconds) {
   return `${m}m ${String(s).padStart(2, '0')}s`;
 }
 
-export default function Leaderboard() {
+export default function Community() {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);

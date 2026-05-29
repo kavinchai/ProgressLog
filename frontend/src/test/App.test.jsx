@@ -4,7 +4,7 @@ import App from '../App';
 import useAuthStore from '../store/authStore';
 
 // Stub all page/layout components to keep tests fast and focused on routing
-vi.mock('../pages/Leaderboard', () => ({ default: () => <div>Leaderboard Page</div> }));
+vi.mock('../pages/Community', () => ({ default: () => <div>Community Page</div> }));
 vi.mock('../pages/SplashPage',  () => ({ default: () => <div>Splash Page</div> }));
 vi.mock('../pages/Login',       () => ({ default: () => <div>Login Page</div> }));
 vi.mock('../pages/Today',       () => ({ default: () => <div>Today Page</div> }));
@@ -22,10 +22,10 @@ beforeEach(() => {
 
 
 describe('App routing — unauthenticated', () => {
-  it('shows Leaderboard at / when not authenticated', () => {
+  it('shows Community at / when not authenticated', () => {
     window.history.pushState({}, '', '/');
     render(<App />);
-    expect(screen.getByText('Leaderboard Page')).toBeInTheDocument();
+    expect(screen.getByText('Community Page')).toBeInTheDocument();
   });
 
   it('shows SplashPage at /splash when not authenticated', () => {
@@ -105,16 +105,16 @@ describe('App routing — authenticated', () => {
 });
 
 describe('App routing — auth store reactivity', () => {
-  it('switches from Leaderboard to app layout when authenticated', async () => {
+  it('switches from Community to app layout when authenticated', async () => {
     window.history.pushState({}, '', '/');
     render(<App />);
-    expect(screen.getByText('Leaderboard Page')).toBeInTheDocument();
+    expect(screen.getByText('Community Page')).toBeInTheDocument();
 
     // Simulate login
     useAuthStore.setState({ authenticated: true, username: 'bob' });
 
     // App re-renders based on Zustand subscription; / redirects to /today
     await screen.findByText('Today Page');
-    expect(screen.queryByText('Leaderboard Page')).not.toBeInTheDocument();
+    expect(screen.queryByText('Community Page')).not.toBeInTheDocument();
   });
 });

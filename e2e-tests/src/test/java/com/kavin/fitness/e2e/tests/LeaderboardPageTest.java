@@ -6,7 +6,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * Smoke coverage for /leaderboard. Seeding community-wide data is impractical
+ * Smoke coverage for /community (leaderboard sub-tab). Seeding community-wide data is impractical
  * (depends on other users opting in to share), so these tests only verify the
  * page renders, the hero is shown, and the strength/cardio tabs are wired up.
  * Empty states are acceptable.

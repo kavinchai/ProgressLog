@@ -15,7 +15,8 @@ Personal fitness tracking application: daily logging for weight, nutrition, work
 │                                                                     │
 │   Pages: Splash · Login · Today · History (Weekly · Total) ·        │
 │          Progress (Strength · Cardio) ·                             │
-│          Leaderboard (+ Shared Calendar) · Settings · ClaudeSetup   │
+│          Community (Leaderboard + Shared Calendar) ·                │
+│          Settings · ClaudeSetup                                     │
 │                                                                     │
 │   Recharts — line/bar charts for weight trend, calories, protein,   │
 │              and strength progression                               │
@@ -212,7 +213,7 @@ WorkoutApp/
 │       │   ├── Progress.jsx               ← sub-router for Strength / Cardio
 │       │   ├── Strength.jsx       + .css  ← progressive overload chart
 │       │   ├── Cardio.jsx         + .css  ← cardio progression and milestones
-│       │   ├── Leaderboard.jsx    + .css  ← community leaderboard (opt-in)
+│       │   ├── Community.jsx      + .css  ← community page (Leaderboard + Shared Calendar sub-tabs)
 │       │   ├── SharedCalendar.jsx + .css  ← shared community workout calendar
 │       │   ├── Settings.jsx       + .css  ← profile, goals, credentials, units, privacy
 │       │   └── ClaudeSetup.jsx    + .css  ← Claude AI / MCP setup guide
@@ -237,7 +238,7 @@ WorkoutApp/
 │           ├── TotalStats.test.jsx
 │           ├── Strength.test.jsx
 │           ├── Cardio.test.jsx
-│           ├── Leaderboard.test.jsx
+│           ├── Community.test.jsx
 │           ├── SharedCalendar.test.jsx
 │           ├── BodyMap.test.jsx
 │           ├── MuscleDetailPanel.test.jsx
