@@ -9,7 +9,6 @@ const navItems = [
   { to: '/today',       label: 'Today' },
   { to: '/history',     label: 'History' },
   { to: '/progress',    label: 'Progress' },
-  { to: '/templates',   label: 'Templates' },
   { to: '/leaderboard', label: 'Leaderboard' },
   { to: '/settings',    label: 'Settings' },
 ];

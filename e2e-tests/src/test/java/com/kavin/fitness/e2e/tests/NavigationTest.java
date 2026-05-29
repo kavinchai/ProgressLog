@@ -24,7 +24,6 @@ public class NavigationTest extends BaseTest {
         assertContains(labels, "Today");
         assertContains(labels, "History");
         assertContains(labels, "Progress");
-        assertContains(labels, "Templates");
         assertContains(labels, "Settings");
     }
 
@@ -55,20 +54,6 @@ public class NavigationTest extends BaseTest {
     }
 
     @Test(priority = 4)
-    public void navigateToTemplatesViaLink() {
-        step("click Templates in sidebar");
-        nav.clickSidebarLink("Templates");
-        nav.waitForUrlContains("/templates");
-        waitForPageLoad();
-
-        step("verify Templates link is active");
-        String active = nav.getActiveLinkLabel();
-        if (!"Templates".equals(active)) {
-            throw new AssertionError("Expected active link 'Templates' but got: " + active);
-        }
-    }
-
-    @Test(priority = 5)
     public void sidebarDisplaysUsername() {
         step("verify sidebar shows a username");
         nav.waitForSidebar();

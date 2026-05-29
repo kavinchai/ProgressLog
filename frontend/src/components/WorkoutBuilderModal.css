@@ -141,17 +141,6 @@
   background: var(--accent-light);
 }
 
-.wbm-template-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  position: relative;
-}
-
-.wbm-template-list {
-  min-width: 160px;
-}
-
 /* ── Mobile ── */
 @media (max-width: 640px) {
   .wbm-exercise-block {

@@ -9,7 +9,6 @@ import Login from './pages/Login';
 import Today from './pages/Today';
 import History from './pages/History';
 import Progress from './pages/Progress';
-import Templates from './pages/Templates';
 import Settings from './pages/Settings';
 import ClaudeSetup from './pages/ClaudeSetup';
 
@@ -63,7 +62,6 @@ export default function App() {
           <Route path="/total"     element={<Navigate to="/history/total" replace />} />
           <Route path="/strength"  element={<Navigate to="/progress/strength" replace />} />
           <Route path="/cardio"    element={<Navigate to="/progress/cardio" replace />} />
-          <Route path="/templates" element={<Templates />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/settings"     element={<Settings />} />
           <Route path="/claude-setup" element={<ClaudeSetup />} />

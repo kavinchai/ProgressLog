@@ -12,7 +12,6 @@ vi.mock('../pages/WeeklyStats', () => ({ default: () => <div>Weekly Stats Page</
 vi.mock('../pages/TotalStats',  () => ({ default: () => <div>Total Stats Page</div> }));
 vi.mock('../pages/Strength',    () => ({ default: () => <div>Strength Page</div> }));
 vi.mock('../pages/Cardio',      () => ({ default: () => <div>Cardio Page</div> }));
-vi.mock('../pages/Templates',   () => ({ default: () => <div>Templates Page</div> }));
 vi.mock('../pages/Settings',    () => ({ default: () => <div>Settings Page</div> }));
 vi.mock('../components/layout/Sidebar', () => ({ default: () => <nav>Sidebar</nav> }));
 vi.mock('../components/layout/Navbar',  () => ({ default: () => <nav>Navbar</nav> }));

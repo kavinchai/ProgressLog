@@ -74,7 +74,6 @@ vi.mock('../hooks/useNutrition',   () => ({ default: vi.fn() }));
 vi.mock('../hooks/useWorkouts',    () => ({ default: vi.fn() }));
 vi.mock('../hooks/useSteps',       () => ({ default: vi.fn() }));
 vi.mock('../hooks/useUserProfile', () => ({ default: vi.fn() }));
-vi.mock('../hooks/useTemplates',   () => ({ default: vi.fn() }));
 vi.mock('../hooks/usePRs',         () => ({ default: vi.fn() }));
 
 import api from '../api';
@@ -83,7 +82,6 @@ import useNutrition   from '../hooks/useNutrition';
 import useWorkouts    from '../hooks/useWorkouts';
 import useSteps       from '../hooks/useSteps';
 import useUserProfile from '../hooks/useUserProfile';
-import useTemplates   from '../hooks/useTemplates';
 import usePRs         from '../hooks/usePRs';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -117,7 +115,6 @@ function setup({
   workouts  = [],
   steps     = [],
   prs       = [],
-  templates = [],
   goals     = DEFAULT_GOALS,
 } = {}) {
   const refetchWeight    = vi.fn();
@@ -131,7 +128,6 @@ function setup({
   useWorkouts.mockReturnValue({  data: workouts,  refetch: refetchWorkouts });
   useSteps.mockReturnValue({     data: steps,     refetch: refetchSteps });
   useUserProfile.mockReturnValue({ goals, loading: false });
-  useTemplates.mockReturnValue({ data: templates });
   usePRs.mockReturnValue({ data: prs, refetch: refetchPRs });
 
   return { refetchWeight, refetchNutrition, refetchWorkouts, refetchSteps, refetchPRs };

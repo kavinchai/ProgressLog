@@ -1,11 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import api from '../api';
 import useWeightLog   from '../hooks/useWeightLog';
 import useNutrition   from '../hooks/useNutrition';
 import useWorkouts    from '../hooks/useWorkouts';
 import useSteps       from '../hooks/useSteps';
 import useUserProfile from '../hooks/useUserProfile';
-import useTemplates   from '../hooks/useTemplates';
 import usePRs         from '../hooks/usePRs';
 import { useDayActions } from '../hooks/useDayActions';
 import WeightModal         from '../components/WeightModal';
@@ -125,7 +124,6 @@ export default function Today() {
   const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
   const { data: stepData,      refetch: refetchSteps }     = useSteps();
   const { goals } = useUserProfile();
-  const { data: templates } = useTemplates();
   const { data: prsData, refetch: refetchPRs } = usePRs();
   const { unit, toDisplay } = useWeightUnit();
 
@@ -134,12 +132,9 @@ export default function Today() {
   const [editExercise,    setEditExercise]     = useState(null);
   const [editMeal,        setEditMeal]         = useState(null);
   const [mealLogId,       setMealLogId]        = useState(null);
-  const [prefillExercises,setPrefillExercises] = useState(null);
   const [appendBlankExercise, setAppendBlankExercise] = useState(false);
-  const [templateMenuOpen,setTemplateMenuOpen] = useState(false);
   const [confirmDelete,    setConfirmDelete]    = useState(null);
   const [selectedMuscle,   setSelectedMuscle]   = useState(null);
-  const templateBtnRef = useRef(null);
 
   const todayWeightEntry    = weightData.find(w => w.logDate === TODAY);
   const todayWorkoutSessions = workoutData.filter(w => w.sessionDate === TODAY);
@@ -212,19 +207,12 @@ export default function Today() {
   function closeModal() {
     setModal(null);
     setEditingEntry(null);
-    setPrefillExercises(null);
     setAppendBlankExercise(false);
   }
 
-  function openWorkoutModal({ exercises = null, appendBlank = false } = {}) {
-    setPrefillExercises(exercises);
+  function openWorkoutModal({ appendBlank = false } = {}) {
     setAppendBlankExercise(appendBlank);
     setModal('workout');
-  }
-
-  function openFromTemplate(template) {
-    setTemplateMenuOpen(false);
-    openWorkoutModal({ exercises: template.exercises });
   }
 
   async function toggleDayType() {
@@ -379,31 +367,6 @@ export default function Today() {
               <button className="btn btn-sm btn-primary" onClick={() => openWorkoutModal()}>
                 Start Workout
               </button>
-            )}
-            {(templates ?? []).length > 0 && (
-              <div className="today-template-picker">
-                <button
-                  ref={templateBtnRef}
-                  className="btn btn-sm"
-                  onClick={() => setTemplateMenuOpen(o => !o)}
-                  onBlur={() => setTimeout(() => setTemplateMenuOpen(false), 150)}
-                >
-                  Template
-                </button>
-                {templateMenuOpen && (
-                  <ul className="today-template-menu">
-                    {(templates ?? []).map(t => (
-                      <li
-                        key={t.id}
-                        className="today-template-item"
-                        onMouseDown={() => openFromTemplate(t)}
-                      >
-                        {t.name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
             )}
           </div>
         </div>
@@ -561,7 +524,6 @@ export default function Today() {
       {modal === 'workout' && (
         <WorkoutBuilderModal
           prefillDate={TODAY}
-          prefillExercises={prefillExercises}
           existingSession={todayWorkoutEntry ? editableWorkoutSession : null}
           appendBlankExercise={appendBlankExercise}
           onClose={closeModal}

@@ -16,7 +16,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   api.get.mockImplementation((url) => {
     if (url === '/workouts/exercise-names') return Promise.resolve({ data: ['Bench Press', 'Squat', 'Deadlift'] });
-    if (url === '/templates') return Promise.resolve({ data: [] });
     return Promise.resolve({ data: [] });
   });
 });
@@ -154,43 +153,6 @@ describe('WorkoutBuilderModal — autocomplete suggestions', () => {
     // None of the known exercises should appear as suggestions
     expect(screen.queryByText('Bench Press')).not.toBeInTheDocument();
     expect(screen.queryByText('Squat')).not.toBeInTheDocument();
-  });
-});
-
-describe('WorkoutBuilderModal — prefilled from template', () => {
-  const prefillExercises = [
-    {
-      exerciseName: 'Squat',
-      sets: [
-        { setNumber: 1, reps: 5, weightLbs: 225 },
-        { setNumber: 2, reps: 5, weightLbs: 225 },
-      ],
-    },
-  ];
-
-  it('renders prefilled exercise name', () => {
-    render(
-      <WorkoutBuilderModal
-        prefillDate="2026-01-05"
-        prefillExercises={prefillExercises}
-        onClose={onClose}
-        onSaved={onSaved}
-      />
-    );
-    expect(screen.getByDisplayValue('Squat')).toBeInTheDocument();
-  });
-
-  it('renders prefilled set values', () => {
-    render(
-      <WorkoutBuilderModal
-        prefillDate="2026-01-05"
-        prefillExercises={prefillExercises}
-        onClose={onClose}
-        onSaved={onSaved}
-      />
-    );
-    expect(screen.getAllByDisplayValue('225')).toHaveLength(2);
-    expect(screen.getAllByDisplayValue('5')).toHaveLength(2);
   });
 });
 
