@@ -1,5 +1,5 @@
 import muscleGroupData from '../data/muscleGroups.json';
-import { detectType } from './workout';
+import { detectType, canonicalExerciseName } from './workout';
 
 const { muscleGroups, exerciseMap } = muscleGroupData;
 
@@ -36,7 +36,7 @@ export function getMuscleGroups() {
 
 export function getExerciseMuscles(exerciseName) {
   if (!exerciseName) return [];
-  const key = exerciseName.toLowerCase().trim();
+  const key = canonicalExerciseName(exerciseName).toLowerCase().trim();
   return normalizedMap[key]
     ?? normalizedMap[key.replace(/s$/, '')]
     ?? [];
@@ -53,11 +53,12 @@ export function buildMuscleGroupStats(workoutData) {
     const sets = session.exerciseSets ?? [];
     const exerciseNames = [...new Set(sets.map(s => s.exerciseName))];
 
-    for (const name of exerciseNames) {
-      const exerciseSets = sets.filter(s => s.exerciseName === name);
+    for (const rawName of exerciseNames) {
+      const exerciseSets = sets.filter(s => s.exerciseName === rawName);
       if (detectType(exerciseSets) === 'timed') continue;
 
-      const muscles = getExerciseMuscles(name);
+      const name = canonicalExerciseName(rawName);
+      const muscles = getExerciseMuscles(rawName);
 
       for (const muscle of muscles) {
         if (stats[muscle]) {

@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { groupByExercise } from '../utils/workout';
+import { groupByExercise, canonicalExerciseName } from '../utils/workout';
+
+describe('canonicalExerciseName', () => {
+  it('maps "Lat raises" to "Lateral Raises"', () => {
+    expect(canonicalExerciseName('Lat raises')).toBe('Lateral Raises');
+  });
+
+  it('is case-insensitive on lookup', () => {
+    expect(canonicalExerciseName('LAT RAISES')).toBe('Lateral Raises');
+    expect(canonicalExerciseName('lat raises')).toBe('Lateral Raises');
+  });
+
+  it('also maps the singular "Lat raise"', () => {
+    expect(canonicalExerciseName('Lat raise')).toBe('Lateral Raises');
+  });
+
+  it('returns the input unchanged for non-aliased names', () => {
+    expect(canonicalExerciseName('Bench Press')).toBe('Bench Press');
+  });
+
+  it('returns null/undefined inputs unchanged', () => {
+    expect(canonicalExerciseName(null)).toBe(null);
+    expect(canonicalExerciseName(undefined)).toBe(undefined);
+  });
+});
 
 const makeSets = (overrides = []) => overrides;
 
@@ -22,6 +46,17 @@ describe('groupByExercise', () => {
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Bench Press');
     expect(result[0].weight).toBe(135);
+    expect(result[0].sets).toHaveLength(2);
+  });
+
+  it('canonicalizes "Lat raises" so it merges with "Lateral Raises"', () => {
+    const sets = [
+      { exerciseName: 'Lat raises',     weightLbs: '20', setNumber: 1, reps: 12 },
+      { exerciseName: 'Lateral Raises', weightLbs: '20', setNumber: 2, reps: 10 },
+    ];
+    const result = groupByExercise(sets);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('Lateral Raises');
     expect(result[0].sets).toHaveLength(2);
   });
 

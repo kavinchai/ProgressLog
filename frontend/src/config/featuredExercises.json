@@ -1,10 +1,11 @@
 {
-  "strength": [
-    "Bench Press",
-    "Bicep Curls",
-    "Lateral Raises",
-    "Lat Pulldowns",
-    "Squats",
-    "Romanian Deadlifts"
-  ]
+	"strength": [
+		"Bench Press",
+		"Bicep Curls",
+		"Lateral Raises",
+		"Lat Pulldowns",
+		"Squats",
+		"Romanian Deadlifts",
+		"Incline Bench Press"
+	]
 }

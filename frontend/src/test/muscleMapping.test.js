@@ -36,6 +36,12 @@ describe('getExerciseMuscles', () => {
     expect(getExerciseMuscles('Underwater Basket Weaving')).toEqual([]);
   });
 
+  it('canonicalizes "Lat raises" to Lateral Raises (shoulders)', () => {
+    const muscles = getExerciseMuscles('Lat raises');
+    expect(muscles).toContain('shoulders');
+    expect(muscles).toEqual(getExerciseMuscles('Lateral Raises'));
+  });
+
   it('returns empty array for null/undefined input', () => {
     expect(getExerciseMuscles(null)).toEqual([]);
     expect(getExerciseMuscles(undefined)).toEqual([]);

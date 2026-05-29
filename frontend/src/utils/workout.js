@@ -1,3 +1,14 @@
+const EXERCISE_NAME_ALIASES = {
+  'lat raises': 'Lateral Raises',
+  'lat raise': 'Lateral Raises',
+};
+
+/** Map common misnamed exercises to their canonical form. Returns input unchanged otherwise. */
+export function canonicalExerciseName(name) {
+  if (!name) return name;
+  return EXERCISE_NAME_ALIASES[name.toLowerCase().trim()] ?? name;
+}
+
 /** Classify exercise sets: 'run' (has distance), 'timed' (duration only), or 'lifting'. */
 export function detectType(sets) {
   const arr = sets ?? [];
@@ -29,8 +40,9 @@ export function calcPace(distanceMiles, durationSeconds) {
 export function groupByExercise(exerciseSets) {
   const map = {};
   for (const s of (exerciseSets ?? [])) {
-    const key = `${s.exerciseName}__${s.weightLbs}`;
-    if (!map[key]) map[key] = { name: s.exerciseName, weight: parseFloat(s.weightLbs), sets: [] };
+    const name = canonicalExerciseName(s.exerciseName);
+    const key = `${name}__${s.weightLbs}`;
+    if (!map[key]) map[key] = { name, weight: parseFloat(s.weightLbs), sets: [] };
     map[key].sets.push(s);
   }
   return Object.values(map)
