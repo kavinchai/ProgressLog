@@ -85,9 +85,6 @@ export function getGroupForSlug(slug) {
   return SLUG_TO_GROUP[slug] ?? null;
 }
 
-// Kept for backward compatibility with tests referencing the old name
-export const getGroupForMuscleId = getGroupForSlug;
-
 export function buildBodyData(muscleStats, selectedMuscle) {
   const data = [];
   for (const [group, stats] of Object.entries(muscleStats)) {
