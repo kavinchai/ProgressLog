@@ -18,10 +18,6 @@ vi.mock('../components/DayDetail', () => ({
 	),
 }));
 
-vi.mock('../components/WeightLineChart', () => ({
-	default: () => <div data-testid="weight-chart" />,
-}));
-
 vi.mock('../components/BodyMap', () => ({
 	default: () => <div data-testid="body-map" />,
 }));

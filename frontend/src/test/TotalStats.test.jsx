@@ -23,10 +23,6 @@ vi.mock('../components/DayDetail', () => ({
 	),
 }));
 
-vi.mock('../components/WeightLineChart', () => ({
-	default: () => <div data-testid="weight-chart" />,
-}));
-
 vi.mock('../hooks/useWeightLog', () => ({ default: vi.fn() }));
 vi.mock('../hooks/useNutrition', () => ({ default: vi.fn() }));
 vi.mock('../hooks/useWorkouts', () => ({ default: vi.fn() }));
