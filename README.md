@@ -1,6 +1,6 @@
 # ProgressLog — Full-Stack Fitness Tracker
 
-Personal fitness tracking application: daily logging for weight, nutrition, workouts, and steps, with strength progression analytics, personal records, workout templates, cardio tracking, Google Calendar integration, and Claude AI integration via MCP.
+Personal fitness tracking application: daily logging for weight, nutrition, workouts, and steps, with strength progression analytics, personal records, cardio tracking, a community leaderboard and shared calendar, Google Calendar integration, and Claude AI integration via MCP.
 
 ---
 
@@ -13,9 +13,9 @@ Personal fitness tracking application: daily logging for weight, nutrition, work
 │   React 18 + Vite          Zustand          React Router v6         │
 │   (plain CSS modules)      (JWT in localStorage)  (13 pages)        │
 │                                                                     │
-│   Pages: Splash · Today · Dashboard · Nutrition · Workouts ·        │
-│          Strength · WeeklyStats · TotalStats · Templates ·          │
-│          Settings · ClaudeSetup · Goals · Milestones · Login        │
+│   Pages: Splash · Login · Today · History (Weekly · Total) ·        │
+│          Progress (Strength · Cardio) ·                             │
+│          Leaderboard (+ Shared Calendar) · Settings · ClaudeSetup   │
 │                                                                     │
 │   Recharts — line/bar charts for weight trend, calories, protein,   │
 │              and strength progression                               │
@@ -34,18 +34,21 @@ Personal fitness tracking application: daily logging for weight, nutrition, work
 │  │  request,    │   │  /api/weight    │   │  NutritionService   │   │
 │  │  validates   │   │  /api/nutrition │   │  WorkoutService     │   │
 │  │  Bearer JWT  │   │  /api/workouts  │   │  ProgressService    │   │
-│  │  or X-API-Key│   │  /api/steps     │   │  WorkoutTemplate-   │   │
-│  │  sets auth   │   │  /api/progress  │   │    Service          │   │
-│  │  context)    │   │  /api/templates │   │  ImportService      │   │
-│  └──────────────┘   │  /api/profile   │   │  StepService        │   │
-│                     │  /api/import    │   └────────┬────────────┘   │
+│  │  or X-API-Key│   │  /api/steps     │   │  ProgressService    │   │
+│  │  sets auth   │   │  /api/progress  │   │  LeaderboardService │   │
+│  │  context)    │   │  /api/leaderboard│  │  SharedCalendar-    │   │
+│  └──────────────┘   │  /api/shared-cal│   │    Service          │   │
+│                     │  /api/profile   │   │  StepService        │   │
+│                     │  /api/import    │   │  ImportService      │   │
+│                     │  /api/undo      │   │  UndoService        │   │
+│                     │                 │   └────────┬────────────┘   │
 │  ┌──────────────┐   └─────────────────┘            │                │
 │  │  JwtUtil     │                                  ▼                │
 │  │  (generate / │   ┌─────────────────────────────────────────┐     │
 │  │  validate    │   │  Spring Data JPA Repositories           │     │
 │  │  tokens)     │   │  UserRepo · WeightLogRepo · MealRepo    │     │
 │  └──────────────┘   │  NutritionLogRepo · WorkoutSessionRepo  │     │
-│                     │  ExerciseSetRepo · WorkoutTemplateRepo  │     │
+│                     │  ExerciseSetRepo · DeletionJournalRepo  │     │
 │  Spring Security 6  │  StepLogRepo                            │     │
 │  stateless JWT,     └──────────────────┬────────────────────--┘     │
 │  /api/auth/** public                   │  JDBC                      │
@@ -55,7 +58,7 @@ Personal fitness tracking application: daily logging for weight, nutrition, work
 ┌────────────────────────────────────────▼────────────────────────────┐
 │                     PostgreSQL 15 — port 5432                       │
 │                                                                     │
-│  Flyway migrations (V1–V11) run automatically on startup            │
+│  Flyway migrations (V1–V15) run automatically on startup            │
 │                                                                     │
 │  Tables:                                                            │
 │  ┌──────────┐  ┌────────────┐  ┌───────────────┐  ┌──────────┐      │
@@ -64,11 +67,12 @@ Personal fitness tracking application: daily logging for weight, nutrition, work
 │       │        ┌──────────────────┐  ┌──────────────┐               │
 │       ├───────▶│ workout_session  │─▶│ exercise_set │               │
 │       │        └──────────────────┘  └──────────────┘               │
-│       │        ┌──────────────────┐  ┌───────────────────┐          │
-│       ├───────▶│workout_template  │─▶│ template_exercise │          │
-│       │        └──────────────────┘  └───────────────────┘          │
-│       └───────▶│   step_log       │                                 │
-│                └──────────────────┘                                 │
+│       │        ┌──────────────────┐                                 │
+│       ├───────▶│   step_log       │                                 │
+│       │        └──────────────────┘                                 │
+│       │        ┌────────────────────────┐                           │
+│       └───────▶│  deletion_journal_entry│  (undo trail)             │
+│                └────────────────────────┘                           │
 └─────────────────────────────────────────────────────────────────────┘
 
   External:
@@ -177,37 +181,41 @@ WorkoutApp/
 │       │   ├── useWeightLog.js
 │       │   ├── useNutrition.js
 │       │   ├── useWorkouts.js
-│       │   ├── useTemplates.js
+│       │   ├── useSteps.js
 │       │   ├── usePRs.js
 │       │   ├── useUserProfile.js
+│       │   ├── useWeightUnit.js
+│       │   ├── useDayActions.js
 │       │   └── useTheme.js
 │       ├── components/
 │       │   ├── layout/
 │       │   │   ├── Sidebar.jsx + .css
 │       │   │   └── Navbar.jsx  + .css
 │       │   ├── Modal.jsx           ← reusable modal wrapper
-│       │   ├── WorkoutBuilderModal.jsx
-│       │   ├── TemplateBuilderModal.jsx
+│       │   ├── WorkoutBuilderModal.jsx + .css
 │       │   ├── EditExerciseModal.jsx
+│       │   ├── ExerciseListEditor.jsx
 │       │   ├── MealModal.jsx
 │       │   ├── WeightModal.jsx
 │       │   ├── DayInfoModal.jsx
-│       │   └── DayDetail.jsx
+│       │   ├── ConfirmDeleteModal.jsx
+│       │   ├── DayDetail.jsx
+│       │   ├── BodyMap.jsx + .css
+│       │   └── MuscleDetailPanel.jsx + .css
 │       ├── pages/
-│       │   ├── SplashPage.jsx  + .css  ← Today's Focus: motivational entry point
-│       │   ├── Login.jsx       + .css
-│       │   ├── Today.jsx       + .css  ← daily hub: weight, meals, workouts, steps
-│       │   ├── Dashboard.jsx   + .css  ← weight chart, overview
-│       │   ├── Nutrition.jsx   + .css  ← calorie/protein bar charts
-│       │   ├── Workouts.jsx    + .css  ← session history
-│       │   ├── Strength.jsx    + .css  ← progressive overload chart
-│       │   ├── WeeklyStats.jsx + .css  ← weekly calorie/protein trends
-│       │   ├── TotalStats.jsx  + .css  ← lifetime statistics
-│       │   ├── Templates.jsx   + .css  ← workout template management
-│       │   ├── Settings.jsx    + .css  ← profile, goals, credentials, units
-│       │   ├── ClaudeSetup.jsx + .css  ← Claude AI / MCP setup guide
-│       │   ├── Goals.jsx       + .css  ← phase targets + adherence
-│       │   └── Milestones.jsx  + .css  ← achievement timeline
+│       │   ├── SplashPage.jsx     + .css  ← Today's Focus: motivational entry point
+│       │   ├── Login.jsx          + .css
+│       │   ├── Today.jsx          + .css  ← daily hub: weight, meals, workouts, steps
+│       │   ├── History.jsx                ← sub-router for WeeklyStats / TotalStats
+│       │   ├── WeeklyStats.jsx    + .css  ← weekly calorie/protein trends
+│       │   ├── TotalStats.jsx     + .css  ← lifetime calendar + summary
+│       │   ├── Progress.jsx               ← sub-router for Strength / Cardio
+│       │   ├── Strength.jsx       + .css  ← progressive overload chart
+│       │   ├── Cardio.jsx         + .css  ← cardio progression and milestones
+│       │   ├── Leaderboard.jsx    + .css  ← community leaderboard (opt-in)
+│       │   ├── SharedCalendar.jsx + .css  ← shared community workout calendar
+│       │   ├── Settings.jsx       + .css  ← profile, goals, credentials, units, privacy
+│       │   └── ClaudeSetup.jsx    + .css  ← Claude AI / MCP setup guide
 │       └── test/
 │           ├── setup.js                ← Vitest test setup
 │           ├── api.test.js
@@ -216,13 +224,23 @@ WorkoutApp/
 │           ├── useWorkouts.test.js
 │           ├── useTheme.test.js
 │           ├── useUserProfile.test.js
-│           ├── utils.date.test.js
+│           ├── useWeightUnit.test.js
 │           ├── utils.workout.test.js
+│           ├── muscleMapping.test.js
 │           ├── App.test.jsx
 │           ├── Login.test.jsx
 │           ├── Today.test.jsx
 │           ├── Settings.test.jsx
-│           ├── Templates.test.jsx
+│           ├── Navigation.test.jsx
+│           ├── SplashPage.test.jsx
+│           ├── WeeklyStats.test.jsx
+│           ├── TotalStats.test.jsx
+│           ├── Strength.test.jsx
+│           ├── Cardio.test.jsx
+│           ├── Leaderboard.test.jsx
+│           ├── SharedCalendar.test.jsx
+│           ├── BodyMap.test.jsx
+│           ├── MuscleDetailPanel.test.jsx
 │           ├── Modal.test.jsx
 │           ├── DayInfoModal.test.jsx
 │           ├── EditExerciseModal.test.jsx
@@ -245,12 +263,16 @@ WorkoutApp/
 │       │   │       ├── V3__meal_and_workout_refactor.sql
 │       │   │       ├── V4__user_goals.sql           ← nutrition targets on users
 │       │   │       ├── V5__remove_seed_user.sql     ← cleans up seed data
-│       │   │       ├── V6__workout_templates.sql    ← template tables
+│       │   │       ├── V6__workout_templates.sql    ← template tables (later dropped, see V15)
 │       │   │       ├── V7__user_api_key.sql         ← API key column on users
 │       │   │       ├── V8__exercise_set_cardio_fields.sql ← distanceMiles, durationSeconds
 │       │   │       ├── V9__step_log.sql             ← standalone step_log table
 │       │   │       ├── V10__drop_legacy_columns.sql ← remove old calories/protein columns
-│       │   │       └── V11__drop_nutrition_steps.sql ← remove steps from nutrition_log
+│       │   │       ├── V11__drop_nutrition_steps.sql ← remove steps from nutrition_log
+│       │   │       ├── V12__user_share_data.sql     ← leaderboard opt-in flag on users
+│       │   │       ├── V13__deletion_journal.sql    ← undo trail for deletes
+│       │   │       ├── V14__user_share_calendar.sql ← shared-calendar opt-in flag
+│       │   │       └── V15__drop_workout_templates.sql ← drop template tables (feature removed)
 │       │   └── java/com/kavin/fitness/
 │       │       ├── FitnessApplication.java
 │       │       ├── security/
@@ -265,9 +287,8 @@ WorkoutApp/
 │       │       │   ├── Meal.java
 │       │       │   ├── WorkoutSession.java
 │       │       │   ├── ExerciseSet.java
-│       │       │   ├── WorkoutTemplate.java
-│       │       │   ├── TemplateExercise.java
-│       │       │   └── StepLog.java
+│       │       │   ├── StepLog.java
+│       │       │   └── DeletionJournalEntry.java
 │       │       ├── repository/
 │       │       ├── dto/
 │       │       ├── service/
@@ -275,19 +296,25 @@ WorkoutApp/
 │       │       │   ├── NutritionService.java
 │       │       │   ├── WorkoutService.java
 │       │       │   ├── ProgressService.java
-│       │       │   ├── WorkoutTemplateService.java
+│       │       │   ├── LeaderboardService.java
+│       │       │   ├── SharedCalendarService.java
 │       │       │   ├── StepService.java
-│       │       │   └── ImportService.java
+│       │       │   ├── ImportService.java
+│       │       │   ├── UndoService.java
+│       │       │   ├── DeletionJournalService.java
+│       │       │   └── DeletionJournalPurgeJob.java
 │       │       └── controller/
 │       │           ├── AuthController.java
 │       │           ├── WeightController.java
 │       │           ├── NutritionController.java
 │       │           ├── WorkoutController.java
 │       │           ├── ProgressController.java
-│       │           ├── WorkoutTemplateController.java
+│       │           ├── LeaderboardController.java
+│       │           ├── SharedCalendarController.java
 │       │           ├── StepController.java
 │       │           ├── ProfileController.java
-│       │           └── ImportController.java
+│       │           ├── ImportController.java
+│       │           └── UndoController.java
 │       └── test/
 │           └── java/com/kavin/fitness/
 │               ├── security/JwtUtilTest.java
@@ -338,10 +365,8 @@ WorkoutApp/
 | `GET`    | `/api/progress/strength`        | Required | Per-exercise strength progression   |
 | `GET`    | `/api/progress/prs`             | Required | Personal records per exercise       |
 | `GET`    | `/api/progress/milestones`      | Required | Achievement timeline                |
-| `GET`    | `/api/templates`                | Required | List workout templates              |
-| `POST`   | `/api/templates`                | Required | Create a workout template           |
-| `PUT`    | `/api/templates/{id}`           | Required | Update a template                   |
-| `DELETE` | `/api/templates/{id}`           | Required | Delete a template                   |
+| `GET`    | `/api/leaderboard`              | Public   | Community leaderboard (opted-in users only) |
+| `GET`    | `/api/shared-calendar`          | Public   | Community workout calendar (opted-in users only) |
 | `GET`    | `/api/profile/goals`            | Required | Get user nutrition goals            |
 | `PUT`    | `/api/profile/goals`            | Required | Update nutrition goals              |
 | `PUT`    | `/api/profile/email`            | Required | Update email address                |
@@ -590,13 +615,13 @@ workout_session                     exercise_set
                                     reps, weight_lbs, completed,
                                     distance_miles, duration_seconds
 
-workout_template                    template_exercise
-  id, user_id → users               id, template_id → workout_template
-  template_name                     exercise_name, set_count,
-                                    default_reps, default_weight
+deletion_journal_entry              users (extended)
+  id, user_id → users                 share_data, share_calendar
+  entity_type, payload (JSON)         (opt-in flags for community
+  created_at, restored_at              leaderboard + shared calendar)
 ```
 
-Flyway runs migrations automatically when the backend starts. V1–V6 build the core schema; V7 adds per-user API keys; V8 adds cardio fields to exercise sets; V9 adds the step_log table; V10–V11 drop legacy columns.
+Flyway runs migrations automatically when the backend starts. V1–V6 build the original core schema; V7 adds per-user API keys; V8 adds cardio fields to exercise sets; V9 adds the step_log table; V10–V11 drop legacy columns; V12 + V14 add the leaderboard / shared-calendar opt-in flags; V13 adds the deletion journal for undo; V15 drops the workout-template tables introduced in V6 (feature removed).
 
 ---
 
@@ -605,14 +630,17 @@ Flyway runs migrations automatically when the backend starts. V1–V6 build the 
 - **Splash page** — "Today's Focus" entry point with motivational quotes that cycle with a fade transition
 - **Daily tracking** — Log weight, meals (with per-meal calorie/protein), workouts, and steps from the Today page
 - **lbs/kg toggle** — Switch between imperial and metric weight display in Settings; preference is persisted
-- **Workout builder** — Build sessions exercise-by-exercise with sets, reps, and weight; or start from a saved template
+- **Workout builder** — Build sessions exercise-by-exercise with sets, reps, and weight
 - **Cardio logging** — Log runs and distance-based cardio with distance + duration, or timed activities (Muay Thai, yoga, etc.)
-- **Workout templates** — Save and reuse common workout structures
+- **Muscle map** — Body-map heatmap on Today / Weekly / Total / Shared Calendar pages showing what you've trained
 - **Steps tracking** — Standalone daily step count logging, separate from nutrition
 - **Nutrition goals** — Set calorie targets for training/rest days and a protein target; track adherence
 - **Strength progression** — Chart weight lifted over time per exercise, sorted by peak weight
 - **Personal records** — Automatically computed PRs per exercise
 - **Weekly & lifetime stats** — Aggregated views of calorie, protein, and workout trends
+- **Community leaderboard** — Opt-in rankings per exercise (strength + cardio categories) and top lifters
+- **Shared community calendar** — Opt-in calendar showing other users' workouts; click an entry for the full session detail
+- **Undo deletes** — Recently deleted entries can be restored from a per-user deletion journal
 - **Data import** — Bulk import historical data from CSV or Excel
 - **Google Calendar sync** — Automated daily sync of workouts and weight to Google Calendar
 - **Claude AI integration** — MCP server with 15 tools; log and query your data by talking to Claude

@@ -364,7 +364,7 @@
     <div class="node frontend" style="top:60px; left:20px; width:190px;">
       <h3>&#127760; React UI</h3>
       <div class="tech">
-        Pages: <code>Today</code> <code>Stats</code> <code>Strength</code> <code>Templates</code> <code>Settings</code><br>
+        Pages: <code>Today</code> <code>History</code> <code>Progress</code> <code>Leaderboard</code> <code>Settings</code><br>
         Charts: <code>Recharts</code><br>
         Router: <code>React Router v6</code>
       </div>
@@ -420,8 +420,9 @@
         <code>NutritionController</code> &mdash; meals/logs<br>
         <code>WeightController</code> &mdash; daily weight<br>
         <code>ProgressController</code> &mdash; PRs/strength<br>
-        <code>TemplateController</code> &mdash; templates<br>
-        <code>ProfileController</code> &mdash; goals/email
+        <code>LeaderboardController</code> &mdash; community rankings<br>
+        <code>SharedCalendarController</code> &mdash; shared community calendar<br>
+        <code>ProfileController</code> &mdash; goals/email/privacy
       </div>
     </div>
 
@@ -451,8 +452,8 @@
     <div class="node database" style="top:660px; left:840px; width:230px;">
       <h3>&#128024; PostgreSQL 15</h3>
       <div class="tech">
-        Tables: <code>users</code> <code>workout_session</code> <code>exercise_set</code> <code>nutrition_log</code> <code>meal</code> <code>weight_log</code> <code>workout_template</code> <code>template_exercise</code><br>
-        Migrations: <code>Flyway V1-V6</code>
+        Tables: <code>users</code> <code>workout_session</code> <code>exercise_set</code> <code>nutrition_log</code> <code>meal</code> <code>weight_log</code> <code>step_log</code> <code>deletion_journal_entry</code><br>
+        Migrations: <code>Flyway V1-V15</code>
       </div>
     </div>
 
@@ -482,7 +483,7 @@
       <h3>&#128295; Flyway Migrations</h3>
       <div class="tech">
         Runs on backend startup<br>
-        <code>V1</code> init &rarr; <code>V6</code> templates<br>
+        <code>V1</code> init &rarr; <code>V15</code> drop templates<br>
         Versioned SQL scripts
       </div>
     </div>
@@ -624,12 +625,12 @@
           <tr><td><code>nutrition_log</code></td><td>id, user_id, log_date, day_type, steps</td><td>belongs to <code>users</code>, has many <code>meal</code></td></tr>
           <tr><td><code>meal</code></td><td>id, nutrition_log_id, meal_name, calories, protein_grams</td><td>belongs to <code>nutrition_log</code></td></tr>
           <tr><td><code>weight_log</code></td><td>id, user_id, log_date, weight_lbs</td><td>belongs to <code>users</code>, unique per day</td></tr>
-          <tr><td><code>workout_template</code></td><td>id, user_id, template_name</td><td>belongs to <code>users</code>, has many <code>template_exercise</code></td></tr>
-          <tr><td><code>template_exercise</code></td><td>id, template_id, exercise_name, set_count, default_reps/weight</td><td>belongs to <code>workout_template</code></td></tr>
+          <tr><td><code>step_log</code></td><td>id, user_id, log_date, steps</td><td>belongs to <code>users</code>, unique per day</td></tr>
+          <tr><td><code>deletion_journal_entry</code></td><td>id, user_id, entity_type, payload, created_at, restored_at</td><td>belongs to <code>users</code>; powers undo</td></tr>
         </tbody>
       </table>
-      <p style="margin-top:12px; font-size:0.82rem; color:#94a3b8;"><strong>Flyway</strong> manages schema evolution. Migrations <code>V1</code> through <code>V6</code> run automatically on Spring Boot startup, ensuring the DB schema matches the code version.</p>
-      <span class="filepath">backend/src/main/resources/db/migration/V1__init.sql &ndash; V6__workout_templates.sql</span>
+      <p style="margin-top:12px; font-size:0.82rem; color:#94a3b8;"><strong>Flyway</strong> manages schema evolution. Migrations <code>V1</code> through <code>V15</code> run automatically on Spring Boot startup, ensuring the DB schema matches the code version. <code>V6</code>'s workout-template tables were removed by <code>V15</code> when the templates feature was retired.</p>
+      <span class="filepath">backend/src/main/resources/db/migration/V1__init.sql &ndash; V15__drop_workout_templates.sql</span>
     </div>
 
     <h2><span class="num">5</span> External Integrations</h2>
