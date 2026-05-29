@@ -6,7 +6,6 @@ import {
   getHeatLevel,
   getGroupForSlug,
   buildBodyData,
-  buildBodyState,
 } from '../utils/muscleMapping';
 
 describe('getMuscleGroups', () => {
@@ -309,35 +308,5 @@ describe('buildBodyData', () => {
     const slugs = data.map(d => d.slug);
     expect(slugs).toContain('upper-back');
     expect(slugs).toContain('lower-back');
-  });
-});
-
-describe('buildBodyState (legacy)', () => {
-  const emptyStats = Object.fromEntries(
-    getMuscleGroups().map(g => [g, { count: 0, exercises: [] }])
-  );
-
-  it('returns body state with intensity 0 for untrained muscles', () => {
-    const state = buildBodyState(emptyStats, null);
-    expect(state['chest'].intensity).toBe(0);
-    expect(state['chest'].selected).toBe(false);
-  });
-
-  it('returns low intensity for 1-2 exercise count', () => {
-    const stats = { ...emptyStats, chest: { count: 2, exercises: [] } };
-    const state = buildBodyState(stats, null);
-    expect(state['chest'].intensity).toBe(3);
-  });
-
-  it('returns high intensity for 3+ exercise count', () => {
-    const stats = { ...emptyStats, chest: { count: 4, exercises: [] } };
-    const state = buildBodyState(stats, null);
-    expect(state['chest'].intensity).toBe(8);
-  });
-
-  it('marks selected muscle group slugs as selected', () => {
-    const state = buildBodyState(emptyStats, 'chest');
-    expect(state['chest'].selected).toBe(true);
-    expect(state['biceps'].selected).toBe(false);
   });
 });

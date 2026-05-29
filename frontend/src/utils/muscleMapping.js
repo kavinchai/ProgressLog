@@ -110,23 +110,3 @@ export function buildBodyData(muscleStats, selectedMuscle) {
   }
   return data;
 }
-
-// Legacy export kept for backward compatibility with tests
-export function buildBodyState(muscleStats, selectedMuscle) {
-  const state = {};
-  for (const [group, data] of Object.entries(muscleStats)) {
-    const slugs = GROUP_TO_SLUGS[group];
-    if (!slugs) continue;
-
-    let intensity = 0;
-    if (data.count >= 3) intensity = 8;
-    else if (data.count >= 1) intensity = 3;
-
-    const isSelected = selectedMuscle === group;
-
-    for (const slug of slugs) {
-      state[slug] = { intensity, selected: isSelected };
-    }
-  }
-  return state;
-}
