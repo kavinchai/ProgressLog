@@ -94,35 +94,24 @@ describe('SharedCalendar', () => {
     });
   });
 
-  it('consolidates multiple sets of the same exercise into one block', async () => {
-    mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
-    const { container } = renderCalendar();
-    await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
-
-    // alice has 3 Bench Press sets + 1 Squats set -> 2 exercise blocks, not 4
-    const aliceBlocks = container.querySelectorAll(
-      `[data-testid="shared-day-${WEEK[2]}"] .sc-exercise`
-    );
-    expect(aliceBlocks.length).toBe(2);
-  });
-
-  it('shows the per-set reps for a consolidated exercise block', async () => {
+  it('shows unique exercise names for each user in their day cell', async () => {
     mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
     renderCalendar();
-    await waitFor(() => {
-      // Bench Press at 185 lbs, reps 5 / 5 / 4
-      expect(screen.getByText(/bench press/i)).toBeInTheDocument();
-      expect(screen.getByText(/185 lbs/i)).toBeInTheDocument();
-      expect(screen.getByText(/5\s+5\s+4/)).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
+
+    // alice has Bench Press + Squats — both names should appear, no reps/weight
+    expect(screen.getByText(/bench press/i)).toBeInTheDocument();
+    expect(screen.getByText(/squats/i)).toBeInTheDocument();
+    expect(screen.queryByText(/185 lbs/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5\s+5\s+4/)).not.toBeInTheDocument();
   });
 
-  it('renders a run entry with distance and duration', async () => {
+  it('renders a run entry showing only the exercise name', async () => {
     mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
     renderCalendar();
     await waitFor(() => {
       expect(screen.getByText(/run/i)).toBeInTheDocument();
-      expect(screen.getByText(/3\.2/)).toBeInTheDocument();
+      expect(screen.queryByText(/3\.2/)).not.toBeInTheDocument();
     });
   });
 
@@ -165,10 +154,9 @@ describe('SharedCalendar', () => {
     });
   });
 
-  it('merges multiple same-day sessions for one user into a single consolidated block', async () => {
-    // qaf-test logged three separate sessions on the same day, each with one
-    // Overhead Press set at 95×5. The cell should show ONE block "Overhead Press
-    // · 95 lbs · 5 5 5" — not three blocks.
+  it('merges multiple same-day sessions for one user into a single entry', async () => {
+    // qaf-test logged three separate sessions on the same day with Overhead Press.
+    // Should show ONE user block with "Overhead Press" once — not three blocks.
     mockApiGet.mockResolvedValue({
       data: {
         totalUsers: 1,
@@ -182,17 +170,11 @@ describe('SharedCalendar', () => {
         ],
       },
     });
-    const { container } = renderCalendar();
+    renderCalendar();
     await waitFor(() => expect(screen.getByText('qaf-test')).toBeInTheDocument());
 
-    const blocks = container.querySelectorAll(
-      `[data-testid="shared-day-${TODAY}"] .sc-exercise`
-    );
-    expect(blocks.length).toBe(1);
-    expect(screen.getByText(/overhead press/i)).toBeInTheDocument();
-    expect(screen.getByText(/95 lbs/i)).toBeInTheDocument();
-    expect(screen.getByText(/5\s+5\s+5/)).toBeInTheDocument();
-
+    // Exercise name appears once (deduplicated across sessions).
+    expect(screen.getAllByText(/overhead press/i).length).toBe(1);
     // Username appears once, not three times.
     expect(screen.getAllByText('qaf-test').length).toBe(1);
   });

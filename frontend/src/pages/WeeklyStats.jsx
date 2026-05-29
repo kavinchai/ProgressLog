@@ -26,7 +26,9 @@ export default function WeeklyStats() {
 
 	const days = getCurrentWeek();
 	const daySet = new Set(days);
-	const weekWorkouts = (workoutData ?? []).filter(s => daySet.has(s.sessionDate));
+	const weekWorkouts = (workoutData ?? []).filter((s) =>
+		daySet.has(s.sessionDate),
+	);
 	const muscleStats = buildMuscleGroupStats(weekWorkouts);
 
 	const today = localDateStr(new Date());
@@ -142,9 +144,13 @@ export default function WeeklyStats() {
 															: "--"}
 													</td>
 													<td>{row.calories != null ? row.calories : "--"}</td>
-													<td>{row.protein != null ? row.protein + "g" : "--"}</td>
 													<td>
-														{row.steps != null ? row.steps.toLocaleString() : "--"}
+														{row.protein != null ? row.protein + "g" : "--"}
+													</td>
+													<td>
+														{row.steps != null
+															? row.steps.toLocaleString()
+															: "--"}
 													</td>
 													<td>{row.workout ?? "--"}</td>
 												</tr>
@@ -172,7 +178,6 @@ export default function WeeklyStats() {
 							</div>
 						</div>
 					</div>
-
 				</div>
 
 				{/* Right column — muscle body map */}
@@ -192,7 +197,11 @@ export default function WeeklyStats() {
 							/>
 							<MuscleDetailPanel
 								muscle={selectedMuscle}
-								exercises={selectedMuscle ? muscleStats[selectedMuscle]?.exercises ?? [] : []}
+								exercises={
+									selectedMuscle
+										? (muscleStats[selectedMuscle]?.exercises ?? [])
+										: []
+								}
 							/>
 						</div>
 					</div>

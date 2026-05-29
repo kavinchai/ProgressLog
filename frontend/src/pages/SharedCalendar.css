@@ -67,58 +67,27 @@
 .sc-day-entry {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px 6px;
+  gap: 2px;
+  padding: 3px 6px;
   border-radius: 4px;
-  background: var(--accent-light, rgba(0,0,0,0.04));
+  background: var(--sc-user-bg);
   font-size: 11px;
   overflow: hidden;
 }
 
 .sc-day-user {
   font-weight: 600;
-  color: var(--accent, var(--fg));
+  color: var(--sc-user-fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.sc-exercise-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sc-exercise {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  line-height: 1.2;
-}
-
-.sc-exercise-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
-  font-weight: 500;
-  color: var(--fg);
-}
-
-.sc-exercise-name {
+.sc-day-activities {
+  color: var(--sc-user-fg);
+  opacity: 0.75;
+  font-size: 10px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sc-exercise-weight {
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.sc-exercise-reps {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }

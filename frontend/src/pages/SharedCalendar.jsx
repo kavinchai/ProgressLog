@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api';
 import { getCurrentWeek, localDateStr } from '../utils/date';
-import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 import './TotalStats.css';
 import './SharedCalendar.css';
 
@@ -10,6 +9,23 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
+
+const USER_PALETTE = [
+  { bg: '#dbeafe', fg: '#1e40af' },
+  { bg: '#dcfce7', fg: '#166534' },
+  { bg: '#fce7f3', fg: '#9d174d' },
+  { bg: '#fef9c3', fg: '#854d0e' },
+  { bg: '#ede9fe', fg: '#5b21b6' },
+  { bg: '#fee2e2', fg: '#991b1b' },
+  { bg: '#ccfbf1', fg: '#0f766e' },
+  { bg: '#ffedd5', fg: '#9a3412' },
+];
+
+function userColor(username) {
+  let h = 0;
+  for (let i = 0; i < username.length; i++) h = (h * 31 + username.charCodeAt(i)) >>> 0;
+  return USER_PALETTE[h % USER_PALETTE.length];
+}
 
 function groupEntriesByDate(entries) {
   const map = new Map();
@@ -32,38 +48,6 @@ function monthCells(year, monthIdx0) {
   return cells;
 }
 
-function ExerciseBlock({ group }) {
-  const type = detectType(group.sets);
-  const body =
-    type === 'run'
-      ? group.sets.map((s) => {
-          const dist = s.distanceMiles != null ? `${Number(s.distanceMiles).toFixed(2)} mi` : '--';
-          const dur  = formatDuration(s.durationSeconds);
-          const pace = calcPace(s.distanceMiles, s.durationSeconds);
-          return pace ? `${dist} / ${dur} (${pace})` : `${dist} / ${dur}`;
-        }).join('  ')
-      : type === 'timed'
-        ? group.sets.map((s) => formatDuration(s.durationSeconds)).join('  ')
-        : group.sets.map((s) => (s.reps ?? '--')).join('  ');
-
-  return (
-    <div className="sc-exercise">
-      <div className="sc-exercise-head">
-        <span className="sc-exercise-name">{group.name}</span>
-        {type === 'lifting' && group.weight != null && (
-          <span className="sc-exercise-weight">{group.weight} lbs</span>
-        )}
-      </div>
-      <div className="sc-exercise-reps">{body}</div>
-    </div>
-  );
-}
-
-/**
- * Merge a day's worth of entries into one per user. Multiple sessions for the
- * same user on the same day flatten into a single sets[] so groupByExercise can
- * consolidate matching (exercise, weight) pairs across sessions.
- */
 function mergeByUser(entries) {
   const order = [];
   const byUser = new Map();
@@ -87,15 +71,12 @@ function DayCell({ date, entries, isToday }) {
       <div className="calendar-cell-date">{parseInt(date.slice(8), 10)}</div>
       <div className="sc-day-entries">
         {merged.map((m) => {
-          const groups = groupByExercise(m.sets);
+          const { bg, fg } = userColor(m.username);
+          const names = [...new Set((m.sets ?? []).map(s => s.exerciseName))].join(' · ');
           return (
-            <div key={m.username} className="sc-day-entry">
+            <div key={m.username} className="sc-day-entry" style={{ '--sc-user-bg': bg, '--sc-user-fg': fg }}>
               <span className="sc-day-user">{m.username}</span>
-              <div className="sc-exercise-list">
-                {groups.map((g) => (
-                  <ExerciseBlock key={`${g.name}-${g.weight}`} group={g} />
-                ))}
-              </div>
+              {names && <span className="sc-day-activities">{names}</span>}
             </div>
           );
         })}
