@@ -71,6 +71,11 @@ a:hover {
 		gap: 8px;
 	}
 
+	.section-header {
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
 	.btn {
 		padding: 10px 16px;
 		font-size: var(--fs);
