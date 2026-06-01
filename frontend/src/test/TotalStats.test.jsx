@@ -155,4 +155,29 @@ describe('TotalStats — calendar view', () => {
 		expect(screen.getByRole('button', { name: /prev/i })).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
 	});
+
+	it('enables Prev in the current month even when it has no data yet, and navigates to the previous month (regression)', async () => {
+		// Today = June 2026, which has no logs. All data lives in May 2026.
+		vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
+		useWeightLog.mockReturnValue({
+			data: [{ id: 1, logDate: '2026-05-10', weightLbs: 180 }],
+			refetch: vi.fn(),
+		});
+		useNutrition.mockReturnValue({ data: [], refetch: vi.fn() });
+		useWorkouts.mockReturnValue({ data: [], refetch: vi.fn() });
+		useSteps.mockReturnValue({ data: [], refetch: vi.fn() });
+
+		render(<TotalStats />);
+
+		// Page opens on the current month (June) — Prev must be clickable so the
+		// user can reach the months that actually have data.
+		const prev = screen.getByRole('button', { name: /prev/i });
+		expect(prev).toBeEnabled();
+		expect(screen.queryByTestId('calendar-day-2026-05-10')).toBeNull();
+
+		await userEvent.click(prev);
+
+		// Now showing May 2026.
+		expect(screen.getByTestId('calendar-day-2026-05-10')).toBeInTheDocument();
+	});
 });

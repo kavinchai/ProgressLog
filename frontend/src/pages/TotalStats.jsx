@@ -88,8 +88,14 @@ export default function TotalStats() {
 	);
 
 	const allMonths = [...new Set(allDates.map((d) => d.slice(0, 7)))].sort();
-	const activeMonth = logMonth ?? today.slice(0, 7);
-	const monthIdx = allMonths.indexOf(activeMonth);
+	const currentMonth = today.slice(0, 7);
+	// Months reachable via Prev/Next: every month that has data, plus the
+	// current month — which is where the calendar opens even before anything
+	// is logged this month. Without it, monthIdx is -1 on first load and Prev
+	// gets disabled.
+	const navMonths = [...new Set([...allMonths, currentMonth])].sort();
+	const activeMonth = logMonth ?? currentMonth;
+	const monthIdx = navMonths.indexOf(activeMonth);
 
 	const monthRows = (() => {
 		if (activeMonth > today.slice(0, 7)) return [];
@@ -235,7 +241,7 @@ export default function TotalStats() {
 						<div className="month-nav">
 							<button
 								className="btn btn-sm"
-								onClick={() => goMonth(allMonths[monthIdx - 1])}
+								onClick={() => goMonth(navMonths[monthIdx - 1])}
 								disabled={monthIdx <= 0}
 							>
 								&larr; Prev
@@ -260,8 +266,8 @@ export default function TotalStats() {
 							</span>
 							<button
 								className="btn btn-sm"
-								onClick={() => goMonth(allMonths[monthIdx + 1])}
-								disabled={monthIdx >= allMonths.length - 1}
+								onClick={() => goMonth(navMonths[monthIdx + 1])}
+								disabled={monthIdx >= navMonths.length - 1}
 							>
 								Next &rarr;
 							</button>
