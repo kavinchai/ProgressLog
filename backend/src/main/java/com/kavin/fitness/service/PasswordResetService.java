@@ -78,15 +78,8 @@ public class PasswordResetService {
                 — ProgressLog
                 """.formatted(user.getUsername(), resetUrl, tokenTtlMinutes);
 
-        try {
-            mailService.send(user.getEmail(), "Reset your ProgressLog password", body);
-            log.info("Password reset token issued for user={}", user.getUsername());
-        } catch (RuntimeException ex) {
-            // Swallow so the endpoint still returns 204 — otherwise a 5xx leaks
-            // that the username exists. The token row stays in the DB unused.
-            log.error("Password reset email failed to send for user={} — endpoint will still return 204",
-                    user.getUsername(), ex);
-        }
+        mailService.send(user.getEmail(), "Reset your ProgressLog password", body);
+        log.info("Password reset token issued for user={}", user.getUsername());
     }
 
     public void resetPassword(String rawToken, String newPassword) {
