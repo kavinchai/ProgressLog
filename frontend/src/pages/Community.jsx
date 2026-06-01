@@ -159,7 +159,11 @@ export default function Community() {
 
       {view === 'leaderboard' && !loading && !error && data && data.totalUsers === 0 && (
         <div className="lb-empty">
-          No one has opted in to sharing yet. Sign in and toggle <b>Share Data</b> in Settings to get on the board.
+          {authenticated ? (
+            <>No one has opted in to sharing yet. Toggle <b>Share Data</b> in <Link to="/settings">Settings</Link> to get on the board.</>
+          ) : (
+            <>No one has opted in to sharing yet. Sign in and toggle <b>Share Data</b> in Settings to get on the board.</>
+          )}
         </div>
       )}
 
@@ -326,8 +330,11 @@ export default function Community() {
       )}
 
       <footer className="lb-footer">
-        Want to be on the board? <Link to="/login?mode=signup">Create an account</Link>,
-        log workouts, and opt in to data sharing in your settings.
+        {authenticated ? (
+          <>Want to be on the board? Opt in to data sharing in <Link to="/settings">Settings</Link>.</>
+        ) : (
+          <>Want to be on the board? <Link to="/login?mode=signup">Create an account</Link>, log workouts, and opt in to data sharing in your settings.</>
+        )}
       </footer>
     </div>
   );
