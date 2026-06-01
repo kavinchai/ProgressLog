@@ -651,6 +651,106 @@ Examples:
 		},
 	);
 
+	// ── Tool: edit_meal ───────────────────────────────────────────────────────
+
+	mcp.tool(
+		"edit_meal",
+		"Update a previously logged meal's name, calories, or protein. Use this to correct a meal that was logged with the wrong values. Only the fields you provide are changed; omitted fields keep their current values. Call get_today_summary first to find the log ID and meal ID.",
+		{
+			logId: z
+				.number()
+				.int()
+				.positive()
+				.describe(
+					"The nutrition day log ID (get from get_today_summary — shown as 'log ID')",
+				),
+			mealId: z
+				.number()
+				.int()
+				.positive()
+				.describe(
+					"The meal ID to edit (get from get_today_summary — shown as 'meal ID' next to each meal)",
+				),
+			mealName: z
+				.string()
+				.optional()
+				.describe("New name for the meal. Omit to keep the current name."),
+			calories: z
+				.number()
+				.int()
+				.min(0)
+				.optional()
+				.describe("New calorie total. Omit to keep the current value."),
+			proteinGrams: z
+				.number()
+				.int()
+				.min(0)
+				.optional()
+				.describe("New protein in grams. Omit to keep the current value."),
+		},
+		withDedup(
+			apiKey,
+			"edit_meal",
+			async ({ logId, mealId, mealName, calories, proteinGrams }) => {
+				if (
+					mealName === undefined &&
+					calories === undefined &&
+					proteinGrams === undefined
+				) {
+					return {
+						content: [
+							{
+								type: "text",
+								text: "Nothing to edit — provide at least one of mealName, calories, or proteinGrams.",
+							},
+						],
+					};
+				}
+
+				// The backend PUT replaces all fields, so fetch the current meal
+				// and merge in only the fields the caller wants to change.
+				const logs = await api("GET", "/nutrition");
+				const dayLog = logs.find((l) => l.id === logId);
+				const current = dayLog?.meals?.find((m) => m.id === mealId);
+				if (!current) {
+					return {
+						content: [
+							{
+								type: "text",
+								text: `No meal ${mealId} found in nutrition log ${logId}. Call get_today_summary to find the right IDs.`,
+							},
+						],
+					};
+				}
+
+				const payload = {
+					mealName: mealName !== undefined ? mealName : current.mealName,
+					calories: calories !== undefined ? calories : current.calories,
+					proteinGrams:
+						proteinGrams !== undefined ? proteinGrams : current.proteinGrams,
+				};
+
+				const result = await api(
+					"PUT",
+					`/nutrition/${logId}/meals/${mealId}`,
+					payload,
+				);
+
+				const totalCal = result.totalCalories ?? payload.calories;
+				const totalProt = result.totalProtein ?? payload.proteinGrams;
+
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Updated meal ${mealId}${payload.mealName ? ` "${payload.mealName}"` : ""}: ${payload.calories} kcal, ${payload.proteinGrams}g protein\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
+						},
+					],
+				};
+			},
+		),
+	);
+
 	// ── Tool: log_steps ───────────────────────────────────────────────────────
 
 	mcp.tool(
