@@ -252,34 +252,23 @@
     padding: 10px 12px;
   }
 
-  /* Force all stats into a single horizontal row, matching desktop layout */
+  /* Wrap stats so labels stay readable on narrow screens */
   .weekly-summary-grid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
   }
 
   .weekly-stat {
-    padding: 5px 6px;
-    gap: 1px;
-    border-right: 1px solid var(--border-dim);
-  }
-
-  .weekly-stat:last-child {
-    border-right: none;
+    padding: 6px 8px;
+    gap: 2px;
   }
 
   .weekly-stat-label {
-    font-size: 7.5px;
+    font-size: var(--fs-xs);
     letter-spacing: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .weekly-stat-value {
-    font-size: var(--fs-xs);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: var(--fs-sm);
   }
 
   .day-detail {
