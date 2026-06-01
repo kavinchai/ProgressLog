@@ -12,87 +12,53 @@ export default function Login() {
 	const [password, setPassword] = useState("");
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
-	const [info, setInfo] = useState("");
 	const [loading, setLoading] = useState(false);
 
 	const isSignup = mode === "signup";
-	const isForgot = mode === "forgot";
 
 	async function handleSubmit(e) {
 		e.preventDefault();
 		setError("");
-		setInfo("");
 		setLoading(true);
 		try {
-			if (isForgot) {
-				await api.post("/auth/forgot-password", { username, email });
-				setInfo("If an account matches, check your email for a reset link. The link expires in 5 minutes.");
-			} else {
-				const endpoint = isSignup ? "/auth/register" : "/auth/login";
-				const body = isSignup ? { username, password, email } : { username, password };
-				const res = await api.post(endpoint, body);
-				login(res.data.username);
-			}
+			const endpoint = isSignup ? "/auth/register" : "/auth/login";
+			const body = isSignup ? { username, password, email } : { username, password };
+			const res = await api.post(endpoint, body);
+			login(res.data.username);
 		} catch (err) {
 			const status = err.response?.status;
 			const msg = err.response?.data?.message;
-			if (isForgot) {
-				setError(msg ?? (status ? `Request failed (HTTP ${status}).` : "Request failed."));
-			} else {
-				setError(
-					msg ??
-						(status
-							? `${isSignup ? "Registration" : "Login"} failed (HTTP ${status}).`
-							: isSignup
-								? "Registration failed."
-								: "Invalid username or password."),
-				);
-			}
+			setError(
+				msg ??
+					(status
+						? `${isSignup ? "Registration" : "Login"} failed (HTTP ${status}).`
+						: isSignup
+							? "Registration failed."
+							: "Invalid username or password."),
+			);
 		} finally {
 			setLoading(false);
 		}
 	}
 
-	function switchTo(next) {
-		setMode(next);
+	function switchMode() {
+		setMode(isSignup ? "login" : "signup");
 		setError("");
-		setInfo("");
 		setUsername("");
 		setPassword("");
 		setEmail("");
 	}
-
-	function switchMode() {
-		switchTo(isSignup ? "login" : "signup");
-	}
-
-	const subtitle = isForgot
-		? "Reset your password"
-		: isSignup
-			? "Create your account"
-			: "Welcome back";
-
-	const submitLabel = isForgot
-		? loading
-			? "Sending..."
-			: "Send reset link"
-		: isSignup
-			? loading
-				? "Creating account..."
-				: "Create Account"
-			: loading
-				? "Signing in..."
-				: "Sign In";
 
 	return (
 		<div className="login-page">
 			<div className="login-card">
 				<div className="login-inner">
 					<div className="login-title">ProgressLog</div>
-					<div className="login-divider">{subtitle}</div>
+					<div className="login-divider">
+						{isSignup ? "Create your account" : "Welcome back"}
+					</div>
 					<form className="login-form" onSubmit={handleSubmit}>
 						{error && <div className="login-error">{error}</div>}
-						{info && <div className="login-info">{info}</div>}
 
 						<div className="login-field">
 							<label htmlFor="username">Username</label>
@@ -108,7 +74,7 @@ export default function Login() {
 							/>
 						</div>
 
-						{(isSignup || isForgot) && (
+						{isSignup && (
 							<div className="login-field">
 								<label htmlFor="email">Email</label>
 								<input
@@ -124,48 +90,36 @@ export default function Login() {
 							</div>
 						)}
 
-						{!isForgot && (
-							<div className="login-field">
-								<label htmlFor="password">Password</label>
-								<input
-									id="password"
-									type="password"
-									className="login-input"
-									placeholder="Enter your password"
-									value={password}
-									onChange={(e) => setPassword(e.target.value)}
-									required
-									autoComplete={isSignup ? "new-password" : "current-password"}
-								/>
-							</div>
-						)}
+						<div className="login-field">
+							<label htmlFor="password">Password</label>
+							<input
+								id="password"
+								type="password"
+								className="login-input"
+								placeholder="Enter your password"
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								required
+								autoComplete={isSignup ? "new-password" : "current-password"}
+							/>
+						</div>
 
 						<button className="login-btn" type="submit" disabled={loading}>
-							{submitLabel}
+							{loading
+								? isSignup
+									? "Creating account..."
+									: "Signing in..."
+								: isSignup
+									? "Create Account"
+									: "Sign In"}
 						</button>
 					</form>
 
-					{isForgot ? (
-						<button className="login-switch-btn" onClick={() => switchTo("login")}>
-							Back to sign in
-						</button>
-					) : (
-						<>
-							<button className="login-switch-btn" onClick={switchMode}>
-								{isSignup
-									? "Already have an account? Sign in"
-									: "Don't have an account? Sign up"}
-							</button>
-							{!isSignup && (
-								<button
-									className="login-switch-btn login-forgot-btn"
-									onClick={() => switchTo("forgot")}
-								>
-									Forgot password?
-								</button>
-							)}
-						</>
-					)}
+					<button className="login-switch-btn" onClick={switchMode}>
+						{isSignup
+							? "Already have an account? Sign in"
+							: "Don't have an account? Sign up"}
+					</button>
 				</div>
 			</div>
 		</div>
