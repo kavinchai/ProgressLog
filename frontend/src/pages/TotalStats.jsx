@@ -339,7 +339,15 @@ export default function TotalStats() {
 											className={
 												"calendar-cell" +
 												(row.date === today ? " calendar-cell-today" : "") +
-												(row.date > today ? " calendar-cell-future" : "")
+												(row.date > today ? " calendar-cell-future" : "") +
+												(row.date <= today &&
+												row.weight == null &&
+												row.calories == null &&
+												row.protein == null &&
+												row.steps == null &&
+												row.workout == null
+													? " calendar-cell-empty"
+													: "")
 											}
 											onClick={() =>
 												row.date <= today && setSelectedDay(row.date)

@@ -116,6 +116,34 @@
 	opacity: 0.3;
 }
 
+.calendar-cell-empty {
+	position: relative;
+}
+
+.calendar-cell-empty::after {
+	content: "+";
+	position: absolute;
+	bottom: 2px;
+	right: 4px;
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+	color: var(--muted);
+	opacity: 0;
+	transition: opacity var(--transition-fast);
+	pointer-events: none;
+}
+
+.calendar-cell-empty:hover::after,
+.calendar-cell-empty:focus-visible::after {
+	opacity: 0.5;
+}
+
+@media (hover: none) {
+	.calendar-cell-empty::after {
+		opacity: 0.35;
+	}
+}
+
 .calendar-cell-date {
 	font-size: clamp(0.7rem, 1.6cqw, var(--fs-sm));
 	font-weight: var(--fw-semibold);
@@ -229,6 +257,7 @@
 	.month-nav {
 		flex-wrap: wrap;
 		gap: 8px;
+		padding: 10px 20px;
 	}
 
 	.month-picker {
