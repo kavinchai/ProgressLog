@@ -425,6 +425,7 @@ ProgressLog ships an MCP server that exposes your fitness data to Claude. Once c
 | `log_cardio`           | Log a run, ride, or distance-based cardio activity       |
 | `log_activity`         | Log a timed activity with no distance (Muay Thai, yoga…) |
 | `log_meal`             | Log a meal with calories and protein                     |
+| `edit_meal`            | Correct a previously logged meal's name, calories, protein |
 | `log_steps`            | Log step count for a date                                |
 | `edit_steps`           | Correct a previously logged step count                   |
 | `delete_steps`         | Clear step count for a date                              |
