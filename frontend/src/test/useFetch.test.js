@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import useFetch from '../hooks/useFetch';
 
 vi.mock('../api', () => ({
@@ -56,6 +56,23 @@ describe('useFetch', () => {
 
     renderHook(() => useFetch('/workouts'));
     await waitFor(() => expect(api.get).toHaveBeenCalledWith('/workouts'));
+  });
+
+  it('keeps loading false during a refetch so open UI is not unmounted', async () => {
+    api.get.mockResolvedValue({ data: [{ id: 1 }] });
+    const { result } = renderHook(() => useFetch('/test'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // Make the next fetch hang so we can observe state mid-refetch.
+    let resolve;
+    api.get.mockReturnValue(new Promise(r => { resolve = r; }));
+    act(() => { result.current.refetch(); });
+
+    // While the refetch is in flight, loading must stay false (stale data shown).
+    expect(result.current.loading).toBe(false);
+
+    await act(async () => { resolve({ data: [{ id: 1 }, { id: 2 }] }); });
+    expect(result.current.data).toHaveLength(2);
   });
 
   it('refetch triggers a second API call', async () => {

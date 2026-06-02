@@ -180,7 +180,7 @@ public class TodayPage {
     }
 
     public void waitForSessionName(String name) {
-        section(WORKOUT_IDX).locator(".section-title .muted",
+        section(WORKOUT_IDX).locator(".section-title .workout-session-name",
                 new Locator.LocatorOptions().setHasText(name)).waitFor();
     }
 
