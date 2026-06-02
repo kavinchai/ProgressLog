@@ -5,6 +5,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class TodayPage {
     private final Page page;
@@ -130,8 +131,12 @@ public class TodayPage {
     }
 
     private Locator workoutAddExerciseBtn() {
+        // The workout section offers two ways to add an exercise to an existing
+        // session: the empty-state "+ Exercise" button and the "+ Add another
+        // exercise" row shown once exercises are present.
         return section(WORKOUT_IDX).locator("button",
-                new Locator.LocatorOptions().setHasText("+ Exercise"));
+                new Locator.LocatorOptions().setHasText(
+                        Pattern.compile("\\+ (Exercise|Add another exercise)")));
     }
 
     /** Wait until the workout section has rendered its initial state. */

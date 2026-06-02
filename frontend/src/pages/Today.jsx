@@ -355,11 +355,6 @@ export default function Today() {
                 Edit Workout
               </button>
             )}
-            {todayWorkoutEntry && editableWorkoutSession && (
-              <button className="btn btn-sm btn-primary" onClick={() => openWorkoutModal({ appendBlank: true })}>
-                + Exercise
-              </button>
-            )}
             {todayWorkoutEntry && (
               <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Workout', message: 'Are you sure you want to delete this workout session?', onDelete: () => api.delete(`/workouts/${todayWorkoutEntry.id}`).then(refetchWorkouts), onUndone: refetchWorkouts })}>Delete</button>
             )}

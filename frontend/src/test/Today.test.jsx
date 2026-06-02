@@ -436,10 +436,10 @@ describe('Today — opening modals', () => {
     expect(modal.dataset.appendBlank).toBe('false');
   });
 
-  it('+ Exercise opens the existing workout with a blank exercise appended', async () => {
+  it('+ Add another exercise opens the existing workout with a blank exercise appended', async () => {
     setup({ workouts: [WORKOUT_ENTRY] });
     render(<Today />);
-    await userEvent.click(screen.getByRole('button', { name: /^\+ Exercise$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /add another exercise/i }));
     const modal = screen.getByTestId('workout-modal');
     expect(modal).toBeInTheDocument();
     expect(modal.dataset.existingSessionId).toBe('10');
