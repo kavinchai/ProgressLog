@@ -1,5 +1,6 @@
 package com.kavin.fitness.e2e.pages;
 
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 
 public class EditExerciseModal {
@@ -45,6 +46,8 @@ public class EditExerciseModal {
     public void deleteExercise() {
         page.locator(DELETE).first().click();
         page.locator(".modal-box >> button:has-text(\"Confirm Delete\")").click();
-        page.locator(".modal-box >> button:has-text(\"Done\")").click();
+        Locator done = page.locator(".modal-box >> button:has-text(\"Done\")");
+        done.waitFor(new Locator.WaitForOptions().setTimeout(30000));
+        done.click();
     }
 }

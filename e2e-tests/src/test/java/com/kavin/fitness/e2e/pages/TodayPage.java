@@ -86,7 +86,8 @@ public class TodayPage {
 
     public void clickAddMeal() {
         page.locator("button", new Page.LocatorOptions()
-                .setHasText(java.util.regex.Pattern.compile("\\+ (Add )?Meal"))).first().click();
+                .setHasText(Pattern.compile("\\+ Add( another)? meal", Pattern.CASE_INSENSITIVE)))
+                .first().click();
     }
 
     public void waitForMealDisplayed(String name) {
@@ -245,7 +246,9 @@ public class TodayPage {
      */
     private void confirmDeleteAndDismiss() {
         page.locator(".modal-box >> button:has-text(\"Confirm Delete\")").click();
-        page.locator(".modal-box >> button:has-text(\"Done\")").click();
+        Locator done = page.locator(".modal-box >> button:has-text(\"Done\")");
+        done.waitFor(new Locator.WaitForOptions().setTimeout(30000));
+        done.click();
         page.locator(".modal-title").first().waitFor(
                 new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
     }
