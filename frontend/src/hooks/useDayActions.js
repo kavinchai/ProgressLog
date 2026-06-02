@@ -4,6 +4,7 @@ import api from '../api';
 export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry, stepEntry, onRefetchW, onRefetchN, onRefetchWo, onRefetchS }) {
   const [renamingSession, setRenamingSession] = useState(false);
   const [renameValue,     setRenameValue]     = useState('');
+  const [renameSaving,    setRenameSaving]    = useState(false);
 
   async function deleteWeight() {
     if (!weightEntry) return;
@@ -21,12 +22,14 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
   }
 
   async function submitRename() {
-    if (!workoutEntry) return;
+    if (!workoutEntry || renameSaving) return;
+    setRenameSaving(true);
     try {
       await api.patch(`/workouts/${workoutEntry.id}/name`, { sessionName: renameValue.trim() || null });
       onRefetchWo();
+      setRenamingSession(false);
     } catch (err) { console.warn('submitRename failed:', err); }
-    setRenamingSession(false);
+    finally { setRenameSaving(false); }
   }
 
   async function saveSteps(steps) {
@@ -53,6 +56,7 @@ export function useDayActions({ date, weightEntry, nutritionEntry, workoutEntry,
   return {
     renamingSession, setRenamingSession,
     renameValue,     setRenameValue,
+    renameSaving,
     deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, saveSteps, getOrCreateNutritionLogId,
   };
 }

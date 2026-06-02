@@ -19,11 +19,10 @@ import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/
 import { mergeWorkoutSessions } from '../utils/stats';
 import { buildMuscleGroupStats } from '../utils/muscleMapping';
 import useWeightUnit from '../hooks/useWeightUnit';
-import { localDateStr, formatDateFull as fmtDate } from '../utils/date';
+import useToday from '../hooks/useToday';
+import { formatDateFull as fmtDate } from '../utils/date';
 import '../pages/WeeklyStats.css';
 import './Today.css';
-
-const TODAY = localDateStr(new Date());
 
 // ── Meal card ─────────────────────────────────────────────────────────────────
 
@@ -119,6 +118,7 @@ function DataRow({ label, value }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Today() {
+  const TODAY = useToday();
   const { data: weightData,    refetch: refetchWeight }   = useWeightLog();
   const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
   const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
@@ -146,9 +146,12 @@ export default function Today() {
 
   const [editingSteps,    setEditingSteps]    = useState(false);
   const [stepsValue,      setStepsValue]      = useState('');
+  const [stepsSaving,     setStepsSaving]     = useState(false);
+  const [dayTypeSaving,   setDayTypeSaving]   = useState(false);
+  const [addingMeal,      setAddingMeal]      = useState(false);
 
   const {
-    renamingSession, setRenamingSession, renameValue, setRenameValue,
+    renamingSession, setRenamingSession, renameValue, setRenameValue, renameSaving,
     deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, saveSteps, getOrCreateNutritionLogId,
   } = useDayActions({
     date: TODAY,
@@ -216,6 +219,8 @@ export default function Today() {
   }
 
   async function toggleDayType() {
+    if (dayTypeSaving) return;
+    setDayTypeSaving(true);
     const current = todayNutritionEntry?.dayType ?? 'training';
     const next    = current === 'training' ? 'rest' : 'training';
     try {
@@ -225,13 +230,27 @@ export default function Today() {
       });
       refetchNutrition();
     } catch (err) { console.warn('toggleDayType failed:', err); }
+    finally { setDayTypeSaving(false); }
   }
 
   async function openAddMeal() {
-    const logId = await getOrCreateNutritionLogId();
-    setMealLogId(logId);
-    setEditMeal(null);
-    setModal('meal');
+    if (addingMeal) return;
+    setAddingMeal(true);
+    try {
+      const logId = await getOrCreateNutritionLogId();
+      setMealLogId(logId);
+      setEditMeal(null);
+      setModal('meal');
+    } finally { setAddingMeal(false); }
+  }
+
+  async function commitSteps() {
+    if (stepsSaving) return;
+    setStepsSaving(true);
+    try {
+      await saveSteps(stepsValue || null);
+      setEditingSteps(false);
+    } finally { setStepsSaving(false); }
   }
 
   return (
@@ -239,7 +258,7 @@ export default function Today() {
       <div className="today-page-header">
         <span className="today-title">Today</span>
         <span className="today-date muted">{fmtDate(TODAY)}</span>
-        <button className="today-day-type-toggle" onClick={toggleDayType}>
+        <button className="today-day-type-toggle" onClick={toggleDayType} disabled={dayTypeSaving}>
           {todayNutritionEntry?.dayType ?? 'training'}
         </button>
       </div>
@@ -301,15 +320,16 @@ export default function Today() {
                 className="modal-input"
                 type="number" min="0" placeholder="Steps"
                 value={stepsValue}
+                disabled={stepsSaving}
                 onChange={e => setStepsValue(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === 'Enter') { saveSteps(stepsValue || null); setEditingSteps(false); }
+                  if (e.key === 'Enter') commitSteps();
                   if (e.key === 'Escape') setEditingSteps(false);
                 }}
                 autoFocus
               />
-              <button className="btn btn-sm btn-primary" onClick={() => { saveSteps(stepsValue || null); setEditingSteps(false); }}>Save</button>
-              <button className="btn btn-sm" onClick={() => setEditingSteps(false)}>&times;</button>
+              <button className="btn btn-sm btn-primary" onClick={commitSteps} disabled={stepsSaving}>{stepsSaving ? 'Saving…' : 'Save'}</button>
+              <button className="btn btn-sm" onClick={() => setEditingSteps(false)} disabled={stepsSaving}>&times;</button>
             </div>
           ) : (
             todayStepEntry
@@ -342,12 +362,13 @@ export default function Today() {
                   type="text"
                   placeholder="Session name"
                   value={renameValue}
+                  disabled={renameSaving}
                   onChange={e => setRenameValue(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') setRenamingSession(false); }}
                   autoFocus
                 />
-                <button className="btn btn-sm btn-primary" onClick={submitRename}>Save</button>
-                <button className="btn btn-sm" onClick={() => setRenamingSession(false)}>&times;</button>
+                <button className="btn btn-sm btn-primary" onClick={submitRename} disabled={renameSaving}>{renameSaving ? 'Saving…' : 'Save'}</button>
+                <button className="btn btn-sm" onClick={() => setRenamingSession(false)} disabled={renameSaving}>&times;</button>
               </>
             )}
             {todayWorkoutEntry && hasSingleWorkoutSession && (
@@ -423,7 +444,7 @@ export default function Today() {
                 <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Nutrition Log', message: 'Are you sure you want to delete this nutrition log and all its meals?', onDelete: () => api.delete(`/nutrition/${todayNutritionEntry.id}`).then(refetchNutrition), onUndone: refetchNutrition })}>Delete</button>
               </>
             )}
-            <button className="btn btn-sm btn-primary" onClick={openAddMeal}>
+            <button className="btn btn-sm btn-primary" onClick={openAddMeal} disabled={addingMeal}>
               + Add Meal
             </button>
           </div>
