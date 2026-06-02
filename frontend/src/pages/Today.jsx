@@ -464,9 +464,6 @@ export default function Today() {
                 <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Nutrition Log', message: 'Are you sure you want to delete this nutrition log and all its meals?', onDelete: () => api.delete(`/nutrition/${todayNutritionEntry.id}`).then(refetchNutrition), onUndone: refetchNutrition })}>Delete</button>
               </>
             )}
-            <button className="btn btn-sm btn-primary" onClick={openAddMeal} disabled={addingMeal}>
-              + Add Meal
-            </button>
           </div>
         </div>
         <div className="section-body">
@@ -525,6 +522,9 @@ export default function Today() {
           ) : (
             <span className="muted">No entry for today.</span>
           )}
+          <button className="today-add-meal-row" onClick={openAddMeal} disabled={addingMeal}>
+            {meals.length > 0 ? '+ Add another meal' : '+ Add meal'}
+          </button>
         </div>
       </div>
 

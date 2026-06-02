@@ -467,10 +467,10 @@ describe('Today — opening modals', () => {
     expect(modal.dataset.existingId).toBe('5');
   });
 
-  it('+ Add Meal opens MealModal when a nutrition log already exists', async () => {
+  it('+ Add another meal opens MealModal when a nutrition log already exists', async () => {
     setup({ nutrition: [NUTRITION_ENTRY] });
     render(<Today />);
-    await userEvent.click(screen.getByRole('button', { name: /\+ add meal/i }));
+    await userEvent.click(screen.getByRole('button', { name: /add another meal/i }));
     const modal = screen.getByTestId('meal-modal');
     expect(modal).toBeInTheDocument();
     expect(modal.dataset.logId).toBe('5');
