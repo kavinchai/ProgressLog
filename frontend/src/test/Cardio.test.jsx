@@ -38,6 +38,7 @@ function daysAgo(n) {
 }
 
 // Running has 3 sessions: two recent + one >30 days old (used by range filter test)
+// Note: 'Running' is normalized to 'run' by the Cardio page
 const CARDIO_DATA = [
   {
     exerciseName: 'Running',
@@ -97,7 +98,7 @@ describe('Cardio page', () => {
     render(<Cardio />);
     await waitFor(() => {
       const sidebar = screen.getByTestId('cardio-sidebar');
-      expect(within(sidebar).getByText('Running')).toBeInTheDocument();
+      expect(within(sidebar).getByText('run')).toBeInTheDocument();
       expect(within(sidebar).getByText('Cycling')).toBeInTheDocument();
     });
   });
@@ -107,8 +108,8 @@ describe('Cardio page', () => {
     render(<Cardio />);
     await waitFor(() => {
       const sidebar = screen.getByTestId('cardio-sidebar');
-      const runningBtn = within(sidebar).getByRole('button', { name: 'Running' });
-      expect(runningBtn).toHaveAttribute('aria-pressed', 'true');
+      const runBtn = within(sidebar).getByRole('button', { name: 'run' });
+      expect(runBtn).toHaveAttribute('aria-pressed', 'true');
     });
   });
 
@@ -125,8 +126,8 @@ describe('Cardio page', () => {
     await user.click(cyclingBtn);
 
     expect(cyclingBtn).toHaveAttribute('aria-pressed', 'true');
-    const runningBtn = within(sidebar).getByRole('button', { name: 'Running' });
-    expect(runningBtn).toHaveAttribute('aria-pressed', 'false');
+    const runBtn = within(sidebar).getByRole('button', { name: 'run' });
+    expect(runBtn).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('renders weekly volume bar chart and pace line chart by default (no expand needed)', async () => {
