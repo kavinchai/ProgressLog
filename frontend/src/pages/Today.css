@@ -107,6 +107,13 @@
   font-size: var(--fs);
 }
 
+.exercise-card-weight {
+  color: var(--muted);
+  font-weight: var(--fw-normal);
+  margin-left: 8px;
+  font-size: var(--fs-sm);
+}
+
 .exercise-card-sets {
   padding: 8px 12px;
   display: flex;
@@ -307,6 +314,24 @@
 .today-day-type-toggle:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.workout-session-name {
+  color: var(--muted);
+  font-weight: var(--fw-normal);
+  margin-left: 8px;
+  font-size: var(--fs-sm);
+  text-transform: none;
+}
+
+.rename-session-input {
+  width: 140px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.section-label-small {
+  font-size: var(--fs-sm);
 }
 
 /* ── Steps inline edit ── */

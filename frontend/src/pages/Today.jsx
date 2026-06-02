@@ -53,7 +53,7 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
         <span className="exercise-card-name">
           {name}
           {type === 'lifting' && (
-            <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)' }}>{toDisplay(weight)} {unit}</span>
+            <span className="exercise-card-weight">{toDisplay(weight)} {unit}</span>
           )}
           {isPR && <span className="pr-badge">PR</span>}
         </span>
@@ -366,7 +366,7 @@ export default function Today() {
           <span className="section-title">
             Workout
             {todayWorkoutEntry?.sessionName && (
-              <span className="muted" style={{ fontWeight: 400, marginLeft: 8, fontSize: 'var(--fs-sm)', textTransform: 'none' }}>
+              <span className="workout-session-name">
                 {todayWorkoutEntry.sessionName}
               </span>
             )}
@@ -378,8 +378,7 @@ export default function Today() {
             {renamingSession && (
               <>
                 <input
-                  className="modal-input"
-                  style={{ width: 140, padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}
+                  className="modal-input rename-session-input"
                   type="text"
                   placeholder="Session name"
                   value={renameValue}
@@ -536,7 +535,7 @@ export default function Today() {
           <div className="section-box weekly-bodymap-section">
             <div className="section-header">
               <span className="section-title">Muscle Map</span>
-              <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>today</span>
+              <span className="muted section-label-small">today</span>
             </div>
             <div className="section-body">
               <BodyMap
