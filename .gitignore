@@ -68,5 +68,4 @@ e2e-tests/bin/
 *.tmp
 *.bak
 coverage/
-.claude/
-AGENTS.md
+.claude/settings.local.json
