@@ -14,6 +14,7 @@ import Today from '../pages/Today';
 // ── Static mocks ─────────────────────────────────────────────────────────────
 
 vi.mock('../pages/Today.css', () => ({}));
+vi.mock('../components/DailyProgressBar.css', () => ({}));
 
 // Fix the date so TODAY constant in Today.jsx is predictable
 vi.mock('../utils/date', () => ({
@@ -66,15 +67,19 @@ vi.mock('../components/MealModal', () => ({
     </div>
   ),
 }));
+vi.mock('../components/DailyProgressBar', () => ({
+  default: () => <div data-testid="daily-progress-bar" />,
+}));
 
 vi.mock('../api', () => ({ default: { delete: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
 
-vi.mock('../hooks/useWeightLog',   () => ({ default: vi.fn() }));
-vi.mock('../hooks/useNutrition',   () => ({ default: vi.fn() }));
-vi.mock('../hooks/useWorkouts',    () => ({ default: vi.fn() }));
-vi.mock('../hooks/useSteps',       () => ({ default: vi.fn() }));
-vi.mock('../hooks/useUserProfile', () => ({ default: vi.fn() }));
-vi.mock('../hooks/usePRs',         () => ({ default: vi.fn() }));
+vi.mock('../hooks/useWeightLog',      () => ({ default: vi.fn() }));
+vi.mock('../hooks/useNutrition',      () => ({ default: vi.fn() }));
+vi.mock('../hooks/useWorkouts',       () => ({ default: vi.fn() }));
+vi.mock('../hooks/useSteps',          () => ({ default: vi.fn() }));
+vi.mock('../hooks/useUserProfile',    () => ({ default: vi.fn() }));
+vi.mock('../hooks/usePRs',            () => ({ default: vi.fn() }));
+vi.mock('../hooks/useMidnightRefresh', () => ({ default: vi.fn() }));
 
 import api from '../api';
 import useWeightLog   from '../hooks/useWeightLog';
