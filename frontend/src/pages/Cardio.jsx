@@ -6,6 +6,7 @@ import {
 import api from '../api';
 import { formatDate, localDateStr } from '../utils/date';
 import { formatDuration, calcPace } from '../utils/workout';
+import { normalizeActivityName } from '../utils/constants';
 import './Cardio.css';
 
 // ── constants ────────────────────────────────────────────────────────────────
@@ -254,9 +255,18 @@ export default function Cardio() {
   useEffect(() => {
     api.get('/progress/cardio')
       .then((res) => {
-        const sorted = [...res.data].sort((a, b) => b.data.length - a.data.length);
-        setProgressData(sorted);
-        if (sorted.length > 0) setActiveName(sorted[0].exerciseName);
+        // Group activities by normalized name and merge their data
+        const grouped = {};
+        for (const activity of res.data) {
+          const normalized = normalizeActivityName(activity.exerciseName);
+          if (!grouped[normalized]) {
+            grouped[normalized] = { exerciseName: normalized, data: [] };
+          }
+          grouped[normalized].data.push(...activity.data);
+        }
+        const merged = Object.values(grouped).sort((a, b) => b.data.length - a.data.length);
+        setProgressData(merged);
+        if (merged.length > 0) setActiveName(merged[0].exerciseName);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
