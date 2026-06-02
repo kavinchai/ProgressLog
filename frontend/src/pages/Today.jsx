@@ -21,6 +21,7 @@ import { mergeWorkoutSessions } from '../utils/stats';
 import { buildMuscleGroupStats } from '../utils/muscleMapping';
 import useWeightUnit from '../hooks/useWeightUnit';
 import useToday from '../hooks/useToday';
+import useMidnightRefresh from '../hooks/useMidnightRefresh';
 import { formatDateFull as fmtDate } from '../utils/date';
 import '../pages/WeeklyStats.css';
 import './Today.css';
@@ -127,6 +128,8 @@ export default function Today() {
   const { goals, loading: loadingProfile } = useUserProfile();
   const { data: prsData, refetch: refetchPRs, loading: loadingPRs, error: errorPRs } = usePRs();
   const { unit, toDisplay } = useWeightUnit();
+
+  useMidnightRefresh(TODAY, [refetchWeight, refetchNutrition, refetchWorkouts, refetchSteps, refetchPRs]);
 
   const isLoading = loadingWeight || loadingNutrition || loadingWorkouts || loadingSteps || loadingProfile || loadingPRs;
   const hasError = errorWeight || errorNutrition || errorWorkouts || errorSteps || errorPRs;
