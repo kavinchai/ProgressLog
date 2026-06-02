@@ -15,6 +15,7 @@ import EditExerciseModal   from '../components/EditExerciseModal';
 import ConfirmDeleteModal  from '../components/ConfirmDeleteModal';
 import BodyMap from '../components/BodyMap';
 import MuscleDetailPanel from '../components/MuscleDetailPanel';
+import DailyProgressBar from '../components/DailyProgressBar';
 import { groupByExercise, detectType, formatDuration, calcPace } from '../utils/workout';
 import { mergeWorkoutSessions } from '../utils/stats';
 import { buildMuscleGroupStats } from '../utils/muscleMapping';
@@ -283,6 +284,25 @@ export default function Today() {
           {todayNutritionEntry?.dayType ?? 'training'}
         </button>
       </div>
+
+      {(() => {
+        const calTarget = todayNutritionEntry?.dayType === 'rest'
+          ? goals.calorieTargetRest
+          : goals.calorieTargetTraining;
+        const calEaten = todayNutritionEntry?.totalCalories ?? 0;
+        const protEaten = todayNutritionEntry?.totalProtein ?? 0;
+        const stepsTaken = todayStepEntry?.steps ?? 0;
+        return (
+          <DailyProgressBar
+            caloriesCurrent={calEaten}
+            caloriesGoal={calTarget ?? 2000}
+            proteinCurrent={protEaten}
+            proteinGoal={goals.proteinTarget ?? 150}
+            stepsCurrent={stepsTaken}
+            stepsGoal={10000}
+          />
+        );
+      })()}
 
       <div className="weekly-content-layout">
         <div className="weekly-main-col">
