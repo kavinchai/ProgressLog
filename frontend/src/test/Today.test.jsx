@@ -151,9 +151,9 @@ describe('Today — empty states', () => {
   it('shows + Add buttons for daily logs and Start Workout when nothing logged', () => {
     setup();
     render(<Today />);
-    // Two "+ Add" buttons: weight section and steps section
-    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
-    expect(addBtns).toHaveLength(2);
+    // Weight and steps each show a labelled add button in their section body
+    expect(screen.getByRole('button', { name: /\+ add weight/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /\+ add steps/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /start workout/i })).toBeInTheDocument();
   });
 
@@ -198,9 +198,9 @@ describe('Today — weight display', () => {
   it('does NOT show + Add in weight section when weight already logged today', () => {
     setup({ weight: [WEIGHT_ENTRY] });
     render(<Today />);
-    // Weight section's + Add is gone; steps section still has one
-    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
-    expect(addBtns).toHaveLength(1);
+    // Weight section's add button is gone; steps section still has one
+    expect(screen.queryByRole('button', { name: /\+ add weight/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /\+ add steps/i })).toBeInTheDocument();
   });
 
   it('ignores weight entries from other dates', () => {
@@ -402,9 +402,7 @@ describe('Today — opening modals', () => {
   it('+ Add weight button opens WeightModal', async () => {
     setup();
     render(<Today />);
-    // First + Add button is in the weight section (weight section comes before workout)
-    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
-    await userEvent.click(addBtns[0]);
+    await userEvent.click(screen.getByRole('button', { name: /\+ add weight/i }));
     expect(screen.getByTestId('weight-modal')).toBeInTheDocument();
   });
 
@@ -503,9 +501,8 @@ describe('Today — opening modals', () => {
   it('closing a modal removes it from the page', async () => {
     setup();
     render(<Today />);
-    // Click the first + Add (weight section) to open WeightModal
-    const addBtns = screen.getAllByRole('button', { name: /^\+ Add$/i });
-    await userEvent.click(addBtns[0]);
+    // Open the weight modal via its add button
+    await userEvent.click(screen.getByRole('button', { name: /\+ add weight/i }));
     expect(screen.getByTestId('weight-modal')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: /modal-close/i }));

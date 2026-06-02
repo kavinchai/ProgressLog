@@ -61,7 +61,7 @@
 }
 
 .today-add-exercise-row,
-.today-add-meal-row {
+.today-add-row {
   width: 100%;
   padding: 10px 12px;
   font-family: var(--font);
@@ -76,12 +76,12 @@
 }
 
 .today-add-exercise-row:hover,
-.today-add-meal-row:hover {
+.today-add-row:hover {
   background: var(--hover-bg);
   border-color: var(--accent);
 }
 
-.today-add-meal-row {
+.today-add-row {
   margin-top: 12px;
 }
 

@@ -301,18 +301,20 @@ export default function Today() {
                 <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Weight Entry', message: 'Are you sure you want to delete this weight entry?', onDelete: () => api.delete(`/weight/${todayWeightEntry.id}`).then(refetchWeight), onUndone: refetchWeight })}>Delete</button>
               </>
             )}
-            {!todayWeightEntry && (
-              <button className="btn btn-sm btn-primary"
-                onClick={() => { setEditingEntry(null); setModal('weight'); }}>
-                + Add
-              </button>
-            )}
           </div>
         </div>
         <div className="section-body">
-          {todayWeightEntry
-            ? <DataRow label="Weight" value={toDisplay(todayWeightEntry.weightLbs) + ' ' + unit} />
-            : <span className="muted">No entry for today.</span>}
+          {todayWeightEntry ? (
+            <DataRow label="Weight" value={toDisplay(todayWeightEntry.weightLbs) + ' ' + unit} />
+          ) : (
+            <>
+              <span className="muted">No entry for today.</span>
+              <button className="today-add-row"
+                onClick={() => { setEditingEntry(null); setModal('weight'); }}>
+                + Add weight
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -321,12 +323,12 @@ export default function Today() {
         <div className="section-header">
           <span className="section-title">Steps</span>
           <div className="btn-actions">
-            {!editingSteps && (
+            {!editingSteps && todayStepEntry && (
               <button className="btn btn-sm" onClick={() => {
-                setStepsValue(todayStepEntry ? String(todayStepEntry.steps) : '');
+                setStepsValue(String(todayStepEntry.steps));
                 setEditingSteps(true);
               }}>
-                {todayStepEntry ? 'Edit' : '+ Add'}
+                Edit
               </button>
             )}
             {!editingSteps && todayStepEntry && (
@@ -352,10 +354,16 @@ export default function Today() {
               <button className="btn btn-sm btn-primary" onClick={commitSteps} disabled={stepsSaving}>{stepsSaving ? 'Saving…' : 'Save'}</button>
               <button className="btn btn-sm" onClick={() => setEditingSteps(false)} disabled={stepsSaving}>&times;</button>
             </div>
+          ) : todayStepEntry ? (
+            <DataRow label="Steps" value={todayStepEntry.steps.toLocaleString()} />
           ) : (
-            todayStepEntry
-              ? <DataRow label="Steps" value={todayStepEntry.steps.toLocaleString()} />
-              : <span className="muted">No steps logged.</span>
+            <>
+              <span className="muted">No steps logged.</span>
+              <button className="today-add-row"
+                onClick={() => { setStepsValue(''); setEditingSteps(true); }}>
+                + Add steps
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -522,7 +530,7 @@ export default function Today() {
           ) : (
             <span className="muted">No entry for today.</span>
           )}
-          <button className="today-add-meal-row" onClick={openAddMeal} disabled={addingMeal}>
+          <button className="today-add-row" onClick={openAddMeal} disabled={addingMeal}>
             {meals.length > 0 ? '+ Add another meal' : '+ Add meal'}
           </button>
         </div>
