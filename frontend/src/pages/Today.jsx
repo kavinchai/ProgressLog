@@ -119,13 +119,17 @@ function DataRow({ label, value }) {
 
 export default function Today() {
   const TODAY = useToday();
-  const { data: weightData,    refetch: refetchWeight }   = useWeightLog();
-  const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
-  const { data: workoutData,   refetch: refetchWorkouts }  = useWorkouts();
-  const { data: stepData,      refetch: refetchSteps }     = useSteps();
-  const { goals } = useUserProfile();
-  const { data: prsData, refetch: refetchPRs } = usePRs();
+  const { data: weightData,    refetch: refetchWeight,    loading: loadingWeight,    error: errorWeight }    = useWeightLog();
+  const { data: nutritionData, refetch: refetchNutrition, loading: loadingNutrition, error: errorNutrition } = useNutrition();
+  const { data: workoutData,   refetch: refetchWorkouts,  loading: loadingWorkouts,  error: errorWorkouts }  = useWorkouts();
+  const { data: stepData,      refetch: refetchSteps,     loading: loadingSteps,     error: errorSteps }     = useSteps();
+  const { goals, loading: loadingProfile } = useUserProfile();
+  const { data: prsData, refetch: refetchPRs, loading: loadingPRs, error: errorPRs } = usePRs();
   const { unit, toDisplay } = useWeightUnit();
+
+  const isLoading = loadingWeight || loadingNutrition || loadingWorkouts || loadingSteps || loadingProfile || loadingPRs;
+  const hasError = errorWeight || errorNutrition || errorWorkouts || errorSteps || errorPRs;
+  const firstError = errorWeight || errorNutrition || errorWorkouts || errorSteps || errorPRs;
 
   const [modal,           setModal]           = useState(null);
   const [editingEntry,    setEditingEntry]     = useState(null);
@@ -253,8 +257,25 @@ export default function Today() {
     } finally { setStepsSaving(false); }
   }
 
+  if (isLoading) {
+    return (
+      <div className="today-page">
+        <div className="today-page-header">
+          <span className="today-title">Today</span>
+          <span className="today-date muted">{fmtDate(TODAY)}</span>
+        </div>
+        <div className="loading-state">Loading your daily stats…</div>
+      </div>
+    );
+  }
+
   return (
     <div className="today-page">
+      {hasError && (
+        <div className="notice error">
+          Error loading data: {firstError}. Please refresh the page.
+        </div>
+      )}
       <div className="today-page-header">
         <span className="today-title">Today</span>
         <span className="today-date muted">{fmtDate(TODAY)}</span>

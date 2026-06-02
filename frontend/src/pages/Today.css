@@ -2,6 +2,13 @@
   width: 100%;
 }
 
+.loading-state {
+  padding: var(--space-lg);
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
 .today-page-header {
   display: flex;
   align-items: center;
