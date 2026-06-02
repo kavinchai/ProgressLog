@@ -439,7 +439,7 @@ export default function Today() {
                 <span className="muted">Session logged. No exercises yet.</span>
                 {editableWorkoutSession && (
                   <button className="btn btn-sm btn-primary" onClick={() => openWorkoutModal({ appendBlank: true })}>
-                    + Exercise
+                    + Add exercise
                   </button>
                 )}
               </div>

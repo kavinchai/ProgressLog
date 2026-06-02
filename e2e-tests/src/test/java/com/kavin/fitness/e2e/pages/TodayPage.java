@@ -132,11 +132,11 @@ public class TodayPage {
 
     private Locator workoutAddExerciseBtn() {
         // The workout section offers two ways to add an exercise to an existing
-        // session: the empty-state "+ Exercise" button and the "+ Add another
-        // exercise" row shown once exercises are present.
+        // session: the empty-state "+ Add exercise" button and the "+ Add
+        // another exercise" row shown once exercises are present.
         return section(WORKOUT_IDX).locator("button",
                 new Locator.LocatorOptions().setHasText(
-                        Pattern.compile("\\+ (Exercise|Add another exercise)")));
+                        Pattern.compile("\\+ Add( another)? exercise", Pattern.CASE_INSENSITIVE)));
     }
 
     /** Wait until the workout section has rendered its initial state. */
