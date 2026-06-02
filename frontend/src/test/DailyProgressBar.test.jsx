@@ -6,7 +6,7 @@
  *   CALC     — do percentages calculate correctly?
  *   STATES   — what happens when goals are exceeded or not set?
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import DailyProgressBar from '../components/DailyProgressBar';
 
