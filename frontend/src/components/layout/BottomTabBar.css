@@ -10,12 +10,19 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: var(--bottom-tab-height);
+    /* Tab row stays a constant --bottom-tab-height; the safe-area inset is
+       added on top (border-box) so the row never changes size as the mobile
+       toolbar / home indicator appears or disappears while scrolling. */
+    height: calc(var(--bottom-tab-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--bg-card);
     border-top: 1px solid var(--border);
     box-shadow: var(--shadow-md);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 100;
+    /* Promote to its own compositor layer to avoid jitter during the mobile
+       address-bar collapse. */
+    transform: translateZ(0);
+    will-change: transform;
   }
 
   .bottom-tab-link {
