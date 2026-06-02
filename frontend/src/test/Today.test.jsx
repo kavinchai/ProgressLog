@@ -14,6 +14,7 @@ import Today from '../pages/Today';
 // ── Static mocks ─────────────────────────────────────────────────────────────
 
 vi.mock('../pages/Today.css', () => ({}));
+vi.mock('../components/DailyProgressBar.css', () => ({}));
 
 // Fix the date so TODAY constant in Today.jsx is predictable
 vi.mock('../utils/date', () => ({
@@ -65,6 +66,9 @@ vi.mock('../components/MealModal', () => ({
       <button onClick={onClose}>modal-close</button>
     </div>
   ),
+}));
+vi.mock('../components/DailyProgressBar', () => ({
+  default: () => <div data-testid="daily-progress-bar" />,
 }));
 
 vi.mock('../api', () => ({ default: { delete: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
@@ -140,6 +144,12 @@ beforeEach(() => {
 // ── DISPLAY: empty states ─────────────────────────────────────────────────────
 
 describe('Today — empty states', () => {
+  it('renders the daily progress bar at the top', () => {
+    setup();
+    render(<Today />);
+    expect(screen.getByTestId('daily-progress-bar')).toBeInTheDocument();
+  });
+
   it('shows "No entry for today" in all three sections when nothing logged', () => {
     setup();
     render(<Today />);
