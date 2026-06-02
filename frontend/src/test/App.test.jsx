@@ -15,6 +15,7 @@ vi.mock('../pages/Cardio',      () => ({ default: () => <div>Cardio Page</div> }
 vi.mock('../pages/Settings',    () => ({ default: () => <div>Settings Page</div> }));
 vi.mock('../components/layout/Sidebar', () => ({ default: () => <nav>Sidebar</nav> }));
 vi.mock('../components/layout/Navbar',  () => ({ default: () => <nav>Navbar</nav> }));
+vi.mock('../components/layout/BottomTabBar', () => ({ default: () => <nav>BottomTabBar</nav> }));
 
 beforeEach(() => {
   useAuthStore.setState({ authenticated: false, username: null });
@@ -45,6 +46,7 @@ describe('App routing — unauthenticated', () => {
     render(<App />);
     expect(screen.queryByText('Sidebar')).not.toBeInTheDocument();
     expect(screen.queryByText('Navbar')).not.toBeInTheDocument();
+    expect(screen.queryByText('BottomTabBar')).not.toBeInTheDocument();
   });
 });
 
@@ -53,10 +55,11 @@ describe('App routing — authenticated', () => {
     useAuthStore.setState({ authenticated: true, username: 'alice' });
   });
 
-  it('shows the app layout (Sidebar + Navbar) when authenticated', () => {
+  it('shows the app layout (Sidebar + Navbar + BottomTabBar) when authenticated', () => {
     render(<App />);
     expect(screen.getByText('Sidebar')).toBeInTheDocument();
     expect(screen.getByText('Navbar')).toBeInTheDocument();
+    expect(screen.getByText('BottomTabBar')).toBeInTheDocument();
   });
 
   it('does NOT show Login page when authenticated', () => {

@@ -33,6 +33,7 @@
 	/* ── Layout ── */
 	--sidebar-width: 240px;
 	--navbar-height: 56px;
+	--bottom-tab-height: 60px;
 
 	/* ── Typography — JetBrains Mono throughout ── */
 	--font: "JetBrains Mono", "Menlo", "Consolas", monospace;

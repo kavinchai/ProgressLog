@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import useAuthStore from './store/authStore';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
+import BottomTabBar from './components/layout/BottomTabBar';
 import SplashPage from './pages/SplashPage';
 import Community from './pages/Community';
 import Login from './pages/Login';
@@ -29,6 +30,7 @@ function AppLayout({ children }) {
       <div className="main-content">
         {children}
       </div>
+      <BottomTabBar />
     </div>
   );
 }

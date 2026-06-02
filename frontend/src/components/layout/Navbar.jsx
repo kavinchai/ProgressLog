@@ -1,22 +1,12 @@
-import { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import useTheme from '../../hooks/useTheme';
 import api from '../../api';
 import './Navbar.css';
 
-const navItems = [
-  { to: '/today',       label: 'Today' },
-  { to: '/history',     label: 'History' },
-  { to: '/progress',    label: 'Progress' },
-  { to: '/community',   label: 'Community' },
-  { to: '/settings',    label: 'Settings' },
-];
-
+// Mobile-only top bar: brand on the left, theme + logout on the right.
+// Primary navigation lives in the BottomTabBar.
 export default function Navbar() {
-  const location = useLocation();
   const clearAuth = useAuthStore((state) => state.logout);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [dark, setDark] = useTheme();
 
   function logout() {
@@ -24,46 +14,22 @@ export default function Navbar() {
     clearAuth();
   }
 
-  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
-
   return (
     <header className="navbar">
-      <div className="navbar-left">
-        <button className="navbar-hamburger" onClick={() => setMenuOpen(o => !o)} aria-label="Menu">
-          <span />
-          <span />
-          <span />
-        </button>
-      </div>
-
       <span className="navbar-brand">ProgressLog</span>
 
-      <div style={{ width: 36 }} />
-
-      {menuOpen && (
-        <>
-          <div className="navbar-overlay" onClick={() => setMenuOpen(false)} />
-          <nav className="navbar-dropdown">
-            {navItems.map(({ to, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) => 'navbar-dropdown-link' + (isActive ? ' active' : '')}
-              >
-                {label}
-              </NavLink>
-            ))}
-            <div className="navbar-dropdown-footer">
-              <button className="navbar-dropdown-btn" onClick={() => setDark(d => !d)}>
-                {dark ? 'Light Mode' : 'Dark Mode'}
-              </button>
-              <button className="navbar-dropdown-btn" onClick={logout}>
-                Log out
-              </button>
-            </div>
-          </nav>
-        </>
-      )}
+      <div className="navbar-actions">
+        <button
+          className="navbar-action"
+          onClick={() => setDark((d) => !d)}
+          aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {dark ? 'Light' : 'Dark'}
+        </button>
+        <button className="navbar-action" onClick={logout}>
+          Log out
+        </button>
+      </div>
     </header>
   );
 }
