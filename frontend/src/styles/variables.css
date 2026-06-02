@@ -8,6 +8,7 @@
 	--text-muted: #5b6171;
 	--text-subtle: #9ca3af;
 	--muted: #5b6171;
+	--muted-strong: #4a4d57;
 	--border: #e7e2d8;
 	--border-strong: #d4ccbe;
 	--border-dim: #efe9dd;
@@ -39,7 +40,7 @@
 	--font-display: "JetBrains Mono", "Menlo", "Consolas", monospace;
 	--font-mono: "JetBrains Mono", "Menlo", "Consolas", monospace;
 	--fs: clamp(0.8125rem, 0.75rem + 0.25vw, 0.875rem);
-	--fs-xs: clamp(0.625rem, 0.6rem + 0.15vw, 0.6875rem);
+	--fs-xs: clamp(0.75rem, 0.7rem + 0.2vw, 0.8125rem);
 	--fs-sm: clamp(0.6875rem, 0.65rem + 0.2vw, 0.75rem);
 	--fs-md: clamp(0.8125rem, 0.75rem + 0.25vw, 0.875rem);
 	--fs-lg: clamp(0.9375rem, 0.875rem + 0.3vw, 1rem);
@@ -157,6 +158,7 @@
 	--text-muted: #a39b8a;
 	--text-subtle: #6f6857;
 	--muted: #a39b8a;
+	--muted-strong: #c5bda8;
 	--border: #322d24;
 	--border-strong: #423b2f;
 	--border-dim: #2c2820;
