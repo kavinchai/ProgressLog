@@ -159,8 +159,8 @@ a:hover {
 }
 
 .btn-primary:hover:not(:disabled) {
-	background: var(--color-primary-dark);
-	border-color: var(--color-primary-dark);
+	background: var(--accent-deep);
+	border-color: var(--accent-deep);
 }
 
 .btn-danger {
@@ -262,34 +262,6 @@ a:hover {
 	color: var(--accent);
 	background: var(--accent-light);
 	font-weight: var(--fw-semibold);
-}
-
-/* ── Inputs ── */
-.ascii-input,
-.ascii-select {
-	font-family: var(--font);
-	font-size: var(--fs);
-	background: var(--bg-card);
-	color: var(--fg);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-md);
-	padding: 8px 12px;
-	outline: none;
-	width: 100%;
-	transition:
-		border-color var(--transition-fast),
-		box-shadow var(--transition-fast);
-}
-
-.ascii-input:focus,
-.ascii-select:focus {
-	border-color: var(--accent);
-	box-shadow: 0 0 0 3px var(--accent-light);
-}
-
-.ascii-select option {
-	background: var(--bg-card);
-	color: var(--fg);
 }
 
 /* ── Muted text ── */
