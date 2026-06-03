@@ -5,11 +5,13 @@ export function mergeWorkoutSessions(sessions) {
   if (sessions.length === 1) {
     return {
       ...sessions[0],
+      _sessionCount: 1,
       exerciseSets: (sessions[0].exerciseSets ?? []).map(s => ({ ...s, _sessionId: sessions[0].id })),
     };
   }
   return {
     ...sessions[0],
+    _sessionCount: sessions.length,
     exerciseSets: sessions.flatMap(s =>
       (s.exerciseSets ?? []).map(set => ({ ...set, _sessionId: s.id }))
     ),

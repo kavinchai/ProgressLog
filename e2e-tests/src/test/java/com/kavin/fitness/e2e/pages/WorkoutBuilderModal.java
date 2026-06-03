@@ -30,6 +30,14 @@ public class WorkoutBuilderModal {
         return this;
     }
 
+    public String title() {
+        return page.locator(TITLE).innerText();
+    }
+
+    public String exerciseNameValue(int idx) {
+        return page.locator(EXERCISE_NAME_INPUTS).nth(idx).inputValue();
+    }
+
     public void enterSessionName(String name) {
         page.locator(SESSION_NAME).fill(name);
     }

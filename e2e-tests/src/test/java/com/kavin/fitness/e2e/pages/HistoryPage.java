@@ -73,6 +73,14 @@ public class HistoryPage {
         page.locator(WEEKLY_ROWS).first().click();
     }
 
+    public void clickTodayRow() {
+        page.locator(TODAY_ROW).first().click();
+    }
+
+    public void clickAddExerciseInExpandedDay() {
+        page.locator("tr.detail-row button:has-text(\"+ Add exercise\")").click();
+    }
+
     public boolean isExpandedRowVisible() {
         return awaitVisible(".weekly-table tbody .detail-row");
     }

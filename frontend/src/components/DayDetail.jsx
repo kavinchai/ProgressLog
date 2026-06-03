@@ -19,6 +19,9 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
   const [editingSteps, setEditingSteps] = useState(false);
   const [stepsValue,   setStepsValue]   = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [appendBlank,  setAppendBlank]  = useState(false);
+
+  const canAppendExercise = workoutEntry?._sessionCount === 1;
 
   const {
     renamingSession, setRenamingSession, renameValue, setRenameValue,
@@ -184,7 +187,10 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
             {showDelete && workoutEntry && (
               <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete({ title: 'Delete Workout', message: 'Are you sure you want to delete this workout session?', onDelete: () => api.delete(`/workouts/${workoutEntry.id}`).then(onRefetchWo), onUndone: onRefetchWo })}>Delete</button>
             )}
-            <button className="btn btn-sm btn-primary" onClick={() => setModal('workout-add')}>+ Add</button>
+            <button className="btn btn-sm btn-primary"
+              onClick={() => { setAppendBlank(canAppendExercise); setModal('workout-add'); }}>
+              {canAppendExercise ? '+ Add exercise' : '+ Add'}
+            </button>
           </div>
         </div>
         {workoutEntry ? (
@@ -251,6 +257,8 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
       {modal === 'workout-add' && (
         <WorkoutBuilderModal
           prefillDate={date}
+          existingSession={canAppendExercise ? workoutEntry : null}
+          appendBlankExercise={appendBlank}
           onClose={close}
           onSaved={onRefetchWo}
         />

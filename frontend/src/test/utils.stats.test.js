@@ -1,5 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { buildDayRows } from '../utils/stats';
+import { buildDayRows, mergeWorkoutSessions } from '../utils/stats';
+
+describe('mergeWorkoutSessions — session count', () => {
+  it('returns null for no sessions', () => {
+    expect(mergeWorkoutSessions([])).toBeNull();
+  });
+
+  it('tags a single-session day with _sessionCount 1', () => {
+    const merged = mergeWorkoutSessions([
+      { id: 10, sessionDate: '2026-05-01', exerciseSets: [{ id: 1, exerciseName: 'Bench' }] },
+    ]);
+    expect(merged._sessionCount).toBe(1);
+    expect(merged.exerciseSets[0]._sessionId).toBe(10);
+  });
+
+  it('tags a multi-session day with the number of sessions', () => {
+    const merged = mergeWorkoutSessions([
+      { id: 10, sessionDate: '2026-05-01', exerciseSets: [{ id: 1, exerciseName: 'Bench' }] },
+      { id: 11, sessionDate: '2026-05-01', exerciseSets: [{ id: 2, exerciseName: 'Squat' }] },
+    ]);
+    expect(merged._sessionCount).toBe(2);
+  });
+});
 
 describe('buildDayRows — data availability', () => {
   it('returns null calories/protein for days with no nutrition entry', () => {

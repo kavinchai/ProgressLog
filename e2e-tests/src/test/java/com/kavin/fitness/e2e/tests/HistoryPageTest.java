@@ -1,6 +1,7 @@
 package com.kavin.fitness.e2e.tests;
 
 import com.kavin.fitness.e2e.pages.HistoryPage;
+import com.kavin.fitness.e2e.pages.WorkoutBuilderModal;
 import com.kavin.fitness.e2e.support.BaseTest;
 import com.kavin.fitness.e2e.support.TestApiClient;
 import org.testng.annotations.AfterClass;
@@ -133,6 +134,36 @@ public class HistoryPageTest extends BaseTest {
         step("verify day-detail contains a Weight section label");
         if (!history.dayDetailContains("Weight")) {
             throw new AssertionError("Expected expanded day detail to show 'Weight' label");
+        }
+    }
+
+    @Test(priority = 10, dependsOnMethods = "weeklyShowsDailyLogTableForCurrentWeek")
+    public void weeklyAddExerciseAppendsToExistingSession() {
+        step("open /history/weekly");
+        history.openWeekly(baseUrl);
+
+        step("expand today's row (has a single seeded workout session)");
+        history.clickTodayRow();
+        if (!history.isExpandedRowVisible()) {
+            throw new AssertionError("Expected today's detail row to expand");
+        }
+
+        step("click the workout '+ Add exercise' button in the expanded day");
+        history.clickAddExerciseInExpandedDay();
+
+        step("verify it opens the existing session for editing, not a brand-new workout");
+        WorkoutBuilderModal modal = new WorkoutBuilderModal(page).waitUntilVisible();
+        if (!modal.title().contains("Edit Workout")) {
+            throw new AssertionError(
+                    "Expected '+ Add exercise' to append to the existing session (Edit Workout), "
+                            + "but the modal title was: " + modal.title());
+        }
+
+        step("verify the existing exercise is pre-filled and a blank row was appended");
+        modal.waitForExerciseCount(2);
+        if (!"History E2E Bench".equals(modal.exerciseNameValue(0))) {
+            throw new AssertionError(
+                    "Expected existing exercise to be pre-filled, got: " + modal.exerciseNameValue(0));
         }
     }
 
