@@ -28,6 +28,9 @@
   box-shadow: var(--shadow-xl);
   width: 100%;
   max-width: 440px;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
   font-family: var(--font);
   animation: modalSlideUp 200ms ease;
   overflow: hidden;
@@ -39,6 +42,7 @@
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -72,7 +76,11 @@
 }
 
 .modal-body {
+  flex: 1;
+  min-height: 0;
   padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* form helpers inside modals */
@@ -157,9 +165,6 @@
   .modal-box {
     max-width: 100%;
     max-height: 90vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     border-bottom: none;
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -173,17 +178,6 @@
     border-radius: 2px;
     margin: 10px auto 4px;
     flex-shrink: 0;
-  }
-
-  .modal-header {
-    flex-shrink: 0;
-  }
-
-  .modal-body {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
   }
 
   .modal-form-row {
