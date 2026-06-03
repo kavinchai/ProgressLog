@@ -16,6 +16,12 @@ import Today from '../pages/Today';
 vi.mock('../pages/Today.css', () => ({}));
 vi.mock('../components/DailyProgressBar.css', () => ({}));
 
+// Toast is exercised in Toast.test.jsx and useDayActions.test.js — stub here.
+vi.mock('../components/Toast', () => ({
+  useToast: () => ({ error: vi.fn(), show: vi.fn(), dismiss: vi.fn() }),
+  ToastProvider: ({ children }) => children,
+}));
+
 // Fix the date so TODAY constant in Today.jsx is predictable
 vi.mock('../utils/date', () => ({
   localDateStr:    () => '2026-04-10',
