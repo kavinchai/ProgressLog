@@ -7,6 +7,7 @@ import DayDetail from "../components/DayDetail";
 import Modal from "../components/Modal";
 import BodyMap from "../components/BodyMap";
 import MuscleDetailPanel from "../components/MuscleDetailPanel";
+import CalendarHoverPreview from "../components/CalendarHoverPreview";
 import {
 	localDateStr,
 	formatDateShort as formatDate,
@@ -367,12 +368,18 @@ export default function TotalStats() {
 													</div>
 												)}
 												{row.calories != null && (
-													<div className="calendar-metric calendar-metric--calories">
-														<span className="calendar-metric-key">Calories</span>
-														<span className="calendar-metric-val">
-															{row.calories}
-														</span>
-													</div>
+													<CalendarHoverPreview
+														type="calories"
+														row={row}
+														onDateClick={() => setSelectedDay(row.date)}
+													>
+														<div className="calendar-metric calendar-metric--calories">
+															<span className="calendar-metric-key">Calories</span>
+															<span className="calendar-metric-val">
+																{row.calories}
+															</span>
+														</div>
+													</CalendarHoverPreview>
 												)}
 												{row.protein != null && (
 													<div className="calendar-metric calendar-metric--protein">
@@ -391,15 +398,21 @@ export default function TotalStats() {
 													</div>
 												)}
 												{row.workout != null && (
-													<div className="calendar-metric calendar-metric--workout">
-														<span className="calendar-metric-key">Workout</span>
-														<span
-															className="calendar-metric-val calendar-metric-workout"
-															title={row.workout}
-														>
-															{row.workout}
-														</span>
-													</div>
+													<CalendarHoverPreview
+														type="workout"
+														row={row}
+														onDateClick={() => setSelectedDay(row.date)}
+													>
+														<div className="calendar-metric calendar-metric--workout">
+															<span className="calendar-metric-key">Workout</span>
+															<span
+																className="calendar-metric-val calendar-metric-workout"
+																title={row.workout}
+															>
+																{row.workout}
+															</span>
+														</div>
+													</CalendarHoverPreview>
 												)}
 											</div>
 											<div className="calendar-cell-dots" aria-hidden="true">
