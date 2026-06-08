@@ -1,0 +1,108 @@
+/* ── Calendar Hover Preview ── */
+
+.cal-hover-wrap {
+	position: relative;
+	display: block;
+	cursor: pointer;
+}
+
+.cal-hover-box {
+	position: fixed;
+	transform: translateX(-50%) translateY(-100%);
+	margin-top: -6px;
+	z-index: 9999;
+	width: clamp(140px, 14vw, 220px);
+	max-height: clamp(120px, 16vh, 200px);
+	overflow-y: auto;
+	padding: 8px 10px;
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-lg);
+	font-family: var(--font);
+	font-size: clamp(0.6rem, 0.9vw, 0.72rem);
+	line-height: 1.4;
+	color: var(--fg);
+	pointer-events: auto;
+	animation: cal-hover-fade-in 120ms ease;
+}
+
+@keyframes cal-hover-fade-in {
+	from {
+		opacity: 0;
+		transform: translateX(-50%) translateY(-100%) translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(-50%) translateY(-100%) translateY(0);
+	}
+}
+
+.cal-hover-content {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.cal-hover-title {
+	font-weight: var(--fw-semibold);
+	font-size: clamp(0.62rem, 1vw, 0.74rem);
+	color: var(--accent);
+	border-bottom: 1px solid var(--border-dim);
+	padding-bottom: 3px;
+	margin-bottom: 2px;
+}
+
+.cal-hover-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.cal-hover-item {
+	display: flex;
+	justify-content: space-between;
+	gap: 6px;
+	align-items: baseline;
+}
+
+.cal-hover-item-name {
+	font-weight: var(--fw-medium);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+	flex: 1;
+}
+
+.cal-hover-item-detail {
+	color: var(--muted);
+	white-space: nowrap;
+	flex-shrink: 0;
+	font-size: 0.9em;
+}
+
+.cal-hover-total {
+	font-weight: var(--fw-semibold);
+	color: var(--muted-strong);
+	border-top: 1px solid var(--border-dim);
+	padding-top: 3px;
+	margin-top: 2px;
+	font-size: 0.9em;
+}
+
+/* ── Hide on mobile/touch — hover-only feature ── */
+@media (max-width: 640px) {
+	.cal-hover-box {
+		display: none;
+	}
+}
+
+@media (hover: none) {
+	.cal-hover-box {
+		display: none;
+	}
+}
