@@ -157,14 +157,12 @@ export default function Today() {
 
   const {
     renamingSession, setRenamingSession, renameValue, setRenameValue, renameSaving,
-    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, saveSteps, getOrCreateNutritionLogId,
+    submitRename, saveSteps, getOrCreateNutritionLogId,
   } = useDayActions({
     date: TODAY,
-    weightEntry:    todayWeightEntry,
     nutritionEntry: todayNutritionEntry,
     workoutEntry:   todayWorkoutEntry,
     stepEntry:      todayStepEntry,
-    onRefetchW:     refetchWeight,
     onRefetchN:     refetchNutrition,
     onRefetchWo:    refetchWorkouts,
     onRefetchS:     refetchSteps,

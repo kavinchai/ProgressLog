@@ -25,8 +25,8 @@ export default function DayDetail({ date, weightEntry, nutritionEntry, workoutEn
 
   const {
     renamingSession, setRenamingSession, renameValue, setRenameValue,
-    deleteWeight, deleteNutritionDay, deleteWorkoutSession, submitRename, saveSteps, getOrCreateNutritionLogId,
-  } = useDayActions({ date, weightEntry, nutritionEntry, workoutEntry, stepEntry, onRefetchW, onRefetchN, onRefetchWo, onRefetchS });
+    submitRename, saveSteps, getOrCreateNutritionLogId,
+  } = useDayActions({ date, nutritionEntry, workoutEntry, stepEntry, onRefetchN, onRefetchWo, onRefetchS });
 
   const exerciseGroups = workoutEntry?.exerciseSets?.length
     ? groupByExercise(workoutEntry.exerciseSets)
