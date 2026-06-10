@@ -10,32 +10,12 @@ import {
 } from "recharts";
 import api from "../api";
 import useWeightUnit from "../hooks/useWeightUnit";
-import { formatDate, localDateStr } from "../utils/date";
+import { formatDate } from "../utils/date";
+import { rangeDaysFor, filterByRange } from "../utils/dateRange";
+import RangeSelector from "../components/RangeSelector";
 import "./Strength.css";
 
-// ── constants ─────────────────────────────────────────────────────────────────
-
-const RANGE_OPTIONS = [
-	{ key: "4W", label: "4W", days: 28 },
-	{ key: "3M", label: "3M", days: 90 },
-	{ key: "6M", label: "6M", days: 180 },
-	{ key: "ALL", label: "All", days: null },
-];
-
 // ── helpers ───────────────────────────────────────────────────────────────────
-
-function todayMinusDays(days) {
-	const d = new Date();
-	d.setHours(0, 0, 0, 0);
-	d.setDate(d.getDate() - days);
-	return localDateStr(d);
-}
-
-function filterByRange(sessions, days) {
-	if (days == null) return sessions;
-	const cutoff = todayMinusDays(days);
-	return sessions.filter((s) => s.sessionDate >= cutoff);
-}
 
 function daysSince(dateStr) {
 	const date = new Date(dateStr + "T00:00:00");
@@ -227,9 +207,7 @@ export default function Strength() {
 		[progressData, activeName],
 	);
 
-	const rangeDays = (
-		RANGE_OPTIONS.find((r) => r.key === rangeKey) ?? RANGE_OPTIONS[3]
-	).days;
+	const rangeDays = rangeDaysFor(rangeKey);
 
 	const filteredSessions = useMemo(
 		() => (active ? filterByRange(active.data, rangeDays) : []),
@@ -329,32 +307,11 @@ export default function Strength() {
 				{/* Detail panel */}
 				<div className="strength-detail">
 					{/* Time range selector */}
-					<div className="strength-range-row">
-						<span className="strength-range-label">Range</span>
-						<div
-							className="strength-range-buttons"
-							role="group"
-							aria-label="Time range"
-						>
-							{RANGE_OPTIONS.map((r) => {
-								const isActive = r.key === rangeKey;
-								return (
-									<button
-										key={r.key}
-										type="button"
-										aria-pressed={isActive}
-										className={
-											"strength-range-btn" +
-											(isActive ? " strength-range-btn-active" : "")
-										}
-										onClick={() => setRangeKey(r.key)}
-									>
-										{r.label}
-									</button>
-								);
-							})}
-						</div>
-					</div>
+					<RangeSelector
+						classPrefix="strength"
+						activeKey={rangeKey}
+						onSelect={setRangeKey}
+					/>
 
 					{/* Stat row */}
 					{stats && (
@@ -379,10 +336,8 @@ export default function Strength() {
 								<Stat
 									label="last trained"
 									value={
-										stats.lastTrained === "today" || "yesterday"
-											? stats.lastTrained.charAt(0).toUpperCase() +
-												stats.lastTrained.slice(1)
-											: stats.lastTrained
+										stats.lastTrained.charAt(0).toUpperCase() +
+										stats.lastTrained.slice(1)
 									}
 									testId="stat-last-trained"
 								/>
