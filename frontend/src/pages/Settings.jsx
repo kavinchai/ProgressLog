@@ -14,6 +14,30 @@ import { formatDateShort as formatDate } from "../utils/date";
 import api from "../api";
 import "./Settings.css";
 
+function PrivacyToggle({ label, ariaLabel, on, disabled, onToggle, saving = false }) {
+	return (
+		<div className="settings-field">
+			<label>{label}</label>
+			<div className="settings-input-row">
+				<div
+					className="unit-toggle"
+					onClick={disabled ? undefined : onToggle}
+					role="button"
+					aria-label={ariaLabel}
+					aria-pressed={on}
+				>
+					<span className={`unit-toggle-label${!on ? " active" : ""}`}>Off</span>
+					<div className={`toggle-track${on ? " on" : ""}`}>
+						<div className="toggle-thumb" />
+					</div>
+					<span className={`unit-toggle-label${on ? " active" : ""}`}>On</span>
+				</div>
+				{saving && <span className="settings-saved">Saving…</span>}
+			</div>
+		</div>
+	);
+}
+
 export default function Settings() {
 	const navigate = useNavigate();
 	const { goals, loading, saving, error, saveGoals } = useUserProfile();
@@ -86,32 +110,20 @@ export default function Settings() {
 			.finally(() => setPrivacyLoading(false));
 	}, []);
 
-	async function handleShareDataToggle() {
-		const next = !shareData;
+	async function updatePrivacy(key) {
+		const current = key === "shareData" ? shareData : shareCalendar;
+		const setter = key === "shareData" ? setShareData : setShareCalendar;
 		setPrivacySaving(true);
 		setPrivacyError(null);
-		setShareData(next); // optimistic
+		setter(!current); // optimistic
 		try {
-			await api.put("/profile/privacy", { shareData: next, shareCalendar });
+			await api.put("/profile/privacy", {
+				shareData,
+				shareCalendar,
+				[key]: !current,
+			});
 		} catch (err) {
-			setShareData(!next); // revert
-			setPrivacyError(
-				err.response?.data?.message ?? "Failed to update privacy.",
-			);
-		} finally {
-			setPrivacySaving(false);
-		}
-	}
-
-	async function handleShareCalendarToggle() {
-		const next = !shareCalendar;
-		setPrivacySaving(true);
-		setPrivacyError(null);
-		setShareCalendar(next); // optimistic
-		try {
-			await api.put("/profile/privacy", { shareData, shareCalendar: next });
-		} catch (err) {
-			setShareCalendar(!next); // revert
+			setter(current); // revert
 			setPrivacyError(
 				err.response?.data?.message ?? "Failed to update privacy.",
 			);
@@ -569,66 +581,22 @@ export default function Settings() {
 						<p className="settings-loading">Loading…</p>
 					) : (
 						<>
-							<div className="settings-field">
-								<label>Share Data on Leaderboard</label>
-								<div className="settings-input-row">
-									<div
-										className="unit-toggle"
-										onClick={privacySaving ? undefined : handleShareDataToggle}
-										role="button"
-										aria-label="Toggle data sharing"
-										aria-pressed={shareData}
-									>
-										<span
-											className={`unit-toggle-label${!shareData ? " active" : ""}`}
-										>
-											Off
-										</span>
-										<div className={`toggle-track${shareData ? " on" : ""}`}>
-											<div className="toggle-thumb" />
-										</div>
-										<span
-											className={`unit-toggle-label${shareData ? " active" : ""}`}
-										>
-											On
-										</span>
-									</div>
-									{privacySaving && (
-										<span className="settings-saved">Saving…</span>
-									)}
-								</div>
-							</div>
+							<PrivacyToggle
+								label="Share Data on Leaderboard"
+								ariaLabel="Toggle data sharing"
+								on={shareData}
+								disabled={privacySaving}
+								saving={privacySaving}
+								onToggle={() => updatePrivacy("shareData")}
+							/>
 
-							<div className="settings-field">
-								<label>Share on Community Calendar</label>
-								<div className="settings-input-row">
-									<div
-										className="unit-toggle"
-										onClick={
-											privacySaving ? undefined : handleShareCalendarToggle
-										}
-										role="button"
-										aria-label="Toggle calendar sharing"
-										aria-pressed={shareCalendar}
-									>
-										<span
-											className={`unit-toggle-label${!shareCalendar ? " active" : ""}`}
-										>
-											Off
-										</span>
-										<div
-											className={`toggle-track${shareCalendar ? " on" : ""}`}
-										>
-											<div className="toggle-thumb" />
-										</div>
-										<span
-											className={`unit-toggle-label${shareCalendar ? " active" : ""}`}
-										>
-											On
-										</span>
-									</div>
-								</div>
-							</div>
+							<PrivacyToggle
+								label="Share on Community Calendar"
+								ariaLabel="Toggle calendar sharing"
+								on={shareCalendar}
+								disabled={privacySaving}
+								onToggle={() => updatePrivacy("shareCalendar")}
+							/>
 
 							{privacyError && <p className="settings-error">{privacyError}</p>}
 						</>
