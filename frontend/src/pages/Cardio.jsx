@@ -7,16 +7,9 @@ import api from '../api';
 import { formatDate, localDateStr } from '../utils/date';
 import { formatDuration, calcPace } from '../utils/workout';
 import { normalizeActivityName } from '../utils/constants';
+import { rangeDaysFor, filterByRange } from '../utils/dateRange';
+import RangeSelector from '../components/RangeSelector';
 import './Cardio.css';
-
-// ── constants ────────────────────────────────────────────────────────────────
-
-const RANGE_OPTIONS = [
-  { key: '4W',  label: '4W',  days: 28  },
-  { key: '3M',  label: '3M',  days: 90  },
-  { key: '6M',  label: '6M',  days: 180 },
-  { key: 'ALL', label: 'All', days: null },
-];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,19 +29,6 @@ function weekStartStr(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() - d.getDay()); // Sunday of that week
   return localDateStr(d);
-}
-
-function todayMinusDays(days) {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - days);
-  return localDateStr(d);
-}
-
-function filterByRange(sessions, days) {
-  if (days == null) return sessions;
-  const cutoff = todayMinusDays(days);
-  return sessions.filter((s) => s.sessionDate >= cutoff);
 }
 
 function weeklyVolume(sessions) {
@@ -277,7 +257,7 @@ export default function Cardio() {
     [progressData, activeName],
   );
 
-  const rangeDays = (RANGE_OPTIONS.find((r) => r.key === rangeKey) ?? RANGE_OPTIONS[3]).days;
+  const rangeDays = rangeDaysFor(rangeKey);
 
   const filteredSessions = useMemo(
     () => (activeExercise ? filterByRange(activeExercise.data, rangeDays) : []),
@@ -362,25 +342,11 @@ export default function Cardio() {
         {/* ── Detail panel ── */}
         <div className="cardio-detail">
           {/* Time range selector */}
-          <div className="cardio-range-row">
-            <span className="cardio-range-label">Range</span>
-            <div className="cardio-range-buttons" role="group" aria-label="Time range">
-              {RANGE_OPTIONS.map((r) => {
-                const isActive = r.key === rangeKey;
-                return (
-                  <button
-                    key={r.key}
-                    type="button"
-                    aria-pressed={isActive}
-                    className={'cardio-range-btn' + (isActive ? ' cardio-range-btn-active' : '')}
-                    onClick={() => setRangeKey(r.key)}
-                  >
-                    {r.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <RangeSelector
+            classPrefix="cardio"
+            activeKey={rangeKey}
+            onSelect={setRangeKey}
+          />
 
           {/* Stats row */}
           {stats && (
