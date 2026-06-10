@@ -379,10 +379,8 @@ export default function Strength() {
 								<Stat
 									label="last trained"
 									value={
-										stats.lastTrained === "today" || "yesterday"
-											? stats.lastTrained.charAt(0).toUpperCase() +
-												stats.lastTrained.slice(1)
-											: stats.lastTrained
+										stats.lastTrained.charAt(0).toUpperCase() +
+										stats.lastTrained.slice(1)
 									}
 									testId="stat-last-trained"
 								/>
