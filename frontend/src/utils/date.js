@@ -1,52 +1,52 @@
 // Date object → 'YYYY-MM-DD'
 export function localDateStr(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 // 'YYYY-MM-DD' → 'M/D'  (charts in Strength, Nutrition)
 export function formatDate(iso) {
-  if (!iso) return '';
-  const [, m, d] = iso.split('-');
-  return `${parseInt(m)}/${parseInt(d)}`;
+	if (!iso) return "";
+	const [, m, d] = iso.split("-");
+	return `${parseInt(m)}/${parseInt(d)}`;
 }
 
 // 'YYYY-MM-DD' → 'M/D/YY'  (TotalStats)
 export function formatDateShort(iso) {
-  const [y, m, d] = iso.split('-');
-  return `${parseInt(m)}/${parseInt(d)}/${y.slice(2)}`;
+	const [y, m, d] = iso.split("-");
+	return `${parseInt(m)}/${parseInt(d)}/${y.slice(2)}`;
 }
 
 // 'YYYY-MM-DD' → 'M/D/YYYY'  (Today page header)
 export function formatDateFull(iso) {
-  const [y, m, d] = iso.split('-');
-  return `${parseInt(m)}/${parseInt(d)}/${y}`;
+	const [y, m, d] = iso.split("-");
+	return `${parseInt(m)}/${parseInt(d)}/${y}`;
 }
 
 // 'YYYY-MM-DD' → 'Mon M/D'  (WeeklyStats chart labels and table)
 export function shortDate(iso) {
-  const [, m, d] = iso.split('-');
-  const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const day = names[new Date(iso + 'T12:00:00').getDay()];
-  return `${day} ${parseInt(m)}/${parseInt(d)}`;
+	const [, m, d] = iso.split("-");
+	const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+	const day = names[new Date(iso + "T12:00:00").getDay()];
+	return `${day} ${parseInt(m)}/${parseInt(d)}`;
 }
 
 // Average of non-null numbers → toFixed(1) string, or null if no valid values
 export function avg(nums) {
-  const valid = nums.filter(n => n != null);
-  if (!valid.length) return null;
-  return (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1);
+	const valid = nums.filter((n) => n != null);
+	if (!valid.length) return null;
+	return (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1);
 }
 
 // Returns the 7 dates of the current calendar week (Sunday → Saturday) as 'YYYY-MM-DD' strings.
 export function getCurrentWeek() {
-  const today = new Date();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - today.getDay());
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(sunday);
-    d.setDate(sunday.getDate() + i);
-    days.push(localDateStr(d));
-  }
-  return days;
+	const today = new Date();
+	const sunday = new Date(today);
+	sunday.setDate(today.getDate() - today.getDay());
+	const days = [];
+	for (let i = 0; i < 7; i++) {
+		const d = new Date(sunday);
+		d.setDate(sunday.getDate() + i);
+		days.push(localDateStr(d));
+	}
+	return days;
 }

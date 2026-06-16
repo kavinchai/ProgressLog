@@ -185,272 +185,296 @@ export default function TotalStats() {
 
 			<div className="weekly-content-layout">
 				<div className="weekly-main-col">
-
-			{/* Summary */}
-			<div className="section-box total-summary-box">
-				<div className="section-header">
-					<span className="section-title">Summary</span>
-					<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-						{monthLabel(activeMonth)}
-					</span>
-				</div>
-				<div className="section-body">
-					<div className="weekly-summary-grid">
-						<div className="weekly-stat">
-							<span className="weekly-stat-label">avg weight</span>
-							<span className="weekly-stat-value">
-								{avgWeight ? toDisplay(avgWeight) + " " + unit : "--"}
+					{/* Summary */}
+					<div className="section-box total-summary-box">
+						<div className="section-header">
+							<span className="section-title">Summary</span>
+							<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
+								{monthLabel(activeMonth)}
 							</span>
 						</div>
-						<div className="weekly-stat">
-							<span className="weekly-stat-label">avg calories</span>
-							<span className="weekly-stat-value">
-								{avgCalories ? avgCalories + " kcal" : "--"}
-							</span>
-						</div>
-						<div className="weekly-stat">
-							<span className="weekly-stat-label">avg protein</span>
-							<span className="weekly-stat-value">
-								{avgProtein ? avgProtein + " g" : "--"}
-							</span>
-						</div>
-						<div className="weekly-stat">
-							<span className="weekly-stat-label">avg steps</span>
-							<span className="weekly-stat-value">
-								{avgSteps ? avgSteps.toLocaleString() : "--"}
-							</span>
-						</div>
-						<div className="weekly-stat">
-							<span className="weekly-stat-label">total workouts</span>
-							<span className="weekly-stat-value">{totalWorkouts}</span>
+						<div className="section-body">
+							<div className="weekly-summary-grid">
+								<div className="weekly-stat">
+									<span className="weekly-stat-label">avg weight</span>
+									<span className="weekly-stat-value">
+										{avgWeight ? toDisplay(avgWeight) + " " + unit : "--"}
+									</span>
+								</div>
+								<div className="weekly-stat">
+									<span className="weekly-stat-label">avg calories</span>
+									<span className="weekly-stat-value">
+										{avgCalories ? avgCalories + " kcal" : "--"}
+									</span>
+								</div>
+								<div className="weekly-stat">
+									<span className="weekly-stat-label">avg protein</span>
+									<span className="weekly-stat-value">
+										{avgProtein ? avgProtein + " g" : "--"}
+									</span>
+								</div>
+								<div className="weekly-stat">
+									<span className="weekly-stat-label">avg steps</span>
+									<span className="weekly-stat-value">
+										{avgSteps ? avgSteps.toLocaleString() : "--"}
+									</span>
+								</div>
+								<div className="weekly-stat">
+									<span className="weekly-stat-label">total workouts</span>
+									<span className="weekly-stat-value">{totalWorkouts}</span>
+								</div>
+							</div>
 						</div>
 					</div>
-				</div>
-			</div>
 
-			{/* Full log */}
-			<div className="section-box">
-				<div className="section-header">
-					<span className="section-title">Full Log</span>
-					<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-						{rows.length} {rows.length === 1 ? "entry" : "entries"} · click a
-						day to view or edit
-					</span>
-				</div>
-				{allMonths.length > 0 && (
-					<>
-						<div className="month-nav">
-							<button
-								className="btn btn-sm"
-								onClick={() => goMonth(navMonths[monthIdx - 1])}
-								disabled={monthIdx <= 0}
-							>
-								&larr; Prev
-							</button>
-							<span className="month-nav-label">
-								<button
-									className={
-										"btn btn-sm" + (picker === "month" ? " range-active" : "")
-									}
-									onClick={() => togglePicker("month")}
-								>
-									{MONTH_NAMES[parseInt(activeMonthNum) - 1]}
-								</button>
-								<button
-									className={
-										"btn btn-sm" + (picker === "year" ? " range-active" : "")
-									}
-									onClick={() => togglePicker("year")}
-								>
-									{activeYear}
-								</button>
+					{/* Full log */}
+					<div className="section-box">
+						<div className="section-header">
+							<span className="section-title">Full Log</span>
+							<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
+								{rows.length} {rows.length === 1 ? "entry" : "entries"} · click
+								a day to view or edit
 							</span>
-							<button
-								className="btn btn-sm"
-								onClick={() => goMonth(navMonths[monthIdx + 1])}
-								disabled={monthIdx >= navMonths.length - 1}
-							>
-								Next &rarr;
-							</button>
 						</div>
-						{picker === "month" && (
-							<div className="month-picker">
-								{Array.from({ length: 12 }, (_, i) => {
-									const mm = String(i + 1).padStart(2, "0");
-									const hasData = monthsWithData.has(mm);
-									return (
+						{allMonths.length > 0 && (
+							<>
+								<div className="month-nav">
+									<button
+										className="btn btn-sm"
+										onClick={() => goMonth(navMonths[monthIdx - 1])}
+										disabled={monthIdx <= 0}
+									>
+										&larr; Prev
+									</button>
+									<span className="month-nav-label">
 										<button
-											key={mm}
 											className={
 												"btn btn-sm" +
-												(mm === activeMonthNum ? " range-active" : "")
+												(picker === "month" ? " range-active" : "")
 											}
-											onClick={() => selectMonth(mm)}
-											disabled={!hasData}
+											onClick={() => togglePicker("month")}
 										>
-											{MONTH_NAMES[i].slice(0, 3)}
+											{MONTH_NAMES[parseInt(activeMonthNum) - 1]}
 										</button>
-									);
-								})}
-							</div>
-						)}
-						{picker === "year" && (
-							<div className="month-picker">
-								{allYears.map((y) => (
-									<button
-										key={y}
-										className={
-											"btn btn-sm" + (y === activeYear ? " range-active" : "")
-										}
-										onClick={() => selectYear(y)}
-									>
-										{y}
-									</button>
-								))}
-							</div>
-						)}
-					</>
-				)}
-				<div className="section-body" style={{ padding: 0 }}>
-					{rows.length === 0 ? (
-						<div style={{ padding: "12px 14px" }} className="muted">
-							No data logged yet.
-						</div>
-					) : (
-						<div className="calendar-wrap">
-							<div className="calendar-weekdays">
-								{WEEKDAYS.map((d) => (
-									<div key={d} className="calendar-weekday">
-										{d}
-									</div>
-								))}
-							</div>
-							<div className="calendar-grid">
-								{calendarCells.map((row, i) =>
-									row === null ? (
-										<div
-											key={`pad-${i}`}
-											className="calendar-cell calendar-cell-pad"
-										/>
-									) : (
 										<button
-											key={row.date}
-											type="button"
-											data-testid={`calendar-day-${row.date}`}
 											className={
-												"calendar-cell" +
-												(row.date === today ? " calendar-cell-today" : "") +
-												(row.date > today ? " calendar-cell-future" : "") +
-												(row.date <= today &&
-												row.weight == null &&
-												row.calories == null &&
-												row.protein == null &&
-												row.steps == null &&
-												row.workout == null
-													? " calendar-cell-empty"
-													: "")
+												"btn btn-sm" +
+												(picker === "year" ? " range-active" : "")
 											}
-											onClick={() =>
-												row.date <= today && setSelectedDay(row.date)
-											}
-											disabled={row.date > today}
+											onClick={() => togglePicker("year")}
 										>
-											<div className="calendar-cell-date">
-												{parseInt(row.date.slice(8))}
-											</div>
-											<div className="calendar-cell-metrics">
-												{row.weight != null && (
-													<div className="calendar-metric calendar-metric--weight">
-														<span className="calendar-metric-key">Weight</span>
-														<span className="calendar-metric-val">
-															{toDisplay(row.weight)} {unit}
-														</span>
-													</div>
-												)}
-												{row.calories != null && (
-													<CalendarHoverPreview
-														type="calories"
-														row={row}
-														onDateClick={() => setSelectedDay(row.date)}
-													>
-														<div className="calendar-metric calendar-metric--calories">
-															<span className="calendar-metric-key">Calories</span>
-															<span className="calendar-metric-val">
-																{row.calories}
-															</span>
-														</div>
-													</CalendarHoverPreview>
-												)}
-												{row.protein != null && (
-													<div className="calendar-metric calendar-metric--protein">
-														<span className="calendar-metric-key">Protein</span>
-														<span className="calendar-metric-val">
-															{row.protein}g
-														</span>
-													</div>
-												)}
-												{row.steps != null && (
-													<div className="calendar-metric calendar-metric--steps">
-														<span className="calendar-metric-key">Steps</span>
-														<span className="calendar-metric-val">
-															{row.steps.toLocaleString()}
-														</span>
-													</div>
-												)}
-												{row.workout != null && (
-													<CalendarHoverPreview
-														type="workout"
-														row={row}
-														onDateClick={() => setSelectedDay(row.date)}
-													>
-														<div className="calendar-metric calendar-metric--workout">
-															<span className="calendar-metric-key">Workout</span>
-															<span
-																className="calendar-metric-val calendar-metric-workout"
-																title={row.workout}
-															>
-																{row.workout}
-															</span>
-														</div>
-													</CalendarHoverPreview>
-												)}
-											</div>
-											<div className="calendar-cell-dots" aria-hidden="true">
-												{row.weight   != null && <span className="cal-dot cal-dot--weight" />}
-												{row.calories != null && <span className="cal-dot cal-dot--calories" />}
-												{row.protein  != null && <span className="cal-dot cal-dot--protein" />}
-												{row.steps    != null && <span className="cal-dot cal-dot--steps" />}
-												{row.workout  != null && <span className="cal-dot cal-dot--workout" />}
-											</div>
+											{activeYear}
 										</button>
-									),
+									</span>
+									<button
+										className="btn btn-sm"
+										onClick={() => goMonth(navMonths[monthIdx + 1])}
+										disabled={monthIdx >= navMonths.length - 1}
+									>
+										Next &rarr;
+									</button>
+								</div>
+								{picker === "month" && (
+									<div className="month-picker">
+										{Array.from({ length: 12 }, (_, i) => {
+											const mm = String(i + 1).padStart(2, "0");
+											const hasData = monthsWithData.has(mm);
+											return (
+												<button
+													key={mm}
+													className={
+														"btn btn-sm" +
+														(mm === activeMonthNum ? " range-active" : "")
+													}
+													onClick={() => selectMonth(mm)}
+													disabled={!hasData}
+												>
+													{MONTH_NAMES[i].slice(0, 3)}
+												</button>
+											);
+										})}
+									</div>
 								)}
-							</div>
+								{picker === "year" && (
+									<div className="month-picker">
+										{allYears.map((y) => (
+											<button
+												key={y}
+												className={
+													"btn btn-sm" +
+													(y === activeYear ? " range-active" : "")
+												}
+												onClick={() => selectYear(y)}
+											>
+												{y}
+											</button>
+										))}
+									</div>
+								)}
+							</>
+						)}
+						<div className="section-body" style={{ padding: 0 }}>
+							{rows.length === 0 ? (
+								<div style={{ padding: "12px 14px" }} className="muted">
+									No data logged yet.
+								</div>
+							) : (
+								<div className="calendar-wrap">
+									<div className="calendar-weekdays">
+										{WEEKDAYS.map((d) => (
+											<div key={d} className="calendar-weekday">
+												{d}
+											</div>
+										))}
+									</div>
+									<div className="calendar-grid">
+										{calendarCells.map((row, i) =>
+											row === null ? (
+												<div
+													key={`pad-${i}`}
+													className="calendar-cell calendar-cell-pad"
+												/>
+											) : (
+												<button
+													key={row.date}
+													type="button"
+													data-testid={`calendar-day-${row.date}`}
+													className={
+														"calendar-cell" +
+														(row.date === today ? " calendar-cell-today" : "") +
+														(row.date > today ? " calendar-cell-future" : "") +
+														(row.date <= today &&
+														row.weight == null &&
+														row.calories == null &&
+														row.protein == null &&
+														row.steps == null &&
+														row.workout == null
+															? " calendar-cell-empty"
+															: "")
+													}
+													onClick={() =>
+														row.date <= today && setSelectedDay(row.date)
+													}
+													disabled={row.date > today}
+												>
+													<div className="calendar-cell-date">
+														{parseInt(row.date.slice(8))}
+													</div>
+													<div className="calendar-cell-metrics">
+														{row.weight != null && (
+															<div className="calendar-metric calendar-metric--weight">
+																<span className="calendar-metric-key">
+																	Weight
+																</span>
+																<span className="calendar-metric-val">
+																	{toDisplay(row.weight)} {unit}
+																</span>
+															</div>
+														)}
+														{row.calories != null && (
+															<CalendarHoverPreview
+																type="calories"
+																row={row}
+																onDateClick={() => setSelectedDay(row.date)}
+															>
+																<div className="calendar-metric calendar-metric--calories">
+																	<span className="calendar-metric-key">
+																		Calories
+																	</span>
+																	<span className="calendar-metric-val">
+																		{row.calories}
+																	</span>
+																</div>
+															</CalendarHoverPreview>
+														)}
+														{row.protein != null && (
+															<div className="calendar-metric calendar-metric--protein">
+																<span className="calendar-metric-key">
+																	Protein
+																</span>
+																<span className="calendar-metric-val">
+																	{row.protein}g
+																</span>
+															</div>
+														)}
+														{row.steps != null && (
+															<div className="calendar-metric calendar-metric--steps">
+																<span className="calendar-metric-key">
+																	Steps
+																</span>
+																<span className="calendar-metric-val">
+																	{row.steps.toLocaleString()}
+																</span>
+															</div>
+														)}
+														{row.workout != null && (
+															<CalendarHoverPreview
+																type="workout"
+																row={row}
+																onDateClick={() => setSelectedDay(row.date)}
+															>
+																<div className="calendar-metric calendar-metric--workout">
+																	<span className="calendar-metric-key">
+																		Workout
+																	</span>
+																	<span
+																		className="calendar-metric-val calendar-metric-workout"
+																		title={row.workout}
+																	>
+																		{row.workout}
+																	</span>
+																</div>
+															</CalendarHoverPreview>
+														)}
+													</div>
+													<div
+														className="calendar-cell-dots"
+														aria-hidden="true"
+													>
+														{row.weight != null && (
+															<span className="cal-dot cal-dot--weight" />
+														)}
+														{row.calories != null && (
+															<span className="cal-dot cal-dot--calories" />
+														)}
+														{row.protein != null && (
+															<span className="cal-dot cal-dot--protein" />
+														)}
+														{row.steps != null && (
+															<span className="cal-dot cal-dot--steps" />
+														)}
+														{row.workout != null && (
+															<span className="cal-dot cal-dot--workout" />
+														)}
+													</div>
+												</button>
+											),
+										)}
+									</div>
+								</div>
+							)}
 						</div>
+					</div>
+
+					{selectedDay && selectedRow && (
+						<Modal
+							title={formatDate(selectedDay)}
+							onClose={() => setSelectedDay(null)}
+						>
+							<DayDetail
+								date={selectedRow.date}
+								weightEntry={selectedRow.weightEntry}
+								nutritionEntry={selectedRow.nutritionEntry}
+								workoutEntry={selectedRow.workoutEntry}
+								stepEntry={selectedRow.stepEntry}
+								onRefetchW={refetchWeight}
+								onRefetchN={refetchNutrition}
+								onRefetchWo={refetchWorkouts}
+								onRefetchS={refetchSteps}
+								showDelete={true}
+							/>
+						</Modal>
 					)}
-				</div>
-			</div>
-
-			{selectedDay && selectedRow && (
-				<Modal
-					title={formatDate(selectedDay)}
-					onClose={() => setSelectedDay(null)}
-				>
-					<DayDetail
-						date={selectedRow.date}
-						weightEntry={selectedRow.weightEntry}
-						nutritionEntry={selectedRow.nutritionEntry}
-						workoutEntry={selectedRow.workoutEntry}
-						stepEntry={selectedRow.stepEntry}
-						onRefetchW={refetchWeight}
-						onRefetchN={refetchNutrition}
-						onRefetchWo={refetchWorkouts}
-						onRefetchS={refetchSteps}
-						showDelete={true}
-					/>
-				</Modal>
-			)}
-
 				</div>
 
 				{/* Right column — muscle body map */}

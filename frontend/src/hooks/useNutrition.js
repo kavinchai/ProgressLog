@@ -1,2 +1,4 @@
-import useFetch from './useFetch';
-export default function useNutrition() { return useFetch('/nutrition'); }
+import useFetch from "./useFetch";
+export default function useNutrition() {
+	return useFetch("/nutrition");
+}

@@ -1,374 +1,376 @@
 .today-page {
-  width: 100%;
+	width: 100%;
 }
 
 .loading-state {
-  padding: var(--space-lg);
-  text-align: center;
-  color: var(--muted);
-  font-size: var(--fs-sm);
+	padding: var(--space-lg);
+	text-align: center;
+	color: var(--muted);
+	font-size: var(--fs-sm);
 }
 
 .today-page-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: var(--space-lg);
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin-bottom: var(--space-lg);
 }
 
 .today-title {
-  font-size: var(--fs-2xl);
-  font-weight: var(--fw-bold);
-  letter-spacing: -0.02em;
+	font-size: var(--fs-2xl);
+	font-weight: var(--fw-bold);
+	letter-spacing: -0.02em;
 }
 
 .today-date {
-  font-size: var(--fs-sm);
+	font-size: var(--fs-sm);
 }
 
 .today-data-row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 4px 0;
-  font-size: var(--fs);
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	padding: 4px 0;
+	font-size: var(--fs);
 }
 
 .today-data-label {
-  color: var(--muted);
-  min-width: 70px;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
+	color: var(--muted);
+	min-width: 70px;
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+	text-transform: capitalize;
+	letter-spacing: 0.02em;
+	flex-shrink: 0;
 }
 
 .today-data-value {
-  color: var(--fg);
-  font-weight: var(--fw-medium);
+	color: var(--fg);
+	font-weight: var(--fw-medium);
 }
 
 .today-session-info {
-  margin-bottom: 12px;
+	margin-bottom: 12px;
 }
 
 /* ── Exercise cards ── */
 .exercise-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
 .today-add-exercise-row,
 .today-add-row {
-  width: 100%;
-  padding: 10px 12px;
-  font-family: var(--font);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--accent);
-  background: var(--accent-light);
-  border: 1px dashed var(--accent);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+	width: 100%;
+	padding: 10px 12px;
+	font-family: var(--font);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+	color: var(--accent);
+	background: var(--accent-light);
+	border: 1px dashed var(--accent);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition:
+		background var(--transition-fast),
+		border-color var(--transition-fast);
 }
 
 .today-add-exercise-row:hover,
 .today-add-row:hover {
-  background: var(--hover-bg);
-  border-color: var(--accent);
+	background: var(--hover-bg);
+	border-color: var(--accent);
 }
 
 .today-add-row {
-  margin-top: 12px;
+	margin-top: 12px;
 }
 
 .today-workout-empty {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 }
 
 .exercise-card {
-  border: 1px solid var(--border-dim);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--bg);
+	border: 1px solid var(--border-dim);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+	background: var(--bg);
 }
 
 .exercise-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-dim);
-  background: var(--bg-card);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--border-dim);
+	background: var(--bg-card);
 }
 
 .exercise-card-name {
-  font-weight: var(--fw-semibold);
-  font-size: var(--fs);
+	font-weight: var(--fw-semibold);
+	font-size: var(--fs);
 }
 
 .exercise-card-weight {
-  color: var(--muted);
-  font-weight: var(--fw-normal);
-  margin-left: 8px;
-  font-size: var(--fs-sm);
+	color: var(--muted);
+	font-weight: var(--fw-normal);
+	margin-left: 8px;
+	font-size: var(--fs-sm);
 }
 
 .exercise-card-sets {
-  padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+	padding: 8px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .exercise-sets-head {
-  display: grid;
-  grid-template-columns: 36px 1fr 1fr;
-  gap: 8px;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--muted);
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
-  margin-bottom: 4px;
+	display: grid;
+	grid-template-columns: 36px 1fr 1fr;
+	gap: 8px;
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+	color: var(--muted);
+	text-transform: capitalize;
+	letter-spacing: 0.02em;
+	margin-bottom: 4px;
 }
 
 .exercise-set-row {
-  display: grid;
-  grid-template-columns: 36px 1fr 1fr;
-  gap: 8px;
-  font-size: var(--fs);
+	display: grid;
+	grid-template-columns: 36px 1fr 1fr;
+	gap: 8px;
+	font-size: var(--fs);
 }
 
 .exercise-set-row span:first-child {
-  color: var(--muted);
+	color: var(--muted);
 }
 
 /* Cardio variant: 4 columns (Set | Distance | Time | Pace) */
 .exercise-sets-head--cardio,
 .exercise-set-row--cardio {
-  grid-template-columns: 36px 1fr 1fr 1fr;
+	grid-template-columns: 36px 1fr 1fr 1fr;
 }
 
 /* ── Meal cards ── */
 .meal-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 12px;
 }
 
 .meal-card {
-  border: 1px solid var(--border-dim);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--bg);
+	border: 1px solid var(--border-dim);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+	background: var(--bg);
 }
 
 .meal-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-dim);
-  background: var(--bg-card);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--border-dim);
+	background: var(--bg-card);
 }
 
 .meal-card-name {
-  font-weight: var(--fw-semibold);
-  font-size: var(--fs);
+	font-weight: var(--fw-semibold);
+	font-size: var(--fs);
 }
 
 .meal-card-body {
-  display: flex;
-  gap: 20px;
-  padding: 8px 12px;
-  font-size: var(--fs);
-  color: var(--muted);
+	display: flex;
+	gap: 20px;
+	padding: 8px 12px;
+	font-size: var(--fs);
+	color: var(--muted);
 }
 
 .nutrition-day-info {
-  margin-bottom: 12px;
+	margin-bottom: 12px;
 }
 
 .nutrition-totals {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 0;
-  margin-top: 10px;
-  border-top: 1px solid var(--border-dim);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 10px 0;
+	margin-top: 10px;
+	border-top: 1px solid var(--border-dim);
 }
 
 .nutrition-totals-row {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  font-size: var(--fs-sm);
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	font-size: var(--fs-sm);
 }
 
 .nutrition-totals-label {
-  color: var(--muted);
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
-  font-weight: var(--fw-semibold);
-  font-size: var(--fs-xs);
-  min-width: 50px;
-  flex-shrink: 0;
+	color: var(--muted);
+	text-transform: capitalize;
+	letter-spacing: 0.02em;
+	font-weight: var(--fw-semibold);
+	font-size: var(--fs-xs);
+	min-width: 50px;
+	flex-shrink: 0;
 }
 
 .nutrition-goal-remaining {
-  color: var(--warning);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
+	color: var(--warning);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-medium);
 }
 
 .nutrition-goal-met {
-  color: var(--success);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
+	color: var(--success);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-medium);
 }
 
 /* ── PR badge ── */
 .pr-badge {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 8px;
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.02em;
-  text-transform: capitalize;
-  color: var(--accent-fg);
-  background: var(--accent);
-  border-radius: var(--radius-full);
-  vertical-align: middle;
+	display: inline-flex;
+	align-items: center;
+	margin-left: 8px;
+	padding: 2px 8px;
+	font-size: 10px;
+	font-weight: var(--fw-bold);
+	letter-spacing: 0.02em;
+	text-transform: capitalize;
+	color: var(--accent-fg);
+	background: var(--accent);
+	border-radius: var(--radius-full);
+	vertical-align: middle;
 }
 
 /* ── PR history ── */
 .pr-history {
-  margin-top: 16px;
-  border-top: 1px solid var(--border-dim);
-  padding-top: 12px;
+	margin-top: 16px;
+	border-top: 1px solid var(--border-dim);
+	padding-top: 12px;
 }
 
 .pr-history-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: var(--font);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-  color: var(--muted);
-  cursor: pointer;
-  transition: color var(--transition-fast);
+	background: none;
+	border: none;
+	padding: 0;
+	font-family: var(--font);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-medium);
+	color: var(--muted);
+	cursor: pointer;
+	transition: color var(--transition-fast);
 }
 
 .pr-history-toggle:hover {
-  color: var(--fg);
+	color: var(--fg);
 }
 
 .pr-history-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-  font-size: var(--fs-sm);
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 10px;
+	font-size: var(--fs-sm);
 }
 
 .pr-history-table th {
-  text-align: left;
-  color: var(--muted);
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  padding: 4px 0 6px;
-  border-bottom: 1px solid var(--border-dim);
+	text-align: left;
+	color: var(--muted);
+	text-transform: capitalize;
+	letter-spacing: 0.02em;
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+	padding: 4px 0 6px;
+	border-bottom: 1px solid var(--border-dim);
 }
 
 .pr-history-table td {
-  padding: 6px 0;
+	padding: 6px 0;
 }
 
 .pr-history-table th:not(:first-child),
 .pr-history-table td:not(:first-child) {
-  padding-left: 16px;
+	padding-left: 16px;
 }
 
 .today-day-type-toggle {
-  margin-left: auto;
-  padding: 4px 12px;
-  font-size: var(--fs-xs);
-  font-family: var(--font);
-  font-weight: var(--fw-semibold);
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  color: var(--muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
+	margin-left: auto;
+	padding: 4px 12px;
+	font-size: var(--fs-xs);
+	font-family: var(--font);
+	font-weight: var(--fw-semibold);
+	text-transform: capitalize;
+	letter-spacing: 0.02em;
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-full);
+	color: var(--muted);
+	cursor: pointer;
+	transition: all var(--transition-fast);
 }
 
 .today-day-type-toggle:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+	border-color: var(--accent);
+	color: var(--accent);
 }
 
 .workout-session-name {
-  color: var(--muted);
-  font-weight: var(--fw-normal);
-  margin-left: 8px;
-  font-size: var(--fs-sm);
-  text-transform: none;
+	color: var(--muted);
+	font-weight: var(--fw-normal);
+	margin-left: 8px;
+	font-size: var(--fs-sm);
+	text-transform: none;
 }
 
 .rename-session-input {
-  width: 140px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
+	width: 140px;
+	padding: 4px 8px;
+	border-radius: var(--radius-sm);
 }
 
 .section-label-small {
-  font-size: var(--fs-sm);
+	font-size: var(--fs-sm);
 }
 
 /* ── Steps inline edit ── */
 .today-steps-edit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .today-steps-edit .modal-input {
-  width: 140px;
-  padding: 4px 8px;
+	width: 140px;
+	padding: 4px 8px;
 }
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-  .today-page-header {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+	.today-page-header {
+		flex-wrap: wrap;
+		gap: 8px;
+	}
 
-  .today-data-row {
-    gap: 6px;
-  }
+	.today-data-row {
+		gap: 6px;
+	}
 
-  .nutrition-totals-row {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
+	.nutrition-totals-row {
+		flex-wrap: wrap;
+		gap: 4px;
+	}
 
-  .meal-card-body {
-    gap: 12px;
-  }
+	.meal-card-body {
+		gap: 12px;
+	}
 }

@@ -1,141 +1,141 @@
 .sc-wrap {
-  width: 100%;
+	width: 100%;
 }
 
 .sc-loading,
 .sc-error,
 .sc-empty {
-  padding: 24px;
-  text-align: center;
-  color: var(--muted);
+	padding: 24px;
+	text-align: center;
+	color: var(--muted);
 }
 
 .sc-error {
-  color: var(--danger, #d33);
+	color: var(--danger, #d33);
 }
 
 .sc-stats {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  padding: 12px 0 8px;
-  color: var(--muted);
-  font-size: 13px;
+	display: flex;
+	justify-content: center;
+	gap: 24px;
+	padding: 12px 0 8px;
+	color: var(--muted);
+	font-size: 13px;
 }
 
 .sc-view-tabs-row {
-  display: flex;
-  justify-content: center;
+	display: flex;
+	justify-content: center;
 }
 
 .sc-view-tabs {
-  margin: 4px 0 8px;
+	margin: 4px 0 8px;
 }
 
 .sc-view-tabs button.page-tab {
-  border: none;
-  background: transparent;
-  font-family: var(--font);
-  cursor: pointer;
+	border: none;
+	background: transparent;
+	font-family: var(--font);
+	cursor: pointer;
 }
 
 .sc-view-tabs button.page-tab.page-tab-active {
-  background: var(--accent-light);
+	background: var(--accent-light);
 }
 
 .sc-range-label {
-  text-align: center;
-  color: var(--muted);
-  font-size: var(--fs-sm);
-  margin-bottom: 8px;
+	text-align: center;
+	color: var(--muted);
+	font-size: var(--fs-sm);
+	margin-bottom: 8px;
 }
 
 .sc-day-cell {
-  cursor: default;
-  align-items: stretch;
-  text-align: left;
+	cursor: default;
+	align-items: stretch;
+	text-align: left;
 }
 
 .sc-day-entries {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
-  overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-top: 4px;
+	overflow: hidden;
 }
 
 .sc-day-entry {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  text-align: left;
-  gap: 2px;
-  padding: 3px 6px;
-  border: none;
-  border-radius: 4px;
-  background: var(--sc-user-bg);
-  font-family: inherit;
-  font-size: 11px;
-  cursor: pointer;
-  overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	text-align: left;
+	gap: 2px;
+	padding: 3px 6px;
+	border: none;
+	border-radius: 4px;
+	background: var(--sc-user-bg);
+	font-family: inherit;
+	font-size: 11px;
+	cursor: pointer;
+	overflow: hidden;
 }
 
 .sc-day-entry:hover {
-  filter: brightness(0.95);
+	filter: brightness(0.95);
 }
 
 .sc-day-entry:focus-visible {
-  outline: 2px solid var(--sc-user-fg);
-  outline-offset: 1px;
+	outline: 2px solid var(--sc-user-fg);
+	outline-offset: 1px;
 }
 
 .sc-day-user {
-  font-weight: 600;
-  color: var(--sc-user-fg);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+	font-weight: 600;
+	color: var(--sc-user-fg);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .sc-day-activities {
-  color: var(--sc-user-fg);
-  opacity: 0.75;
-  font-size: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+	color: var(--sc-user-fg);
+	opacity: 0.75;
+	font-size: 10px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .sc-detail-session-names {
-  color: var(--muted);
-  font-size: var(--fs-sm);
-  margin-bottom: 12px;
+	color: var(--muted);
+	font-size: var(--fs-sm);
+	margin-bottom: 12px;
 }
 
 .sc-detail-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
 
 .sc-detail-exercise {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .sc-detail-name {
-  font-weight: 600;
-  color: var(--fg);
+	font-weight: 600;
+	color: var(--fg);
 }
 
 .sc-detail-sets {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+	list-style: none;
+	margin: 0;
+	padding: 0 0 0 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
 }

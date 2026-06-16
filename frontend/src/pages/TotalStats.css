@@ -209,31 +209,71 @@
 	flex-shrink: 0;
 }
 
-.cal-dot--weight   { background: #6b9fd4; }
-.cal-dot--calories { background: #d4934e; }
-.cal-dot--protein  { background: #4faa78; }
-.cal-dot--steps    { background: #8a7ec8; }
-.cal-dot--workout  { background: #c97070; }
+.cal-dot--weight {
+	background: #6b9fd4;
+}
+.cal-dot--calories {
+	background: #d4934e;
+}
+.cal-dot--protein {
+	background: #4faa78;
+}
+.cal-dot--steps {
+	background: #8a7ec8;
+}
+.cal-dot--workout {
+	background: #c97070;
+}
 
-.dark .cal-dot--weight   { background: #5585bc; }
-.dark .cal-dot--calories { background: #c07a30; }
-.dark .cal-dot--protein  { background: #3d8a5e; }
-.dark .cal-dot--steps    { background: #6a5eab; }
-.dark .cal-dot--workout  { background: #ab4f4f; }
+.dark .cal-dot--weight {
+	background: #5585bc;
+}
+.dark .cal-dot--calories {
+	background: #c07a30;
+}
+.dark .cal-dot--protein {
+	background: #3d8a5e;
+}
+.dark .cal-dot--steps {
+	background: #6a5eab;
+}
+.dark .cal-dot--workout {
+	background: #ab4f4f;
+}
 
 /* ── Per-metric chip colours (light mode) ── */
-.calendar-metric--weight   { background: #dde8f6; }
-.calendar-metric--calories { background: #fdecd3; }
-.calendar-metric--protein  { background: #d6f0e2; }
-.calendar-metric--steps    { background: #e8e3f7; }
-.calendar-metric--workout  { background: #fce3e3; }
+.calendar-metric--weight {
+	background: #dde8f6;
+}
+.calendar-metric--calories {
+	background: #fdecd3;
+}
+.calendar-metric--protein {
+	background: #d6f0e2;
+}
+.calendar-metric--steps {
+	background: #e8e3f7;
+}
+.calendar-metric--workout {
+	background: #fce3e3;
+}
 
 /* ── Per-metric chip colours (dark mode) ── */
-.dark .calendar-metric--weight   { background: #1b2540; }
-.dark .calendar-metric--calories { background: #2a1e08; }
-.dark .calendar-metric--protein  { background: #0e2118; }
-.dark .calendar-metric--steps    { background: #1e1840; }
-.dark .calendar-metric--workout  { background: #2b1414; }
+.dark .calendar-metric--weight {
+	background: #1b2540;
+}
+.dark .calendar-metric--calories {
+	background: #2a1e08;
+}
+.dark .calendar-metric--protein {
+	background: #0e2118;
+}
+.dark .calendar-metric--steps {
+	background: #1e1840;
+}
+.dark .calendar-metric--workout {
+	background: #2b1414;
+}
 
 /* ── Tablet / narrow desktop ── */
 @media (max-width: 900px) {
@@ -301,4 +341,3 @@
 		height: 5px;
 	}
 }
-

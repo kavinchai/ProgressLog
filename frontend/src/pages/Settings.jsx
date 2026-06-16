@@ -14,7 +14,14 @@ import { formatDateShort as formatDate } from "../utils/date";
 import api from "../api";
 import "./Settings.css";
 
-function PrivacyToggle({ label, ariaLabel, on, disabled, onToggle, saving = false }) {
+function PrivacyToggle({
+	label,
+	ariaLabel,
+	on,
+	disabled,
+	onToggle,
+	saving = false,
+}) {
 	return (
 		<div className="settings-field">
 			<label>{label}</label>
@@ -26,7 +33,9 @@ function PrivacyToggle({ label, ariaLabel, on, disabled, onToggle, saving = fals
 					aria-label={ariaLabel}
 					aria-pressed={on}
 				>
-					<span className={`unit-toggle-label${!on ? " active" : ""}`}>Off</span>
+					<span className={`unit-toggle-label${!on ? " active" : ""}`}>
+						Off
+					</span>
 					<div className={`toggle-track${on ? " on" : ""}`}>
 						<div className="toggle-thumb" />
 					</div>

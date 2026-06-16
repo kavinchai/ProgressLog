@@ -7,7 +7,9 @@ import "./Login.css";
 export default function Login() {
 	const login = useAuthStore((state) => state.login);
 	const [searchParams] = useSearchParams();
-	const [mode, setMode] = useState(searchParams.get("mode") === "signup" ? "signup" : "login");
+	const [mode, setMode] = useState(
+		searchParams.get("mode") === "signup" ? "signup" : "login",
+	);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [email, setEmail] = useState("");
@@ -22,7 +24,9 @@ export default function Login() {
 		setLoading(true);
 		try {
 			const endpoint = isSignup ? "/auth/register" : "/auth/login";
-			const body = isSignup ? { username, password, email } : { username, password };
+			const body = isSignup
+				? { username, password, email }
+				: { username, password };
 			const res = await api.post(endpoint, body);
 			login(res.data.username);
 		} catch (err) {

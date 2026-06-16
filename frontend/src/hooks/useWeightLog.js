@@ -1,2 +1,4 @@
-import useFetch from './useFetch';
-export default function useWeightLog() { return useFetch('/weight'); }
+import useFetch from "./useFetch";
+export default function useWeightLog() {
+	return useFetch("/weight");
+}

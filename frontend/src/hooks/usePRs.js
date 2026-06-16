@@ -1,5 +1,5 @@
-import useFetch from './useFetch';
+import useFetch from "./useFetch";
 
 export default function usePRs() {
-  return useFetch('/progress/prs');
+	return useFetch("/progress/prs");
 }

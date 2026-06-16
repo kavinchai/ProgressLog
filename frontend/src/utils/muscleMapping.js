@@ -1,112 +1,111 @@
-import muscleGroupData from '../data/muscleGroups.json';
-import { detectType, canonicalExerciseName } from './workout';
+import muscleGroupData from "../data/muscleGroups.json";
+import { detectType, canonicalExerciseName } from "./workout";
 
 const { muscleGroups, exerciseMap } = muscleGroupData;
 
 const normalizedMap = Object.fromEntries(
-  Object.entries(exerciseMap).map(([k, v]) => [k.toLowerCase(), v])
+	Object.entries(exerciseMap).map(([k, v]) => [k.toLowerCase(), v]),
 );
 
 // Maps our muscle group names to react-muscle-highlighter slug names
 const GROUP_TO_SLUGS = {
-  chest: ['chest'],
-  back: ['upper-back', 'lower-back'],
-  shoulders: ['deltoids', 'trapezius'],
-  biceps: ['biceps'],
-  triceps: ['triceps'],
-  forearms: ['forearm'],
-  core: ['abs', 'obliques'],
-  quads: ['quadriceps', 'adductors', 'knees'],
-  hamstrings: ['hamstring'],
-  glutes: ['gluteal'],
-  calves: ['calves', 'tibialis'],
+	chest: ["chest"],
+	back: ["upper-back", "lower-back"],
+	shoulders: ["deltoids", "trapezius"],
+	biceps: ["biceps"],
+	triceps: ["triceps"],
+	forearms: ["forearm"],
+	core: ["abs", "obliques"],
+	quads: ["quadriceps", "adductors", "knees"],
+	hamstrings: ["hamstring"],
+	glutes: ["gluteal"],
+	calves: ["calves", "tibialis"],
 };
 
 // Reverse map: slug → our group name
 const SLUG_TO_GROUP = {};
 for (const [group, slugs] of Object.entries(GROUP_TO_SLUGS)) {
-  for (const slug of slugs) {
-    SLUG_TO_GROUP[slug] = group;
-  }
+	for (const slug of slugs) {
+		SLUG_TO_GROUP[slug] = group;
+	}
 }
 
 export function getMuscleGroups() {
-  return muscleGroups;
+	return muscleGroups;
 }
 
 export function getExerciseMuscles(exerciseName) {
-  if (!exerciseName) return [];
-  const key = canonicalExerciseName(exerciseName).toLowerCase().trim();
-  return normalizedMap[key]
-    ?? normalizedMap[key.replace(/s$/, '')]
-    ?? [];
+	if (!exerciseName) return [];
+	const key = canonicalExerciseName(exerciseName).toLowerCase().trim();
+	return normalizedMap[key] ?? normalizedMap[key.replace(/s$/, "")] ?? [];
 }
 
 export function buildMuscleGroupStats(workoutData) {
-  const stats = Object.fromEntries(
-    muscleGroups.map(g => [g, { count: 0, exercises: [] }])
-  );
+	const stats = Object.fromEntries(
+		muscleGroups.map((g) => [g, { count: 0, exercises: [] }]),
+	);
 
-  if (!workoutData) return stats;
+	if (!workoutData) return stats;
 
-  for (const session of workoutData) {
-    const sets = session.exerciseSets ?? [];
-    const exerciseNames = [...new Set(sets.map(s => s.exerciseName))];
+	for (const session of workoutData) {
+		const sets = session.exerciseSets ?? [];
+		const exerciseNames = [...new Set(sets.map((s) => s.exerciseName))];
 
-    for (const rawName of exerciseNames) {
-      const exerciseSets = sets.filter(s => s.exerciseName === rawName);
-      if (detectType(exerciseSets) === 'timed') continue;
+		for (const rawName of exerciseNames) {
+			const exerciseSets = sets.filter((s) => s.exerciseName === rawName);
+			if (detectType(exerciseSets) === "timed") continue;
 
-      const name = canonicalExerciseName(rawName);
-      const muscles = getExerciseMuscles(rawName);
+			const name = canonicalExerciseName(rawName);
+			const muscles = getExerciseMuscles(rawName);
 
-      for (const muscle of muscles) {
-        if (stats[muscle]) {
-          stats[muscle].count += 1;
-          stats[muscle].exercises.push({
-            name,
-            sets: exerciseSets,
-          });
-        }
-      }
-    }
-  }
+			for (const muscle of muscles) {
+				if (stats[muscle]) {
+					stats[muscle].count += 1;
+					stats[muscle].exercises.push({
+						name,
+						sets: exerciseSets,
+					});
+				}
+			}
+		}
+	}
 
-  return stats;
+	return stats;
 }
 
 export function getHeatLevel(count) {
-  if (count === 0) return 'none';
-  if (count <= 2) return 'low';
-  return 'high';
+	if (count === 0) return "none";
+	if (count <= 2) return "low";
+	return "high";
 }
 
 export function getGroupForSlug(slug) {
-  return SLUG_TO_GROUP[slug] ?? null;
+	return SLUG_TO_GROUP[slug] ?? null;
 }
 
 export function buildBodyData(muscleStats, selectedMuscle) {
-  const data = [];
-  for (const [group, stats] of Object.entries(muscleStats)) {
-    const slugs = GROUP_TO_SLUGS[group];
-    if (!slugs || stats.count === 0) continue;
+	const data = [];
+	for (const [group, stats] of Object.entries(muscleStats)) {
+		const slugs = GROUP_TO_SLUGS[group];
+		if (!slugs || stats.count === 0) continue;
 
-    const color = stats.count >= 3
-      ? 'rgba(255, 107, 53, 0.9)'   // high intensity — solid orange
-      : 'rgba(255, 107, 53, 0.35)'; // low intensity — light orange
+		const color =
+			stats.count >= 3
+				? "rgba(255, 107, 53, 0.9)" // high intensity — solid orange
+				: "rgba(255, 107, 53, 0.35)"; // low intensity — light orange
 
-    const isSelected = selectedMuscle === group;
+		const isSelected = selectedMuscle === group;
 
-    for (const slug of slugs) {
-      const entry = { slug, color };
-      if (isSelected) {
-        entry.styles = {
-          stroke: '#ff6b35',
-          strokeWidth: 2,
-        };
-      }
-      data.push(entry);
-    }
-  }
-  return data;
+		for (const slug of slugs) {
+			const entry = { slug, color };
+			if (isSelected) {
+				entry.styles = {
+					stroke: "#ff6b35",
+					strokeWidth: 2,
+				};
+			}
+			data.push(entry);
+		}
+	}
+	return data;
 }

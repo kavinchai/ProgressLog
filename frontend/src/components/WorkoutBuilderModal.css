@@ -1,153 +1,153 @@
 .wbm-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
 }
 
 .wbm-exercises {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 4px;
 }
 
 .wbm-exercise-block {
-  border: 1px solid var(--border-dim);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  background: var(--bg);
+	border: 1px solid var(--border-dim);
+	border-radius: var(--radius-md);
+	padding: 12px;
+	background: var(--bg);
 }
 
 .wbm-exercise-header {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 10px;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 10px;
 }
 
 .wbm-exercise-name {
-  flex: 1;
-  font-weight: var(--fw-semibold);
+	flex: 1;
+	font-weight: var(--fw-semibold);
 }
 
 .wbm-sets {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 8px;
 }
 
 .wbm-sets-head {
-  display: grid;
-  grid-template-columns: 28px 1fr 1fr 28px;
-  gap: 6px;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--muted);
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
-  padding: 0 2px;
+	display: grid;
+	grid-template-columns: 28px 1fr 1fr 28px;
+	gap: 6px;
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+	color: var(--muted);
+	text-transform: capitalize;
+	letter-spacing: 0.02em;
+	padding: 0 2px;
 }
 
 .wbm-set-row {
-  display: grid;
-  grid-template-columns: 28px 1fr 1fr 28px;
-  gap: 6px;
-  align-items: center;
+	display: grid;
+	grid-template-columns: 28px 1fr 1fr 28px;
+	gap: 6px;
+	align-items: center;
 }
 
 /* Cardio variant: Distance | Min | Sec */
 .wbm-set-row--cardio,
 .wbm-sets--cardio .wbm-sets-head,
 .wbm-sets-head--cardio {
-  grid-template-columns: 1fr 1fr 1fr;
+	grid-template-columns: 1fr 1fr 1fr;
 }
 
 .wbm-set-num {
-  font-size: var(--fs-sm);
-  color: var(--muted);
-  text-align: center;
-  font-weight: var(--fw-medium);
+	font-size: var(--fs-sm);
+	color: var(--muted);
+	text-align: center;
+	font-weight: var(--fw-medium);
 }
 
 .wbm-set-input {
-  width: 100%;
+	width: 100%;
 }
 
 .wbm-add-set {
-  align-self: flex-start;
+	align-self: flex-start;
 }
 
 .wbm-add-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
+	display: flex;
+	gap: 8px;
+	margin-top: 4px;
 }
 
 .wbm-add-exercise {
-  align-self: flex-start;
+	align-self: flex-start;
 }
 
 .wbm-name-wrapper {
-  position: relative;
-  flex: 1;
+	position: relative;
+	flex: 1;
 }
 
 .wbm-name-wrapper .wbm-exercise-name {
-  width: 100%;
+	width: 100%;
 }
 
 .wbm-suggestions {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 100;
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  max-height: 200px;
-  overflow-y: auto;
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	z-index: 100;
+	margin: 0;
+	padding: 4px;
+	list-style: none;
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-lg);
+	max-height: 200px;
+	overflow-y: auto;
 }
 
 .wbm-suggestion {
-  padding: 8px 10px;
-  font-size: var(--fs-sm);
-  color: var(--fg);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: background var(--transition-fast);
+	padding: 8px 10px;
+	font-size: var(--fs-sm);
+	color: var(--fg);
+	cursor: pointer;
+	border-radius: var(--radius-sm);
+	transition: background var(--transition-fast);
 }
 
 .wbm-suggestion:hover,
 .wbm-suggestion--active {
-  background: var(--hover-bg);
+	background: var(--hover-bg);
 }
 
 .wbm-type-toggle {
-  font-size: var(--fs-xs);
-  flex-shrink: 0;
-  color: var(--muted);
-  border-color: var(--border-dim);
+	font-size: var(--fs-xs);
+	flex-shrink: 0;
+	color: var(--muted);
+	border-color: var(--border-dim);
 }
 
 .wbm-type-toggle--timed {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-light);
+	color: var(--accent);
+	border-color: var(--accent);
+	background: var(--accent-light);
 }
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-  .wbm-exercise-block {
-    padding: 10px;
-  }
+	.wbm-exercise-block {
+		padding: 10px;
+	}
 
-  .wbm-suggestions {
-    max-width: calc(100vw - 80px);
-  }
+	.wbm-suggestions {
+		max-width: calc(100vw - 80px);
+	}
 }

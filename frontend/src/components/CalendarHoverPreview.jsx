@@ -13,7 +13,12 @@ import "./CalendarHoverPreview.css";
  *  - onDateClick: () => void — called on click to open the day modal
  *  - children: the metric content (displayed inline)
  */
-export default function CalendarHoverPreview({ type, row, onDateClick, children }) {
+export default function CalendarHoverPreview({
+	type,
+	row,
+	onDateClick,
+	children,
+}) {
 	const [visible, setVisible] = useState(false);
 	const [pos, setPos] = useState(null);
 	const timeoutRef = useRef(null);
@@ -54,18 +59,20 @@ export default function CalendarHoverPreview({ type, row, onDateClick, children 
 			}}
 		>
 			{children}
-			{visible && pos && createPortal(
-				<div
-					className="cal-hover-box"
-					role="tooltip"
-					style={{ top: pos.top, left: pos.left }}
-					onMouseEnter={show}
-					onMouseLeave={hide}
-				>
-					{content}
-				</div>,
-				document.body
-			)}
+			{visible &&
+				pos &&
+				createPortal(
+					<div
+						className="cal-hover-box"
+						role="tooltip"
+						style={{ top: pos.top, left: pos.left }}
+						onMouseEnter={show}
+						onMouseLeave={hide}
+					>
+						{content}
+					</div>,
+					document.body,
+				)}
 		</span>
 	);
 }
@@ -105,9 +112,7 @@ function buildContent(type, row) {
 		if (exercises.length === 0 && !entry.sessionName) return null;
 		return (
 			<div className="cal-hover-content">
-				<div className="cal-hover-title">
-					{entry.sessionName || "Workout"}
-				</div>
+				<div className="cal-hover-title">{entry.sessionName || "Workout"}</div>
 				{exercises.length > 0 && (
 					<ul className="cal-hover-list">
 						{exercises.map((name) => (

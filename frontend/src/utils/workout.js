@@ -1,51 +1,55 @@
 const EXERCISE_NAME_ALIASES = {
-  'lat raises': 'Lateral Raises',
-  'lat raise': 'Lateral Raises',
+	"lat raises": "Lateral Raises",
+	"lat raise": "Lateral Raises",
 };
 
 /** Map common misnamed exercises to their canonical form. Returns input unchanged otherwise. */
 export function canonicalExerciseName(name) {
-  if (!name) return name;
-  return EXERCISE_NAME_ALIASES[name.toLowerCase().trim()] ?? name;
+	if (!name) return name;
+	return EXERCISE_NAME_ALIASES[name.toLowerCase().trim()] ?? name;
 }
 
 /** Classify exercise sets: 'run' (has distance), 'timed' (duration only), or 'lifting'. */
 export function detectType(sets) {
-  const arr = sets ?? [];
-  if (arr.some(s => s.distanceMiles != null)) return 'run';
-  if (arr.some(s => s.durationSeconds != null)) return 'timed';
-  return 'lifting';
+	const arr = sets ?? [];
+	if (arr.some((s) => s.distanceMiles != null)) return "run";
+	if (arr.some((s) => s.durationSeconds != null)) return "timed";
+	return "lifting";
 }
 
 /** Format seconds into "Xm Ys" or "Xh Ym Zs". */
 export function formatDuration(seconds) {
-  if (seconds == null) return '--';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+	if (seconds == null) return "--";
+	const h = Math.floor(seconds / 3600);
+	const m = Math.floor((seconds % 3600) / 60);
+	const s = seconds % 60;
+	if (h > 0) return `${h}h ${m}m ${s}s`;
+	if (m > 0) return `${m}m ${s}s`;
+	return `${s}s`;
 }
 
 /** Calculate pace as "X:XX /mi" from distance (miles) and duration (seconds). */
 export function calcPace(distanceMiles, durationSeconds) {
-  if (!distanceMiles || !durationSeconds || distanceMiles <= 0) return null;
-  const paceSeconds = durationSeconds / distanceMiles;
-  const mins = Math.floor(paceSeconds / 60);
-  const secs = Math.round(paceSeconds % 60);
-  return `${mins}:${String(secs).padStart(2, '0')} /mi`;
+	if (!distanceMiles || !durationSeconds || distanceMiles <= 0) return null;
+	const paceSeconds = durationSeconds / distanceMiles;
+	const mins = Math.floor(paceSeconds / 60);
+	const secs = Math.round(paceSeconds % 60);
+	return `${mins}:${String(secs).padStart(2, "0")} /mi`;
 }
 
 export function groupByExercise(exerciseSets) {
-  const map = {};
-  for (const s of (exerciseSets ?? [])) {
-    const name = canonicalExerciseName(s.exerciseName);
-    const key = `${name}__${s.weightLbs}`;
-    if (!map[key]) map[key] = { name, weight: parseFloat(s.weightLbs), sets: [] };
-    map[key].sets.push(s);
-  }
-  return Object.values(map)
-    .sort((a, b) => a.name.localeCompare(b.name) || b.weight - a.weight)
-    .map(g => ({ ...g, sets: g.sets.sort((a, b) => a.setNumber - b.setNumber) }));
+	const map = {};
+	for (const s of exerciseSets ?? []) {
+		const name = canonicalExerciseName(s.exerciseName);
+		const key = `${name}__${s.weightLbs}`;
+		if (!map[key])
+			map[key] = { name, weight: parseFloat(s.weightLbs), sets: [] };
+		map[key].sets.push(s);
+	}
+	return Object.values(map)
+		.sort((a, b) => a.name.localeCompare(b.name) || b.weight - a.weight)
+		.map((g) => ({
+			...g,
+			sets: g.sets.sort((a, b) => a.setNumber - b.setNumber),
+		}));
 }
