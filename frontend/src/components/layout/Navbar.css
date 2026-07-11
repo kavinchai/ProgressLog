@@ -1,58 +1,58 @@
 /* Navbar is mobile-only (top bar); primary nav lives in BottomTabBar. */
 .navbar {
-  display: none;
+	display: none;
 }
 
 @media (max-width: 640px) {
-  .navbar {
-    display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: var(--navbar-height);
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border);
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-    z-index: 90;
-    box-shadow: var(--shadow-sm);
-  }
+	.navbar {
+		display: flex;
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: var(--navbar-height);
+		background: var(--bg-card);
+		border-bottom: 1px solid var(--border);
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 16px;
+		z-index: 90;
+		box-shadow: var(--shadow-sm);
+	}
 
-  .navbar-brand {
-    font-size: var(--fs-lg);
-    font-weight: var(--fw-bold);
-    color: var(--accent);
-    letter-spacing: -0.02em;
-  }
+	.navbar-brand {
+		font-size: var(--fs-lg);
+		font-weight: var(--fw-bold);
+		color: var(--accent);
+		letter-spacing: -0.02em;
+	}
 
-  .navbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+	.navbar-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
 
-  .navbar-action {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-family: var(--font);
-    font-size: var(--fs-xs);
-    font-weight: var(--fw-medium);
-    padding: 6px 12px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-  }
+	.navbar-action {
+		background: transparent;
+		border: 1px solid var(--border);
+		color: var(--muted);
+		font-family: var(--font);
+		font-size: var(--fs-xs);
+		font-weight: var(--fw-medium);
+		padding: 6px 12px;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+	}
 
-  .navbar-action:hover {
-    color: var(--fg);
-    border-color: var(--muted);
-    background: var(--hover-bg);
-  }
+	.navbar-action:hover {
+		color: var(--fg);
+		border-color: var(--muted);
+		background: var(--hover-bg);
+	}
 
-  .navbar-action:active {
-    background: var(--active-bg);
-  }
+	.navbar-action:active {
+		background: var(--active-bg);
+	}
 }

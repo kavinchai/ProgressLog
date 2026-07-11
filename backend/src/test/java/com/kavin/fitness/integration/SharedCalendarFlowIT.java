@@ -1,22 +1,20 @@
 package com.kavin.fitness.integration;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-
-import java.time.LocalDate;
-
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.LocalDate;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+
 /**
  * Verifies the shared-calendar opt-in contract:
  *
- *   - GET /api/profile/privacy returns the new shareCalendar field alongside shareData.
- *   - PUT /api/profile/privacy persists shareCalendar independently of shareData.
- *   - GET /api/shared-calendar is public and only includes workouts from users
- *     who set shareCalendar=true.
+ * <p>- GET /api/profile/privacy returns the new shareCalendar field alongside shareData. - PUT
+ * /api/profile/privacy persists shareCalendar independently of shareData. - GET
+ * /api/shared-calendar is public and only includes workouts from users who set shareCalendar=true.
  */
 class SharedCalendarFlowIT extends IntegrationTestBase {
 
@@ -26,13 +24,12 @@ class SharedCalendarFlowIT extends IntegrationTestBase {
     @BeforeEach
     void setUp() throws Exception {
         aliceToken = registerAndGetToken("calendar_alice", "pass1234");
-        bobToken   = registerAndGetToken("calendar_bob",   "pass1234");
+        bobToken = registerAndGetToken("calendar_bob", "pass1234");
     }
 
     @Test
     void privacyEndpoint_includesShareCalendarFlag_andDefaultsFalse() throws Exception {
-        mockMvc.perform(get("/api/profile/privacy")
-                        .header("Authorization", "Bearer " + aliceToken))
+        mockMvc.perform(get("/api/profile/privacy").header("Authorization", "Bearer " + aliceToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shareData").value(false))
                 .andExpect(jsonPath("$.shareCalendar").value(false));
@@ -41,10 +38,12 @@ class SharedCalendarFlowIT extends IntegrationTestBase {
     @Test
     void privacyEndpoint_persistsShareCalendarIndependentlyOfShareData() throws Exception {
         // Toggle ONLY shareCalendar on
-        mockMvc.perform(put("/api/profile/privacy")
-                        .header("Authorization", "Bearer " + aliceToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+        mockMvc.perform(
+                        put("/api/profile/privacy")
+                                .header("Authorization", "Bearer " + aliceToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
                             {"shareData": false, "shareCalendar": true}
                         """))
                 .andExpect(status().isOk())
@@ -52,22 +51,22 @@ class SharedCalendarFlowIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$.shareCalendar").value(true));
 
         // Read back
-        mockMvc.perform(get("/api/profile/privacy")
-                        .header("Authorization", "Bearer " + aliceToken))
+        mockMvc.perform(get("/api/profile/privacy").header("Authorization", "Bearer " + aliceToken))
                 .andExpect(jsonPath("$.shareData").value(false))
                 .andExpect(jsonPath("$.shareCalendar").value(true));
     }
 
     @Test
     void sharedCalendarEndpoint_isPublic_andOnlyShowsOptedInUsers() throws Exception {
-        String today     = LocalDate.now().toString();
+        String today = LocalDate.now().toString();
         String yesterday = LocalDate.now().minusDays(1).toString();
 
         // Alice opts into calendar sharing and logs a workout
-        mockMvc.perform(put("/api/profile/privacy")
-                        .header("Authorization", "Bearer " + aliceToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"shareData\": false, \"shareCalendar\": true}"))
+        mockMvc.perform(
+                        put("/api/profile/privacy")
+                                .header("Authorization", "Bearer " + aliceToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"shareData\": false, \"shareCalendar\": true}"))
                 .andExpect(status().isOk());
         seedLiftingWorkout(aliceToken, today, "Bench Press", 185, 5);
 
@@ -92,10 +91,11 @@ class SharedCalendarFlowIT extends IntegrationTestBase {
         String today = LocalDate.now().toString();
 
         // Opt in, log, verify present
-        mockMvc.perform(put("/api/profile/privacy")
-                        .header("Authorization", "Bearer " + aliceToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"shareData\": false, \"shareCalendar\": true}"))
+        mockMvc.perform(
+                        put("/api/profile/privacy")
+                                .header("Authorization", "Bearer " + aliceToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"shareData\": false, \"shareCalendar\": true}"))
                 .andExpect(status().isOk());
         seedLiftingWorkout(aliceToken, today, "Deadlift", 315, 1);
 
@@ -103,19 +103,23 @@ class SharedCalendarFlowIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$.entries[?(@.username == 'calendar_alice')]", hasSize(1)));
 
         // Opt back out
-        mockMvc.perform(put("/api/profile/privacy")
-                        .header("Authorization", "Bearer " + aliceToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"shareData\": false, \"shareCalendar\": false}"))
+        mockMvc.perform(
+                        put("/api/profile/privacy")
+                                .header("Authorization", "Bearer " + aliceToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"shareData\": false, \"shareCalendar\": false}"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/shared-calendar"))
                 .andExpect(jsonPath("$.entries[?(@.username == 'calendar_alice')]", hasSize(0)));
     }
 
-    private void seedLiftingWorkout(String token, String date, String exercise,
-                                    double weightLbs, int reps) throws Exception {
-        String body = String.format("""
+    private void seedLiftingWorkout(
+            String token, String date, String exercise, double weightLbs, int reps)
+            throws Exception {
+        String body =
+                String.format(
+                        """
             {
               "sessionName": "Test",
               "sessionDate": "%s",
@@ -124,12 +128,14 @@ class SharedCalendarFlowIT extends IntegrationTestBase {
                 "sets": [{"setNumber": 1, "reps": %d, "weightLbs": %s}]
               }]
             }
-            """, date, exercise, reps, weightLbs);
+            """,
+                        date, exercise, reps, weightLbs);
 
-        mockMvc.perform(post("/api/workouts")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+        mockMvc.perform(
+                        post("/api/workouts")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body))
                 .andExpect(status().isCreated());
     }
 }

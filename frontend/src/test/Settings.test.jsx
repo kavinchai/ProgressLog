@@ -1,590 +1,760 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import userEvent from '@testing-library/user-event';
-import Settings from '../pages/Settings';
-import useAuthStore from '../store/authStore';
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import userEvent from "@testing-library/user-event";
+import Settings from "../pages/Settings";
+import useAuthStore from "../store/authStore";
 
 function renderSettings() {
-  return render(<MemoryRouter><Settings /></MemoryRouter>);
+	return render(
+		<MemoryRouter>
+			<Settings />
+		</MemoryRouter>,
+	);
 }
 
 // Mock the CSS
-vi.mock('../pages/Settings.css', () => ({}));
+vi.mock("../pages/Settings.css", () => ({}));
 
 // Mock the api module directly (Settings.jsx calls api.get/post/put directly)
-vi.mock('../api', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
+vi.mock("../api", () => ({
+	default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+}));
 
 // Mock useUserProfile to control goals state
-vi.mock('../hooks/useUserProfile', () => ({
-  default: vi.fn(),
+vi.mock("../hooks/useUserProfile", () => ({
+	default: vi.fn(),
 }));
 
 // Mock data hooks used by export/import section
-vi.mock('../hooks/useWeightLog', () => ({ default: vi.fn() }));
-vi.mock('../hooks/useNutrition', () => ({ default: vi.fn() }));
-vi.mock('../hooks/useWorkouts', () => ({ default: vi.fn() }));
-vi.mock('../hooks/useSteps', () => ({ default: vi.fn() }));
+vi.mock("../hooks/useWeightLog", () => ({ default: vi.fn() }));
+vi.mock("../hooks/useNutrition", () => ({ default: vi.fn() }));
+vi.mock("../hooks/useWorkouts", () => ({ default: vi.fn() }));
+vi.mock("../hooks/useSteps", () => ({ default: vi.fn() }));
 
 // Mock xlsx library
-vi.mock('xlsx', () => ({
-  utils: {
-    json_to_sheet: vi.fn(() => ({})),
-    book_new: vi.fn(() => ({})),
-    book_append_sheet: vi.fn(),
-  },
-  writeFile: vi.fn(),
+vi.mock("xlsx", () => ({
+	utils: {
+		json_to_sheet: vi.fn(() => ({})),
+		book_new: vi.fn(() => ({})),
+		book_append_sheet: vi.fn(),
+	},
+	writeFile: vi.fn(),
 }));
 
-import api from '../api';
-import useUserProfile from '../hooks/useUserProfile';
-import useWeightLog from '../hooks/useWeightLog';
-import useNutrition from '../hooks/useNutrition';
-import useWorkouts from '../hooks/useWorkouts';
-import useSteps from '../hooks/useSteps';
-import * as XLSX from 'xlsx';
+import api from "../api";
+import useUserProfile from "../hooks/useUserProfile";
+import useWeightLog from "../hooks/useWeightLog";
+import useNutrition from "../hooks/useNutrition";
+import useWorkouts from "../hooks/useWorkouts";
+import useSteps from "../hooks/useSteps";
+import * as XLSX from "xlsx";
 
-const DEFAULT_GOALS = { calorieTargetTraining: 2600, calorieTargetRest: 2000, proteinTarget: 180 };
+const DEFAULT_GOALS = {
+	calorieTargetTraining: 2600,
+	calorieTargetRest: 2000,
+	proteinTarget: 180,
+};
 
 function setupProfile(overrides = {}) {
-  useUserProfile.mockReturnValue({
-    goals: DEFAULT_GOALS,
-    loading: false,
-    saving: false,
-    error: null,
-    saveGoals: vi.fn(),
-    ...overrides,
-  });
+	useUserProfile.mockReturnValue({
+		goals: DEFAULT_GOALS,
+		loading: false,
+		saving: false,
+		error: null,
+		saveGoals: vi.fn(),
+		...overrides,
+	});
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  useAuthStore.setState({ authenticated: true, username: 'alice' });
-  // Route-specific API GET mocks: email + privacy endpoints
-  api.get.mockImplementation((url) => {
-    if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: false, shareCalendar: false } });
-    return Promise.resolve({ data: { email: 'alice@example.com' } });
-  });
-  // Default empty data sets for export/import section
-  useWeightLog.mockReturnValue({ data: [], refetch: vi.fn() });
-  useNutrition.mockReturnValue({ data: [], refetch: vi.fn() });
-  useWorkouts.mockReturnValue({ data: [], refetch: vi.fn() });
-  useSteps.mockReturnValue({ data: [], refetch: vi.fn() });
+	vi.clearAllMocks();
+	useAuthStore.setState({ authenticated: true, username: "alice" });
+	// Route-specific API GET mocks: email + privacy endpoints
+	api.get.mockImplementation((url) => {
+		if (url === "/profile/privacy")
+			return Promise.resolve({
+				data: { shareData: false, shareCalendar: false },
+			});
+		return Promise.resolve({ data: { email: "alice@example.com" } });
+	});
+	// Default empty data sets for export/import section
+	useWeightLog.mockReturnValue({ data: [], refetch: vi.fn() });
+	useNutrition.mockReturnValue({ data: [], refetch: vi.fn() });
+	useWorkouts.mockReturnValue({ data: [], refetch: vi.fn() });
+	useSteps.mockReturnValue({ data: [], refetch: vi.fn() });
 });
 
-describe('Settings — goals form', () => {
-  it('shows loading indicator while goals are loading', () => {
-    setupProfile({ loading: true });
-    renderSettings();
-    expect(screen.getAllByText(/loading…/i).length).toBeGreaterThan(0);
-  });
+describe("Settings — goals form", () => {
+	it("shows loading indicator while goals are loading", () => {
+		setupProfile({ loading: true });
+		renderSettings();
+		expect(screen.getAllByText(/loading…/i).length).toBeGreaterThan(0);
+	});
 
-  it('populates form with goals from hook once loaded', () => {
-    setupProfile();
-    renderSettings();
-    expect(screen.getByDisplayValue('2600')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('2000')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('180')).toBeInTheDocument();
-  });
+	it("populates form with goals from hook once loaded", () => {
+		setupProfile();
+		renderSettings();
+		expect(screen.getByDisplayValue("2600")).toBeInTheDocument();
+		expect(screen.getByDisplayValue("2000")).toBeInTheDocument();
+		expect(screen.getByDisplayValue("180")).toBeInTheDocument();
+	});
 
-  it('calls saveGoals with parsed integer values on submit', async () => {
-    const saveGoals = vi.fn().mockResolvedValue({});
-    setupProfile({ saveGoals });
-    renderSettings();
+	it("calls saveGoals with parsed integer values on submit", async () => {
+		const saveGoals = vi.fn().mockResolvedValue({});
+		setupProfile({ saveGoals });
+		renderSettings();
 
-    const trainingInput = screen.getByLabelText(/training day/i);
-    await userEvent.clear(trainingInput);
-    await userEvent.type(trainingInput, '2800');
-    await userEvent.click(screen.getByRole('button', { name: /save goals/i }));
+		const trainingInput = screen.getByLabelText(/training day/i);
+		await userEvent.clear(trainingInput);
+		await userEvent.type(trainingInput, "2800");
+		await userEvent.click(screen.getByRole("button", { name: /save goals/i }));
 
-    await waitFor(() => {
-      expect(saveGoals).toHaveBeenCalledWith({
-        calorieTargetTraining: 2800,
-        calorieTargetRest: 2000,
-        proteinTarget: 180,
-      });
-    });
-  });
+		await waitFor(() => {
+			expect(saveGoals).toHaveBeenCalledWith({
+				calorieTargetTraining: 2800,
+				calorieTargetRest: 2000,
+				proteinTarget: 180,
+			});
+		});
+	});
 
-  it('shows "saved." confirmation after successful save', async () => {
-    const saveGoals = vi.fn().mockResolvedValue({});
-    setupProfile({ saveGoals });
-    renderSettings();
+	it('shows "saved." confirmation after successful save', async () => {
+		const saveGoals = vi.fn().mockResolvedValue({});
+		setupProfile({ saveGoals });
+		renderSettings();
 
-    await userEvent.click(screen.getByRole('button', { name: /save goals/i }));
+		await userEvent.click(screen.getByRole("button", { name: /save goals/i }));
 
-    await waitFor(() => expect(screen.getByText(/saved!/i)).toBeInTheDocument());
-  });
+		await waitFor(() =>
+			expect(screen.getByText(/saved!/i)).toBeInTheDocument(),
+		);
+	});
 
-  it('shows hook error when saveGoals rejects', async () => {
-    const saveGoals = vi.fn().mockRejectedValue(new Error('server error'));
-    setupProfile({ error: 'Failed to save goals', saveGoals });
-    renderSettings();
+	it("shows hook error when saveGoals rejects", async () => {
+		const saveGoals = vi.fn().mockRejectedValue(new Error("server error"));
+		setupProfile({ error: "Failed to save goals", saveGoals });
+		renderSettings();
 
-    expect(screen.getByText(/failed to save goals/i)).toBeInTheDocument();
-  });
+		expect(screen.getByText(/failed to save goals/i)).toBeInTheDocument();
+	});
 });
 
-describe('Settings — account / password verification', () => {
-  it('renders Current Password field by default (not yet verified)', () => {
-    setupProfile();
-    renderSettings();
-    expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
-  });
+describe("Settings — account / password verification", () => {
+	it("renders Current Password field by default (not yet verified)", () => {
+		setupProfile();
+		renderSettings();
+		expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
+	});
 
-  it('does NOT show the credentials form before password is verified', () => {
-    setupProfile();
-    renderSettings();
-    expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
-  });
+	it("does NOT show the credentials form before password is verified", () => {
+		setupProfile();
+		renderSettings();
+		expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
+	});
 
-  it('successful password verify reveals the credentials form', async () => {
-    api.post.mockResolvedValue({});
-    setupProfile();
-    renderSettings();
+	it("successful password verify reveals the credentials form", async () => {
+		api.post.mockResolvedValue({});
+		setupProfile();
+		renderSettings();
 
-    await userEvent.type(screen.getByLabelText(/current password/i), 'mypassword');
-    await userEvent.click(screen.getByRole('button', { name: /verify/i }));
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"mypassword",
+		);
+		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/new username/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/new password/i)).toBeInTheDocument();
-    });
-  });
+		await waitFor(() => {
+			expect(screen.getByLabelText(/new username/i)).toBeInTheDocument();
+			expect(screen.getByLabelText(/new password/i)).toBeInTheDocument();
+		});
+	});
 
-  it('wrong password shows verify error message', async () => {
-    api.post.mockRejectedValue({ response: { data: { message: 'Incorrect password.' } } });
-    setupProfile();
-    renderSettings();
+	it("wrong password shows verify error message", async () => {
+		api.post.mockRejectedValue({
+			response: { data: { message: "Incorrect password." } },
+		});
+		setupProfile();
+		renderSettings();
 
-    await userEvent.type(screen.getByLabelText(/current password/i), 'wrongpass');
-    await userEvent.click(screen.getByRole('button', { name: /verify/i }));
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"wrongpass",
+		);
+		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
 
-    await waitFor(() => expect(screen.getByText(/incorrect password/i)).toBeInTheDocument());
-    expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
-  });
+		await waitFor(() =>
+			expect(screen.getByText(/incorrect password/i)).toBeInTheDocument(),
+		);
+		expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
+	});
 
-  it('calls /profile/verify-password with current password', async () => {
-    api.post.mockResolvedValue({});
-    setupProfile();
-    renderSettings();
+	it("calls /profile/verify-password with current password", async () => {
+		api.post.mockResolvedValue({});
+		setupProfile();
+		renderSettings();
 
-    await userEvent.type(screen.getByLabelText(/current password/i), 'securepass');
-    await userEvent.click(screen.getByRole('button', { name: /verify/i }));
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"securepass",
+		);
+		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
 
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith(
-      '/profile/verify-password',
-      { password: 'securepass' }
-    ));
-  });
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith("/profile/verify-password", {
+				password: "securepass",
+			}),
+		);
+	});
 });
 
-describe('Settings — updating credentials', () => {
-  async function verifyPassword() {
-    api.post.mockResolvedValue({});
-    setupProfile();
-    renderSettings();
-    await userEvent.type(screen.getByLabelText(/current password/i), 'mypass');
-    await userEvent.click(screen.getByRole('button', { name: /verify/i }));
-    await waitFor(() => expect(screen.getByLabelText(/new username/i)).toBeInTheDocument());
-  }
+describe("Settings — updating credentials", () => {
+	async function verifyPassword() {
+		api.post.mockResolvedValue({});
+		setupProfile();
+		renderSettings();
+		await userEvent.type(screen.getByLabelText(/current password/i), "mypass");
+		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
+		await waitFor(() =>
+			expect(screen.getByLabelText(/new username/i)).toBeInTheDocument(),
+		);
+	}
 
-  it('shows validation error when saving with all fields empty', async () => {
-    await verifyPassword();
-    // Clear the email field that was pre-filled
-    await userEvent.clear(screen.getByLabelText(/new email/i));
-    await userEvent.click(screen.getByRole('button', { name: /save account/i }));
+	it("shows validation error when saving with all fields empty", async () => {
+		await verifyPassword();
+		// Clear the email field that was pre-filled
+		await userEvent.clear(screen.getByLabelText(/new email/i));
+		await userEvent.click(
+			screen.getByRole("button", { name: /save account/i }),
+		);
 
-    await waitFor(() => expect(screen.getByText(/enter a new username/i)).toBeInTheDocument());
-  });
+		await waitFor(() =>
+			expect(screen.getByText(/enter a new username/i)).toBeInTheDocument(),
+		);
+	});
 
-  it('calls /profile/credentials when new username is provided', async () => {
-    api.put.mockResolvedValue({ data: { username: 'newbob' } });
-    await verifyPassword();
+	it("calls /profile/credentials when new username is provided", async () => {
+		api.put.mockResolvedValue({ data: { username: "newbob" } });
+		await verifyPassword();
 
-    await userEvent.clear(screen.getByLabelText(/new email/i));
-    await userEvent.type(screen.getByLabelText(/new username/i), 'newbob');
-    await userEvent.click(screen.getByRole('button', { name: /save account/i }));
+		await userEvent.clear(screen.getByLabelText(/new email/i));
+		await userEvent.type(screen.getByLabelText(/new username/i), "newbob");
+		await userEvent.click(
+			screen.getByRole("button", { name: /save account/i }),
+		);
 
-    await waitFor(() => expect(api.put).toHaveBeenCalledWith(
-      '/profile/credentials',
-      expect.objectContaining({ newUsername: 'newbob' })
-    ));
-  });
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(
+				"/profile/credentials",
+				expect.objectContaining({ newUsername: "newbob" }),
+			),
+		);
+	});
 
-  it('calls /profile/email when new email is provided', async () => {
-    api.put.mockResolvedValue({ data: { username: 'alice' } });
-    await verifyPassword();
+	it("calls /profile/email when new email is provided", async () => {
+		api.put.mockResolvedValue({ data: { username: "alice" } });
+		await verifyPassword();
 
-    const emailInput = screen.getByLabelText(/new email/i);
-    await userEvent.clear(emailInput);
-    await userEvent.type(emailInput, 'newalice@example.com');
-    await userEvent.click(screen.getByRole('button', { name: /save account/i }));
+		const emailInput = screen.getByLabelText(/new email/i);
+		await userEvent.clear(emailInput);
+		await userEvent.type(emailInput, "newalice@example.com");
+		await userEvent.click(
+			screen.getByRole("button", { name: /save account/i }),
+		);
 
-    await waitFor(() => expect(api.put).toHaveBeenCalledWith(
-      '/profile/email',
-      { email: 'newalice@example.com' }
-    ));
-  });
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/email", {
+				email: "newalice@example.com",
+			}),
+		);
+	});
 
-  it('resets to the verify-password form after a successful credential update', async () => {
-    api.put.mockResolvedValue({ data: { username: 'alice' } });
-    await verifyPassword();
+	it("resets to the verify-password form after a successful credential update", async () => {
+		api.put.mockResolvedValue({ data: { username: "alice" } });
+		await verifyPassword();
 
-    const emailInput = screen.getByLabelText(/new email/i);
-    await userEvent.clear(emailInput);
-    await userEvent.type(emailInput, 'newalice@example.com');
-    await userEvent.click(screen.getByRole('button', { name: /save account/i }));
+		const emailInput = screen.getByLabelText(/new email/i);
+		await userEvent.clear(emailInput);
+		await userEvent.type(emailInput, "newalice@example.com");
+		await userEvent.click(
+			screen.getByRole("button", { name: /save account/i }),
+		);
 
-    // After success the credentials form is hidden and the password verify form reappears
-    await waitFor(() => expect(screen.getByLabelText(/current password/i)).toBeInTheDocument());
-    expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
-  });
+		// After success the credentials form is hidden and the password verify form reappears
+		await waitFor(() =>
+			expect(screen.getByLabelText(/current password/i)).toBeInTheDocument(),
+		);
+		expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
+	});
 
-  it('shows error when credential update fails', async () => {
-    api.put.mockRejectedValue({ response: { data: { message: 'Username already exists' } } });
-    await verifyPassword();
+	it("shows error when credential update fails", async () => {
+		api.put.mockRejectedValue({
+			response: { data: { message: "Username already exists" } },
+		});
+		await verifyPassword();
 
-    await userEvent.type(screen.getByLabelText(/new username/i), 'taken');
-    await userEvent.clear(screen.getByLabelText(/new email/i));
-    await userEvent.click(screen.getByRole('button', { name: /save account/i }));
+		await userEvent.type(screen.getByLabelText(/new username/i), "taken");
+		await userEvent.clear(screen.getByLabelText(/new email/i));
+		await userEvent.click(
+			screen.getByRole("button", { name: /save account/i }),
+		);
 
-    await waitFor(() => expect(screen.getByText(/username already exists/i)).toBeInTheDocument());
-  });
+		await waitFor(() =>
+			expect(screen.getByText(/username already exists/i)).toBeInTheDocument(),
+		);
+	});
 });
 
-describe('Settings — data export & import', () => {
-  it('renders the Data section with export and import controls', () => {
-    setupProfile();
-    renderSettings();
-    expect(screen.getByText('Data', { selector: '.settings-section-label' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /export.*xlsx/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /export.*json/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /choose json file/i })).toBeInTheDocument();
-  });
+describe("Settings — data export & import", () => {
+	it("renders the Data section with export and import controls", () => {
+		setupProfile();
+		renderSettings();
+		expect(
+			screen.getByText("Data", { selector: ".settings-section-label" }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /export.*xlsx/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /export.*json/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /choose json file/i }),
+		).toBeInTheDocument();
+	});
 
-  it('disables export buttons when no data is available', () => {
-    setupProfile();
-    renderSettings();
-    expect(screen.getByRole('button', { name: /export.*xlsx/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /export.*json/i })).toBeDisabled();
-  });
+	it("disables export buttons when no data is available", () => {
+		setupProfile();
+		renderSettings();
+		expect(
+			screen.getByRole("button", { name: /export.*xlsx/i }),
+		).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: /export.*json/i }),
+		).toBeDisabled();
+	});
 
-  it('enables export buttons when there is data', () => {
-    setupProfile();
-    useWeightLog.mockReturnValue({
-      data: [{ logDate: '2026-04-01', weightLbs: 180 }],
-      refetch: vi.fn(),
-    });
-    renderSettings();
-    expect(screen.getByRole('button', { name: /export.*xlsx/i })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /export.*json/i })).toBeEnabled();
-  });
+	it("enables export buttons when there is data", () => {
+		setupProfile();
+		useWeightLog.mockReturnValue({
+			data: [{ logDate: "2026-04-01", weightLbs: 180 }],
+			refetch: vi.fn(),
+		});
+		renderSettings();
+		expect(screen.getByRole("button", { name: /export.*xlsx/i })).toBeEnabled();
+		expect(screen.getByRole("button", { name: /export.*json/i })).toBeEnabled();
+	});
 
-  it('triggers XLSX export when XLSX button clicked', async () => {
-    setupProfile();
-    useWeightLog.mockReturnValue({
-      data: [{ logDate: '2026-04-01', weightLbs: 180 }],
-      refetch: vi.fn(),
-    });
-    renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /export.*xlsx/i }));
-    expect(XLSX.writeFile).toHaveBeenCalled();
-  });
+	it("triggers XLSX export when XLSX button clicked", async () => {
+		setupProfile();
+		useWeightLog.mockReturnValue({
+			data: [{ logDate: "2026-04-01", weightLbs: 180 }],
+			refetch: vi.fn(),
+		});
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*xlsx/i }),
+		);
+		expect(XLSX.writeFile).toHaveBeenCalled();
+	});
 
-  it('triggers JSON download when JSON button clicked', async () => {
-    setupProfile();
-    useWeightLog.mockReturnValue({
-      data: [{ logDate: '2026-04-01', weightLbs: 180 }],
-      refetch: vi.fn(),
-    });
-    // jsdom needs URL.createObjectURL stubbed
-    const createObjectURL = vi.fn(() => 'blob:fake-url');
-    const revokeObjectURL = vi.fn();
-    global.URL.createObjectURL = createObjectURL;
-    global.URL.revokeObjectURL = revokeObjectURL;
-    renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /export.*json/i }));
-    expect(createObjectURL).toHaveBeenCalled();
-  });
+	it("triggers JSON download when JSON button clicked", async () => {
+		setupProfile();
+		useWeightLog.mockReturnValue({
+			data: [{ logDate: "2026-04-01", weightLbs: 180 }],
+			refetch: vi.fn(),
+		});
+		// jsdom needs URL.createObjectURL stubbed
+		const createObjectURL = vi.fn(() => "blob:fake-url");
+		const revokeObjectURL = vi.fn();
+		global.URL.createObjectURL = createObjectURL;
+		global.URL.revokeObjectURL = revokeObjectURL;
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*json/i }),
+		);
+		expect(createObjectURL).toHaveBeenCalled();
+	});
 
-  it('shows success status after a successful import', async () => {
-    api.post.mockResolvedValue({
-      data: {
-        weightImported: 2,
-        weightSkipped: 0,
-        nutritionImported: 1,
-        nutritionSkipped: 0,
-        workoutsImported: 0,
-        workoutsSkipped: 0,
-      },
-    });
-    setupProfile();
-    renderSettings();
+	it("shows success status after a successful import", async () => {
+		api.post.mockResolvedValue({
+			data: {
+				weightImported: 2,
+				weightSkipped: 0,
+				nutritionImported: 1,
+				nutritionSkipped: 0,
+				workoutsImported: 0,
+				workoutsSkipped: 0,
+			},
+		});
+		setupProfile();
+		renderSettings();
 
-    const fileInput = document.querySelector('input[type="file"]');
-    expect(fileInput).toBeTruthy();
+		const fileInput = document.querySelector('input[type="file"]');
+		expect(fileInput).toBeTruthy();
 
-    const file = new File([JSON.stringify({ totalStats: [], workouts: [] })], 'data.json', {
-      type: 'application/json',
-    });
-    await userEvent.upload(fileInput, file);
+		const file = new File(
+			[JSON.stringify({ totalStats: [], workouts: [] })],
+			"data.json",
+			{
+				type: "application/json",
+			},
+		);
+		await userEvent.upload(fileInput, file);
 
-    await waitFor(() =>
-      expect(screen.getByText(/imported/i)).toBeInTheDocument()
-    );
-    expect(api.post).toHaveBeenCalledWith('/import', expect.any(Object));
-  });
+		await waitFor(() =>
+			expect(screen.getByText(/imported/i)).toBeInTheDocument(),
+		);
+		expect(api.post).toHaveBeenCalledWith("/import", expect.any(Object));
+	});
 
-  it('shows error status when import fails', async () => {
-    api.post.mockRejectedValue(new Error('bad payload'));
-    setupProfile();
-    renderSettings();
+	it("shows error status when import fails", async () => {
+		api.post.mockRejectedValue(new Error("bad payload"));
+		setupProfile();
+		renderSettings();
 
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = new File(['not json'], 'bad.json', { type: 'application/json' });
-    await userEvent.upload(fileInput, file);
+		const fileInput = document.querySelector('input[type="file"]');
+		const file = new File(["not json"], "bad.json", {
+			type: "application/json",
+		});
+		await userEvent.upload(fileInput, file);
 
-    await waitFor(() =>
-      expect(screen.getByText(/import failed/i)).toBeInTheDocument()
-    );
-  });
+		await waitFor(() =>
+			expect(screen.getByText(/import failed/i)).toBeInTheDocument(),
+		);
+	});
 });
 
 const NUTRITION_DATA = [
-  {
-    logDate: '2026-04-01',
-    dayType: 'training',
-    totalCalories: 1200,
-    totalProtein: 80,
-    meals: [
-      { id: 1, mealName: 'Breakfast', calories: 500, proteinGrams: 30 },
-      { id: 2, mealName: 'Lunch',     calories: 700, proteinGrams: 50 },
-    ],
-  },
+	{
+		logDate: "2026-04-01",
+		dayType: "training",
+		totalCalories: 1200,
+		totalProtein: 80,
+		meals: [
+			{ id: 1, mealName: "Breakfast", calories: 500, proteinGrams: 30 },
+			{ id: 2, mealName: "Lunch", calories: 700, proteinGrams: 50 },
+		],
+	},
 ];
 
 const WORKOUT_WITH_CARDIO = [
-  {
-    sessionDate: '2026-04-01',
-    exerciseSets: [
-      { exerciseName: 'Bench Press', setNumber: 1, reps: 8, weightLbs: '135', completed: true },
-      { exerciseName: 'Running', setNumber: 1, reps: 0, weightLbs: '0', distanceMiles: '3.1', durationSeconds: 1800 },
-    ],
-  },
+	{
+		sessionDate: "2026-04-01",
+		exerciseSets: [
+			{
+				exerciseName: "Bench Press",
+				setNumber: 1,
+				reps: 8,
+				weightLbs: "135",
+				completed: true,
+			},
+			{
+				exerciseName: "Running",
+				setNumber: 1,
+				reps: 0,
+				weightLbs: "0",
+				distanceMiles: "3.1",
+				durationSeconds: 1800,
+			},
+		],
+	},
 ];
 
-describe('Settings — export handles nutrition meals', () => {
-  beforeEach(() => {
-    setupProfile();
-    useNutrition.mockReturnValue({ data: NUTRITION_DATA, refetch: vi.fn() });
-  });
+describe("Settings — export handles nutrition meals", () => {
+	beforeEach(() => {
+		setupProfile();
+		useNutrition.mockReturnValue({ data: NUTRITION_DATA, refetch: vi.fn() });
+	});
 
-  it('XLSX export creates four sheets including Nutrition', async () => {
-    renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /export.*xlsx/i }));
-    const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
-    expect(sheetNames).toEqual(['Total Stats', 'Workouts', 'Cardio', 'Nutrition']);
-  });
+	it("XLSX export creates four sheets including Nutrition", async () => {
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*xlsx/i }),
+		);
+		const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
+		expect(sheetNames).toEqual([
+			"Total Stats",
+			"Workouts",
+			"Cardio",
+			"Nutrition",
+		]);
+	});
 
-  it('JSON export includes a nutrition key with per-meal rows', async () => {
-    let capturedJson = null;
-    const OrigBlob = global.Blob;
-    global.Blob = class { constructor(data) { capturedJson = data[0]; } };
-    global.URL.createObjectURL = vi.fn(() => 'blob:x');
-    global.URL.revokeObjectURL = vi.fn();
+	it("JSON export includes a nutrition key with per-meal rows", async () => {
+		let capturedJson = null;
+		const OrigBlob = global.Blob;
+		global.Blob = class {
+			constructor(data) {
+				capturedJson = data[0];
+			}
+		};
+		global.URL.createObjectURL = vi.fn(() => "blob:x");
+		global.URL.revokeObjectURL = vi.fn();
 
-    renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /export.*json/i }));
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*json/i }),
+		);
 
-    const parsed = JSON.parse(capturedJson);
-    expect(parsed).toHaveProperty('nutrition');
-    expect(parsed.nutrition).toHaveLength(2);
-    expect(parsed.nutrition[0]).toMatchObject({
-      Meal: 'Breakfast', Calories: 500, Protein: 30, 'Day Type': 'Training',
-    });
-    expect(parsed.nutrition[1]).toMatchObject({ Meal: 'Lunch', Calories: 700, Protein: 50, 'Day Type': 'Training' });
-    global.Blob = OrigBlob;
-  });
+		const parsed = JSON.parse(capturedJson);
+		expect(parsed).toHaveProperty("nutrition");
+		expect(parsed.nutrition).toHaveLength(2);
+		expect(parsed.nutrition[0]).toMatchObject({
+			Meal: "Breakfast",
+			Calories: 500,
+			Protein: 30,
+			"Day Type": "Training",
+		});
+		expect(parsed.nutrition[1]).toMatchObject({
+			Meal: "Lunch",
+			Calories: 700,
+			Protein: 50,
+			"Day Type": "Training",
+		});
+		global.Blob = OrigBlob;
+	});
 
-  it('nutrition totals in totalStats are still exported', async () => {
-    let capturedJson = null;
-    const OrigBlob = global.Blob;
-    global.Blob = class { constructor(data) { capturedJson = data[0]; } };
-    global.URL.createObjectURL = vi.fn(() => 'blob:x');
-    global.URL.revokeObjectURL = vi.fn();
+	it("nutrition totals in totalStats are still exported", async () => {
+		let capturedJson = null;
+		const OrigBlob = global.Blob;
+		global.Blob = class {
+			constructor(data) {
+				capturedJson = data[0];
+			}
+		};
+		global.URL.createObjectURL = vi.fn(() => "blob:x");
+		global.URL.revokeObjectURL = vi.fn();
 
-    renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /export.*json/i }));
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*json/i }),
+		);
 
-    const parsed = JSON.parse(capturedJson);
-    const statsRow = parsed.totalStats.find((r) => r.Date !== '' && r.Calories !== '');
-    expect(statsRow).toBeDefined();
-    expect(statsRow.Calories).toBe(1200);
-    expect(statsRow.Protein).toBe(80);
-    global.Blob = OrigBlob;
-  });
+		const parsed = JSON.parse(capturedJson);
+		const statsRow = parsed.totalStats.find(
+			(r) => r.Date !== "" && r.Calories !== "",
+		);
+		expect(statsRow).toBeDefined();
+		expect(statsRow.Calories).toBe(1200);
+		expect(statsRow.Protein).toBe(80);
+		global.Blob = OrigBlob;
+	});
 });
 
-describe('Settings — export handles cardio sets', () => {
-  beforeEach(() => {
-    setupProfile();
-    useWorkouts.mockReturnValue({ data: WORKOUT_WITH_CARDIO, refetch: vi.fn() });
-  });
+describe("Settings — export handles cardio sets", () => {
+	beforeEach(() => {
+		setupProfile();
+		useWorkouts.mockReturnValue({
+			data: WORKOUT_WITH_CARDIO,
+			refetch: vi.fn(),
+		});
+	});
 
-  it('XLSX export creates four sheets: Total Stats, Workouts, Cardio, Nutrition', async () => {
-    renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /export.*xlsx/i }));
-    const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
-    expect(sheetNames).toEqual(['Total Stats', 'Workouts', 'Cardio', 'Nutrition']);
-  });
+	it("XLSX export creates four sheets: Total Stats, Workouts, Cardio, Nutrition", async () => {
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*xlsx/i }),
+		);
+		const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
+		expect(sheetNames).toEqual([
+			"Total Stats",
+			"Workouts",
+			"Cardio",
+			"Nutrition",
+		]);
+	});
 
-  it('JSON export includes a cardio key with cardio rows', async () => {
-    let capturedJson = null;
-    const OrigBlob = global.Blob;
-    global.Blob = class { constructor(data) { capturedJson = data[0]; } };
-    global.URL.createObjectURL = vi.fn(() => 'blob:x');
-    global.URL.revokeObjectURL = vi.fn();
+	it("JSON export includes a cardio key with cardio rows", async () => {
+		let capturedJson = null;
+		const OrigBlob = global.Blob;
+		global.Blob = class {
+			constructor(data) {
+				capturedJson = data[0];
+			}
+		};
+		global.URL.createObjectURL = vi.fn(() => "blob:x");
+		global.URL.revokeObjectURL = vi.fn();
 
-    renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /export.*json/i }));
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*json/i }),
+		);
 
-    const parsed = JSON.parse(capturedJson);
-    expect(parsed).toHaveProperty('cardio');
-    expect(parsed.cardio).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ Exercise: 'Running', Set: 1 }),
-      ]),
-    );
-    global.Blob = OrigBlob;
-  });
+		const parsed = JSON.parse(capturedJson);
+		expect(parsed).toHaveProperty("cardio");
+		expect(parsed.cardio).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ Exercise: "Running", Set: 1 }),
+			]),
+		);
+		global.Blob = OrigBlob;
+	});
 
-  it('cardio sets do not appear in the workouts section of JSON', async () => {
-    let capturedJson = null;
-    const OrigBlob = global.Blob;
-    global.Blob = class { constructor(data) { capturedJson = data[0]; } };
-    global.URL.createObjectURL = vi.fn(() => 'blob:x');
-    global.URL.revokeObjectURL = vi.fn();
+	it("cardio sets do not appear in the workouts section of JSON", async () => {
+		let capturedJson = null;
+		const OrigBlob = global.Blob;
+		global.Blob = class {
+			constructor(data) {
+				capturedJson = data[0];
+			}
+		};
+		global.URL.createObjectURL = vi.fn(() => "blob:x");
+		global.URL.revokeObjectURL = vi.fn();
 
-    renderSettings();
-    await userEvent.click(screen.getByRole('button', { name: /export.*json/i }));
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*json/i }),
+		);
 
-    const parsed = JSON.parse(capturedJson);
-    const workoutExercises = parsed.workouts.map((r) => r.Exercise);
-    expect(workoutExercises).not.toContain('Running');
-    expect(workoutExercises).toContain('Bench Press');
-    global.Blob = OrigBlob;
-  });
+		const parsed = JSON.parse(capturedJson);
+		const workoutExercises = parsed.workouts.map((r) => r.Exercise);
+		expect(workoutExercises).not.toContain("Running");
+		expect(workoutExercises).toContain("Bench Press");
+		global.Blob = OrigBlob;
+	});
 });
 
-describe('Settings — privacy / data sharing', () => {
-  it('renders the Privacy section heading', async () => {
-    setupProfile();
-    renderSettings();
-    await waitFor(() => expect(screen.getByText('Privacy')).toBeInTheDocument());
-  });
+describe("Settings — privacy / data sharing", () => {
+	it("renders the Privacy section heading", async () => {
+		setupProfile();
+		renderSettings();
+		await waitFor(() =>
+			expect(screen.getByText("Privacy")).toBeInTheDocument(),
+		);
+	});
 
-  it('shows the Share Data on Leaderboard label', async () => {
-    setupProfile();
-    renderSettings();
-    await waitFor(() =>
-      expect(screen.getByText(/share data on leaderboard/i)).toBeInTheDocument()
-    );
-  });
+	it("shows the Share Data on Leaderboard label", async () => {
+		setupProfile();
+		renderSettings();
+		await waitFor(() =>
+			expect(
+				screen.getByText(/share data on leaderboard/i),
+			).toBeInTheDocument(),
+		);
+	});
 
-  it('toggle starts as Off when shareData is false', async () => {
-    setupProfile();
-    renderSettings();
-    await waitFor(() => {
-      const offLabel = screen.getAllByText(/^off$/i);
-      expect(offLabel.length).toBeGreaterThan(0);
-    });
-  });
+	it("toggle starts as Off when shareData is false", async () => {
+		setupProfile();
+		renderSettings();
+		await waitFor(() => {
+			const offLabel = screen.getAllByText(/^off$/i);
+			expect(offLabel.length).toBeGreaterThan(0);
+		});
+	});
 
-  it('clicking the toggle calls PUT /profile/privacy with shareData true', async () => {
-    api.put.mockResolvedValue({ data: { shareData: true } });
-    setupProfile();
-    renderSettings();
+	it("clicking the toggle calls PUT /profile/privacy with shareData true", async () => {
+		api.put.mockResolvedValue({ data: { shareData: true } });
+		setupProfile();
+		renderSettings();
 
-    await waitFor(() => expect(screen.getByText(/share data on leaderboard/i)).toBeInTheDocument());
+		await waitFor(() =>
+			expect(
+				screen.getByText(/share data on leaderboard/i),
+			).toBeInTheDocument(),
+		);
 
-    const toggle = screen.getByRole('button', { name: /toggle data sharing/i });
-    await userEvent.click(toggle);
+		const toggle = screen.getByRole("button", { name: /toggle data sharing/i });
+		await userEvent.click(toggle);
 
-    await waitFor(() =>
-      expect(api.put).toHaveBeenCalledWith(
-        '/profile/privacy',
-        { shareData: true, shareCalendar: false },
-      )
-    );
-  });
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/privacy", {
+				shareData: true,
+				shareCalendar: false,
+			}),
+		);
+	});
 
-  it('reverts the toggle on PUT failure', async () => {
-    api.put.mockRejectedValue({ response: { data: { message: 'Server error' } } });
-    setupProfile();
-    renderSettings();
+	it("reverts the toggle on PUT failure", async () => {
+		api.put.mockRejectedValue({
+			response: { data: { message: "Server error" } },
+		});
+		setupProfile();
+		renderSettings();
 
-    await waitFor(() => expect(screen.getByText(/share data on leaderboard/i)).toBeInTheDocument());
+		await waitFor(() =>
+			expect(
+				screen.getByText(/share data on leaderboard/i),
+			).toBeInTheDocument(),
+		);
 
-    const toggle = screen.getByRole('button', { name: /toggle data sharing/i });
-    await userEvent.click(toggle);
+		const toggle = screen.getByRole("button", { name: /toggle data sharing/i });
+		await userEvent.click(toggle);
 
-    await waitFor(() => expect(screen.getByText(/server error/i)).toBeInTheDocument());
-  });
+		await waitFor(() =>
+			expect(screen.getByText(/server error/i)).toBeInTheDocument(),
+		);
+	});
 
-  it('shows shareData as On when API returns true', async () => {
-    api.get.mockImplementation((url) => {
-      if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: true, shareCalendar: false } });
-      return Promise.resolve({ data: { email: 'alice@example.com' } });
-    });
-    setupProfile();
-    renderSettings();
+	it("shows shareData as On when API returns true", async () => {
+		api.get.mockImplementation((url) => {
+			if (url === "/profile/privacy")
+				return Promise.resolve({
+					data: { shareData: true, shareCalendar: false },
+				});
+			return Promise.resolve({ data: { email: "alice@example.com" } });
+		});
+		setupProfile();
+		renderSettings();
 
-    await waitFor(() => {
-      const onLabel = screen.getAllByText(/^on$/i);
-      expect(onLabel.length).toBeGreaterThan(0);
-    });
-  });
+		await waitFor(() => {
+			const onLabel = screen.getAllByText(/^on$/i);
+			expect(onLabel.length).toBeGreaterThan(0);
+		});
+	});
 
-  it('shows the Share Calendar label', async () => {
-    setupProfile();
-    renderSettings();
-    await waitFor(() =>
-      expect(screen.getByText(/share on community calendar/i)).toBeInTheDocument()
-    );
-  });
+	it("shows the Share Calendar label", async () => {
+		setupProfile();
+		renderSettings();
+		await waitFor(() =>
+			expect(
+				screen.getByText(/share on community calendar/i),
+			).toBeInTheDocument(),
+		);
+	});
 
-  it('clicking the calendar toggle PUTs shareCalendar=true while preserving shareData', async () => {
-    api.put.mockResolvedValue({ data: { shareData: false, shareCalendar: true } });
-    setupProfile();
-    renderSettings();
+	it("clicking the calendar toggle PUTs shareCalendar=true while preserving shareData", async () => {
+		api.put.mockResolvedValue({
+			data: { shareData: false, shareCalendar: true },
+		});
+		setupProfile();
+		renderSettings();
 
-    await waitFor(() =>
-      expect(screen.getByText(/share on community calendar/i)).toBeInTheDocument()
-    );
+		await waitFor(() =>
+			expect(
+				screen.getByText(/share on community calendar/i),
+			).toBeInTheDocument(),
+		);
 
-    const toggle = screen.getByRole('button', { name: /toggle calendar sharing/i });
-    await userEvent.click(toggle);
+		const toggle = screen.getByRole("button", {
+			name: /toggle calendar sharing/i,
+		});
+		await userEvent.click(toggle);
 
-    await waitFor(() =>
-      expect(api.put).toHaveBeenCalledWith(
-        '/profile/privacy',
-        { shareData: false, shareCalendar: true },
-      )
-    );
-  });
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/privacy", {
+				shareData: false,
+				shareCalendar: true,
+			}),
+		);
+	});
 
-  it('shows shareCalendar as On when API returns true', async () => {
-    api.get.mockImplementation((url) => {
-      if (url === '/profile/privacy') return Promise.resolve({ data: { shareData: false, shareCalendar: true } });
-      return Promise.resolve({ data: { email: 'alice@example.com' } });
-    });
-    setupProfile();
-    renderSettings();
+	it("shows shareCalendar as On when API returns true", async () => {
+		api.get.mockImplementation((url) => {
+			if (url === "/profile/privacy")
+				return Promise.resolve({
+					data: { shareData: false, shareCalendar: true },
+				});
+			return Promise.resolve({ data: { email: "alice@example.com" } });
+		});
+		setupProfile();
+		renderSettings();
 
-    await waitFor(() => {
-      const toggle = screen.getByRole('button', { name: /toggle calendar sharing/i });
-      expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    });
-  });
+		await waitFor(() => {
+			const toggle = screen.getByRole("button", {
+				name: /toggle calendar sharing/i,
+			});
+			expect(toggle).toHaveAttribute("aria-pressed", "true");
+		});
+	});
 });

@@ -1,11 +1,18 @@
 package com.kavin.fitness.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.kavin.fitness.dto.StepLogDTO;
 import com.kavin.fitness.dto.StepLogRequest;
 import com.kavin.fitness.model.StepLog;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.StepLogRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,14 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StepServiceTest {
@@ -70,11 +69,13 @@ class StepServiceTest {
 
         when(stepLogRepository.findByUserIdAndLogDate(1L, LocalDate.of(2026, 4, 10)))
                 .thenReturn(Optional.empty());
-        when(stepLogRepository.save(any())).thenAnswer(inv -> {
-            StepLog log = inv.getArgument(0);
-            ReflectionTestUtils.setField(log, "id", 5L);
-            return log;
-        });
+        when(stepLogRepository.save(any()))
+                .thenAnswer(
+                        inv -> {
+                            StepLog log = inv.getArgument(0);
+                            ReflectionTestUtils.setField(log, "id", 5L);
+                            return log;
+                        });
 
         StepLogDTO result = stepService.save(user, request);
 

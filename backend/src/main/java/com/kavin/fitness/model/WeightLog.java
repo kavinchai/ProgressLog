@@ -2,17 +2,19 @@ package com.kavin.fitness.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
 @Entity
-@Table(name = "weight_log",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "log_date"}))
-@Getter @Setter @NoArgsConstructor
+@Table(
+        name = "weight_log",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "log_date"}))
+@Getter
+@Setter
+@NoArgsConstructor
 public class WeightLog {
 
     @Id

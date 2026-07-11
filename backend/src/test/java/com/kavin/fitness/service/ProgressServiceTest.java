@@ -1,13 +1,19 @@
 package com.kavin.fitness.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.kavin.fitness.dto.CardioProgressDTO;
 import com.kavin.fitness.dto.MilestoneDTO;
 import com.kavin.fitness.dto.PREntryDTO;
 import com.kavin.fitness.dto.StrengthProgressDTO;
 import com.kavin.fitness.model.ExerciseSet;
-import com.kavin.fitness.model.WorkoutSession;
 import com.kavin.fitness.model.User;
+import com.kavin.fitness.model.WorkoutSession;
 import com.kavin.fitness.repository.ExerciseSetRepository;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,13 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProgressServiceTest {
@@ -87,8 +86,8 @@ class ProgressServiceTest {
                 .thenReturn(List.of(exerciseSet(session, "Curls", 1, 12, "30")));
 
         // Key lifts with no data are skipped, so mock the rest as empty
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(eq(1L), argThat(
-                name -> !name.equals("Squats") && !name.equals("Curls"))))
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(
+                        eq(1L), argThat(name -> !name.equals("Squats") && !name.equals("Curls"))))
                 .thenReturn(List.of());
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
@@ -151,7 +150,7 @@ class ProgressServiceTest {
         ReflectionTestUtils.setField(session2, "id", 2L);
 
         // Same weight, same set count, but different reps
-        ExerciseSet lowReps  = exerciseSet(session1, "Bench Press", 1, 5, "135"); // 5 reps
+        ExerciseSet lowReps = exerciseSet(session1, "Bench Press", 1, 5, "135"); // 5 reps
         ExerciseSet highReps = exerciseSet(session2, "Bench Press", 1, 8, "135"); // 8 reps
 
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
@@ -170,8 +169,9 @@ class ProgressServiceTest {
     @Test
     void getStrengthProgress_excludesCardioAndTimedExercises() {
         WorkoutSession session = session(LocalDate.of(2026, 4, 1));
-        ExerciseSet runSet   = cardioSet(session, "Running", 1, "3.0", 1800); // cardio: has distanceMiles
-        ExerciseSet yogaSet  = timedSet(session,  "Yoga",    1, 3600);        // timed: has durationSeconds only
+        ExerciseSet runSet =
+                cardioSet(session, "Running", 1, "3.0", 1800); // cardio: has distanceMiles
+        ExerciseSet yogaSet = timedSet(session, "Yoga", 1, 3600); // timed: has durationSeconds only
         ExerciseSet benchSet = exerciseSet(session, "Bench Press", 1, 5, "135");
 
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
@@ -182,8 +182,9 @@ class ProgressServiceTest {
                 .thenReturn(List.of(runSet));
         when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Yoga"))
                 .thenReturn(List.of(yogaSet));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(eq(1L), argThat(
-                name -> !List.of("Bench Press", "Running", "Yoga").contains(name))))
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(
+                        eq(1L),
+                        argThat(name -> !List.of("Bench Press", "Running", "Yoga").contains(name))))
                 .thenReturn(List.of());
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
@@ -195,11 +196,11 @@ class ProgressServiceTest {
     @Test
     void getStrengthProgress_sortsByDateAscWhenAllElseEqual() {
         WorkoutSession earlier = session(LocalDate.of(2026, 3, 1));
-        WorkoutSession later   = session(LocalDate.of(2026, 3, 5));
+        WorkoutSession later = session(LocalDate.of(2026, 3, 5));
         ReflectionTestUtils.setField(later, "id", 2L);
 
         ExerciseSet e1 = exerciseSet(earlier, "Bench Press", 1, 6, "135");
-        ExerciseSet e2 = exerciseSet(later,   "Bench Press", 1, 6, "135");
+        ExerciseSet e2 = exerciseSet(later, "Bench Press", 1, 6, "135");
 
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
                 .thenReturn(List.of("Bench Press"));
@@ -253,10 +254,17 @@ class ProgressServiceTest {
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
                 .thenReturn(List.of("Bench Press"));
         when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(
-                        exerciseSet(early, "Bench Press", 1, 8, "135"), // lighter, more reps
-                        exerciseSet(later, "Bench Press", 1, 3, "155")  // heavier — wins on weight
-                ));
+                .thenReturn(
+                        List.of(
+                                exerciseSet(
+                                        early, "Bench Press", 1, 8, "135"), // lighter, more reps
+                                exerciseSet(
+                                        later,
+                                        "Bench Press",
+                                        1,
+                                        3,
+                                        "155") // heavier — wins on weight
+                                ));
 
         PREntryDTO pr = progressService.getPRs(1L).get(0);
         assertEquals(new BigDecimal("155"), pr.getMaxWeightLbs());
@@ -268,24 +276,24 @@ class ProgressServiceTest {
     @Test
     void getPRs_breaksWeightTieBySetCount() {
         WorkoutSession threeSets = session(LocalDate.of(2026, 3, 1));
-        WorkoutSession fiveSets  = session(LocalDate.of(2026, 3, 8));
+        WorkoutSession fiveSets = session(LocalDate.of(2026, 3, 8));
         ReflectionTestUtils.setField(fiveSets, "id", 2L);
 
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
                 .thenReturn(List.of("Bench Press"));
         when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(
-                        // Date 1: 3×6 @ 135
-                        exerciseSet(threeSets, "Bench Press", 1, 6, "135"),
-                        exerciseSet(threeSets, "Bench Press", 2, 6, "135"),
-                        exerciseSet(threeSets, "Bench Press", 3, 6, "135"),
-                        // Date 2: 5×5 @ 135 — same weight, more sets
-                        exerciseSet(fiveSets, "Bench Press", 1, 5, "135"),
-                        exerciseSet(fiveSets, "Bench Press", 2, 5, "135"),
-                        exerciseSet(fiveSets, "Bench Press", 3, 5, "135"),
-                        exerciseSet(fiveSets, "Bench Press", 4, 5, "135"),
-                        exerciseSet(fiveSets, "Bench Press", 5, 5, "135")
-                ));
+                .thenReturn(
+                        List.of(
+                                // Date 1: 3×6 @ 135
+                                exerciseSet(threeSets, "Bench Press", 1, 6, "135"),
+                                exerciseSet(threeSets, "Bench Press", 2, 6, "135"),
+                                exerciseSet(threeSets, "Bench Press", 3, 6, "135"),
+                                // Date 2: 5×5 @ 135 — same weight, more sets
+                                exerciseSet(fiveSets, "Bench Press", 1, 5, "135"),
+                                exerciseSet(fiveSets, "Bench Press", 2, 5, "135"),
+                                exerciseSet(fiveSets, "Bench Press", 3, 5, "135"),
+                                exerciseSet(fiveSets, "Bench Press", 4, 5, "135"),
+                                exerciseSet(fiveSets, "Bench Press", 5, 5, "135")));
 
         PREntryDTO pr = progressService.getPRs(1L).get(0);
         assertEquals(new BigDecimal("135"), pr.getMaxWeightLbs());
@@ -297,22 +305,22 @@ class ProgressServiceTest {
     @Test
     void getPRs_breaksWeightAndSetTieByMaxSingleSetReps() {
         WorkoutSession evenSpread = session(LocalDate.of(2026, 3, 1));
-        WorkoutSession bigSet     = session(LocalDate.of(2026, 3, 8));
+        WorkoutSession bigSet = session(LocalDate.of(2026, 3, 8));
         ReflectionTestUtils.setField(bigSet, "id", 2L);
 
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
                 .thenReturn(List.of("Bench Press"));
         when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(
-                        // Date 1: 3 sets of 5/5/5 — max rep in any set is 5
-                        exerciseSet(evenSpread, "Bench Press", 1, 5, "135"),
-                        exerciseSet(evenSpread, "Bench Press", 2, 5, "135"),
-                        exerciseSet(evenSpread, "Bench Press", 3, 5, "135"),
-                        // Date 2: 3 sets of 10/3/2 — max rep in any set is 10 (wins)
-                        exerciseSet(bigSet, "Bench Press", 1, 10, "135"),
-                        exerciseSet(bigSet, "Bench Press", 2, 3,  "135"),
-                        exerciseSet(bigSet, "Bench Press", 3, 2,  "135")
-                ));
+                .thenReturn(
+                        List.of(
+                                // Date 1: 3 sets of 5/5/5 — max rep in any set is 5
+                                exerciseSet(evenSpread, "Bench Press", 1, 5, "135"),
+                                exerciseSet(evenSpread, "Bench Press", 2, 5, "135"),
+                                exerciseSet(evenSpread, "Bench Press", 3, 5, "135"),
+                                // Date 2: 3 sets of 10/3/2 — max rep in any set is 10 (wins)
+                                exerciseSet(bigSet, "Bench Press", 1, 10, "135"),
+                                exerciseSet(bigSet, "Bench Press", 2, 3, "135"),
+                                exerciseSet(bigSet, "Bench Press", 3, 2, "135")));
 
         PREntryDTO pr = progressService.getPRs(1L).get(0);
         assertEquals(new BigDecimal("135"), pr.getMaxWeightLbs());
@@ -323,20 +331,20 @@ class ProgressServiceTest {
 
     @Test
     void getPRs_keepsEarliestDateWhenTupleFullyTied() {
-        WorkoutSession first  = session(LocalDate.of(2026, 3, 1));
+        WorkoutSession first = session(LocalDate.of(2026, 3, 1));
         WorkoutSession second = session(LocalDate.of(2026, 3, 15));
         ReflectionTestUtils.setField(second, "id", 2L);
 
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
                 .thenReturn(List.of("Bench Press"));
         when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(
-                        // Same (weight, setCount, maxReps) tuple on both dates
-                        exerciseSet(first,  "Bench Press", 1, 5, "135"),
-                        exerciseSet(first,  "Bench Press", 2, 5, "135"),
-                        exerciseSet(second, "Bench Press", 1, 5, "135"),
-                        exerciseSet(second, "Bench Press", 2, 5, "135")
-                ));
+                .thenReturn(
+                        List.of(
+                                // Same (weight, setCount, maxReps) tuple on both dates
+                                exerciseSet(first, "Bench Press", 1, 5, "135"),
+                                exerciseSet(first, "Bench Press", 2, 5, "135"),
+                                exerciseSet(second, "Bench Press", 1, 5, "135"),
+                                exerciseSet(second, "Bench Press", 2, 5, "135")));
 
         assertEquals(LocalDate.of(2026, 3, 1), progressService.getPRs(1L).get(0).getAchievedDate());
     }
@@ -396,8 +404,7 @@ class ProgressServiceTest {
         ExerciseSet run1 = cardioSet(session, "Running", 1, "3.10", 1800);
         ExerciseSet run2 = cardioSet(session, "Running", 2, "1.00", 600);
 
-        when(exerciseSetRepository.findCardioSetsByUserId(1L))
-                .thenReturn(List.of(run1, run2));
+        when(exerciseSetRepository.findCardioSetsByUserId(1L)).thenReturn(List.of(run1, run2));
 
         List<CardioProgressDTO> result = progressService.getCardioProgress(1L);
 
@@ -414,13 +421,14 @@ class ProgressServiceTest {
     @Test
     void getCardioProgress_sortsSessionsByDateAscending() {
         WorkoutSession early = session(LocalDate.of(2026, 3, 1));
-        WorkoutSession late  = session(LocalDate.of(2026, 4, 15));
+        WorkoutSession late = session(LocalDate.of(2026, 4, 15));
         ReflectionTestUtils.setField(late, "id", 2L);
 
         when(exerciseSetRepository.findCardioSetsByUserId(1L))
-                .thenReturn(List.of(
-                        cardioSet(late, "Running", 1, "2.00", 1200),
-                        cardioSet(early, "Running", 1, "3.00", 1800)));
+                .thenReturn(
+                        List.of(
+                                cardioSet(late, "Running", 1, "2.00", 1200),
+                                cardioSet(early, "Running", 1, "3.00", 1800)));
 
         List<CardioProgressDTO> result = progressService.getCardioProgress(1L);
 
@@ -434,9 +442,10 @@ class ProgressServiceTest {
         WorkoutSession session = session(LocalDate.of(2026, 4, 1));
 
         when(exerciseSetRepository.findCardioSetsByUserId(1L))
-                .thenReturn(List.of(
-                        cardioSet(session, "Running", 1, "3.00", 1800),
-                        cardioSet(session, "Cycling", 1, "10.00", 2400)));
+                .thenReturn(
+                        List.of(
+                                cardioSet(session, "Running", 1, "3.00", 1800),
+                                cardioSet(session, "Cycling", 1, "10.00", 2400)));
 
         List<CardioProgressDTO> result = progressService.getCardioProgress(1L);
 
@@ -448,7 +457,8 @@ class ProgressServiceTest {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    private ExerciseSet cardioSet(WorkoutSession session, String name, int setNum, String distance, int duration) {
+    private ExerciseSet cardioSet(
+            WorkoutSession session, String name, int setNum, String distance, int duration) {
         ExerciseSet es = new ExerciseSet();
         es.setSession(session);
         es.setExerciseName(name);
@@ -469,7 +479,8 @@ class ProgressServiceTest {
         return s;
     }
 
-    private ExerciseSet exerciseSet(WorkoutSession session, String name, int setNum, int reps, String weight) {
+    private ExerciseSet exerciseSet(
+            WorkoutSession session, String name, int setNum, int reps, String weight) {
         ExerciseSet es = new ExerciseSet();
         es.setSession(session);
         es.setExerciseName(name);

@@ -22,6 +22,14 @@ jobs:
         working-directory: frontend
         run: npm install
 
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Check frontend formatting
+        working-directory: frontend
+        run: npm run format:check
+
       - name: Run frontend tests
         working-directory: frontend
         run: npm test
@@ -57,6 +65,10 @@ jobs:
         with:
           gradle-version: "8.10"
 
+      - name: Check backend formatting (Spotless)
+        working-directory: backend
+        run: gradle spotlessCheck --no-daemon
+
       - name: Run backend tests
         working-directory: backend
         run: gradle test --no-daemon
@@ -65,7 +77,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: karate-test-report
+          name: backend-test-report
           path: backend/build/reports/
 
   e2e-tests:

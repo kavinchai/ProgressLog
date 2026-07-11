@@ -9,7 +9,7 @@ import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import { buildDayRows } from "../utils/stats";
-import { groupByExercise, detectType } from "../utils/workout";
+import { groupByExercise } from "../utils/workout";
 import { formatDateShort as formatDate } from "../utils/date";
 import api from "../api";
 import "./Settings.css";

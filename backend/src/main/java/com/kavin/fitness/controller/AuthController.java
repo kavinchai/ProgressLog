@@ -10,8 +10,10 @@ import com.kavin.fitness.security.CookieUtil;
 import com.kavin.fitness.security.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.security.SecureRandom;
+import java.util.Base64;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,27 +24,26 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.SecureRandom;
-import java.util.Base64;
-
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired private AuthenticationManager authenticationManager;
-    @Autowired private JwtUtil jwtUtil;
-    @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private CookieUtil cookieUtil;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final CookieUtil cookieUtil;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
-                                               HttpServletResponse response) {
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         log.info("Login attempt for user={}", request.getUsername());
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(), request.getPassword()));
+        Authentication auth =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                request.getUsername(), request.getPassword()));
 
         UserDetails userDetails = (UserDetails) auth.getPrincipal();
         String token = jwtUtil.generateToken(userDetails.getUsername());
@@ -54,8 +55,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request,
-                                                  HttpServletResponse response) {
+    public ResponseEntity<LoginResponse> register(
+            @Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
         log.info("Registration attempt for user={}", request.getUsername());
         if (userRepository.existsByUsername(request.getUsername())) {
             log.warn("Registration failed — username already taken: {}", request.getUsername());
@@ -85,8 +86,10 @@ public class AuthController {
     @GetMapping("/api-key")
     public ResponseEntity<ApiKeyResponse> getApiKey(
             @AuthenticationPrincipal UserDetails userDetails) {
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User user =
+                userRepository
+                        .findByUsername(userDetails.getUsername())
+                        .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return ResponseEntity.ok(new ApiKeyResponse(user.getApiKey()));
     }
 
@@ -94,8 +97,10 @@ public class AuthController {
     public ResponseEntity<ApiKeyResponse> generateApiKey(
             @AuthenticationPrincipal UserDetails userDetails) {
         log.info("API key generation requested by user={}", userDetails.getUsername());
-        User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User user =
+                userRepository
+                        .findByUsername(userDetails.getUsername())
+                        .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         byte[] bytes = new byte[32];
         new SecureRandom().nextBytes(bytes);
