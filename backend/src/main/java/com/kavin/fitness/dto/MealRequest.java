@@ -6,14 +6,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class MealRequest {
 
-    private String mealName;   // optional label
+    private String mealName; // optional label
 
-    @NotNull @Min(0)
+    @NotNull
+    @Min(0)
     private Integer calories;
 
-    @NotNull @Min(0)
+    @NotNull
+    @Min(0)
     private Integer proteinGrams;
 }

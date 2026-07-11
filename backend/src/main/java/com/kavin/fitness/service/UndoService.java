@@ -18,55 +18,53 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.DeletionJournalRepository;
 import com.kavin.fitness.repository.NutritionLogRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.time.Instant;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.List;
-
 /**
- * Replays the most recent un-restored entry in the deletion journal
- * by re-creating the deleted data through the existing service code.
- * Restored entities receive fresh IDs — callers must not rely on the
- * pre-deletion ID being preserved.
+ * Replays the most recent un-restored entry in the deletion journal by re-creating the deleted data
+ * through the existing service code. Restored entities receive fresh IDs — callers must not rely on
+ * the pre-deletion ID being preserved.
  */
 @Service
+@RequiredArgsConstructor
 public class UndoService {
 
-    @Autowired private DeletionJournalRepository journalRepository;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private WorkoutService workoutService;
-    @Autowired private NutritionService nutritionService;
-    @Autowired private NutritionLogRepository nutritionLogRepository;
-    @Autowired private StepService stepService;
-    @Autowired private WeightService weightService;
+    private final DeletionJournalRepository journalRepository;
+    private final ObjectMapper objectMapper;
+    private final WorkoutService workoutService;
+    private final NutritionService nutritionService;
+    private final NutritionLogRepository nutritionLogRepository;
+    private final StepService stepService;
+    private final WeightService weightService;
 
     @Transactional
     public UndoActionDTO undoLast(User user) {
-        DeletionJournalEntry entry = journalRepository
-                .findFirstByUserIdAndRestoredAtIsNullOrderByCreatedAtDesc(user.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Nothing to undo"));
+        DeletionJournalEntry entry =
+                journalRepository
+                        .findFirstByUserIdAndRestoredAtIsNullOrderByCreatedAtDesc(user.getId())
+                        .orElseThrow(() -> new EntityNotFoundException("Nothing to undo"));
 
         switch (entry.getEntityType()) {
             case DeletionJournalService.TYPE_WORKOUT_SESSION -> restoreWorkoutSession(entry, user);
-            case DeletionJournalService.TYPE_EXERCISE_SET    -> restoreExerciseSets(entry, user);
-            case DeletionJournalService.TYPE_NUTRITION_LOG   -> restoreNutritionLog(entry, user);
-            case DeletionJournalService.TYPE_MEAL            -> restoreMeal(entry, user);
-            case DeletionJournalService.TYPE_STEP_LOG        -> restoreStepLog(entry, user);
-            case DeletionJournalService.TYPE_WEIGHT_LOG      -> restoreWeightLog(entry, user);
-            default -> throw new IllegalStateException(
-                    "Unknown deletion journal entityType: " + entry.getEntityType());
+            case DeletionJournalService.TYPE_EXERCISE_SET -> restoreExerciseSets(entry, user);
+            case DeletionJournalService.TYPE_NUTRITION_LOG -> restoreNutritionLog(entry, user);
+            case DeletionJournalService.TYPE_MEAL -> restoreMeal(entry, user);
+            case DeletionJournalService.TYPE_STEP_LOG -> restoreStepLog(entry, user);
+            case DeletionJournalService.TYPE_WEIGHT_LOG -> restoreWeightLog(entry, user);
+            default ->
+                    throw new IllegalStateException(
+                            "Unknown deletion journal entityType: " + entry.getEntityType());
         }
 
         entry.setRestoredAt(Instant.now());
         journalRepository.save(entry);
 
         return new UndoActionDTO(
-                entry.getId(),
-                entry.getEntityType(),
-                entry.getSummary(),
-                entry.getCreatedAt());
+                entry.getId(), entry.getEntityType(), entry.getSummary(), entry.getCreatedAt());
     }
 
     // ── restorers ────────────────────────────────────────────────────────────
@@ -100,11 +98,15 @@ public class UndoService {
     private void restoreMeal(DeletionJournalEntry entry, User user) {
         MealSnapshot snap = readSnapshot(entry, MealSnapshot.class);
         // Ensure the parent log still exists and belongs to this user.
-        NutritionLog log = nutritionLogRepository.findById(snap.getLogId())
-                .filter(n -> n.getUser().getId().equals(user.getId()))
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Cannot restore meal — its day log no longer exists. " +
-                        "Undo the day log first."));
+        NutritionLog log =
+                nutritionLogRepository
+                        .findById(snap.getLogId())
+                        .filter(n -> n.getUser().getId().equals(user.getId()))
+                        .orElseThrow(
+                                () ->
+                                        new EntityNotFoundException(
+                                                "Cannot restore meal — its day log no longer exists. "
+                                                        + "Undo the day log first."));
         MealRequest req = new MealRequest();
         req.setMealName(snap.getMealName());
         req.setCalories(snap.getCalories());
@@ -138,11 +140,13 @@ public class UndoService {
         return journalRepository
                 .findTop20ByUserIdAndRestoredAtIsNullOrderByCreatedAtDesc(userId)
                 .stream()
-                .map(entry -> new UndoActionDTO(
-                        entry.getId(),
-                        entry.getEntityType(),
-                        entry.getSummary(),
-                        entry.getCreatedAt()))
+                .map(
+                        entry ->
+                                new UndoActionDTO(
+                                        entry.getId(),
+                                        entry.getEntityType(),
+                                        entry.getSummary(),
+                                        entry.getCreatedAt()))
                 .toList();
     }
 }

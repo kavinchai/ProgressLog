@@ -1,13 +1,13 @@
 package com.kavin.fitness.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.kavin.fitness.dto.ErrorResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class GlobalExceptionHandlerTest {
 
@@ -34,7 +34,8 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleIllegalState_returns500WithMessage() {
         ResponseEntity<ErrorResponse> response =
-                handler.handleIllegalState(new IllegalStateException("Authenticated user not found"));
+                handler.handleIllegalState(
+                        new IllegalStateException("Authenticated user not found"));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals("Authenticated user not found", response.getBody().getMessage());

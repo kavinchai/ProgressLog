@@ -8,7 +8,9 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "meal")
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class Meal {
 
     @Id

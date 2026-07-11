@@ -1,5 +1,9 @@
 package com.kavin.fitness.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.kavin.fitness.dto.ExerciseRequest;
 import com.kavin.fitness.dto.WorkoutSessionDTO;
 import com.kavin.fitness.dto.WorkoutSessionRequest;
@@ -9,22 +13,17 @@ import com.kavin.fitness.model.WorkoutSession;
 import com.kavin.fitness.repository.ExerciseSetRepository;
 import com.kavin.fitness.repository.WorkoutSessionRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WorkoutServiceTest {
@@ -49,7 +48,8 @@ class WorkoutServiceTest {
     @Test
     void getWorkoutSessions_returnsMappedDTOs() {
         WorkoutSession s = sessionWithId(10L, LocalDate.of(2026, 1, 1));
-        when(workoutSessionRepository.findByUserIdWithSetsOrderByDateAsc(1L)).thenReturn(List.of(s));
+        when(workoutSessionRepository.findByUserIdWithSetsOrderByDateAsc(1L))
+                .thenReturn(List.of(s));
 
         List<WorkoutSessionDTO> result = workoutService.getWorkoutSessions(1L, null);
 
@@ -73,11 +73,13 @@ class WorkoutServiceTest {
         req.setSessionDate(LocalDate.of(2026, 3, 10));
 
         // Return the argument itself with an id injected, so the service works on the real object
-        when(workoutSessionRepository.save(any())).thenAnswer(inv -> {
-            WorkoutSession s = inv.getArgument(0);
-            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 5L);
-            return s;
-        });
+        when(workoutSessionRepository.save(any()))
+                .thenAnswer(
+                        inv -> {
+                            WorkoutSession s = inv.getArgument(0);
+                            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 5L);
+                            return s;
+                        });
 
         WorkoutSessionDTO dto = workoutService.save(user, req);
 
@@ -101,11 +103,13 @@ class WorkoutServiceTest {
         req.setSessionDate(LocalDate.of(2026, 3, 10));
         req.setExercises(List.of(ex));
 
-        when(workoutSessionRepository.save(any())).thenAnswer(inv -> {
-            WorkoutSession s = inv.getArgument(0);
-            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 6L);
-            return s;
-        });
+        when(workoutSessionRepository.save(any()))
+                .thenAnswer(
+                        inv -> {
+                            WorkoutSession s = inv.getArgument(0);
+                            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 6L);
+                            return s;
+                        });
 
         WorkoutSessionDTO dto = workoutService.save(user, req);
 
@@ -210,8 +214,8 @@ class WorkoutServiceTest {
         req.setExerciseName("X");
         req.setSets(List.of());
 
-        assertThrows(EntityNotFoundException.class,
-                () -> workoutService.upsertExercise(99L, 1L, req));
+        assertThrows(
+                EntityNotFoundException.class, () -> workoutService.upsertExercise(99L, 1L, req));
     }
 
     @Test
@@ -224,8 +228,8 @@ class WorkoutServiceTest {
         req.setSets(List.of());
 
         // user id 999 does not own this session (owner id is 1)
-        assertThrows(EntityNotFoundException.class,
-                () -> workoutService.upsertExercise(7L, 999L, req));
+        assertThrows(
+                EntityNotFoundException.class, () -> workoutService.upsertExercise(7L, 999L, req));
     }
 
     // ── exercise name normalization ─────────────────────────────────────────
@@ -235,11 +239,13 @@ class WorkoutServiceTest {
         // User already has "Barbell Squats" in their history
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
                 .thenReturn(List.of("Barbell Squats", "Bench Press"));
-        when(workoutSessionRepository.save(any())).thenAnswer(inv -> {
-            WorkoutSession s = inv.getArgument(0);
-            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 9L);
-            return s;
-        });
+        when(workoutSessionRepository.save(any()))
+                .thenAnswer(
+                        inv -> {
+                            WorkoutSession s = inv.getArgument(0);
+                            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 9L);
+                            return s;
+                        });
 
         ExerciseRequest.SetRequest sr = new ExerciseRequest.SetRequest();
         sr.setSetNumber(1);
@@ -264,11 +270,14 @@ class WorkoutServiceTest {
         // User already has "Barbell Squat" in their history
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
                 .thenReturn(List.of("Barbell Squat", "Bench Press"));
-        when(workoutSessionRepository.save(any())).thenAnswer(inv -> {
-            WorkoutSession s = inv.getArgument(0);
-            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 10L);
-            return s;
-        });
+        when(workoutSessionRepository.save(any()))
+                .thenAnswer(
+                        inv -> {
+                            WorkoutSession s = inv.getArgument(0);
+                            org.springframework.test.util.ReflectionTestUtils.setField(
+                                    s, "id", 10L);
+                            return s;
+                        });
 
         ExerciseRequest.SetRequest sr = new ExerciseRequest.SetRequest();
         sr.setSetNumber(1);
@@ -292,11 +301,14 @@ class WorkoutServiceTest {
     void save_keepsExerciseNameWhenNoSingularPluralMatch() {
         when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
                 .thenReturn(List.of("Bench Press"));
-        when(workoutSessionRepository.save(any())).thenAnswer(inv -> {
-            WorkoutSession s = inv.getArgument(0);
-            org.springframework.test.util.ReflectionTestUtils.setField(s, "id", 11L);
-            return s;
-        });
+        when(workoutSessionRepository.save(any()))
+                .thenAnswer(
+                        inv -> {
+                            WorkoutSession s = inv.getArgument(0);
+                            org.springframework.test.util.ReflectionTestUtils.setField(
+                                    s, "id", 11L);
+                            return s;
+                        });
 
         ExerciseRequest.SetRequest sr = new ExerciseRequest.SetRequest();
         sr.setSetNumber(1);

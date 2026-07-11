@@ -13,8 +13,8 @@ import com.kavin.fitness.security.CookieUtil;
 import com.kavin.fitness.security.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,23 +25,24 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/profile")
+@RequiredArgsConstructor
 public class ProfileController {
 
-    @Autowired private UserRepository  userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private JwtUtil         jwtUtil;
-    @Autowired private CookieUtil      cookieUtil;
-    @Autowired private UserResolver    userResolver;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final CookieUtil cookieUtil;
+    private final UserResolver userResolver;
 
     @GetMapping("/goals")
     public ResponseEntity<UserGoalsDTO> getGoals(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userResolver.resolve(userDetails);
 
-        return ResponseEntity.ok(new UserGoalsDTO(
-                user.getCalorieTargetTraining(),
-                user.getCalorieTargetRest(),
-                user.getProteinTarget()
-        ));
+        return ResponseEntity.ok(
+                new UserGoalsDTO(
+                        user.getCalorieTargetTraining(),
+                        user.getCalorieTargetRest(),
+                        user.getProteinTarget()));
     }
 
     @PutMapping("/goals")
@@ -49,7 +50,12 @@ public class ProfileController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UserGoalsDTO dto) {
 
-        log.info("PUT goals user={} calTrain={} calRest={} protein={}", userDetails.getUsername(), dto.getCalorieTargetTraining(), dto.getCalorieTargetRest(), dto.getProteinTarget());
+        log.info(
+                "PUT goals user={} calTrain={} calRest={} protein={}",
+                userDetails.getUsername(),
+                dto.getCalorieTargetTraining(),
+                dto.getCalorieTargetRest(),
+                dto.getProteinTarget());
         User user = userResolver.resolve(userDetails);
 
         user.setCalorieTargetTraining(dto.getCalorieTargetTraining());
@@ -61,7 +67,8 @@ public class ProfileController {
     }
 
     @GetMapping("/email")
-    public ResponseEntity<EmailResponse> getEmail(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<EmailResponse> getEmail(
+            @AuthenticationPrincipal UserDetails userDetails) {
         User user = userResolver.resolve(userDetails);
         return ResponseEntity.ok(new EmailResponse(user.getEmail() != null ? user.getEmail() : ""));
     }
@@ -111,12 +118,16 @@ public class ProfileController {
         User user = userResolver.resolve(userDetails);
 
         if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
-            log.warn("Credentials update failed — wrong current password for user={}", userDetails.getUsername());
+            log.warn(
+                    "Credentials update failed — wrong current password for user={}",
+                    userDetails.getUsername());
             throw new BadCredentialsException("Current password is incorrect.");
         }
 
         String newUsername = dto.getNewUsername();
-        if (newUsername != null && !newUsername.isBlank() && !newUsername.equals(user.getUsername())) {
+        if (newUsername != null
+                && !newUsername.isBlank()
+                && !newUsername.equals(user.getUsername())) {
             if (userRepository.existsByUsername(newUsername)) {
                 throw new IllegalArgumentException("Username already taken.");
             }
@@ -142,15 +153,16 @@ public class ProfileController {
 
     @PutMapping("/privacy")
     public ResponseEntity<PrivacyDTO> updatePrivacy(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody PrivacyDTO dto) {
-        log.info("PUT privacy user={} shareData={} shareCalendar={}",
-                userDetails.getUsername(), dto.isShareData(), dto.isShareCalendar());
+            @AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody PrivacyDTO dto) {
+        log.info(
+                "PUT privacy user={} shareData={} shareCalendar={}",
+                userDetails.getUsername(),
+                dto.isShareData(),
+                dto.isShareCalendar());
         User user = userResolver.resolve(userDetails);
         user.setShareData(dto.isShareData());
         user.setShareCalendar(dto.isShareCalendar());
         userRepository.save(user);
         return ResponseEntity.ok(new PrivacyDTO(user.isShareData(), user.isShareCalendar()));
     }
-
 }

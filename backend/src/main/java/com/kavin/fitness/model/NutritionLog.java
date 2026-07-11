@@ -2,18 +2,20 @@ package com.kavin.fitness.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
-@Table(name = "nutrition_log",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "log_date"}))
-@Getter @Setter @NoArgsConstructor
+@Table(
+        name = "nutrition_log",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "log_date"}))
+@Getter
+@Setter
+@NoArgsConstructor
 public class NutritionLog {
 
     @Id
@@ -29,7 +31,7 @@ public class NutritionLog {
     private LocalDate logDate;
 
     @Column(name = "day_type", nullable = false, length = 20)
-    private String dayType;   // "training" | "rest"
+    private String dayType; // "training" | "rest"
 
     @OneToMany(mappedBy = "nutritionLog", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Meal> meals = new ArrayList<>();

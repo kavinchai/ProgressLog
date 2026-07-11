@@ -10,21 +10,21 @@ import com.kavin.fitness.model.WorkoutSession;
 import com.kavin.fitness.repository.ExerciseSetRepository;
 import com.kavin.fitness.repository.WorkoutSessionRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class WorkoutService {
 
-    @Autowired private WorkoutSessionRepository workoutSessionRepository;
-    @Autowired private ExerciseSetRepository exerciseSetRepository;
-    @Autowired private DeletionJournalService deletionJournal;
+    private final WorkoutSessionRepository workoutSessionRepository;
+    private final ExerciseSetRepository exerciseSetRepository;
+    private final DeletionJournalService deletionJournal;
 
     @Transactional(readOnly = true)
     public List<String> getDistinctExerciseNames(Long userId) {
@@ -34,12 +34,13 @@ public class WorkoutService {
     @Transactional(readOnly = true)
     public List<WorkoutSessionDTO> getWorkoutSessions(Long userId, LocalDate date) {
         if (date != null) {
-            return workoutSessionRepository.findByUserIdAndSessionDate(userId, date)
-                    .stream().map(this::toDTO).collect(Collectors.toList());
+            return workoutSessionRepository.findByUserIdAndSessionDate(userId, date).stream()
+                    .map(this::toDTO)
+                    .collect(Collectors.toList());
         }
-        return workoutSessionRepository
-                .findByUserIdWithSetsOrderByDateAsc(userId)
-                .stream().map(this::toDTO).collect(Collectors.toList());
+        return workoutSessionRepository.findByUserIdWithSetsOrderByDateAsc(userId).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -49,11 +50,13 @@ public class WorkoutService {
 
     @Transactional(readOnly = true)
     public List<WorkoutSessionDTO> getWorkoutsByExercise(Long userId, String exerciseName) {
-        List<ExerciseSet> sets = exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, exerciseName);
-        List<Long> sessionIds = sets.stream()
-                .map(set -> set.getSession().getId())
-                .distinct()
-                .collect(Collectors.toList());
+        List<ExerciseSet> sets =
+                exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, exerciseName);
+        List<Long> sessionIds =
+                sets.stream()
+                        .map(set -> set.getSession().getId())
+                        .distinct()
+                        .collect(Collectors.toList());
         return sessionIds.stream()
                 .map(id -> workoutSessionRepository.findById(id).orElse(null))
                 .filter(session -> session != null && session.getUser().getId().equals(userId))
@@ -106,8 +109,12 @@ public class WorkoutService {
         WorkoutSession session = resolveSession(sessionId, userId);
 
         // remove old sets for this exercise name
-        session.getExerciseSets().removeIf(exerciseSet ->
-                exerciseSet.getExerciseName().equalsIgnoreCase(request.getExerciseName()));
+        session.getExerciseSets()
+                .removeIf(
+                        exerciseSet ->
+                                exerciseSet
+                                        .getExerciseName()
+                                        .equalsIgnoreCase(request.getExerciseName()));
 
         addSetsForExercise(session, request);
         session = workoutSessionRepository.save(session);
@@ -116,7 +123,8 @@ public class WorkoutService {
 
     /** Replace the entire workout session (name + all exercises). */
     @Transactional
-    public WorkoutSessionDTO updateSession(Long sessionId, Long userId, WorkoutSessionRequest request) {
+    public WorkoutSessionDTO updateSession(
+            Long sessionId, Long userId, WorkoutSessionRequest request) {
         WorkoutSession session = resolveSession(sessionId, userId);
         session.setSessionDate(request.getSessionDate());
         session.setSessionName(request.getSessionName());
@@ -137,32 +145,37 @@ public class WorkoutService {
     public void deleteExercise(Long sessionId, Long userId, String exerciseName) {
         WorkoutSession session = resolveSession(sessionId, userId);
 
-        List<ExerciseSet> doomed = session.getExerciseSets().stream()
-                .filter(es -> es.getExerciseName().equalsIgnoreCase(exerciseName))
-                .toList();
+        List<ExerciseSet> doomed =
+                session.getExerciseSets().stream()
+                        .filter(es -> es.getExerciseName().equalsIgnoreCase(exerciseName))
+                        .toList();
         if (!doomed.isEmpty()) {
             deletionJournal.record(
                     session.getUser(),
                     DeletionJournalService.TYPE_EXERCISE_SET,
-                    String.format("\"%s\" (%d set%s) from workout on %s",
+                    String.format(
+                            "\"%s\" (%d set%s) from workout on %s",
                             doomed.get(0).getExerciseName(),
                             doomed.size(),
                             doomed.size() == 1 ? "" : "s",
                             session.getSessionDate()),
-                    buildExerciseSetsSnapshot(session.getId(), doomed.get(0).getExerciseName(), doomed));
+                    buildExerciseSetsSnapshot(
+                            session.getId(), doomed.get(0).getExerciseName(), doomed));
         }
 
-        session.getExerciseSets().removeIf(exerciseSet ->
-                exerciseSet.getExerciseName().equalsIgnoreCase(exerciseName));
+        session.getExerciseSets()
+                .removeIf(
+                        exerciseSet ->
+                                exerciseSet.getExerciseName().equalsIgnoreCase(exerciseName));
         workoutSessionRepository.save(session);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
     /**
-     * Resolve an exercise name to the canonical form already used by this user.
-     * Matches singular ↔ plural variants (trailing "s") case-insensitively.
-     * Returns the existing name if found, otherwise the original input.
+     * Resolve an exercise name to the canonical form already used by this user. Matches singular ↔
+     * plural variants (trailing "s") case-insensitively. Returns the existing name if found,
+     * otherwise the original input.
      */
     private String resolveCanonicalName(Long userId, String name) {
         List<String> existing = exerciseSetRepository.findDistinctExerciseNamesByUserId(userId);
@@ -177,7 +190,8 @@ public class WorkoutService {
     }
 
     private void addSetsForExercise(WorkoutSession session, ExerciseRequest exerciseRequest) {
-        String canonical = resolveCanonicalName(session.getUser().getId(), exerciseRequest.getExerciseName());
+        String canonical =
+                resolveCanonicalName(session.getUser().getId(), exerciseRequest.getExerciseName());
         for (ExerciseRequest.SetRequest setRequest : exerciseRequest.getSets()) {
             ExerciseSet exerciseSet = new ExerciseSet();
             exerciseSet.setSession(session);
@@ -192,7 +206,8 @@ public class WorkoutService {
     }
 
     private WorkoutSession resolveSession(Long sessionId, Long userId) {
-        return workoutSessionRepository.findById(sessionId)
+        return workoutSessionRepository
+                .findById(sessionId)
                 .filter(session -> session.getUser().getId().equals(userId))
                 .orElseThrow(() -> new EntityNotFoundException("Session not found"));
     }
@@ -200,12 +215,17 @@ public class WorkoutService {
     // ── snapshot helpers (deletion journal) ──────────────────────────────────
 
     private String workoutSessionSummary(WorkoutSession session) {
-        long distinctExercises = session.getExerciseSets().stream()
-                .map(ExerciseSet::getExerciseName).distinct().count();
-        String label = session.getSessionName() != null && !session.getSessionName().isBlank()
-                ? "\"" + session.getSessionName() + "\""
-                : "session";
-        return String.format("Workout %s on %s (%d exercise%s)",
+        long distinctExercises =
+                session.getExerciseSets().stream()
+                        .map(ExerciseSet::getExerciseName)
+                        .distinct()
+                        .count();
+        String label =
+                session.getSessionName() != null && !session.getSessionName().isBlank()
+                        ? "\"" + session.getSessionName() + "\""
+                        : "session";
+        return String.format(
+                "Workout %s on %s (%d exercise%s)",
                 label,
                 session.getSessionDate(),
                 distinctExercises,
@@ -220,27 +240,31 @@ public class WorkoutService {
         return req;
     }
 
-    private ExerciseSetsSnapshot buildExerciseSetsSnapshot(Long sessionId, String exerciseName, List<ExerciseSet> sets) {
-        List<ExerciseRequest.SetRequest> setRequests = sets.stream()
-                .sorted((a, b) -> Integer.compare(a.getSetNumber(), b.getSetNumber()))
-                .map(this::toSetRequest)
-                .toList();
+    private ExerciseSetsSnapshot buildExerciseSetsSnapshot(
+            Long sessionId, String exerciseName, List<ExerciseSet> sets) {
+        List<ExerciseRequest.SetRequest> setRequests =
+                sets.stream()
+                        .sorted((a, b) -> Integer.compare(a.getSetNumber(), b.getSetNumber()))
+                        .map(this::toSetRequest)
+                        .toList();
         return new ExerciseSetsSnapshot(sessionId, exerciseName, setRequests);
     }
 
     private List<ExerciseRequest> buildExerciseRequests(List<ExerciseSet> sets) {
-        java.util.LinkedHashMap<String, List<ExerciseRequest.SetRequest>> grouped = new java.util.LinkedHashMap<>();
+        java.util.LinkedHashMap<String, List<ExerciseRequest.SetRequest>> grouped =
+                new java.util.LinkedHashMap<>();
         for (ExerciseSet set : sets) {
             grouped.computeIfAbsent(set.getExerciseName(), k -> new ArrayList<>())
                     .add(toSetRequest(set));
         }
         return grouped.entrySet().stream()
-                .map(e -> {
-                    ExerciseRequest req = new ExerciseRequest();
-                    req.setExerciseName(e.getKey());
-                    req.setSets(e.getValue());
-                    return req;
-                })
+                .map(
+                        e -> {
+                            ExerciseRequest req = new ExerciseRequest();
+                            req.setExerciseName(e.getKey());
+                            req.setSets(e.getValue());
+                            return req;
+                        })
                 .collect(Collectors.toList());
     }
 
@@ -255,12 +279,21 @@ public class WorkoutService {
     }
 
     private WorkoutSessionDTO toDTO(WorkoutSession session) {
-        List<WorkoutSessionDTO.SetDTO> sets = session.getExerciseSets().stream()
-                .map(exerciseSet -> new WorkoutSessionDTO.SetDTO(
-                        exerciseSet.getId(), exerciseSet.getExerciseName(), exerciseSet.getSetNumber(),
-                        exerciseSet.getReps(), exerciseSet.getWeightLbs(), exerciseSet.getCompleted(),
-                        exerciseSet.getDistanceMiles(), exerciseSet.getDurationSeconds()))
-                .collect(Collectors.toList());
-        return new WorkoutSessionDTO(session.getId(), session.getSessionDate(), session.getSessionName(), sets);
+        List<WorkoutSessionDTO.SetDTO> sets =
+                session.getExerciseSets().stream()
+                        .map(
+                                exerciseSet ->
+                                        new WorkoutSessionDTO.SetDTO(
+                                                exerciseSet.getId(),
+                                                exerciseSet.getExerciseName(),
+                                                exerciseSet.getSetNumber(),
+                                                exerciseSet.getReps(),
+                                                exerciseSet.getWeightLbs(),
+                                                exerciseSet.getCompleted(),
+                                                exerciseSet.getDistanceMiles(),
+                                                exerciseSet.getDurationSeconds()))
+                        .collect(Collectors.toList());
+        return new WorkoutSessionDTO(
+                session.getId(), session.getSessionDate(), session.getSessionName(), sets);
     }
 }

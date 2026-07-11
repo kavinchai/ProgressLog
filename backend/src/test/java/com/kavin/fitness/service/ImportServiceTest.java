@@ -1,9 +1,15 @@
 package com.kavin.fitness.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.kavin.fitness.dto.ImportRequest;
 import com.kavin.fitness.dto.ImportResultDTO;
 import com.kavin.fitness.model.*;
 import com.kavin.fitness.repository.*;
+import jakarta.persistence.EntityManager;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,22 +17,14 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import jakarta.persistence.EntityManager;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class ImportServiceTest {
 
-    @Mock WeightLogRepository       weightLogRepository;
-    @Mock WorkoutSessionRepository  workoutSessionRepository;
-    @Mock NutritionLogRepository    nutritionLogRepository;
-    @Mock StepLogRepository         stepLogRepository;
-    @Mock MealRepository            mealRepository;
+    @Mock WeightLogRepository weightLogRepository;
+    @Mock WorkoutSessionRepository workoutSessionRepository;
+    @Mock NutritionLogRepository nutritionLogRepository;
+    @Mock StepLogRepository stepLogRepository;
+    @Mock MealRepository mealRepository;
 
     @InjectMocks ImportService importService;
 
@@ -40,14 +38,15 @@ class ImportServiceTest {
 
         // Mockito cannot mock EntityManager on Java 23 (ByteBuddy limitation).
         // Use a JDK dynamic proxy as a lightweight stub instead.
-        entityManager = (EntityManager) java.lang.reflect.Proxy.newProxyInstance(
-                EntityManager.class.getClassLoader(),
-                new Class[]{EntityManager.class},
-                (proxy, method, args) -> {
-                    if ("getReference".equals(method.getName())) return user;
-                    return null; // flush(), clear() etc. are no-ops
-                }
-        );
+        entityManager =
+                (EntityManager)
+                        java.lang.reflect.Proxy.newProxyInstance(
+                                EntityManager.class.getClassLoader(),
+                                new Class[] {EntityManager.class},
+                                (proxy, method, args) -> {
+                                    if ("getReference".equals(method.getName())) return user;
+                                    return null; // flush(), clear() etc. are no-ops
+                                });
         ReflectionTestUtils.setField(importService, "entityManager", entityManager);
     }
 
@@ -188,7 +187,8 @@ class ImportServiceTest {
         ImportRequest req = new ImportRequest();
         req.setNutrition(List.of(row1, row2));
 
-        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any()))
+                .thenReturn(Optional.empty());
         when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         ImportResultDTO result = importService.importData(user, req);
@@ -224,7 +224,8 @@ class ImportServiceTest {
         ImportRequest req = new ImportRequest();
         req.setNutrition(List.of(row1, row2));
 
-        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any()))
+                .thenReturn(Optional.empty());
         when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         ImportResultDTO result = importService.importData(user, req);
@@ -249,7 +250,8 @@ class ImportServiceTest {
         ImportRequest req = new ImportRequest();
         req.setNutrition(List.of(row));
 
-        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.of(existing));
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any()))
+                .thenReturn(Optional.of(existing));
         when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(mealRepository.findByNutritionLogId(99L)).thenReturn(List.of());
 
@@ -282,7 +284,8 @@ class ImportServiceTest {
         req.setTotalStats(List.of(statsRow));
         req.setNutrition(List.of(nutritionRow));
 
-        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any()))
+                .thenReturn(Optional.empty());
         when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         importService.importData(user, req);
@@ -305,7 +308,8 @@ class ImportServiceTest {
         req.setTotalStats(List.of(statsRow));
         // req.setNutrition intentionally left null
 
-        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any()))
+                .thenReturn(Optional.empty());
         when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         ImportResultDTO result = importService.importData(user, req);

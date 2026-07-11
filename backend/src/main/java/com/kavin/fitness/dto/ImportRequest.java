@@ -1,13 +1,14 @@
 package com.kavin.fitness.dto;
 
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-import java.util.Map;
-
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class ImportRequest {
     // Each element mirrors the exported totalStats row:
     // { "Date": "M/D/YY", "Weight": 185.5, "Calories": 2200, "Protein": 180, "Workout": "..." }
@@ -18,10 +19,12 @@ public class ImportRequest {
     private List<Map<String, Object>> workouts;
 
     // Each element mirrors an exported cardio row:
-    // { "Date": "M/D/YY", "Exercise": "Running", "Set": 1, "Distance (mi)": 3.1, "Duration (sec)": 1800 }
+    // { "Date": "M/D/YY", "Exercise": "Running", "Set": 1, "Distance (mi)": 3.1, "Duration (sec)":
+    // 1800 }
     private List<Map<String, Object>> cardio;
 
     // Each element mirrors an exported nutrition row:
-    // { "Date": "M/D/YY", "Day Type": "training", "Meal": "Breakfast", "Calories": 500, "Protein": 30 }
+    // { "Date": "M/D/YY", "Day Type": "training", "Meal": "Breakfast", "Calories": 500, "Protein":
+    // 30 }
     private List<Map<String, Object>> nutrition;
 }

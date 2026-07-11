@@ -1,5 +1,8 @@
 package com.kavin.fitness.integration;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,27 +15,21 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /**
- * Base class for integration tests.
- * Uses the local PostgreSQL (docker-compose) with a dedicated fitness_test database.
- * Flyway runs migrations on startup. Each test class gets a clean slate via truncation.
+ * Base class for integration tests. Uses the local PostgreSQL (docker-compose) with a dedicated
+ * fitness_test database. Flyway runs migrations on startup. Each test class gets a clean slate via
+ * truncation.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 public abstract class IntegrationTestBase {
 
-    @Autowired
-    protected MockMvc mockMvc;
+    @Autowired protected MockMvc mockMvc;
 
-    @Autowired
-    protected ObjectMapper objectMapper;
+    @Autowired protected ObjectMapper objectMapper;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void cleanDatabase() {
@@ -40,42 +37,47 @@ public abstract class IntegrationTestBase {
         jdbcTemplate.execute("TRUNCATE TABLE users CASCADE");
     }
 
-    /**
-     * Register a user and return the JWT token from the Set-Cookie header.
-     */
+    /** Register a user and return the JWT token from the Set-Cookie header. */
     protected String registerAndGetToken(String username, String password) throws Exception {
-        String body = objectMapper.writeValueAsString(
-                java.util.Map.of("username", username, "password", password,
-                        "email", username + "@test.com"));
+        String body =
+                objectMapper.writeValueAsString(
+                        java.util.Map.of(
+                                "username",
+                                username,
+                                "password",
+                                password,
+                                "email",
+                                username + "@test.com"));
 
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isCreated())
-                .andReturn();
+        MvcResult result =
+                mockMvc.perform(
+                                post("/api/auth/register")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(body))
+                        .andExpect(status().isCreated())
+                        .andReturn();
 
         return extractJwtFromCookie(result);
     }
 
-    /**
-     * Login and return the JWT token from the Set-Cookie header.
-     */
+    /** Login and return the JWT token from the Set-Cookie header. */
     protected String loginAndGetToken(String username, String password) throws Exception {
-        String body = objectMapper.writeValueAsString(
-                java.util.Map.of("username", username, "password", password));
+        String body =
+                objectMapper.writeValueAsString(
+                        java.util.Map.of("username", username, "password", password));
 
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult result =
+                mockMvc.perform(
+                                post("/api/auth/login")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(body))
+                        .andExpect(status().isOk())
+                        .andReturn();
 
         return extractJwtFromCookie(result);
     }
 
-    /**
-     * Extract the JWT value from the "jwt" cookie in the response.
-     */
+    /** Extract the JWT value from the "jwt" cookie in the response. */
     protected String extractJwtFromCookie(MvcResult result) {
         Cookie cookie = result.getResponse().getCookie("jwt");
         if (cookie != null) {

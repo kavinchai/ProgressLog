@@ -1,6 +1,9 @@
 package com.kavin.fitness.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,17 +21,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.util.List;
-import java.util.Map;
-
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Autowired
-    private JwtFilter jwtFilter;
+    private final JwtFilter jwtFilter;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
@@ -59,25 +57,38 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
-                .requestMatchers("/api/leaderboard").permitAll()
-                .requestMatchers("/api/shared-calendar").permitAll()
-                .anyRequest().authenticated())
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(401);
-                    response.setContentType("application/json");
-                    response.getWriter().write(
-                            new ObjectMapper().writeValueAsString(
-                                    Map.of("message", "Unauthorized")));
-                }))
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(
+                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(
+                        auth ->
+                                auth.requestMatchers(
+                                                "/api/auth/login",
+                                                "/api/auth/register",
+                                                "/api/auth/logout")
+                                        .permitAll()
+                                        .requestMatchers("/api/leaderboard")
+                                        .permitAll()
+                                        .requestMatchers("/api/shared-calendar")
+                                        .permitAll()
+                                        .anyRequest()
+                                        .authenticated())
+                .exceptionHandling(
+                        ex ->
+                                ex.authenticationEntryPoint(
+                                        (request, response, authException) -> {
+                                            response.setStatus(401);
+                                            response.setContentType("application/json");
+                                            response.getWriter()
+                                                    .write(
+                                                            new ObjectMapper()
+                                                                    .writeValueAsString(
+                                                                            Map.of(
+                                                                                    "message",
+                                                                                    "Unauthorized")));
+                                        }))
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

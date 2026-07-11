@@ -6,33 +6,33 @@ import com.kavin.fitness.model.StepLog;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.StepLogRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
+@RequiredArgsConstructor
 public class StepService {
 
-    @Autowired
-    private StepLogRepository stepLogRepository;
+    private final StepLogRepository stepLogRepository;
 
-    @Autowired
-    private DeletionJournalService deletionJournal;
+    private final DeletionJournalService deletionJournal;
 
     @Transactional(readOnly = true)
     public List<StepLogDTO> getStepLogs(Long userId) {
-        return stepLogRepository.findByUserIdOrderByLogDateAsc(userId)
-                .stream().map(this::toDTO).collect(Collectors.toList());
+        return stepLogRepository.findByUserIdOrderByLogDateAsc(userId).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public StepLogDTO save(User user, StepLogRequest request) {
-        StepLog log = stepLogRepository
-                .findByUserIdAndLogDate(user.getId(), request.getLogDate())
-                .orElseGet(StepLog::new);
+        StepLog log =
+                stepLogRepository
+                        .findByUserIdAndLogDate(user.getId(), request.getLogDate())
+                        .orElseGet(StepLog::new);
         log.setUser(user);
         log.setLogDate(request.getLogDate());
         log.setSteps(request.getSteps());
@@ -45,9 +45,11 @@ public class StepService {
 
     @Transactional
     public void delete(Long id, Long userId) {
-        StepLog log = stepLogRepository.findById(id)
-                .filter(s -> s.getUser().getId().equals(userId))
-                .orElseThrow(() -> new EntityNotFoundException("Step log not found"));
+        StepLog log =
+                stepLogRepository
+                        .findById(id)
+                        .filter(s -> s.getUser().getId().equals(userId))
+                        .orElseThrow(() -> new EntityNotFoundException("Step log not found"));
         StepLogRequest snapshot = new StepLogRequest();
         snapshot.setLogDate(log.getLogDate());
         snapshot.setSteps(log.getSteps());

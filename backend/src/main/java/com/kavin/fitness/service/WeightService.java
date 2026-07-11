@@ -6,33 +6,34 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.model.WeightLog;
 import com.kavin.fitness.repository.WeightLogRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
+@RequiredArgsConstructor
 public class WeightService {
 
-    @Autowired
-    private WeightLogRepository weightLogRepository;
+    private final WeightLogRepository weightLogRepository;
 
-    @Autowired
-    private DeletionJournalService deletionJournal;
+    private final DeletionJournalService deletionJournal;
 
     @Transactional(readOnly = true)
     public List<WeightLogDTO> getWeightLog(Long userId) {
-        return weightLogRepository.findByUserIdOrderByLogDateAsc(userId)
-                .stream().map(this::toDTO).collect(Collectors.toList());
+        return weightLogRepository.findByUserIdOrderByLogDateAsc(userId).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public void delete(Long id, Long userId) {
-        WeightLog log = weightLogRepository.findById(id)
-                .filter(w -> w.getUser().getId().equals(userId))
-                .orElseThrow(() -> new EntityNotFoundException("Weight log not found"));
+        WeightLog log =
+                weightLogRepository
+                        .findById(id)
+                        .filter(w -> w.getUser().getId().equals(userId))
+                        .orElseThrow(() -> new EntityNotFoundException("Weight log not found"));
         WeightLogRequest snapshot = new WeightLogRequest();
         snapshot.setLogDate(log.getLogDate());
         snapshot.setWeightLbs(log.getWeightLbs());
@@ -46,13 +47,16 @@ public class WeightService {
 
     @Transactional
     public WeightLogDTO save(User user, WeightLogRequest request) {
-        WeightLog log = weightLogRepository.findByUserIdAndLogDate(user.getId(), request.getLogDate())
-                .orElseGet(() -> {
-                    WeightLog newLog = new WeightLog();
-                    newLog.setUser(user);
-                    newLog.setLogDate(request.getLogDate());
-                    return newLog;
-                });
+        WeightLog log =
+                weightLogRepository
+                        .findByUserIdAndLogDate(user.getId(), request.getLogDate())
+                        .orElseGet(
+                                () -> {
+                                    WeightLog newLog = new WeightLog();
+                                    newLog.setUser(user);
+                                    newLog.setLogDate(request.getLogDate());
+                                    return newLog;
+                                });
         log.setWeightLbs(request.getWeightLbs());
         return toDTO(weightLogRepository.save(log));
     }

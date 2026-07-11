@@ -1,5 +1,9 @@
 package com.kavin.fitness.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.kavin.fitness.dto.MealRequest;
 import com.kavin.fitness.dto.NutritionLogDTO;
 import com.kavin.fitness.dto.NutritionLogRequest;
@@ -9,6 +13,10 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.MealRepository;
 import com.kavin.fitness.repository.NutritionLogRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,15 +24,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NutritionServiceTest {
@@ -47,7 +46,8 @@ class NutritionServiceTest {
 
     @Test
     void getNutritionLog_returnsEmptyListWhenNoLogs() {
-        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L)).thenReturn(List.of());
+        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L))
+                .thenReturn(List.of());
 
         assertTrue(nutritionService.getNutritionLog(1L).isEmpty());
     }
@@ -58,7 +58,8 @@ class NutritionServiceTest {
         Meal meal = meal(20L, log, "Chicken", 500, 40);
         log.getMeals().add(meal);
 
-        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L)).thenReturn(List.of(log));
+        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L))
+                .thenReturn(List.of(log));
 
         List<NutritionLogDTO> result = nutritionService.getNutritionLog(1L);
 
@@ -78,7 +79,8 @@ class NutritionServiceTest {
         log.getMeals().add(meal(1L, log, "Breakfast", 600, 30));
         log.getMeals().add(meal(2L, log, "Lunch", 800, 50));
 
-        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L)).thenReturn(List.of(log));
+        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L))
+                .thenReturn(List.of(log));
 
         NutritionLogDTO dto = nutritionService.getNutritionLog(1L).get(0);
         assertEquals(1400, dto.getTotalCalories());
@@ -95,11 +97,13 @@ class NutritionServiceTest {
 
         when(nutritionLogRepository.findByUserIdAndLogDate(1L, LocalDate.of(2026, 3, 10)))
                 .thenReturn(Optional.empty());
-        when(nutritionLogRepository.save(any())).thenAnswer(inv -> {
-            NutritionLog log = inv.getArgument(0);
-            ReflectionTestUtils.setField(log, "id", 5L);
-            return log;
-        });
+        when(nutritionLogRepository.save(any()))
+                .thenAnswer(
+                        inv -> {
+                            NutritionLog log = inv.getArgument(0);
+                            ReflectionTestUtils.setField(log, "id", 5L);
+                            return log;
+                        });
 
         NutritionLogDTO dto = nutritionService.upsertLog(user, request);
 
@@ -154,8 +158,8 @@ class NutritionServiceTest {
         request.setCalories(500);
         request.setProteinGrams(30);
 
-        assertThrows(EntityNotFoundException.class,
-                () -> nutritionService.addMeal(99L, 1L, request));
+        assertThrows(
+                EntityNotFoundException.class, () -> nutritionService.addMeal(99L, 1L, request));
     }
 
     @Test
@@ -167,8 +171,8 @@ class NutritionServiceTest {
         request.setCalories(500);
         request.setProteinGrams(30);
 
-        assertThrows(EntityNotFoundException.class,
-                () -> nutritionService.addMeal(10L, 999L, request));
+        assertThrows(
+                EntityNotFoundException.class, () -> nutritionService.addMeal(10L, 999L, request));
     }
 
     // ── deleteLog ────────────────────────────────────────────────────────────
@@ -187,8 +191,7 @@ class NutritionServiceTest {
     void deleteLog_throwsWhenLogNotFound() {
         when(nutritionLogRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class,
-                () -> nutritionService.deleteLog(99L, 1L));
+        assertThrows(EntityNotFoundException.class, () -> nutritionService.deleteLog(99L, 1L));
     }
 
     // ── deleteMeal ───────────────────────────────────────────────────────────
@@ -212,8 +215,8 @@ class NutritionServiceTest {
         when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
         when(mealRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class,
-                () -> nutritionService.deleteMeal(10L, 99L, 1L));
+        assertThrows(
+                EntityNotFoundException.class, () -> nutritionService.deleteMeal(10L, 99L, 1L));
     }
 
     @Test
@@ -225,8 +228,8 @@ class NutritionServiceTest {
         when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log10));
         when(mealRepository.findById(30L)).thenReturn(Optional.of(m));
 
-        assertThrows(EntityNotFoundException.class,
-                () -> nutritionService.deleteMeal(10L, 30L, 1L));
+        assertThrows(
+                EntityNotFoundException.class, () -> nutritionService.deleteMeal(10L, 30L, 1L));
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
