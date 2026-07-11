@@ -1,61 +1,61 @@
 /* Bottom tab bar is mobile-only (replaces the hamburger nav). */
 .bottom-tab-bar {
-  display: none;
+	display: none;
 }
 
 @media (max-width: 640px) {
-  .bottom-tab-bar {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    /* Tab row stays a constant --bottom-tab-height; the safe-area inset is
+	.bottom-tab-bar {
+		display: flex;
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		/* Tab row stays a constant --bottom-tab-height; the safe-area inset is
        added on top (border-box) so the row never changes size as the mobile
        toolbar / home indicator appears or disappears while scrolling. */
-    height: calc(var(--bottom-tab-height) + env(safe-area-inset-bottom, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: var(--bg-card);
-    border-top: 1px solid var(--border);
-    box-shadow: var(--shadow-md);
-    z-index: 100;
-    /* Promote to its own compositor layer to avoid jitter during the mobile
+		height: calc(var(--bottom-tab-height) + env(safe-area-inset-bottom, 0px));
+		padding-bottom: env(safe-area-inset-bottom, 0px);
+		background: var(--bg-card);
+		border-top: 1px solid var(--border);
+		box-shadow: var(--shadow-md);
+		z-index: 100;
+		/* Promote to its own compositor layer to avoid jitter during the mobile
        address-bar collapse. */
-    transform: translateZ(0);
-    will-change: transform;
-  }
+		transform: translateZ(0);
+		will-change: transform;
+	}
 
-  .bottom-tab-link {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    padding: 6px 2px;
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 11px;
-    font-weight: var(--fw-medium);
-    letter-spacing: 0.01em;
-    transition: color var(--transition-fast);
-    -webkit-tap-highlight-color: transparent;
-  }
+	.bottom-tab-link {
+		flex: 1 1 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 3px;
+		padding: 6px 2px;
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 11px;
+		font-weight: var(--fw-medium);
+		letter-spacing: 0.01em;
+		transition: color var(--transition-fast);
+		-webkit-tap-highlight-color: transparent;
+	}
 
-  .bottom-tab-link:hover {
-    text-decoration: none;
-  }
+	.bottom-tab-link:hover {
+		text-decoration: none;
+	}
 
-  .bottom-tab-link.active {
-    color: var(--accent);
-    font-weight: var(--fw-semibold);
-  }
+	.bottom-tab-link.active {
+		color: var(--accent);
+		font-weight: var(--fw-semibold);
+	}
 
-  .bottom-tab-icon {
-    flex-shrink: 0;
-  }
+	.bottom-tab-icon {
+		flex-shrink: 0;
+	}
 
-  .bottom-tab-label {
-    line-height: 1;
-  }
+	.bottom-tab-label {
+		line-height: 1;
+	}
 }
