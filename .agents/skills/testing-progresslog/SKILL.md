@@ -29,9 +29,6 @@ No local backend/DB is normally set up. Easiest path is the vite dev server prox
 Alternative: `docker-compose up` runs postgres + backend + frontend locally with `COOKIE_SECURE=false`
 and CORS `http://localhost:5173`, avoiding the proxy hacks (needs Docker, not always available).
 
-## Login
-username `kavinchai` / password `password`.
-
 ## Reaching the day-detail modal (History)
 - Route `/history/total` = "Full Log" month calendar (`TotalStats.jsx`). Click any past day cell
   (`data-testid="calendar-day-YYYY-MM-DD"`) to open a `Modal` containing `DayDetail`.
