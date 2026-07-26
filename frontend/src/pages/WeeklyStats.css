@@ -145,6 +145,14 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.day-detail-section-head .btn-actions {
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	min-width: 0;
 }
 
 .day-detail-label {
@@ -153,6 +161,8 @@
 	color: var(--muted);
 	text-transform: capitalize;
 	letter-spacing: 0.02em;
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 .day-detail-value {
@@ -285,11 +295,6 @@
 	.weekly-header {
 		flex-wrap: wrap;
 		gap: 8px;
-	}
-
-	.day-detail-section-head {
-		flex-wrap: wrap;
-		gap: 6px;
 	}
 
 	.day-meal-row {
