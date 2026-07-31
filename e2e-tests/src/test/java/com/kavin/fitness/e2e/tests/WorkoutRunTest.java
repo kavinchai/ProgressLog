@@ -23,10 +23,12 @@ public class WorkoutRunTest extends BaseTest {
 
     @Test(priority = 1)
     public void addRunExerciseWithDistanceAndTime() {
-        step("open workout builder, click Add Run");
+        step("open workout builder, add exercise, switch type to Run");
         today.clickAddWorkout();
         workout.waitUntilVisible();
-        workout.clickAddRun();
+        workout.clickAddExercise();
+        workout.waitForExerciseCount(1);
+        workout.selectType(0, "Run");
 
         step("enter distance 3.1, time 25m30s, save");
         workout.enterDistance(0, "3.1");

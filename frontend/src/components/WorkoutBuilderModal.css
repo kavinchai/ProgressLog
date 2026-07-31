@@ -128,17 +128,43 @@
 	background: var(--hover-bg);
 }
 
-.wbm-type-toggle {
-	font-size: var(--fs-xs);
-	flex-shrink: 0;
-	color: var(--muted);
-	border-color: var(--border-dim);
+/* 3-way exercise type selector (Lifting | Timed | Run) */
+.wbm-type-select {
+	display: inline-flex;
+	align-self: flex-start;
+	margin-bottom: 10px;
+	border: 1px solid var(--border-dim);
+	border-radius: var(--radius-md);
+	overflow: hidden;
 }
 
-.wbm-type-toggle--timed {
+.wbm-type-option {
+	font-family: var(--font);
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-medium);
+	color: var(--muted);
+	background: transparent;
+	border: none;
+	padding: 6px 16px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		background var(--transition-fast),
+		color var(--transition-fast);
+}
+
+.wbm-type-option:not(:last-child) {
+	border-right: 1px solid var(--border-dim);
+}
+
+.wbm-type-option:hover:not(.wbm-type-option--active) {
+	background: var(--hover-bg);
+}
+
+.wbm-type-option--active {
 	color: var(--accent);
-	border-color: var(--accent);
 	background: var(--accent-light);
+	font-weight: var(--fw-semibold);
 }
 
 /* ── Mobile ── */
@@ -149,5 +175,18 @@
 
 	.wbm-suggestions {
 		max-width: calc(100vw - 80px);
+	}
+
+	/* Full-width segmented control with larger tap targets on phones */
+	.wbm-type-select {
+		display: flex;
+		width: 100%;
+	}
+
+	.wbm-type-option {
+		flex: 1;
+		padding: 9px 0;
+		font-size: var(--fs-sm);
+		text-align: center;
 	}
 }

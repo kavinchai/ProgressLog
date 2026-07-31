@@ -23,10 +23,12 @@ public class WorkoutTimedTest extends BaseTest {
 
     @Test(priority = 1)
     public void addTimedActivity() {
-        step("open workout builder, click Add Timed");
+        step("open workout builder, add exercise, switch type to Timed");
         today.clickAddWorkout();
         workout.waitUntilVisible();
-        workout.clickAddTimed();
+        workout.clickAddExercise();
+        workout.waitForExerciseCount(1);
+        workout.selectType(0, "Timed");
 
         step("name 'Plank', duration 0h 2m 30s, save");
         workout.enterExerciseName(0, "Plank");

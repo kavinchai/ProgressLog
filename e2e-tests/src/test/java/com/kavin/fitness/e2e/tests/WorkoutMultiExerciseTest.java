@@ -34,16 +34,18 @@ public class WorkoutMultiExerciseTest extends BaseTest {
         workout.enterWeight(0, "95");
         workout.enterReps(0, "10");
 
-        step("add Run: 2 mi, 18m 0s (name pre-filled by + Run)");
-        workout.clickAddRun();
+        step("add Run: 2 mi, 18m 0s (name auto-filled by Run type)");
+        workout.clickAddExercise();
         workout.waitForExerciseCount(2);
+        workout.selectType(1, "Run");
         workout.enterDistance(0, "2");
         workout.enterRunMinutes(0, "18");
         workout.enterRunSeconds(0, "0");
 
         step("add Timed exercise: Yoga 0h 30m 0s");
-        workout.clickAddTimed();
+        workout.clickAddExercise();
         workout.waitForExerciseCount(3);
+        workout.selectType(2, "Timed");
         workout.enterExerciseName(2, "Yoga");
         workout.enterDuration(1, "0", "30", "0");
 

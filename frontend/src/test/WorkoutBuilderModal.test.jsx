@@ -117,6 +117,105 @@ describe("WorkoutBuilderModal — exercise management", () => {
 	});
 });
 
+describe("WorkoutBuilderModal — exercise type selector", () => {
+	it("no longer renders separate + Run / + Timed add buttons", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		expect(
+			screen.queryByRole("button", { name: /\+ run/i }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /\+ timed/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("a new block defaults to Lifting and shows the type selector", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+
+		// All three type options are present, Lifting active by default (weight/reps fields shown).
+		expect(screen.getByRole("button", { name: /^lifting$/i })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /^timed$/i })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /^run$/i })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /\+ set/i })).toBeInTheDocument();
+	});
+
+	it("switching a block to Run auto-fills the name and shows cardio fields", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		await userEvent.click(screen.getByRole("button", { name: /^run$/i }));
+
+		expect(screen.getByDisplayValue("Run")).toBeInTheDocument();
+		expect(screen.getByText(/distance \(mi\)/i)).toBeInTheDocument();
+		// Lifting-only "+ Set" control is gone for cardio types.
+		expect(
+			screen.queryByRole("button", { name: /\+ set/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("switching a block to Timed leaves the name blank and shows duration fields", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		await userEvent.click(screen.getByRole("button", { name: /^timed$/i }));
+
+		expect(screen.getByPlaceholderText(/exercise name/i)).toHaveValue("");
+		expect(screen.getByText(/^hr$/i)).toBeInTheDocument();
+	});
+
+	it("preserves a typed name when switching to Run", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		await userEvent.type(
+			screen.getByPlaceholderText(/exercise name/i),
+			"Sprints",
+		);
+		await userEvent.click(screen.getByRole("button", { name: /^run$/i }));
+
+		expect(screen.getByDisplayValue("Sprints")).toBeInTheDocument();
+	});
+
+	it("submits a run built via the type selector with distance and duration", async () => {
+		api.post.mockResolvedValue({});
+
+		render(
+			<WorkoutBuilderModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		await userEvent.click(screen.getByRole("button", { name: /^run$/i }));
+
+		const inputs = screen.getAllByPlaceholderText("0"); // distance | min | sec
+		await userEvent.type(inputs[0], "3.1");
+		await userEvent.type(inputs[1], "25");
+		await userEvent.type(inputs[2], "30");
+
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+		await waitFor(() => {
+			expect(api.post).toHaveBeenCalledWith("/workouts", {
+				sessionDate: "2026-01-05",
+				sessionName: null,
+				exercises: [
+					{
+						exerciseName: "Run",
+						sets: [
+							{
+								setNumber: 1,
+								reps: 0,
+								weightLbs: 0,
+								distanceMiles: 3.1,
+								durationSeconds: 1530,
+							},
+						],
+					},
+				],
+			});
+		});
+	});
+});
+
 describe("WorkoutBuilderModal — autocomplete suggestions", () => {
 	it("shows suggestions matching the typed exercise name", async () => {
 		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);

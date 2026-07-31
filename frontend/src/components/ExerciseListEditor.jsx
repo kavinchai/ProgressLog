@@ -18,6 +18,12 @@ export function emptyExercise() {
 	return { exerciseName: "", type: "lifting", sets: [emptySet(1)] };
 }
 
+const TYPE_OPTIONS = [
+	{ value: "lifting", label: "Lifting" },
+	{ value: "timed", label: "Timed" },
+	{ value: "run", label: "Run" },
+];
+
 function detectType(sets) {
 	const hasDist = (sets ?? []).some((s) => s.distanceMiles != null);
 	const hasDur = (sets ?? []).some((s) => s.durationSeconds != null);
@@ -135,26 +141,14 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 		onChange((prev) => [...prev, emptyExercise()]);
 	}
 
-	function addRun() {
-		onChange((prev) => [
-			...prev,
-			{ exerciseName: "Run", type: "run", sets: [emptySet(1)] },
-		]);
-	}
-
-	function addTimed() {
-		onChange((prev) => [
-			...prev,
-			{ exerciseName: "", type: "timed", sets: [emptySet(1)] },
-		]);
-	}
-
-	function toggleType(exerciseIndex) {
+	function setType(exerciseIndex, type) {
 		onChange((prev) =>
 			prev.map((ex, i) => {
 				if (i !== exerciseIndex) return ex;
-				const next = ex.type === "lifting" ? "timed" : "lifting";
-				return { ...ex, type: next };
+				const next = { ...ex, type };
+				// Runs need a name or they're dropped on save; default it when blank.
+				if (type === "run" && !ex.exerciseName.trim()) next.exerciseName = "Run";
+				return next;
 			}),
 		);
 	}
@@ -238,15 +232,6 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 											</ul>
 										)}
 								</div>
-								{ex.type !== "run" && (
-									<button
-										type="button"
-										className={`btn btn-sm wbm-type-toggle${ex.type === "timed" ? " wbm-type-toggle--timed" : ""}`}
-										onClick={() => toggleType(exerciseIndex)}
-									>
-										{ex.type === "timed" ? "Timed" : "Lifting"}
-									</button>
-								)}
 								<button
 									type="button"
 									className="btn btn-sm"
@@ -254,6 +239,20 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 								>
 									&times;
 								</button>
+							</div>
+
+							<div className="wbm-type-select" role="group" aria-label="Exercise type">
+								{TYPE_OPTIONS.map((opt) => (
+									<button
+										key={opt.value}
+										type="button"
+										className={`wbm-type-option${ex.type === opt.value ? " wbm-type-option--active" : ""}`}
+										aria-pressed={ex.type === opt.value}
+										onClick={() => setType(exerciseIndex, opt.value)}
+									>
+										{opt.label}
+									</button>
+								))}
 							</div>
 
 							<div
@@ -458,20 +457,6 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 					onClick={addExercise}
 				>
 					+ Exercise
-				</button>
-				<button
-					type="button"
-					className="btn btn-sm wbm-add-exercise"
-					onClick={addRun}
-				>
-					+ Run
-				</button>
-				<button
-					type="button"
-					className="btn btn-sm wbm-add-exercise"
-					onClick={addTimed}
-				>
-					+ Timed
 				</button>
 			</div>
 		</>

@@ -9,13 +9,11 @@ public class WorkoutBuilderModal {
     private static final String TITLE = ".modal-title";
     private static final String SESSION_NAME = "input[placeholder*='push, pull, legs' i]";
     private static final String ADD_EXERCISE = ".modal-box >> button:has-text(\"+ Exercise\")";
-    private static final String ADD_RUN = ".modal-box >> button:has-text(\"+ Run\")";
-    private static final String ADD_TIMED = ".modal-box >> button:has-text(\"+ Timed\")";
     // Exact match — saves it from also catching a "Saving..." in-progress label.
     private static final String SAVE = ".modal-box >> button:text-is(\"Save\")";
     private static final String EXERCISE_NAME_INPUTS = "input[placeholder*='exercise name' i]";
     private static final String ADD_SET_BTNS = "button:has-text(\"+ Set\")";
-    private static final String TYPE_BTNS = ".wbm-type-toggle";
+    private static final String TYPE_SELECTS = ".wbm-type-select";
 
     public WorkoutBuilderModal(Page page) {
         this.page = page;
@@ -46,12 +44,10 @@ public class WorkoutBuilderModal {
         page.locator(ADD_EXERCISE).first().click();
     }
 
-    public void clickAddRun() {
-        page.locator(ADD_RUN).first().click();
-    }
-
-    public void clickAddTimed() {
-        page.locator(ADD_TIMED).first().click();
+    /** Pick a type ("Lifting" | "Timed" | "Run") on the segmented control of the given exercise block. */
+    public void selectType(int exerciseIdx, String label) {
+        page.locator(TYPE_SELECTS).nth(exerciseIdx)
+                .locator("button:text-is(\"" + label + "\")").click();
     }
 
     public void waitForExerciseCount(int count) {
@@ -91,10 +87,6 @@ public class WorkoutBuilderModal {
 
     public void clickAddSet(int exerciseIdx) {
         page.locator(ADD_SET_BTNS).nth(exerciseIdx).click();
-    }
-
-    public void toggleExerciseType(int exerciseIdx) {
-        page.locator(TYPE_BTNS).nth(exerciseIdx).click();
     }
 
     public void save() {
