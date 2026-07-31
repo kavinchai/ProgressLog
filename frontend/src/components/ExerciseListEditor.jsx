@@ -147,7 +147,8 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 				if (i !== exerciseIndex) return ex;
 				const next = { ...ex, type };
 				// Runs need a name or they're dropped on save; default it when blank.
-				if (type === "run" && !ex.exerciseName.trim()) next.exerciseName = "Run";
+				if (type === "run" && !ex.exerciseName.trim())
+					next.exerciseName = "Run";
 				return next;
 			}),
 		);
@@ -241,7 +242,11 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 								</button>
 							</div>
 
-							<div className="wbm-type-select" role="group" aria-label="Exercise type">
+							<div
+								className="wbm-type-select"
+								role="group"
+								aria-label="Exercise type"
+							>
 								{TYPE_OPTIONS.map((opt) => (
 									<button
 										key={opt.value}

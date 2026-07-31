@@ -133,8 +133,12 @@ describe("WorkoutBuilderModal — exercise type selector", () => {
 		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
 
 		// All three type options are present, Lifting active by default (weight/reps fields shown).
-		expect(screen.getByRole("button", { name: /^lifting$/i })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /^timed$/i })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /^lifting$/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /^timed$/i }),
+		).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /^run$/i })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /\+ set/i })).toBeInTheDocument();
 	});
