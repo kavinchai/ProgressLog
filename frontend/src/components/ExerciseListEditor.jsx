@@ -146,9 +146,13 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 			prev.map((ex, i) => {
 				if (i !== exerciseIndex) return ex;
 				const next = { ...ex, type };
-				// Runs need a name or they're dropped on save; default it when blank.
-				if (type === "run" && !ex.exerciseName.trim())
+				if (type === "run" && !ex.exerciseName.trim()) {
+					// Runs need a name or they're dropped on save; default it when blank.
 					next.exerciseName = "Run";
+				} else if (type !== "run" && ex.exerciseName === "Run") {
+					// Leaving Run clears the auto-filled name so the user can type their own.
+					next.exerciseName = "";
+				}
 				return next;
 			}),
 		);

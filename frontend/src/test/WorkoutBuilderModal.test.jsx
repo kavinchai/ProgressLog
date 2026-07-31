@@ -165,6 +165,26 @@ describe("WorkoutBuilderModal — exercise type selector", () => {
 		expect(screen.getByText(/^hr$/i)).toBeInTheDocument();
 	});
 
+	it("clears the auto-filled Run name when switching back to Lifting", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		await userEvent.click(screen.getByRole("button", { name: /^run$/i }));
+		expect(screen.getByDisplayValue("Run")).toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole("button", { name: /^lifting$/i }));
+		expect(screen.getByPlaceholderText(/exercise name/i)).toHaveValue("");
+	});
+
+	it("clears the auto-filled Run name when switching to Timed", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		await userEvent.click(screen.getByRole("button", { name: /^run$/i }));
+		expect(screen.getByDisplayValue("Run")).toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole("button", { name: /^timed$/i }));
+		expect(screen.getByPlaceholderText(/exercise name/i)).toHaveValue("");
+	});
+
 	it("preserves a typed name when switching to Run", async () => {
 		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
 		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
