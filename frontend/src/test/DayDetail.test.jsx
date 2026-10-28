@@ -29,12 +29,11 @@ vi.mock("../components/DayInfoModal", () => ({
 	default: () => <div data-testid="dayinfo-modal" />,
 }));
 vi.mock("../components/MealCards", () => ({
-	default: ({ nutritionEntry, getOrCreateNutritionLogId, compact }) => (
+	default: ({ nutritionEntry, getOrCreateNutritionLogId }) => (
 		<div
 			data-testid="meal-cards"
 			data-log-id={nutritionEntry?.id ?? ""}
 			data-can-create={String(typeof getOrCreateNutritionLogId === "function")}
-			data-compact={String(!!compact)}
 		/>
 	),
 }));
@@ -131,29 +130,6 @@ beforeEach(() => {
 });
 
 describe("DayDetail — meals", () => {
-	it("uses the full meal boxes by default", () => {
-		renderDetail(null);
-		expect(screen.getByTestId("meal-cards").dataset.compact).toBe("false");
-	});
-
-	it("passes compactMeals through so narrow panels get read lines", () => {
-		render(
-			<DayDetail
-				date={DATE}
-				weightEntry={null}
-				nutritionEntry={null}
-				workoutEntry={null}
-				stepEntry={null}
-				onRefetchW={vi.fn()}
-				onRefetchN={vi.fn()}
-				onRefetchWo={vi.fn()}
-				onRefetchS={vi.fn()}
-				compactMeals
-			/>,
-		);
-		expect(screen.getByTestId("meal-cards").dataset.compact).toBe("true");
-	});
-
 	it("shows the meal boxes even when the day has no nutrition log", () => {
 		renderDetail(null);
 		const cards = screen.getByTestId("meal-cards");

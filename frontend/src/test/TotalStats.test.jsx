@@ -43,12 +43,8 @@ vi.mock("../components/HistoryCharts", () => ({
 
 // Stub DayDetail — has its own behavior; we only verify it renders with the right date
 vi.mock("../components/DayDetail", () => ({
-	default: ({ date, compactMeals }) => (
-		<div
-			data-testid="day-detail"
-			data-date={date}
-			data-compact-meals={String(!!compactMeals)}
-		>
+	default: ({ date }) => (
+		<div data-testid="day-detail" data-date={date}>
 			DayDetail for {date}
 		</div>
 	),
@@ -178,17 +174,31 @@ describe("TotalStats — selected day panel", () => {
 		expect(screen.getByText(/select a day/i)).toBeInTheDocument();
 	});
 
-	it("clicking a day shows its editable detail beside the calendar", async () => {
+	it("clicking a day shows its editable detail below the calendar", async () => {
 		render(<TotalStats />);
 		await userEvent.click(cell("2026-04-10"));
 		expect(screen.getByTestId("day-detail").dataset.date).toBe("2026-04-10");
 		expect(cell("2026-04-10")).toHaveAttribute("aria-pressed", "true");
 	});
 
-	it("uses compact (tap-to-edit) meals because the side panel is narrow", async () => {
-		render(<TotalStats />);
-		await userEvent.click(cell("2026-04-10"));
-		expect(screen.getByTestId("day-detail").dataset.compactMeals).toBe("true");
+	it("opens the day panel directly below the calendar card and scrolls to it", async () => {
+		const scrollIntoView = vi.fn();
+		Element.prototype.scrollIntoView = scrollIntoView;
+		try {
+			render(<TotalStats />);
+			expect(
+				screen.queryByRole("region", { name: /selected day/i }),
+			).not.toBeInTheDocument();
+
+			await userEvent.click(cell("2026-04-10"));
+			const panel = screen.getByRole("region", { name: /selected day/i });
+			// Next sibling of the calendar card (not a column beside it), so it
+			// spans the page like Weekly's day panel.
+			expect(panel.previousElementSibling).toContainElement(cell("2026-04-10"));
+			expect(scrollIntoView).toHaveBeenCalled();
+		} finally {
+			delete Element.prototype.scrollIntoView;
+		}
 	});
 
 	it("an empty past day can be selected so data can be added", async () => {
@@ -202,6 +212,7 @@ describe("TotalStats — selected day panel", () => {
 		await userEvent.click(cell("2026-04-10"));
 		await userEvent.click(screen.getByRole("button", { name: /close day/i }));
 		expect(screen.queryByTestId("day-detail")).not.toBeInTheDocument();
+		expect(screen.getByText(/select a day/i)).toBeInTheDocument();
 	});
 });
 
