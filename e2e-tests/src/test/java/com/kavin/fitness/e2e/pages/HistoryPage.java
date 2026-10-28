@@ -172,36 +172,6 @@ public class HistoryPage {
         button("Close day").click();
     }
 
-    // Total's narrow day panel shows meals as read lines; tapping one opens it.
-    private Locator mealCard(String label) {
-        return page.locator(DAY_PANEL).getByRole(AriaRole.GROUP,
-                new Locator.GetByRoleOptions().setName(label).setExact(true));
-    }
-
-    /** Taps a meal's read line, types what was eaten and calories, then Done. */
-    public void editMealInDayPanel(String label, String name, String calories) {
-        mealCard(label).getByRole(AriaRole.BUTTON,
-                new Locator.GetByRoleOptions().setName("Edit " + label.toLowerCase())).click();
-        Locator nameInput = mealCard(label).getByLabel("What you ate",
-                new Locator.GetByLabelOptions().setExact(true));
-        assertThat(nameInput).isFocused();
-        nameInput.fill(name);
-        mealCard(label).getByLabel("Calories",
-                new Locator.GetByLabelOptions().setExact(true)).fill(calories);
-        // Done saves the last edit; wait for that request so a reload can't cut it off.
-        page.waitForResponse(
-                r -> r.url().contains("/meals") && !"GET".equals(r.request().method()),
-                () -> mealCard(label).getByRole(AriaRole.BUTTON,
-                        new Locator.GetByRoleOptions().setName("Done")).click());
-    }
-
-    /** Waits until a meal's read line shows {@code text} (e.g. the name or "640 kcal"). */
-    public void waitForMealLine(String label, String text) {
-        assertThat(mealCard(label).getByRole(AriaRole.BUTTON,
-                new Locator.GetByRoleOptions().setName("Edit " + label.toLowerCase())))
-                .containsText(text);
-    }
-
     public void clickMonthPickerToggle() {
         page.locator(".month-nav-label button").first().click();
     }

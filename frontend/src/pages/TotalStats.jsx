@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
@@ -82,6 +82,17 @@ export default function TotalStats() {
 	const { unit, toDisplay } = useWeightUnit();
 
 	const [selectedDay, setSelectedDay] = useState(null);
+	const dayPanelRef = useRef(null);
+
+	// The day panel sits below the calendar, so bring it into view on select.
+	useEffect(() => {
+		if (selectedDay) {
+			dayPanelRef.current?.scrollIntoView?.({
+				behavior: "smooth",
+				block: "start",
+			});
+		}
+	}, [selectedDay]);
 	const [logMonth, setLogMonth] = useState(null);
 	const [picker, setPicker] = useState(null);
 	const [metric, setMetric] = useState("calories");
@@ -356,142 +367,135 @@ export default function TotalStats() {
 				</Kpi>
 			</div>
 
-			<div className="history-split">
-				<div className="history-split-main">
-					<div className="history-day-panel">
-						<div className="history-day-panel-head">
-							<div
-								className="history-seg"
-								role="group"
-								aria-label="Color days by"
+			<div className="history-day-panel">
+				<div className="history-day-panel-head">
+					<div className="history-seg" role="group" aria-label="Color days by">
+						{Object.entries(METRICS).map(([key, m]) => (
+							<button
+								key={key}
+								type="button"
+								aria-pressed={metric === key}
+								onClick={() => setMetric(key)}
 							>
-								{Object.entries(METRICS).map(([key, m]) => (
-									<button
-										key={key}
-										type="button"
-										aria-pressed={metric === key}
-										onClick={() => setMetric(key)}
-									>
-										{m.label}
-									</button>
-								))}
-							</div>
-							<span className="heatmap-legend">
-								<span>less</span>
-								{[0.12, 0.35, 0.6, 0.9].map((a) => (
-									<i key={a} style={{ background: `rgba(255,107,53,${a})` }} />
-								))}
-								<span>more</span>
-								<span className="heatmap-dot" style={{ marginLeft: 8 }} />
-								<span>workout</span>
-							</span>
-						</div>
-						<div className="history-day-panel-body">
-							<div className="heatmap" aria-hidden="true">
-								{WEEKDAYS.map((d) => (
-									<span key={d} className="heatmap-dow">
-										{d}
-									</span>
-								))}
-							</div>
-							<div className="heatmap" style={{ marginTop: 6 }}>
-								{calendarCells.map((row, i) => {
-									if (!row) {
-										return (
-											<span
-												key={`pad-${i}`}
-												className="heatmap-cell heatmap-cell--pad"
-											/>
-										);
-									}
-									const future = row.date > today;
-									const v = active.value(row);
-									const alpha = shadeAlpha(v, active.goal(row));
-									const shown = v == null ? null : active.show(row);
-									return (
-										<button
-											key={row.date}
-											type="button"
-											data-testid={`calendar-day-${row.date}`}
-											className={
-												"heatmap-cell" +
-												(row.date === today ? " heatmap-cell--today" : "")
-											}
-											style={
-												alpha == null
-													? undefined
-													: {
-															background: `rgba(255,107,53,${alpha.toFixed(2)})`,
-														}
-											}
-											disabled={future}
-											aria-pressed={row.date === selectedDay}
-											aria-label={
-												`${shortDate(row.date)}: ` +
-												(shown == null
-													? "nothing logged"
-													: `${active.label} ${shown}`) +
-												(row.workout ? `, workout: ${row.workout}` : "")
-											}
-											onClick={() => setSelectedDay(row.date)}
-										>
-											<span className="heatmap-cell-top">
-												<span>{parseInt(row.date.slice(8))}</span>
-												{row.workout && <span className="heatmap-dot" />}
-											</span>
-											{shown != null && (
-												<span className="heatmap-value">{shown}</span>
-											)}
-										</button>
-									);
-								})}
-							</div>
-						</div>
+								{m.label}
+							</button>
+						))}
 					</div>
+					<span className="heatmap-legend">
+						<span>less</span>
+						{[0.12, 0.35, 0.6, 0.9].map((a) => (
+							<i key={a} style={{ background: `rgba(255,107,53,${a})` }} />
+						))}
+						<span>more</span>
+						<span className="heatmap-dot" style={{ marginLeft: 8 }} />
+						<span>workout</span>
+					</span>
 				</div>
-
-				<div className="history-split-side">
-					<section className="history-day-panel" aria-label="Selected day">
-						<div className="history-day-panel-head">
-							<span className="history-day-panel-title">
-								{selectedDay ? shortDate(selectedDay) : "Day details"}
+				<div className="history-day-panel-body">
+					<div className="heatmap" aria-hidden="true">
+						{WEEKDAYS.map((d) => (
+							<span key={d} className="heatmap-dow">
+								{d}
 							</span>
-							{selectedDay && (
+						))}
+					</div>
+					<div className="heatmap" style={{ marginTop: 6 }}>
+						{calendarCells.map((row, i) => {
+							if (!row) {
+								return (
+									<span
+										key={`pad-${i}`}
+										className="heatmap-cell heatmap-cell--pad"
+									/>
+								);
+							}
+							const future = row.date > today;
+							const v = active.value(row);
+							const alpha = shadeAlpha(v, active.goal(row));
+							const shown = v == null ? null : active.show(row);
+							return (
 								<button
+									key={row.date}
 									type="button"
-									className="btn btn-sm"
-									aria-label="Close day"
-									onClick={() => setSelectedDay(null)}
+									data-testid={`calendar-day-${row.date}`}
+									className={
+										"heatmap-cell" +
+										(row.date === today ? " heatmap-cell--today" : "")
+									}
+									style={
+										alpha == null
+											? undefined
+											: {
+													background: `rgba(255,107,53,${alpha.toFixed(2)})`,
+												}
+									}
+									disabled={future}
+									aria-pressed={row.date === selectedDay}
+									aria-label={
+										`${shortDate(row.date)}: ` +
+										(shown == null
+											? "nothing logged"
+											: `${active.label} ${shown}`) +
+										(row.workout ? `, workout: ${row.workout}` : "")
+									}
+									onClick={() => setSelectedDay(row.date)}
 								>
-									✕
+									<span className="heatmap-cell-top">
+										<span>{parseInt(row.date.slice(8))}</span>
+										{row.workout && <span className="heatmap-dot" />}
+									</span>
+									{shown != null && (
+										<span className="heatmap-value">{shown}</span>
+									)}
 								</button>
-							)}
-						</div>
-						<div className="history-day-panel-body">
-							{selectedRow ? (
-								<DayDetail
-									key={selectedDay}
-									date={selectedDay}
-									weightEntry={selectedRow.weightEntry}
-									nutritionEntry={selectedRow.nutritionEntry}
-									workoutEntry={selectedRow.workoutEntry}
-									stepEntry={selectedRow.stepEntry}
-									onRefetchW={refetchWeight}
-									onRefetchN={refetchNutrition}
-									onRefetchWo={refetchWorkouts}
-									onRefetchS={refetchSteps}
-									showDelete={true}
-									compactMeals
-								/>
-							) : (
-								<span className="muted">
-									Select a day in the calendar to view or edit it.
-								</span>
-							)}
-						</div>
-					</section>
+							);
+						})}
+					</div>
+					{!selectedDay && (
+						<p className="muted history-calendar-hint">
+							Select a day in the calendar to view or edit it.
+						</p>
+					)}
 				</div>
 			</div>
+
+			{/* Selected day opens full width under the calendar (like Weekly). */}
+			{selectedRow && (
+				<section
+					ref={dayPanelRef}
+					className="history-day-panel"
+					aria-label="Selected day"
+				>
+					<div className="history-day-panel-head">
+						<span className="history-day-panel-title">
+							{shortDate(selectedDay)}
+						</span>
+						<button
+							type="button"
+							className="btn btn-sm"
+							aria-label="Close day"
+							onClick={() => setSelectedDay(null)}
+						>
+							✕
+						</button>
+					</div>
+					<div className="history-day-panel-body">
+						<DayDetail
+							key={selectedDay}
+							date={selectedDay}
+							weightEntry={selectedRow.weightEntry}
+							nutritionEntry={selectedRow.nutritionEntry}
+							workoutEntry={selectedRow.workoutEntry}
+							stepEntry={selectedRow.stepEntry}
+							onRefetchW={refetchWeight}
+							onRefetchN={refetchNutrition}
+							onRefetchWo={refetchWorkouts}
+							onRefetchS={refetchSteps}
+							showDelete={true}
+						/>
+					</div>
+				</section>
+			)}
 
 			<h2 className="history-section-title">
 				Trends
