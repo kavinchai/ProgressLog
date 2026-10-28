@@ -1,9 +1,10 @@
 /**
- * TotalStats page — calendar view tests.
+ * TotalStats page — month heatmap + selected-day panel + trend charts.
  *
- * The Full Log section renders a month-grid calendar. Each day cell shows
- * Weight, Calories, Protein, Steps, Workout (in that order). Clicking a
- * past/today cell opens an overlay with the existing DayDetail.
+ * Each calendar cell shows the day number and the selected metric (Calories by
+ * default), with a dot on workout days. Clicking a past/today cell shows the
+ * editable DayDetail in the side panel. Below: weight trend, avg calories per
+ * week and workout consistency for the chosen range (default 3M).
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
@@ -13,6 +14,32 @@ import TotalStats from "../pages/TotalStats";
 // ── Static mocks ─────────────────────────────────────────────────────────────
 vi.mock("../pages/TotalStats.css", () => ({}));
 vi.mock("../pages/WeeklyStats.css", () => ({}));
+vi.mock("../pages/History.css", () => ({}));
+
+vi.mock("../components/HistoryCharts", () => ({
+	WeightTrendChart: ({ title, data }) => (
+		<div
+			data-testid="trend-chart"
+			data-title={title}
+			data-points={data.length}
+		/>
+	),
+	DailyBarChart: ({ title, data }) => (
+		<div
+			data-testid="trend-chart"
+			data-title={title}
+			data-points={data.length}
+		/>
+	),
+	WorkoutGrid: ({ title, days }) => (
+		<div
+			data-testid="trend-chart"
+			data-title={title}
+			data-points={days.length}
+			data-workout-days={days.filter((d) => d.count > 0).length}
+		/>
+	),
+}));
 
 // Stub DayDetail — has its own behavior; we only verify it renders with the right date
 vi.mock("../components/DayDetail", () => ({
@@ -28,6 +55,15 @@ vi.mock("../hooks/useNutrition", () => ({ default: vi.fn() }));
 vi.mock("../hooks/useWorkouts", () => ({ default: vi.fn() }));
 vi.mock("../hooks/useSteps", () => ({ default: vi.fn() }));
 vi.mock("../hooks/useWeightUnit", () => ({ default: vi.fn() }));
+vi.mock("../hooks/useUserProfile", () => ({
+	default: () => ({
+		goals: {
+			calorieTargetTraining: 2600,
+			calorieTargetRest: 2000,
+			proteinTarget: 180,
+		},
+	}),
+}));
 
 import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
@@ -89,70 +125,118 @@ beforeEach(() => {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-describe("TotalStats — calendar view", () => {
+const cell = (date) => screen.getByTestId(`calendar-day-${date}`);
+
+describe("TotalStats — heatmap calendar", () => {
 	it("renders weekday headers (Sun–Sat)", () => {
 		render(<TotalStats />);
-		// All seven 3-letter weekday headers should appear
-		["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) => {
-			expect(screen.getAllByText(d).length).toBeGreaterThan(0);
-		});
+		for (const d of ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]) {
+			expect(screen.getByText(d)).toBeInTheDocument();
+		}
 	});
 
-	it("renders a calendar cell for each day in the active month", () => {
+	it("renders a cell for each day in the active month", () => {
 		render(<TotalStats />);
-		const cells = screen.getAllByTestId(/^calendar-day-/);
-		// April 2026 has 30 days
-		expect(cells.length).toBe(30);
+		expect(cell("2026-04-01")).toBeInTheDocument();
+		expect(cell("2026-04-30")).toBeInTheDocument();
+		expect(screen.queryByTestId("calendar-day-2026-05-01")).toBeNull();
 	});
 
-	it("renders a day cell with the date number", () => {
+	it("shows the day number and calories by default, with a workout marker", () => {
 		render(<TotalStats />);
-		const cell = screen.getByTestId("calendar-day-2026-04-10");
-		expect(within(cell).getByText("10")).toBeInTheDocument();
+		const c = cell("2026-04-10");
+		expect(within(c).getByText("10")).toBeInTheDocument();
+		expect(within(c).getByText("2,400")).toBeInTheDocument();
+		expect(c).toHaveAccessibleName(/workout: push day/i);
 	});
 
-	it("shows weight, calories, protein, steps, workout on a day with data", () => {
+	it("switching the metric re-labels every cell", async () => {
 		render(<TotalStats />);
-		const cell = screen.getByTestId("calendar-day-2026-04-10");
-		expect(within(cell).getByText(/180.*lbs/i)).toBeInTheDocument();
-		expect(within(cell).getByText(/2400/)).toBeInTheDocument();
-		expect(within(cell).getByText(/180g/)).toBeInTheDocument();
-		expect(within(cell).getByText(/8,?500/)).toBeInTheDocument();
-		expect(within(cell).getByText(/push day/i)).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: "Steps" }));
+		expect(within(cell("2026-04-10")).getByText("8,500")).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: "Weight" }));
+		expect(within(cell("2026-04-10")).getByText("180")).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: "Protein" }));
+		expect(within(cell("2026-04-10")).getByText("180g")).toBeInTheDocument();
 	});
 
-	it("clicking a day with data opens the DayDetail overlay", async () => {
+	it("future days are disabled", () => {
 		render(<TotalStats />);
-		await userEvent.click(screen.getByTestId("calendar-day-2026-04-10"));
-		const detail = await screen.findByTestId("day-detail");
-		expect(detail).toHaveAttribute("data-date", "2026-04-10");
+		expect(cell("2026-04-20")).toBeDisabled();
+		expect(cell("2026-04-15")).toBeEnabled();
+	});
+});
+
+describe("TotalStats — selected day panel", () => {
+	it("starts with no day selected", () => {
+		render(<TotalStats />);
+		expect(screen.queryByTestId("day-detail")).not.toBeInTheDocument();
+		expect(screen.getByText(/select a day/i)).toBeInTheDocument();
 	});
 
-	it("clicking an empty day still opens the DayDetail overlay so the user can add data", async () => {
+	it("clicking a day shows its editable detail beside the calendar", async () => {
 		render(<TotalStats />);
-		await userEvent.click(screen.getByTestId("calendar-day-2026-04-05"));
-		const detail = await screen.findByTestId("day-detail");
-		expect(detail).toHaveAttribute("data-date", "2026-04-05");
+		await userEvent.click(cell("2026-04-10"));
+		expect(screen.getByTestId("day-detail").dataset.date).toBe("2026-04-10");
+		expect(cell("2026-04-10")).toHaveAttribute("aria-pressed", "true");
 	});
 
-	it("overlay close button hides the DayDetail", async () => {
+	it("an empty past day can be selected so data can be added", async () => {
 		render(<TotalStats />);
-		await userEvent.click(screen.getByTestId("calendar-day-2026-04-10"));
-		expect(await screen.findByTestId("day-detail")).toBeInTheDocument();
-		await userEvent.click(screen.getByRole("button", { name: /close/i }));
+		await userEvent.click(cell("2026-04-05"));
+		expect(screen.getByTestId("day-detail").dataset.date).toBe("2026-04-05");
+	});
+
+	it("the close button clears the selection", async () => {
+		render(<TotalStats />);
+		await userEvent.click(cell("2026-04-10"));
+		await userEvent.click(screen.getByRole("button", { name: /close day/i }));
 		expect(screen.queryByTestId("day-detail")).not.toBeInTheDocument();
 	});
+});
 
-	it("does NOT open the overlay when a future day is clicked", async () => {
+describe("TotalStats — month summary", () => {
+	it("summarises the active month", () => {
 		render(<TotalStats />);
-		// Today is mocked to 2026-04-15, so 2026-04-20 is future
-		const future = screen.queryByTestId("calendar-day-2026-04-20");
-		expect(future).toBeTruthy();
-		await userEvent.click(future);
-		expect(screen.queryByTestId("day-detail")).not.toBeInTheDocument();
+		expect(
+			within(screen.getByRole("group", { name: /avg calories/i })).getByText(
+				"2,400",
+			),
+		).toBeInTheDocument();
+		expect(
+			within(screen.getByRole("group", { name: /workouts/i })).getByText("1"),
+		).toBeInTheDocument();
+	});
+});
+
+describe("TotalStats — trends", () => {
+	it("shows weight trend, avg calories per week and workout consistency, in that order", () => {
+		render(<TotalStats />);
+		expect(
+			screen.getAllByTestId("trend-chart").map((c) => c.dataset.title),
+		).toEqual(["Weight trend", "Avg calories per week", "Workout consistency"]);
 	});
 
-	it("Prev / Next buttons are still visible to navigate months", () => {
+	it("defaults to the last 3 months and follows the range selector", async () => {
+		render(<TotalStats />);
+		expect(screen.getByRole("button", { name: "3M" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		const grid = () =>
+			screen
+				.getAllByTestId("trend-chart")
+				.find((c) => c.dataset.title === "Workout consistency");
+		expect(Number(grid().dataset.points)).toBeGreaterThanOrEqual(91);
+		expect(grid().dataset.workoutDays).toBe("1");
+
+		await userEvent.click(screen.getByRole("button", { name: "4W" }));
+		expect(Number(grid().dataset.points)).toBeLessThan(40);
+	});
+});
+
+describe("TotalStats — month navigation", () => {
+	it("Prev / Next buttons are visible to navigate months", () => {
 		render(<TotalStats />);
 		expect(screen.getByRole("button", { name: /prev/i })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /next/i })).toBeInTheDocument();

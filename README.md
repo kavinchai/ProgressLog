@@ -206,8 +206,8 @@ WorkoutApp/
 │       │   ├── Login.jsx          + .css
 │       │   ├── Today.jsx          + .css  ← daily hub: weight, meals, workouts, steps
 │       │   ├── History.jsx                ← sub-router for WeeklyStats / TotalStats
-│       │   ├── WeeklyStats.jsx    + .css  ← weekly calorie/protein trends
-│       │   ├── TotalStats.jsx     + .css  ← lifetime calendar + summary
+│       │   ├── WeeklyStats.jsx    + .css  ← week strip, selected day, daily calorie/steps charts
+│       │   ├── TotalStats.jsx     + .css  ← month heatmap, day panel, weight/calorie/workout trends
 │       │   ├── Progress.jsx               ← sub-router for Strength / Cardio
 │       │   ├── Strength.jsx       + .css  ← progressive overload chart
 │       │   ├── Cardio.jsx         + .css  ← cardio progression and milestones

@@ -9,7 +9,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.time.LocalDate;
+import java.time.format.TextStyle;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Covers the /history routes (Weekly and Total tabs). These pages had zero
@@ -84,6 +86,12 @@ public class HistoryPageTest extends BaseTest {
         } catch (Exception ignored) {}
     }
 
+    /** Matches the app's shortDate(): "Wed 10/28". */
+    private static String shortDate(LocalDate d) {
+        return d.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.US)
+                + " " + d.getMonthValue() + "/" + d.getDayOfMonth();
+    }
+
     // ── Weekly ───────────────────────────────────────────────────────────────
 
     @Test(priority = 1)
@@ -102,54 +110,82 @@ public class HistoryPageTest extends BaseTest {
     }
 
     @Test(priority = 2, dependsOnMethods = "weeklyPageLoadsWithTitleAndTabs")
-    public void weeklyShowsDailyLogTableForCurrentWeek() {
-        step("verify Daily Log table has 7 rows (one per day of week)");
-        if (!history.isWeeklyTableVisible()) {
-            throw new AssertionError("Expected weekly table to be visible");
+    public void weeklyShowsOneCardPerDayOfTheWeek() {
+        step("verify the week strip has 7 day cards");
+        if (!history.isWeekStripVisible()) {
+            throw new AssertionError("Expected the week strip to be visible");
         }
-        int rows = history.getWeeklyRowCount();
-        if (rows != 7) {
-            throw new AssertionError("Expected 7 weekly rows, got: " + rows);
-        }
-    }
-
-    @Test(priority = 3, dependsOnMethods = "weeklyShowsDailyLogTableForCurrentWeek")
-    public void weeklyHighlightsTodayRow() {
-        step("verify today's row is highlighted");
-        if (!history.hasTodayRow()) {
-            throw new AssertionError("Expected today's row to be highlighted with .today-row");
+        int cards = history.getDayCardCount();
+        if (cards != 7) {
+            throw new AssertionError("Expected 7 day cards, got: " + cards);
         }
     }
 
-    @Test(priority = 4, dependsOnMethods = "weeklyShowsDailyLogTableForCurrentWeek")
-    public void weeklyRowExpandsToShowDayDetail() {
-        step("click first weekly row");
-        history.clickFirstWeeklyRow();
-
-        step("verify detail row appears");
-        if (!history.isExpandedRowVisible()) {
-            throw new AssertionError("Expected detail row to appear after click");
+    @Test(priority = 3, dependsOnMethods = "weeklyShowsOneCardPerDayOfTheWeek")
+    public void weeklySelectsTodayByDefault() {
+        step("verify today's card is selected and its day panel is shown");
+        if (!history.isTodaySelected()) {
+            throw new AssertionError("Expected today's card to be selected by default");
         }
+        history.waitForDayPanelTitle(shortDate(LocalDate.now()));
 
-        step("verify day-detail contains a Weight section label");
-        if (!history.dayDetailContains("Weight")) {
-            throw new AssertionError("Expected expanded day detail to show 'Weight' label");
+        step("verify the panel shows today's seeded workout");
+        if (!history.dayPanelContains("History E2E Bench")) {
+            throw new AssertionError("Expected today's panel to show the seeded 'History E2E Bench'");
         }
     }
 
-    @Test(priority = 10, dependsOnMethods = "weeklyShowsDailyLogTableForCurrentWeek")
+    @Test(priority = 4, dependsOnMethods = "weeklyShowsOneCardPerDayOfTheWeek")
+    public void selectingADayShowsItInTheDayPanel() {
+        step("click the first (Sunday) card");
+        history.clickFirstDayCard();
+
+        step("verify the day panel switched to Sunday");
+        LocalDate now = LocalDate.now();
+        history.waitForDayPanelTitle(shortDate(now.minusDays(now.getDayOfWeek().getValue() % 7)));
+    }
+
+    @Test(priority = 5, dependsOnMethods = "weeklyShowsOneCardPerDayOfTheWeek")
+    public void weeklyShowsCaloriesAndStepsCharts() {
+        step("verify the daily charts render below the day panel");
+        if (!history.isChartVisible("Calories per day")) {
+            throw new AssertionError("Expected 'Calories per day' chart");
+        }
+        if (!history.isChartVisible("Steps per day")) {
+            throw new AssertionError("Expected 'Steps per day' chart");
+        }
+    }
+
+    @Test(priority = 6, dependsOnMethods = "weeklyShowsOneCardPerDayOfTheWeek")
+    public void weeklyNavigatesToPreviousWeekAndBack() {
+        step("on the current week Next is disabled");
+        history.waitForThisWeekPill();
+        history.waitForNextWeekEnabled(false);
+
+        step("go back one week: Next becomes enabled and the 'This week' pill goes away");
+        history.clickPreviousWeek();
+        history.waitForNextWeekEnabled(true);
+        history.waitForThisWeekPillHidden();
+
+        step("come back to the current week");
+        history.clickNextWeek();
+        history.waitForThisWeekPill();
+        history.waitForNextWeekEnabled(false);
+    }
+
+    @Test(priority = 12, dependsOnMethods = "weeklyShowsOneCardPerDayOfTheWeek")
     public void weeklyAddExerciseAppendsToExistingSession() {
         step("open /history/weekly");
         history.openWeekly(baseUrl);
 
-        step("expand today's row (has a single seeded workout session)");
-        history.clickTodayRow();
-        if (!history.isExpandedRowVisible()) {
-            throw new AssertionError("Expected today's detail row to expand");
+        step("select today's card (has a single seeded workout session)");
+        history.clickTodayCard();
+        if (!history.dayPanelContains("History E2E Bench")) {
+            throw new AssertionError("Expected today's day panel to show the seeded workout");
         }
 
-        step("click the workout '+ Add exercise' button in the expanded day");
-        history.clickAddExerciseInExpandedDay();
+        step("click the workout '+ Add exercise' button in the day panel");
+        history.clickAddExerciseInDayPanel();
 
         step("verify it opens the existing session for editing, not a brand-new workout");
         WorkoutBuilderModal modal = new WorkoutBuilderModal(page).waitUntilVisible();
@@ -169,7 +205,7 @@ public class HistoryPageTest extends BaseTest {
 
     // ── Total ────────────────────────────────────────────────────────────────
 
-    @Test(priority = 5)
+    @Test(priority = 7)
     public void totalPageLoadsAndShowsCalendar() {
         step("open /history/total");
         history.openTotal(baseUrl);
@@ -179,9 +215,9 @@ public class HistoryPageTest extends BaseTest {
             throw new AssertionError("Expected Total tab to be active");
         }
 
-        step("verify calendar grid is visible");
+        step("verify the heatmap calendar is visible");
         if (!history.isCalendarVisible()) {
-            throw new AssertionError("Expected calendar grid to be visible");
+            throw new AssertionError("Expected heatmap calendar to be visible");
         }
 
         step("verify month navigation is visible (we have seeded data)");
@@ -190,7 +226,7 @@ public class HistoryPageTest extends BaseTest {
         }
     }
 
-    @Test(priority = 6, dependsOnMethods = "totalPageLoadsAndShowsCalendar")
+    @Test(priority = 8, dependsOnMethods = "totalPageLoadsAndShowsCalendar")
     public void totalCalendarHasCellsForCurrentMonth() {
         step("verify calendar has at least 28 day cells");
         int cells = history.getCalendarCellCount();
@@ -199,23 +235,45 @@ public class HistoryPageTest extends BaseTest {
         }
     }
 
-    @Test(priority = 7, dependsOnMethods = "totalCalendarHasCellsForCurrentMonth")
-    public void clickingTodayInCalendarOpensDayModal() {
+    @Test(priority = 9, dependsOnMethods = "totalCalendarHasCellsForCurrentMonth")
+    public void clickingTodayShowsItInTheDayPanel() {
         step("click today's cell in calendar");
         history.clickCalendarDay(todayDate);
 
-        step("verify day modal opens");
-        history.waitForDayModal();
-        if (!history.dayModalContains("Weight")) {
-            throw new AssertionError("Expected day modal to show 'Weight' label");
+        step("verify the side panel shows today with its seeded workout");
+        history.waitForDayPanelTitle(shortDate(LocalDate.now()));
+        if (!history.dayPanelContains("History E2E Bench")) {
+            throw new AssertionError("Expected the day panel to show the seeded 'History E2E Bench'");
         }
 
-        step("close modal");
-        history.closeDayModal();
+        step("close the day panel");
+        history.closeDayPanel();
     }
 
-    @Test(priority = 9, dependsOnMethods = "totalPageLoadsAndShowsCalendar")
+    @Test(priority = 10, dependsOnMethods = "totalCalendarHasCellsForCurrentMonth")
+    public void heatmapMetricSwitchRelabelsDays() {
+        step("color days by Steps");
+        history.selectHeatmapMetric("Steps");
+
+        step("today's cell reports the seeded 8,500 steps");
+        history.waitForCalendarDayLabel(todayDate, "Steps 8,500");
+    }
+
+    @Test(priority = 11, dependsOnMethods = "totalPageLoadsAndShowsCalendar")
+    public void trendChartsRender() {
+        step("verify weight trend, avg calories per week and workout consistency render");
+        for (String title : List.of("Weight trend", "Avg calories per week", "Workout consistency")) {
+            if (!history.isChartVisible(title)) {
+                throw new AssertionError("Expected '" + title + "' chart on the Total page");
+            }
+        }
+    }
+
+    @Test(priority = 13, dependsOnMethods = "totalPageLoadsAndShowsCalendar")
     public void monthPickerOpensWhenLabelClicked() {
+        step("open /history/total");
+        history.openTotal(baseUrl);
+
         step("click month label to open picker");
         history.clickMonthPickerToggle();
 

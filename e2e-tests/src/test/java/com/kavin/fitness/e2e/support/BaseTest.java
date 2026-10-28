@@ -33,8 +33,10 @@ public abstract class BaseTest {
 
         playwright = Browsers.newPlaywright();
         browser = Browsers.chromium(playwright);
+        // Pin the locale so number formatting (e.g. "8,500") doesn't depend on the host.
         context = browser.newContext(new Browser.NewContextOptions()
-                .setViewportSize(1920, 1080));
+                .setViewportSize(1920, 1080)
+                .setLocale("en-US"));
         page = context.newPage();
         page.setDefaultTimeout(10_000);
 

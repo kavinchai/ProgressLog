@@ -3,20 +3,31 @@ import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
-import DayDetail from "../components/DayDetail";
-import Modal from "../components/Modal";
-import CalendarHoverPreview from "../components/CalendarHoverPreview";
-import {
-	localDateStr,
-	formatDateShort as formatDate,
-	avg,
-} from "../utils/date";
-import { buildDayRows } from "../utils/stats";
+import useUserProfile from "../hooks/useUserProfile";
 import useWeightUnit from "../hooks/useWeightUnit";
+import DayDetail from "../components/DayDetail";
+import RangeSelector from "../components/RangeSelector";
+import {
+	DailyBarChart,
+	WeightTrendChart,
+	WorkoutGrid,
+} from "../components/HistoryCharts";
+import { localDateStr, formatDate, shortDate } from "../utils/date";
+import { buildDayRows } from "../utils/stats";
+import { rangeDaysFor } from "../utils/dateRange";
+import {
+	datesBetween,
+	summarize,
+	weeklyAverages,
+	workoutCountsByDate,
+	shadeAlpha,
+} from "../utils/history";
 import "./WeeklyStats.css";
 import "./TotalStats.css";
+import "./History.css";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const STEPS_GOAL = 10000;
 
 function emptyRow(date) {
 	return {
@@ -49,9 +60,17 @@ const MONTH_NAMES = [
 	"November",
 	"December",
 ];
-function monthLabel(ym) {
-	const [y, m] = ym.split("-");
-	return MONTH_NAMES[parseInt(m) - 1] + " " + y;
+
+const fmt = (n) => (n == null ? "--" : Math.round(n).toLocaleString());
+
+function Kpi({ label, value, children }) {
+	return (
+		<div className="history-kpi" role="group" aria-label={label}>
+			<span className="history-kpi-label">{label}</span>
+			<span className="history-kpi-value">{value}</span>
+			<span className="history-kpi-sub">{children}</span>
+		</div>
+	);
 }
 
 export default function TotalStats() {
@@ -59,11 +78,14 @@ export default function TotalStats() {
 	const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
 	const { data: workoutData, refetch: refetchWorkouts } = useWorkouts();
 	const { data: stepData, refetch: refetchSteps } = useSteps();
+	const { goals } = useUserProfile();
 	const { unit, toDisplay } = useWeightUnit();
 
 	const [selectedDay, setSelectedDay] = useState(null);
 	const [logMonth, setLogMonth] = useState(null);
 	const [picker, setPicker] = useState(null);
+	const [metric, setMetric] = useState("calories");
+	const [range, setRange] = useState("3M");
 
 	const today = localDateStr(new Date());
 
@@ -83,6 +105,7 @@ export default function TotalStats() {
 		workoutData,
 		stepData,
 	);
+	const rowFor = (date) => rows.find((r) => r.date === date) ?? emptyRow(date);
 
 	const allMonths = [...new Set(allDates.map((d) => d.slice(0, 7)))].sort();
 	const currentMonth = today.slice(0, 7);
@@ -93,27 +116,22 @@ export default function TotalStats() {
 	const navMonths = [...new Set([...allMonths, currentMonth])].sort();
 	const activeMonth = logMonth ?? currentMonth;
 	const monthIdx = navMonths.indexOf(activeMonth);
+	const [activeYear, activeMonthNum] = activeMonth.split("-");
 
-	const monthRows = (() => {
-		if (activeMonth > today.slice(0, 7)) return [];
+	const monthDates = (() => {
+		if (activeMonth > currentMonth) return [];
 		const [y, m] = activeMonth.split("-").map(Number);
 		const lastOfMonth = localDateStr(new Date(y, m, 0));
-		const end = lastOfMonth < today ? lastOfMonth : today;
-		const days = [];
-		for (
-			let d = new Date(`${activeMonth}-01T00:00:00`);
-			d <= new Date(`${end}T00:00:00`);
-			d.setDate(d.getDate() + 1)
-		) {
-			days.push(localDateStr(d));
-		}
-		return days
-			.reverse()
-			.map((date) => rows.find((row) => row.date === date) ?? emptyRow(date));
+		return datesBetween(
+			`${activeMonth}-01`,
+			lastOfMonth < today ? lastOfMonth : today,
+		);
 	})();
+	const monthRows = monthDates.map(rowFor);
+	const month = summarize(monthRows);
+	const monthWeights = monthRows.filter((r) => r.weight != null);
 
-	// Calendar grid: always 6 rows × 7 cols = 42 cells, so the calendar's
-	// total height stays constant regardless of which month is active.
+	// Calendar grid: leading blanks, then every day of the month.
 	const calendarCells = (() => {
 		const [y, m] = activeMonth.split("-").map(Number);
 		const firstDow = new Date(y, m - 1, 1).getDay();
@@ -121,23 +139,49 @@ export default function TotalStats() {
 		const cells = [];
 		for (let i = 0; i < firstDow; i++) cells.push(null);
 		for (let d = 1; d <= numDays; d++) {
-			const date = localDateStr(new Date(y, m - 1, d));
-			cells.push(rows.find((r) => r.date === date) ?? emptyRow(date));
+			cells.push(rowFor(localDateStr(new Date(y, m - 1, d))));
 		}
-		while (cells.length < 35) cells.push(null);
 		return cells;
 	})();
-	const avgWeight = avg(monthRows.map((row) => row.weight));
-	const avgCalories = avg(monthRows.map((row) => row.calories));
-	const avgProtein = avg(monthRows.map((row) => row.protein));
-	const avgSteps = avg(monthRows.map((row) => row.steps));
-	const totalWorkouts = monthRows.filter((row) => row.workout).length;
 
-	const [activeYear, activeMonthNum] = activeMonth.split("-");
-	const allYears = [...new Set(allMonths.map((m) => m.slice(0, 4)))].sort();
-	const monthsWithData = new Set(
-		allMonths.filter((m) => m.startsWith(activeYear)).map((m) => m.slice(5, 7)),
-	);
+	// Heat shading per metric. Weight has no goal, so it's shaded relative to
+	// the month's lightest → heaviest day.
+	const minW = Math.min(...monthWeights.map((r) => r.weight));
+	const maxW = Math.max(...monthWeights.map((r) => r.weight));
+	const METRICS = {
+		calories: {
+			label: "Calories",
+			show: (r) => fmt(r.calories),
+			value: (r) => r.calories,
+			goal: (r) =>
+				r.nutritionEntry?.dayType === "rest"
+					? goals.calorieTargetRest
+					: goals.calorieTargetTraining,
+			unit: "kcal",
+		},
+		protein: {
+			label: "Protein",
+			show: (r) => `${fmt(r.protein)}g`,
+			value: (r) => r.protein,
+			goal: () => goals.proteinTarget,
+			unit: "",
+		},
+		steps: {
+			label: "Steps",
+			show: (r) => fmt(r.steps),
+			value: (r) => r.steps,
+			goal: () => STEPS_GOAL,
+			unit: "steps",
+		},
+		weight: {
+			label: "Weight",
+			show: (r) => `${toDisplay(r.weight)}`,
+			value: (r) => (r.weight == null ? null : r.weight - minW),
+			goal: () => Math.max(maxW - minW, 1),
+			unit,
+		},
+	};
+	const active = METRICS[metric];
 
 	function goMonth(ym) {
 		setLogMonth(ym);
@@ -145,13 +189,15 @@ export default function TotalStats() {
 		setPicker(null);
 	}
 
-	const selectedRow =
-		selectedDay != null
-			? (rows.find((r) => r.date === selectedDay) ?? emptyRow(selectedDay))
-			: null;
+	const allYears = [...new Set(allMonths.map((m) => m.slice(0, 4)))].sort();
+	const monthsWithData = new Set(
+		allMonths.filter((m) => m.startsWith(activeYear)).map((m) => m.slice(5, 7)),
+	);
+
 	function selectMonth(mm) {
 		goMonth(`${activeYear}-${mm}`);
 	}
+
 	function selectYear(y) {
 		const sameMonth = `${y}-${activeMonthNum}`;
 		if (allMonths.includes(sameMonth)) {
@@ -161,312 +207,309 @@ export default function TotalStats() {
 			goMonth(yearMonths[yearMonths.length - 1]);
 		}
 	}
+
 	function togglePicker(type) {
 		setPicker((p) => (p === type ? null : type));
 	}
 
+	const selectedRow = selectedDay ? rowFor(selectedDay) : null;
+
+	// ── Trends over the chosen range ────────────────────────────────────────
+	const rangeDays = rangeDaysFor(range);
+	const trendStart = (() => {
+		if (rangeDays == null) return allDates[allDates.length - 1] ?? today;
+		const d = new Date(`${today}T00:00:00`);
+		d.setDate(d.getDate() - rangeDays + 1);
+		return localDateStr(d);
+	})();
+	const trendRows = datesBetween(trendStart, today).map(rowFor);
+	const weightTrend = trendRows
+		.filter((r) => r.weight != null)
+		.map((r) => ({
+			label: formatDate(r.date),
+			value: Number(toDisplay(r.weight)),
+		}));
+	const caloriesPerWeek = weeklyAverages(trendRows, "calories").map((w) => ({
+		label: formatDate(w.weekStart),
+		value: w.value,
+	}));
+	const gridStart = (() => {
+		const d = new Date(`${trendStart}T00:00:00`);
+		d.setDate(d.getDate() - d.getDay());
+		return localDateStr(d);
+	})();
+	const counts = workoutCountsByDate(workoutData);
+	const gridDays = datesBetween(gridStart, today).map((date) => ({
+		date,
+		count: counts.get(date) ?? 0,
+	}));
+
+	const firstW = monthWeights[0]?.weight;
+	const lastW = monthWeights[monthWeights.length - 1]?.weight;
+
 	return (
 		<div className="total-page">
-			<div className="weekly-header">
-				<span className="weekly-title">Total Stats</span>
-				<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-					all time
+			<div className="history-head">
+				<span className="history-title">
+					{MONTH_NAMES[parseInt(activeMonthNum) - 1]} {activeYear}
 				</span>
+				<span className="history-spacer" />
+				{allMonths.length > 0 && (
+					<div className="history-nav month-nav">
+						<button
+							type="button"
+							aria-label="Prev month"
+							onClick={() => goMonth(navMonths[monthIdx - 1])}
+							disabled={monthIdx <= 0}
+						>
+							‹
+						</button>
+						<span className="month-nav-label">
+							<button
+								type="button"
+								className={picker === "month" ? "range-active" : ""}
+								onClick={() => togglePicker("month")}
+							>
+								{MONTH_NAMES[parseInt(activeMonthNum) - 1].slice(0, 3)}
+							</button>
+							<button
+								type="button"
+								className={picker === "year" ? "range-active" : ""}
+								onClick={() => togglePicker("year")}
+							>
+								{activeYear}
+							</button>
+						</span>
+						<button
+							type="button"
+							aria-label="Next month"
+							onClick={() => goMonth(navMonths[monthIdx + 1])}
+							disabled={monthIdx >= navMonths.length - 1}
+						>
+							›
+						</button>
+					</div>
+				)}
+			</div>
+			{picker === "month" && (
+				<div className="month-picker">
+					{Array.from({ length: 12 }, (_, i) => {
+						const mm = String(i + 1).padStart(2, "0");
+						return (
+							<button
+								key={mm}
+								className={
+									"btn btn-sm" + (mm === activeMonthNum ? " range-active" : "")
+								}
+								onClick={() => selectMonth(mm)}
+								disabled={!monthsWithData.has(mm)}
+							>
+								{MONTH_NAMES[i].slice(0, 3)}
+							</button>
+						);
+					})}
+				</div>
+			)}
+			{picker === "year" && (
+				<div className="month-picker">
+					{allYears.map((y) => (
+						<button
+							key={y}
+							className={
+								"btn btn-sm" + (y === activeYear ? " range-active" : "")
+							}
+							onClick={() => selectYear(y)}
+						>
+							{y}
+						</button>
+					))}
+				</div>
+			)}
+
+			<div className="history-kpis">
+				<Kpi
+					label="Weight change"
+					value={
+						firstW == null
+							? "--"
+							: `${lastW - firstW > 0 ? "+" : ""}${(toDisplay(lastW) - toDisplay(firstW)).toFixed(1)}`
+					}
+				>
+					{firstW == null
+						? unit
+						: `${toDisplay(firstW)} → ${toDisplay(lastW)} ${unit}`}
+				</Kpi>
+				<Kpi label="Avg calories" value={fmt(month.calories)}>
+					target {fmt(goals.calorieTargetTraining)}
+				</Kpi>
+				<Kpi
+					label="Avg protein"
+					value={month.protein == null ? "--" : `${fmt(month.protein)}g`}
+				>
+					target {goals.proteinTarget}g
+				</Kpi>
+				<Kpi label="Avg steps" value={fmt(month.steps)}>
+					goal {fmt(STEPS_GOAL)}
+				</Kpi>
+				<Kpi label="Workouts" value={month.workouts}>
+					this month
+				</Kpi>
 			</div>
 
-			<div className="weekly-content-layout">
-				<div className="weekly-main-col">
-					{/* Summary */}
-					<div className="section-box total-summary-box">
-						<div className="section-header">
-							<span className="section-title">Summary</span>
-							<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-								{monthLabel(activeMonth)}
+			<div className="history-split">
+				<div className="history-split-main">
+					<div className="history-day-panel">
+						<div className="history-day-panel-head">
+							<div
+								className="history-seg"
+								role="group"
+								aria-label="Color days by"
+							>
+								{Object.entries(METRICS).map(([key, m]) => (
+									<button
+										key={key}
+										type="button"
+										aria-pressed={metric === key}
+										onClick={() => setMetric(key)}
+									>
+										{m.label}
+									</button>
+								))}
+							</div>
+							<span className="heatmap-legend">
+								<span>less</span>
+								{[0.12, 0.35, 0.6, 0.9].map((a) => (
+									<i key={a} style={{ background: `rgba(255,107,53,${a})` }} />
+								))}
+								<span>more</span>
+								<span className="heatmap-dot" style={{ marginLeft: 8 }} />
+								<span>workout</span>
 							</span>
 						</div>
-						<div className="section-body">
-							<div className="weekly-summary-grid">
-								<div className="weekly-stat">
-									<span className="weekly-stat-label">avg weight</span>
-									<span className="weekly-stat-value">
-										{avgWeight ? toDisplay(avgWeight) + " " + unit : "--"}
+						<div className="history-day-panel-body">
+							<div className="heatmap" aria-hidden="true">
+								{WEEKDAYS.map((d) => (
+									<span key={d} className="heatmap-dow">
+										{d}
 									</span>
-								</div>
-								<div className="weekly-stat">
-									<span className="weekly-stat-label">avg calories</span>
-									<span className="weekly-stat-value">
-										{avgCalories ? avgCalories + " kcal" : "--"}
-									</span>
-								</div>
-								<div className="weekly-stat">
-									<span className="weekly-stat-label">avg protein</span>
-									<span className="weekly-stat-value">
-										{avgProtein ? avgProtein + " g" : "--"}
-									</span>
-								</div>
-								<div className="weekly-stat">
-									<span className="weekly-stat-label">avg steps</span>
-									<span className="weekly-stat-value">
-										{avgSteps ? avgSteps.toLocaleString() : "--"}
-									</span>
-								</div>
-								<div className="weekly-stat">
-									<span className="weekly-stat-label">total workouts</span>
-									<span className="weekly-stat-value">{totalWorkouts}</span>
-								</div>
+								))}
+							</div>
+							<div className="heatmap" style={{ marginTop: 6 }}>
+								{calendarCells.map((row, i) => {
+									if (!row) {
+										return (
+											<span
+												key={`pad-${i}`}
+												className="heatmap-cell heatmap-cell--pad"
+											/>
+										);
+									}
+									const future = row.date > today;
+									const v = active.value(row);
+									const alpha = shadeAlpha(v, active.goal(row));
+									const shown = v == null ? null : active.show(row);
+									return (
+										<button
+											key={row.date}
+											type="button"
+											data-testid={`calendar-day-${row.date}`}
+											className={
+												"heatmap-cell" +
+												(row.date === today ? " heatmap-cell--today" : "")
+											}
+											style={
+												alpha == null
+													? undefined
+													: {
+															background: `rgba(255,107,53,${alpha.toFixed(2)})`,
+														}
+											}
+											disabled={future}
+											aria-pressed={row.date === selectedDay}
+											aria-label={
+												`${shortDate(row.date)}: ` +
+												(shown == null
+													? "nothing logged"
+													: `${active.label} ${shown}`) +
+												(row.workout ? `, workout: ${row.workout}` : "")
+											}
+											onClick={() => setSelectedDay(row.date)}
+										>
+											<span className="heatmap-cell-top">
+												<span>{parseInt(row.date.slice(8))}</span>
+												{row.workout && <span className="heatmap-dot" />}
+											</span>
+											{shown != null && (
+												<span className="heatmap-value">{shown}</span>
+											)}
+										</button>
+									);
+								})}
 							</div>
 						</div>
 					</div>
+				</div>
 
-					{/* Full log */}
-					<div className="section-box">
-						<div className="section-header">
-							<span className="section-title">Full Log</span>
-							<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-								{rows.length} {rows.length === 1 ? "entry" : "entries"} · click
-								a day to view or edit
+				<div className="history-split-side">
+					<section className="history-day-panel" aria-label="Selected day">
+						<div className="history-day-panel-head">
+							<span className="history-day-panel-title">
+								{selectedDay ? shortDate(selectedDay) : "Day details"}
 							</span>
-						</div>
-						{allMonths.length > 0 && (
-							<>
-								<div className="month-nav">
-									<button
-										className="btn btn-sm"
-										onClick={() => goMonth(navMonths[monthIdx - 1])}
-										disabled={monthIdx <= 0}
-									>
-										&larr; Prev
-									</button>
-									<span className="month-nav-label">
-										<button
-											className={
-												"btn btn-sm" +
-												(picker === "month" ? " range-active" : "")
-											}
-											onClick={() => togglePicker("month")}
-										>
-											{MONTH_NAMES[parseInt(activeMonthNum) - 1]}
-										</button>
-										<button
-											className={
-												"btn btn-sm" +
-												(picker === "year" ? " range-active" : "")
-											}
-											onClick={() => togglePicker("year")}
-										>
-											{activeYear}
-										</button>
-									</span>
-									<button
-										className="btn btn-sm"
-										onClick={() => goMonth(navMonths[monthIdx + 1])}
-										disabled={monthIdx >= navMonths.length - 1}
-									>
-										Next &rarr;
-									</button>
-								</div>
-								{picker === "month" && (
-									<div className="month-picker">
-										{Array.from({ length: 12 }, (_, i) => {
-											const mm = String(i + 1).padStart(2, "0");
-											const hasData = monthsWithData.has(mm);
-											return (
-												<button
-													key={mm}
-													className={
-														"btn btn-sm" +
-														(mm === activeMonthNum ? " range-active" : "")
-													}
-													onClick={() => selectMonth(mm)}
-													disabled={!hasData}
-												>
-													{MONTH_NAMES[i].slice(0, 3)}
-												</button>
-											);
-										})}
-									</div>
-								)}
-								{picker === "year" && (
-									<div className="month-picker">
-										{allYears.map((y) => (
-											<button
-												key={y}
-												className={
-													"btn btn-sm" +
-													(y === activeYear ? " range-active" : "")
-												}
-												onClick={() => selectYear(y)}
-											>
-												{y}
-											</button>
-										))}
-									</div>
-								)}
-							</>
-						)}
-						<div className="section-body" style={{ padding: 0 }}>
-							{rows.length === 0 ? (
-								<div style={{ padding: "12px 14px" }} className="muted">
-									No data logged yet.
-								</div>
-							) : (
-								<div className="calendar-wrap">
-									<div className="calendar-weekdays">
-										{WEEKDAYS.map((d) => (
-											<div key={d} className="calendar-weekday">
-												{d}
-											</div>
-										))}
-									</div>
-									<div className="calendar-grid">
-										{calendarCells.map((row, i) =>
-											row === null ? (
-												<div
-													key={`pad-${i}`}
-													className="calendar-cell calendar-cell-pad"
-												/>
-											) : (
-												<button
-													key={row.date}
-													type="button"
-													data-testid={`calendar-day-${row.date}`}
-													className={
-														"calendar-cell" +
-														(row.date === today ? " calendar-cell-today" : "") +
-														(row.date > today ? " calendar-cell-future" : "") +
-														(row.date <= today &&
-														row.weight == null &&
-														row.calories == null &&
-														row.protein == null &&
-														row.steps == null &&
-														row.workout == null
-															? " calendar-cell-empty"
-															: "")
-													}
-													onClick={() =>
-														row.date <= today && setSelectedDay(row.date)
-													}
-													disabled={row.date > today}
-												>
-													<div className="calendar-cell-date">
-														{parseInt(row.date.slice(8))}
-													</div>
-													<div className="calendar-cell-metrics">
-														{row.weight != null && (
-															<div className="calendar-metric calendar-metric--weight">
-																<span className="calendar-metric-key">
-																	Weight
-																</span>
-																<span className="calendar-metric-val">
-																	{toDisplay(row.weight)} {unit}
-																</span>
-															</div>
-														)}
-														{row.calories != null && (
-															<CalendarHoverPreview
-																type="calories"
-																row={row}
-																onDateClick={() => setSelectedDay(row.date)}
-															>
-																<div className="calendar-metric calendar-metric--calories">
-																	<span className="calendar-metric-key">
-																		Calories
-																	</span>
-																	<span className="calendar-metric-val">
-																		{row.calories}
-																	</span>
-																</div>
-															</CalendarHoverPreview>
-														)}
-														{row.protein != null && (
-															<div className="calendar-metric calendar-metric--protein">
-																<span className="calendar-metric-key">
-																	Protein
-																</span>
-																<span className="calendar-metric-val">
-																	{row.protein}g
-																</span>
-															</div>
-														)}
-														{row.steps != null && (
-															<div className="calendar-metric calendar-metric--steps">
-																<span className="calendar-metric-key">
-																	Steps
-																</span>
-																<span className="calendar-metric-val">
-																	{row.steps.toLocaleString()}
-																</span>
-															</div>
-														)}
-														{row.workout != null && (
-															<CalendarHoverPreview
-																type="workout"
-																row={row}
-																onDateClick={() => setSelectedDay(row.date)}
-															>
-																<div className="calendar-metric calendar-metric--workout">
-																	<span className="calendar-metric-key">
-																		Workout
-																	</span>
-																	<span
-																		className="calendar-metric-val calendar-metric-workout"
-																		title={row.workout}
-																	>
-																		{row.workout}
-																	</span>
-																</div>
-															</CalendarHoverPreview>
-														)}
-													</div>
-													<div
-														className="calendar-cell-dots"
-														aria-hidden="true"
-													>
-														{row.weight != null && (
-															<span className="cal-dot cal-dot--weight" />
-														)}
-														{row.calories != null && (
-															<span className="cal-dot cal-dot--calories" />
-														)}
-														{row.protein != null && (
-															<span className="cal-dot cal-dot--protein" />
-														)}
-														{row.steps != null && (
-															<span className="cal-dot cal-dot--steps" />
-														)}
-														{row.workout != null && (
-															<span className="cal-dot cal-dot--workout" />
-														)}
-													</div>
-												</button>
-											),
-										)}
-									</div>
-								</div>
+							{selectedDay && (
+								<button
+									type="button"
+									className="btn btn-sm"
+									aria-label="Close day"
+									onClick={() => setSelectedDay(null)}
+								>
+									✕
+								</button>
 							)}
 						</div>
-					</div>
-
-					{selectedDay && selectedRow && (
-						<Modal
-							title={formatDate(selectedDay)}
-							onClose={() => setSelectedDay(null)}
-						>
-							<DayDetail
-								date={selectedRow.date}
-								weightEntry={selectedRow.weightEntry}
-								nutritionEntry={selectedRow.nutritionEntry}
-								workoutEntry={selectedRow.workoutEntry}
-								stepEntry={selectedRow.stepEntry}
-								onRefetchW={refetchWeight}
-								onRefetchN={refetchNutrition}
-								onRefetchWo={refetchWorkouts}
-								onRefetchS={refetchSteps}
-								showDelete={true}
-							/>
-						</Modal>
-					)}
+						<div className="history-day-panel-body">
+							{selectedRow ? (
+								<DayDetail
+									key={selectedDay}
+									date={selectedDay}
+									weightEntry={selectedRow.weightEntry}
+									nutritionEntry={selectedRow.nutritionEntry}
+									workoutEntry={selectedRow.workoutEntry}
+									stepEntry={selectedRow.stepEntry}
+									onRefetchW={refetchWeight}
+									onRefetchN={refetchNutrition}
+									onRefetchWo={refetchWorkouts}
+									onRefetchS={refetchSteps}
+									showDelete={true}
+								/>
+							) : (
+								<span className="muted">
+									Select a day in the calendar to view or edit it.
+								</span>
+							)}
+						</div>
+					</section>
 				</div>
+			</div>
+
+			<h2 className="history-section-title">
+				Trends
+				<RangeSelector
+					classPrefix="history"
+					activeKey={range}
+					onSelect={setRange}
+				/>
+			</h2>
+			<div className="history-charts history-charts--stacked">
+				<WeightTrendChart title="Weight trend" data={weightTrend} unit={unit} />
+				<DailyBarChart
+					title="Avg calories per week"
+					data={caloriesPerWeek}
+					goal={goals.calorieTargetTraining}
+					color="#d4934e"
+					unit="kcal"
+				/>
+				<WorkoutGrid title="Workout consistency" days={gridDays} />
 			</div>
 		</div>
 	);
