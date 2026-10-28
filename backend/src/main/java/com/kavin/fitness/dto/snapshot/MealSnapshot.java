@@ -12,6 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class MealSnapshot {
     private Long logId;
+    private String mealLabel;
     private String mealName;
     private Integer calories;
     private Integer proteinGrams;

@@ -26,6 +26,7 @@ public class NutritionLogDTO {
     @AllArgsConstructor
     public static class MealDTO {
         private Long id;
+        private String mealLabel;
         private String mealName;
         private Integer calories;
         private Integer proteinGrams;

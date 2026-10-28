@@ -343,6 +343,7 @@ export default function Settings() {
 				nutritionRows.push({
 					Date: formatDate(entry.logDate),
 					"Day Type": dayType,
+					Label: meal.mealLabel ?? "",
 					Meal: meal.mealName ?? "",
 					Calories: meal.calories ?? "",
 					Protein: meal.proteinGrams ?? "",
@@ -378,7 +379,16 @@ export default function Settings() {
 		const ws4 = XLSX.utils.json_to_sheet(
 			nutritionRows.length
 				? nutritionRows
-				: [{ Date: "", "Day Type": "", Meal: "", Calories: "", Protein: "" }],
+				: [
+						{
+							Date: "",
+							"Day Type": "",
+							Label: "",
+							Meal: "",
+							Calories: "",
+							Protein: "",
+						},
+					],
 		);
 		const wb = XLSX.utils.book_new();
 		XLSX.utils.book_append_sheet(wb, ws1, "Total Stats");

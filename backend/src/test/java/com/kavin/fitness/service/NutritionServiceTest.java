@@ -2,11 +2,14 @@ package com.kavin.fitness.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.kavin.fitness.dto.MealRequest;
 import com.kavin.fitness.dto.NutritionLogDTO;
 import com.kavin.fitness.dto.NutritionLogRequest;
+import com.kavin.fitness.dto.snapshot.MealSnapshot;
+import com.kavin.fitness.dto.snapshot.NutritionLogSnapshot;
 import com.kavin.fitness.model.Meal;
 import com.kavin.fitness.model.NutritionLog;
 import com.kavin.fitness.model.User;
@@ -20,6 +23,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -87,6 +91,25 @@ class NutritionServiceTest {
         assertEquals(80, dto.getTotalProtein());
     }
 
+    @Test
+    void getNutritionLog_ordersBreakfastLunchDinnerThenExtrasById() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        log.getMeals().add(meal(5L, log, "Dinner", "Steak", 800, 60));
+        log.getMeals().add(meal(3L, log, "Snack", "Bar", 200, 20));
+        log.getMeals().add(meal(4L, log, "breakfast", "Oats", 400, 20));
+        log.getMeals().add(meal(1L, log, null, "Shake", 300, 50));
+        log.getMeals().add(meal(2L, log, "Lunch", "Wrap", 600, 40));
+
+        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L))
+                .thenReturn(List.of(log));
+
+        List<Long> ids =
+                nutritionService.getNutritionLog(1L).get(0).getMeals().stream()
+                        .map(NutritionLogDTO.MealDTO::getId)
+                        .toList();
+        assertEquals(List.of(4L, 2L, 5L, 1L, 3L), ids);
+    }
+
     // ── upsertLog ────────────────────────────────────────────────────────────
 
     @Test
@@ -151,6 +174,43 @@ class NutritionServiceTest {
     }
 
     @Test
+    void addMeal_storesLabelSeparatelyFromWhatWasEaten() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+        when(nutritionLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        MealRequest request = new MealRequest();
+        request.setMealLabel("Breakfast");
+        request.setMealName("Oatmeal & eggs");
+        request.setCalories(620);
+        request.setProteinGrams(42);
+
+        NutritionLogDTO.MealDTO meal = nutritionService.addMeal(10L, 1L, request).getMeals().get(0);
+
+        assertEquals("Breakfast", meal.getMealLabel());
+        assertEquals("Oatmeal & eggs", meal.getMealName());
+    }
+
+    @Test
+    void addMeal_skippedMealIsZeroCaloriesWithSkippedName() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+        when(nutritionLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        MealRequest request = new MealRequest();
+        request.setMealLabel("Lunch");
+        request.setMealName("Skipped Lunch");
+        request.setCalories(0);
+        request.setProteinGrams(0);
+
+        NutritionLogDTO dto = nutritionService.addMeal(10L, 1L, request);
+
+        assertEquals("Lunch", dto.getMeals().get(0).getMealLabel());
+        assertEquals("Skipped Lunch", dto.getMeals().get(0).getMealName());
+        assertEquals(0, dto.getTotalCalories());
+    }
+
+    @Test
     void addMeal_throwsWhenLogNotFound() {
         when(nutritionLogRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -175,7 +235,49 @@ class NutritionServiceTest {
                 EntityNotFoundException.class, () -> nutritionService.addMeal(10L, 999L, request));
     }
 
+    // ── updateMeal ───────────────────────────────────────────────────────────
+
+    @Test
+    void updateMeal_updatesLabelNameAndMacros() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        Meal m = meal(20L, log, "Snack", "Banana", 105, 1);
+        log.getMeals().add(m);
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+        when(mealRepository.findById(20L)).thenReturn(Optional.of(m));
+        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L))
+                .thenReturn(List.of(log));
+
+        MealRequest request = new MealRequest();
+        request.setMealLabel("Pre-workout");
+        request.setMealName("Banana & coffee");
+        request.setCalories(120);
+        request.setProteinGrams(2);
+
+        NutritionLogDTO.MealDTO meal =
+                nutritionService.updateMeal(10L, 20L, 1L, request).getMeals().get(0);
+
+        assertEquals("Pre-workout", meal.getMealLabel());
+        assertEquals("Banana & coffee", meal.getMealName());
+        assertEquals(120, meal.getCalories());
+        verify(mealRepository).save(m);
+    }
+
     // ── deleteLog ────────────────────────────────────────────────────────────
+
+    @Test
+    void deleteLog_snapshotKeepsMealLabels() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        log.getMeals().add(meal(20L, log, "Breakfast", "Oats", 400, 20));
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+
+        nutritionService.deleteLog(10L, 1L);
+
+        ArgumentCaptor<Object> snap = ArgumentCaptor.forClass(Object.class);
+        verify(deletionJournal).record(eq(user), any(), any(), snap.capture());
+        NutritionLogSnapshot saved = (NutritionLogSnapshot) snap.getValue();
+        assertEquals("Breakfast", saved.getMeals().get(0).getMealLabel());
+        assertEquals("Oats", saved.getMeals().get(0).getMealName());
+    }
 
     @Test
     void deleteLog_removesLogOwnedByUser() {
@@ -207,6 +309,22 @@ class NutritionServiceTest {
         nutritionService.deleteMeal(10L, 20L, 1L);
 
         verify(mealRepository).delete(m);
+    }
+
+    @Test
+    void deleteMeal_snapshotKeepsLabel() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        Meal m = meal(20L, log, "Dinner", "Salmon", 700, 45);
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+        when(mealRepository.findById(20L)).thenReturn(Optional.of(m));
+
+        nutritionService.deleteMeal(10L, 20L, 1L);
+
+        ArgumentCaptor<Object> snap = ArgumentCaptor.forClass(Object.class);
+        verify(deletionJournal).record(eq(user), any(), any(), snap.capture());
+        MealSnapshot saved = (MealSnapshot) snap.getValue();
+        assertEquals("Dinner", saved.getMealLabel());
+        assertEquals("Salmon", saved.getMealName());
     }
 
     @Test
@@ -245,9 +363,14 @@ class NutritionServiceTest {
     }
 
     private Meal meal(Long id, NutritionLog log, String name, int cal, int protein) {
+        return meal(id, log, null, name, cal, protein);
+    }
+
+    private Meal meal(Long id, NutritionLog log, String label, String name, int cal, int protein) {
         Meal m = new Meal();
         ReflectionTestUtils.setField(m, "id", id);
         m.setNutritionLog(log);
+        m.setMealLabel(label);
         m.setMealName(name);
         m.setCalories(cal);
         m.setProteinGrams(protein);

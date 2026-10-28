@@ -198,11 +198,48 @@ class ImportServiceTest {
         NutritionLog saved = captor.getValue();
         assertEquals("training", saved.getDayType());
         assertEquals(2, saved.getMeals().size());
-        assertEquals("Breakfast", saved.getMeals().get(0).getMealName());
+        // Legacy rows (no Label column) named after a slot become that slot's label
+        assertEquals("Breakfast", saved.getMeals().get(0).getMealLabel());
+        assertEquals("", saved.getMeals().get(0).getMealName());
         assertEquals(500, saved.getMeals().get(0).getCalories());
         assertEquals(30, saved.getMeals().get(0).getProteinGrams());
-        assertEquals("Lunch", saved.getMeals().get(1).getMealName());
+        assertEquals("Lunch", saved.getMeals().get(1).getMealLabel());
         assertEquals(1, result.getNutritionImported());
+    }
+
+    @Test
+    void importData_readsLabelColumnSeparatelyFromMeal() {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("Date", "4/1/26");
+        row.put("Day Type", "training");
+        row.put("Label", "Pre-workout");
+        row.put("Meal", "Banana");
+        row.put("Calories", "105");
+        row.put("Protein", "1");
+
+        Map<String, Object> legacyName = new LinkedHashMap<>();
+        legacyName.put("Date", "4/1/26");
+        legacyName.put("Day Type", "training");
+        legacyName.put("Meal", "Protein shake");
+        legacyName.put("Calories", "300");
+        legacyName.put("Protein", "50");
+
+        ImportRequest req = new ImportRequest();
+        req.setNutrition(List.of(row, legacyName));
+
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any()))
+                .thenReturn(Optional.empty());
+        when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        importService.importData(user, req);
+
+        ArgumentCaptor<NutritionLog> captor = ArgumentCaptor.forClass(NutritionLog.class);
+        verify(nutritionLogRepository).save(captor.capture());
+        NutritionLog saved = captor.getValue();
+        assertEquals("Pre-workout", saved.getMeals().get(0).getMealLabel());
+        assertEquals("Banana", saved.getMeals().get(0).getMealName());
+        assertNull(saved.getMeals().get(1).getMealLabel());
+        assertEquals("Protein shake", saved.getMeals().get(1).getMealName());
     }
 
     @Test
@@ -294,7 +331,7 @@ class ImportServiceTest {
         verify(nutritionLogRepository, times(1)).save(any(NutritionLog.class));
         ArgumentCaptor<NutritionLog> captor = ArgumentCaptor.forClass(NutritionLog.class);
         verify(nutritionLogRepository).save(captor.capture());
-        assertEquals("Lunch", captor.getValue().getMeals().get(0).getMealName());
+        assertEquals("Lunch", captor.getValue().getMeals().get(0).getMealLabel());
     }
 
     @Test

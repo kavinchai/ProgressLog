@@ -1,0 +1,191 @@
+/* Stacked meal boxes: Breakfast / Lunch / Dinner + extras, edited in place */
+.meal-cards {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+}
+
+.meal-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+	padding: 12px;
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-xs);
+	transition:
+		border-color var(--transition-fast),
+		box-shadow var(--transition-fast);
+}
+
+.meal-card:focus-within {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.meal-card--skipped {
+	background: var(--bg);
+	border-style: dashed;
+}
+
+.meal-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-sm);
+	min-height: 28px;
+}
+
+.meal-card-label {
+	font-family: var(--font);
+	font-size: 11px;
+	font-weight: var(--fw-bold);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--accent);
+}
+
+.meal-card--skipped .meal-card-label {
+	color: var(--muted);
+}
+
+.meal-card-label-input {
+	width: 180px;
+	max-width: 100%;
+	padding: 4px 6px;
+	margin-left: -6px;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+}
+
+.meal-card-label-input::placeholder {
+	color: var(--accent);
+	opacity: 0.55;
+}
+
+.meal-card-label-input:hover {
+	border-color: var(--border);
+}
+
+.meal-card-label-input:focus {
+	outline: none;
+	background: var(--accent-light);
+	border-color: var(--accent);
+}
+
+.meal-card-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+}
+
+.meal-card-status {
+	font-size: var(--fs-sm);
+	color: var(--success);
+	font-weight: var(--fw-semibold);
+}
+
+.meal-card-skip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-medium);
+	color: var(--muted);
+	cursor: pointer;
+}
+
+.meal-card-skip input {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--accent);
+}
+
+.meal-card-delete {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	color: var(--muted);
+	background: transparent;
+	border: none;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+}
+
+.meal-card-delete:hover {
+	color: var(--danger);
+	background: var(--danger-light);
+}
+
+/* Name, kcal and protein share one line */
+.meal-card-fields {
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+}
+
+.meal-card-name {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.meal-card-unit {
+	position: relative;
+	flex: 0 0 104px;
+}
+
+.meal-card-unit input {
+	width: 100%;
+	padding-right: 38px;
+}
+
+.meal-card-unit span {
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 11px;
+	color: var(--muted);
+	pointer-events: none;
+}
+
+.meal-card-skipped-text {
+	font-size: var(--fs-sm);
+	color: var(--muted);
+}
+
+.meal-card-add {
+	padding: 12px;
+	font-family: var(--font);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+	color: var(--accent);
+	background: var(--accent-light);
+	border: 1px dashed var(--accent);
+	border-radius: var(--radius-lg);
+	cursor: pointer;
+}
+
+.meal-card-add:hover {
+	background: var(--hover-bg);
+}
+
+@media (max-width: 640px) {
+	.meal-card-fields {
+		flex-wrap: wrap;
+	}
+
+	.meal-card-name {
+		flex-basis: 100%;
+	}
+
+	.meal-card-unit {
+		flex: 1 1 0;
+	}
+}

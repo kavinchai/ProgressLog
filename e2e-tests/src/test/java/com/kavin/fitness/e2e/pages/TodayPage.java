@@ -84,40 +84,18 @@ public class TodayPage {
 
     // ── Nutrition / Meals ────────────────────────────────────────────────────
 
-    public void clickAddMeal() {
-        page.locator("button", new Page.LocatorOptions()
-                .setHasText(Pattern.compile("\\+ Add( another)? meal", Pattern.CASE_INSENSITIVE)))
-                .first().click();
-    }
-
-    public void waitForMealDisplayed(String name) {
-        page.locator("span.meal-card-name",
-                new Page.LocatorOptions().setHasText(name)).first().waitFor();
-    }
-
-    /** Count of meal cards currently displayed. */
-    public int getMealCount() {
-        return page.locator(".meal-card-name").count();
-    }
+    // Meal boxes themselves live in the MealCards page object.
 
     /**
-     * True iff at least one meal card has the default "Meal N" name that the
-     * UI assigns when a meal is saved without an explicit name.
+     * Waits until the totals row for {@code label} ("Calories" / "Protein") shows
+     * exactly {@code eaten} as the amount eaten ("620 / 2600 kcal"), so a target
+     * or "remaining" number can't satisfy the wait by accident.
      */
-    public boolean hasDefaultNamedMeal() {
-        return page.locator(".meal-card-name",
-                new Page.LocatorOptions().setHasText(
-                        java.util.regex.Pattern.compile("Meal \\d+"))).count() > 0;
-    }
-
-    public void waitForMealCount(int expected) {
-        // No direct count wait; poll via the locator size.
-        page.waitForCondition(() -> page.locator(".meal-card-name").count() == expected);
-    }
-
-    public void waitForNutritionTotal(String text) {
-        page.locator(".nutrition-totals",
-                new Page.LocatorOptions().setHasText(text)).waitFor();
+    public void waitForEaten(String label, int eaten) {
+        page.locator(".nutrition-totals-row", new Page.LocatorOptions().setHasText(label))
+                .filter(new Locator.FilterOptions()
+                        .setHasText(Pattern.compile("(^|\\D)" + eaten + " / ")))
+                .waitFor();
     }
 
     // ── Workout ──────────────────────────────────────────────────────────────

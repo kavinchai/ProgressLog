@@ -515,6 +515,47 @@ describe("Settings — export handles nutrition meals", () => {
 		global.Blob = OrigBlob;
 	});
 
+	it("JSON export puts the meal label in its own Label column", async () => {
+		useNutrition.mockReturnValue({
+			data: [
+				{
+					...NUTRITION_DATA[0],
+					meals: [
+						{
+							id: 1,
+							mealLabel: "Breakfast",
+							mealName: "Oatmeal",
+							calories: 500,
+							proteinGrams: 30,
+						},
+					],
+				},
+			],
+			refetch: vi.fn(),
+		});
+		let capturedJson = null;
+		const OrigBlob = global.Blob;
+		global.Blob = class {
+			constructor(data) {
+				capturedJson = data[0];
+			}
+		};
+		global.URL.createObjectURL = vi.fn(() => "blob:x");
+		global.URL.revokeObjectURL = vi.fn();
+
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*json/i }),
+		);
+
+		expect(JSON.parse(capturedJson).nutrition[0]).toMatchObject({
+			Label: "Breakfast",
+			Meal: "Oatmeal",
+			Calories: 500,
+		});
+		global.Blob = OrigBlob;
+	});
+
 	it("nutrition totals in totalStats are still exported", async () => {
 		let capturedJson = null;
 		const OrigBlob = global.Blob;

@@ -120,11 +120,16 @@ public class TestApiClient {
         deleteEntriesOnDate("/steps", date, "steps");
     }
 
+    /** Delete the nutrition log (and its meals) for a given date. No-op if none exists. */
+    public void deleteNutritionOnDate(String date) {
+        deleteEntriesOnDate("/nutrition", date, "nutrition");
+    }
+
     /**
      * Shared cleanup for date-keyed log endpoints. GET /{resource} returns all
      * entries for the user; we filter by logDate and DELETE each match by id.
      * Pattern relies on Jackson serializing DTO fields in declaration order
-     * (id, logDate, ...) — true for WeightLogDTO and StepLogDTO today.
+     * (id, logDate, ...) — true for WeightLogDTO, StepLogDTO and NutritionLogDTO today.
      */
     private void deleteEntriesOnDate(String resource, String date, String label) {
         HttpResponse<String> list = get(resource);

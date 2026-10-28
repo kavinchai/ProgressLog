@@ -1,78 +1,90 @@
 package com.kavin.fitness.e2e.tests;
 
-import com.kavin.fitness.e2e.pages.MealModal;
+import com.kavin.fitness.e2e.pages.MealCards;
 import com.kavin.fitness.e2e.pages.TodayPage;
 import com.kavin.fitness.e2e.support.BaseTest;
+import com.kavin.fitness.e2e.support.TestApiClient;
+import java.time.LocalDate;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+/**
+ * Meals are edited in place: Breakfast / Lunch / Dinner boxes are always on
+ * the Today page, a box can be marked skipped, and extra meals get a
+ * user-chosen label. No modal is involved.
+ */
 public class MealsTest extends BaseTest {
     private TodayPage today;
-    private MealModal modal;
+    private MealCards meals;
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
+        String apiUrl = System.getProperty("env.apiurl", "http://localhost:8080/api");
+        String username = System.getProperty("test.user.username", "qaf-test");
+        String password = System.getProperty("test.user.password", "qaf-test-password");
+        TestApiClient api = new TestApiClient(apiUrl);
+        api.login(username, password);
+        api.deleteNutritionOnDate(LocalDate.now().toString());
+
         today = new TodayPage(page);
-        modal = new MealModal(page);
+        meals = new MealCards(page);
         navigateToToday();
     }
 
     @Test(priority = 1)
-    public void addNewMealCreatesNutritionLog() {
-        step("click Add Meal");
-        today.clickAddMeal();
-        modal.waitUntilVisible();
-
-        step("enter 'Lunch', 800 cal, 50g protein, save");
-        modal.enterName("Lunch");
-        modal.enterCalories("800");
-        modal.enterProtein("50");
-        modal.save();
-
-        step("modal closed and meal 'Lunch' is displayed");
-        waitForModalClosed();
-        today.waitForMealDisplayed("Lunch");
+    public void breakfastLunchDinnerBoxesAreAlwaysShown() {
+        step("with no nutrition log, all three slot boxes are on the page");
+        meals.waitForCard("Breakfast");
+        meals.waitForCard("Lunch");
+        meals.waitForCard("Dinner");
     }
 
-    @Test(priority = 2, dependsOnMethods = "addNewMealCreatesNutritionLog")
-    public void nutritionTotalsUpdateAfterAddingMeals() {
-        step("Lunch is already displayed");
-        today.waitForMealDisplayed("Lunch");
+    @Test(priority = 2, dependsOnMethods = "breakfastLunchDinnerBoxesAreAlwaysShown")
+    public void fillingBreakfastSavesWithoutAModal() {
+        step("type Oatmeal, 620 kcal, 42 g into Breakfast and tab out");
+        meals.fillMeal("Breakfast", "Oatmeal", "620", "42");
 
-        step("add Dinner: 700 cal, 45g protein");
-        today.clickAddMeal();
-        modal.waitUntilVisible();
-        modal.enterName("Dinner");
-        modal.enterCalories("700");
-        modal.enterProtein("45");
-        modal.save();
-        waitForModalClosed();
+        step("wait until every field is saved (totals show 620 kcal / 42 g eaten)");
+        today.waitForEaten("Calories", 620);
+        today.waitForEaten("Protein", 42);
 
-        step("Dinner is displayed and totals show 1500 kcal / 95g protein");
-        today.waitForMealDisplayed("Dinner");
-        today.waitForNutritionTotal("1500");
-        today.waitForNutritionTotal("95");
+        step("reload: Breakfast still shows what was eaten");
+        navigateToToday();
+        meals.assertWhatYouAte("Breakfast", "Oatmeal");
+        today.waitForEaten("Calories", 620);
     }
 
-    @Test(priority = 3, dependsOnMethods = "addNewMealCreatesNutritionLog")
-    public void addMealWithoutNameUsesDefaultNumbering() {
-        step("note meal count before adding");
-        int before = today.getMealCount();
+    @Test(priority = 3, dependsOnMethods = "fillingBreakfastSavesWithoutAModal")
+    public void tickingSkippedRecordsASkippedMeal() {
+        step("tick Skipped on Lunch and wait for it to save");
+        meals.toggleSkipped("Lunch");
+        meals.waitForSkippedSummary("Lunch");
+        meals.waitForFirstSave("Lunch");
 
-        step("click Add Meal, fill calories/protein only, save (no name)");
-        today.clickAddMeal();
-        modal.waitUntilVisible();
-        modal.enterCalories("500");
-        modal.enterProtein("30");
-        modal.save();
-        waitForModalClosed();
+        step("reload: Lunch is still skipped and adds 0 kcal");
+        navigateToToday();
+        meals.waitForSkippedSummary("Lunch");
+        meals.assertSkipped("Lunch");
+        today.waitForEaten("Calories", 620);
+    }
 
-        step("verify a new meal card was added");
-        today.waitForMealCount(before + 1);
+    @Test(priority = 4, dependsOnMethods = "fillingBreakfastSavesWithoutAModal")
+    public void extraMealGetsItsOwnLabel() {
+        step("+ Add meal, label it Snack, enter Protein bar 300 kcal 23 g");
+        meals.addMeal("Snack");
+        meals.fillMeal("Snack", "Protein bar", "300", "23");
 
-        step("verify the unnamed meal renders with the default 'Meal N' name");
-        if (!today.hasDefaultNamedMeal()) {
-            throw new AssertionError("Expected a meal card with default 'Meal N' name");
-        }
+        step("totals include the snack: 920 kcal / 65 g eaten");
+        today.waitForEaten("Calories", 920);
+        today.waitForEaten("Protein", 65);
+    }
+
+    @Test(priority = 5, dependsOnMethods = "extraMealGetsItsOwnLabel")
+    public void deletingAnExtraMealRemovesItsBox() {
+        step("delete Snack through the delete-with-undo dialog");
+        meals.deleteMeal("Snack");
+
+        step("totals drop back to 620 kcal eaten");
+        today.waitForEaten("Calories", 620);
     }
 }

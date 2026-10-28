@@ -566,10 +566,17 @@ Examples:
 		"log_meal",
 		"Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros.",
 		{
+			mealLabel: z
+				.string()
+				.max(50)
+				.optional()
+				.describe(
+					'Which meal this is: "Breakfast", "Lunch", "Dinner", or a custom label like "Snack". Use one of the first three whenever the user names that meal.',
+				),
 			mealName: z
 				.string()
 				.optional()
-				.describe('Name of the meal, e.g. "Breakfast", "Protein Shake"'),
+				.describe('What was eaten, e.g. "Oatmeal & eggs", "Protein shake"'),
 			calories: z.number().int().min(0).describe("Total calories"),
 			proteinGrams: z.number().int().min(0).describe("Protein in grams"),
 			date: z
@@ -586,7 +593,14 @@ Examples:
 		withDedup(
 			apiKey,
 			"log_meal",
-			async ({ mealName, calories, proteinGrams, date, dayType }) => {
+			async ({
+				mealLabel,
+				mealName,
+				calories,
+				proteinGrams,
+				date,
+				dayType,
+			}) => {
 				const logDate = date ?? todayStr();
 
 				// Step 1: Ensure a nutrition day log exists (upsert)
@@ -597,6 +611,7 @@ Examples:
 
 				// Step 2: Add the meal to that day log
 				const result = await api("POST", `/nutrition/${dayLog.id}/meals`, {
+					mealLabel: mealLabel ?? null,
 					mealName: mealName ?? null,
 					calories,
 					proteinGrams,
@@ -604,12 +619,15 @@ Examples:
 
 				const totalCal = result.totalCalories ?? calories;
 				const totalProt = result.totalProtein ?? proteinGrams;
+				const what = [mealLabel, mealName && `"${mealName}"`]
+					.filter(Boolean)
+					.join(" ");
 
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Logged meal${mealName ? ` "${mealName}"` : ""}: ${calories} kcal, ${proteinGrams}g protein on ${logDate}\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
+							text: `Logged meal${what ? ` ${what}` : ""}: ${calories} kcal, ${proteinGrams}g protein on ${logDate}\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
 						},
 					],
 				};
@@ -655,7 +673,7 @@ Examples:
 
 	mcp.tool(
 		"edit_meal",
-		"Update a previously logged meal's name, calories, or protein. Use this to correct a meal that was logged with the wrong values. Only the fields you provide are changed; omitted fields keep their current values. Call get_today_summary first to find the log ID and meal ID.",
+		"Update a previously logged meal's label, name, calories, or protein. Use this to correct a meal that was logged with the wrong values. Only the fields you provide are changed; omitted fields keep their current values. Call get_today_summary first to find the log ID and meal ID.",
 		{
 			logId: z
 				.number()
@@ -671,10 +689,17 @@ Examples:
 				.describe(
 					"The meal ID to edit (get from get_today_summary — shown as 'meal ID' next to each meal)",
 				),
+			mealLabel: z
+				.string()
+				.max(50)
+				.optional()
+				.describe(
+					'New label ("Breakfast", "Lunch", "Dinner" or custom). Omit to keep the current label.',
+				),
 			mealName: z
 				.string()
 				.optional()
-				.describe("New name for the meal. Omit to keep the current name."),
+				.describe("New description of what was eaten. Omit to keep it."),
 			calories: z
 				.number()
 				.int()
@@ -691,8 +716,16 @@ Examples:
 		withDedup(
 			apiKey,
 			"edit_meal",
-			async ({ logId, mealId, mealName, calories, proteinGrams }) => {
+			async ({
+				logId,
+				mealId,
+				mealLabel,
+				mealName,
+				calories,
+				proteinGrams,
+			}) => {
 				if (
+					mealLabel === undefined &&
 					mealName === undefined &&
 					calories === undefined &&
 					proteinGrams === undefined
@@ -701,7 +734,7 @@ Examples:
 						content: [
 							{
 								type: "text",
-								text: "Nothing to edit — provide at least one of mealName, calories, or proteinGrams.",
+								text: "Nothing to edit — provide at least one of mealLabel, mealName, calories, or proteinGrams.",
 							},
 						],
 					};
@@ -724,6 +757,7 @@ Examples:
 				}
 
 				const payload = {
+					mealLabel: mealLabel !== undefined ? mealLabel : current.mealLabel,
 					mealName: mealName !== undefined ? mealName : current.mealName,
 					calories: calories !== undefined ? calories : current.calories,
 					proteinGrams:
@@ -905,7 +939,7 @@ Examples:
 					parts.push("  Meals:");
 					for (const m of nutrition.meals) {
 						parts.push(
-							`    • ${m.mealName || "Meal"} [meal ID: ${m.id}]: ${m.calories} kcal, ${m.proteinGrams}g protein`,
+							`    • ${[m.mealLabel, m.mealName].filter(Boolean).join(": ") || "Meal"} [meal ID: ${m.id}]: ${m.calories} kcal, ${m.proteinGrams}g protein`,
 						);
 					}
 				}

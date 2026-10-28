@@ -2,6 +2,7 @@ package com.kavin.fitness.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,7 +12,10 @@ import lombok.Setter;
 @NoArgsConstructor
 public class MealRequest {
 
-    private String mealName; // optional label
+    @Size(max = 50)
+    private String mealLabel; // optional: Breakfast / Lunch / Dinner / custom
+
+    private String mealName; // optional: what was eaten
 
     @NotNull
     @Min(0)

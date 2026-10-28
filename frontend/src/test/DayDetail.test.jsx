@@ -28,8 +28,14 @@ vi.mock("../components/WeightModal", () => ({
 vi.mock("../components/DayInfoModal", () => ({
 	default: () => <div data-testid="dayinfo-modal" />,
 }));
-vi.mock("../components/MealModal", () => ({
-	default: () => <div data-testid="meal-modal" />,
+vi.mock("../components/MealCards", () => ({
+	default: ({ nutritionEntry, getOrCreateNutritionLogId }) => (
+		<div
+			data-testid="meal-cards"
+			data-log-id={nutritionEntry?.id ?? ""}
+			data-can-create={String(typeof getOrCreateNutritionLogId === "function")}
+		/>
+	),
 }));
 vi.mock("../components/EditExerciseModal", () => ({
 	default: () => <div data-testid="edit-exercise-modal" />,
@@ -121,6 +127,51 @@ function renderDetail(workoutEntry) {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+});
+
+describe("DayDetail — meals", () => {
+	it("shows the meal boxes even when the day has no nutrition log", () => {
+		renderDetail(null);
+		const cards = screen.getByTestId("meal-cards");
+		expect(cards.dataset.logId).toBe("");
+		expect(cards.dataset.canCreate).toBe("true");
+		expect(
+			screen.queryByRole("button", { name: /\+ meal/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("passes the day's nutrition log to the meal boxes and shows the total", () => {
+		render(
+			<DayDetail
+				date={DATE}
+				weightEntry={null}
+				nutritionEntry={{
+					id: 5,
+					logDate: DATE,
+					dayType: "rest",
+					totalCalories: 1390,
+					totalProtein: 101,
+					meals: [
+						{
+							id: 1,
+							mealLabel: "Breakfast",
+							mealName: "Yogurt",
+							calories: 450,
+							proteinGrams: 38,
+						},
+					],
+				}}
+				workoutEntry={null}
+				stepEntry={null}
+				onRefetchW={vi.fn()}
+				onRefetchN={vi.fn()}
+				onRefetchWo={vi.fn()}
+				onRefetchS={vi.fn()}
+			/>,
+		);
+		expect(screen.getByTestId("meal-cards").dataset.logId).toBe("5");
+		expect(screen.getByText(/1390 kcal/)).toBeInTheDocument();
+	});
 });
 
 describe("DayDetail — workout add", () => {
