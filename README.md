@@ -200,9 +200,7 @@ WorkoutApp/
 │       │   ├── WeightModal.jsx
 │       │   ├── DayInfoModal.jsx
 │       │   ├── ConfirmDeleteModal.jsx
-│       │   ├── DayDetail.jsx
-│       │   ├── BodyMap.jsx + .css
-│       │   └── MuscleDetailPanel.jsx + .css
+│       │   └── DayDetail.jsx
 │       ├── pages/
 │       │   ├── SplashPage.jsx     + .css  ← Today's Focus: motivational entry point
 │       │   ├── Login.jsx          + .css
@@ -227,7 +225,6 @@ WorkoutApp/
 │           ├── useUserProfile.test.js
 │           ├── useWeightUnit.test.js
 │           ├── utils.workout.test.js
-│           ├── muscleMapping.test.js
 │           ├── App.test.jsx
 │           ├── Login.test.jsx
 │           ├── Today.test.jsx
@@ -240,8 +237,6 @@ WorkoutApp/
 │           ├── Cardio.test.jsx
 │           ├── Community.test.jsx
 │           ├── SharedCalendar.test.jsx
-│           ├── BodyMap.test.jsx
-│           ├── MuscleDetailPanel.test.jsx
 │           ├── Modal.test.jsx
 │           ├── DayInfoModal.test.jsx
 │           ├── EditExerciseModal.test.jsx
@@ -634,7 +629,6 @@ Flyway runs migrations automatically when the backend starts. V1–V6 build the 
 - **lbs/kg toggle** — Switch between imperial and metric weight display in Settings; preference is persisted
 - **Workout builder** — Build sessions exercise-by-exercise with sets, reps, and weight
 - **Cardio logging** — Log runs and distance-based cardio with distance + duration, or timed activities (Muay Thai, yoga, etc.)
-- **Muscle map** — Body-map heatmap on Today / Weekly / Total / Shared Calendar pages showing what you've trained
 - **Steps tracking** — Standalone daily step count logging, separate from nutrition
 - **Nutrition goals** — Set calorie targets for training/rest days and a protein target; track adherence
 - **Strength progression** — Chart weight lifted over time per exercise, sorted by peak weight

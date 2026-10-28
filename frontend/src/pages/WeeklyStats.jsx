@@ -4,11 +4,8 @@ import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import DayDetail from "../components/DayDetail";
-import BodyMap from "../components/BodyMap";
-import MuscleDetailPanel from "../components/MuscleDetailPanel";
 import { localDateStr, shortDate, avg, getCurrentWeek } from "../utils/date";
 import { buildDayRows } from "../utils/stats";
-import { buildMuscleGroupStats } from "../utils/muscleMapping";
 import useWeightUnit from "../hooks/useWeightUnit";
 import "./WeeklyStats.css";
 
@@ -21,15 +18,9 @@ export default function WeeklyStats() {
 	const { data: stepData, refetch: refetchSteps } = useSteps();
 
 	const [expandedDay, setExpandedDay] = useState(null);
-	const [selectedMuscle, setSelectedMuscle] = useState(null);
 	const { unit, toDisplay } = useWeightUnit();
 
 	const days = getCurrentWeek();
-	const daySet = new Set(days);
-	const weekWorkouts = (workoutData ?? []).filter((s) =>
-		daySet.has(s.sessionDate),
-	);
-	const muscleStats = buildMuscleGroupStats(weekWorkouts);
 
 	const today = localDateStr(new Date());
 
@@ -176,33 +167,6 @@ export default function WeeklyStats() {
 									</tbody>
 								</table>
 							</div>
-						</div>
-					</div>
-				</div>
-
-				{/* Right column — muscle body map */}
-				<div className="weekly-bodymap-col">
-					<div className="section-box weekly-bodymap-section">
-						<div className="section-header">
-							<span className="section-title">Muscle Map</span>
-							<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-								click a muscle group
-							</span>
-						</div>
-						<div className="section-body">
-							<BodyMap
-								muscleStats={muscleStats}
-								onSelectMuscle={setSelectedMuscle}
-								selectedMuscle={selectedMuscle}
-							/>
-							<MuscleDetailPanel
-								muscle={selectedMuscle}
-								exercises={
-									selectedMuscle
-										? (muscleStats[selectedMuscle]?.exercises ?? [])
-										: []
-								}
-							/>
 						</div>
 					</div>
 				</div>

@@ -338,10 +338,6 @@
 	border-radius: var(--radius-sm);
 }
 
-.section-label-small {
-	font-size: var(--fs-sm);
-}
-
 /* ── Steps inline edit ── */
 .today-steps-edit {
 	display: flex;
