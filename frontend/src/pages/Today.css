@@ -158,43 +158,6 @@
 	grid-template-columns: 36px 1fr 1fr 1fr;
 }
 
-/* ── Meal cards ── */
-.meal-cards {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	margin-top: 12px;
-}
-
-.meal-card {
-	border: 1px solid var(--border-dim);
-	border-radius: var(--radius-md);
-	overflow: hidden;
-	background: var(--bg);
-}
-
-.meal-card-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--border-dim);
-	background: var(--bg-card);
-}
-
-.meal-card-name {
-	font-weight: var(--fw-semibold);
-	font-size: var(--fs);
-}
-
-.meal-card-body {
-	display: flex;
-	gap: 20px;
-	padding: 8px 12px;
-	font-size: var(--fs);
-	color: var(--muted);
-}
-
 .nutrition-day-info {
 	margin-bottom: 12px;
 }
@@ -364,9 +327,5 @@
 	.nutrition-totals-row {
 		flex-wrap: wrap;
 		gap: 4px;
-	}
-
-	.meal-card-body {
-		gap: 12px;
 	}
 }

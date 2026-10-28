@@ -196,7 +196,7 @@ WorkoutApp/
 │       │   ├── WorkoutBuilderModal.jsx + .css
 │       │   ├── EditExerciseModal.jsx
 │       │   ├── ExerciseListEditor.jsx
-│       │   ├── MealModal.jsx
+│       │   ├── MealCards.jsx + .css
 │       │   ├── WeightModal.jsx
 │       │   ├── DayInfoModal.jsx
 │       │   ├── ConfirmDeleteModal.jsx
@@ -240,7 +240,7 @@ WorkoutApp/
 │           ├── Modal.test.jsx
 │           ├── DayInfoModal.test.jsx
 │           ├── EditExerciseModal.test.jsx
-│           ├── MealModal.test.jsx
+│           ├── MealCards.test.jsx
 │           ├── WeightModal.test.jsx
 │           └── WorkoutBuilderModal.test.jsx
 │
@@ -420,7 +420,7 @@ ProgressLog ships an MCP server that exposes your fitness data to Claude. Once c
 | `log_cardio`           | Log a run, ride, or distance-based cardio activity       |
 | `log_activity`         | Log a timed activity with no distance (Muay Thai, yoga…) |
 | `log_meal`             | Log a meal with calories and protein                     |
-| `edit_meal`            | Correct a previously logged meal's name, calories, protein |
+| `edit_meal`            | Correct a previously logged meal's label, name, calories, protein |
 | `log_steps`            | Log step count for a date                                |
 | `edit_steps`           | Correct a previously logged step count                   |
 | `delete_steps`         | Clear step count for a date                              |
@@ -599,7 +599,7 @@ weight_log                          nutrition_log
   UNIQUE(user_id, log_date)         UNIQUE(user_id, log_date)
 
 meal                                 ↑ belongs to nutrition_log
-  id, nutrition_log_id               meal_name, calories, protein_grams
+  id, nutrition_log_id               meal_label, meal_name, calories, protein_grams
 
 step_log
   id, user_id → users
@@ -625,7 +625,7 @@ Flyway runs migrations automatically when the backend starts. V1–V6 build the 
 ## Features
 
 - **Splash page** — "Today's Focus" entry point with motivational quotes that cycle with a fade transition
-- **Daily tracking** — Log weight, meals (with per-meal calorie/protein), workouts, and steps from the Today page
+- **Daily tracking** — Log weight, meals (inline Breakfast / Lunch / Dinner boxes with skip, plus labelled extra meals), workouts, and steps from the Today page
 - **lbs/kg toggle** — Switch between imperial and metric weight display in Settings; preference is persisted
 - **Workout builder** — Build sessions exercise-by-exercise with sets, reps, and weight
 - **Cardio logging** — Log runs and distance-based cardio with distance + duration, or timed activities (Muay Thai, yoga, etc.)

@@ -73,14 +73,10 @@ vi.mock("../components/DayInfoModal", () => ({
 		</div>
 	),
 }));
-vi.mock("../components/MealModal", () => ({
-	default: ({ logId, existing, onClose }) => (
-		<div
-			data-testid="meal-modal"
-			data-log-id={logId}
-			data-existing-id={existing?.id ?? ""}
-		>
-			<button onClick={onClose}>modal-close</button>
+vi.mock("../components/MealCards", () => ({
+	default: ({ nutritionEntry, getOrCreateNutritionLogId }) => (
+		<div data-testid="meal-cards" data-log-id={nutritionEntry?.id ?? ""}>
+			<button onClick={getOrCreateNutritionLogId}>stub-create-log</button>
 		</div>
 	),
 }));
@@ -197,12 +193,12 @@ describe("Today — empty states", () => {
 		expect(screen.getByTestId("daily-progress-bar")).toBeInTheDocument();
 	});
 
-	it('shows "No entry for today" in all three sections when nothing logged', () => {
+	it('shows "No entry for today" in weight and workout when nothing logged', () => {
 		setup();
 		render(<Today />);
-		// All three sections (weight, workout, nutrition) each show this span
+		// Weight and workout show this span; nutrition shows empty meal boxes instead
 		const empties = screen.getAllByText(/no entry for today/i);
-		expect(empties).toHaveLength(3);
+		expect(empties).toHaveLength(2);
 	});
 
 	it("shows + Add buttons for daily logs and Start Workout when nothing logged", () => {
@@ -238,11 +234,10 @@ describe("Today — empty states", () => {
 		expect(empties.length).toBeGreaterThanOrEqual(2);
 	});
 
-	it('shows "No entry for today" in nutrition section when no nutrition logged', () => {
+	it("shows the meal boxes in nutrition even when no nutrition logged", () => {
 		setup();
 		render(<Today />);
-		const empties = screen.getAllByText(/no entry for today/i);
-		expect(empties.length).toBeGreaterThanOrEqual(3);
+		expect(screen.getByTestId("meal-cards").dataset.logId).toBe("");
 	});
 });
 
@@ -280,9 +275,9 @@ describe("Today — weight display", () => {
 		setup({ weight: [{ id: 99, logDate: "2025-01-01", weightLbs: 200 }] });
 		render(<Today />);
 		expect(screen.queryByText("200 lbs")).not.toBeInTheDocument();
-		// All three sections show "No entry for today" since the old entry is filtered out
+		// Weight and workout show "No entry for today" since the old entry is filtered out
 		const empties = screen.getAllByText(/no entry for today/i);
-		expect(empties.length).toBeGreaterThanOrEqual(3);
+		expect(empties.length).toBeGreaterThanOrEqual(2);
 	});
 });
 
@@ -538,19 +533,10 @@ describe("Today — workout display", () => {
 // ── DISPLAY: nutrition section ────────────────────────────────────────────────
 
 describe("Today — nutrition display", () => {
-	it("shows meal names when meals are logged", () => {
+	it("passes today's nutrition log to the meal boxes", () => {
 		setup({ nutrition: [NUTRITION_ENTRY] });
 		render(<Today />);
-		expect(screen.getByText("Breakfast")).toBeInTheDocument();
-		expect(screen.getByText("Lunch")).toBeInTheDocument();
-	});
-
-	it("shows calories and protein for each meal card", () => {
-		setup({ nutrition: [NUTRITION_ENTRY] });
-		render(<Today />);
-		// getAllByText handles cases where parent containers also contain this text
-		expect(screen.getAllByText(/600 kcal/i).length).toBeGreaterThan(0);
-		expect(screen.getAllByText(/40g protein/i).length).toBeGreaterThan(0);
+		expect(screen.getByTestId("meal-cards").dataset.logId).toBe("5");
 	});
 
 	it("shows calorie totals vs target", () => {
@@ -588,7 +574,7 @@ describe("Today — nutrition display", () => {
 		).toBeInTheDocument();
 	});
 
-	it('shows "No meals logged yet." when day info exists but no meals', () => {
+	it("hides the totals when the day has no meals yet", () => {
 		const noMeals = {
 			...NUTRITION_ENTRY,
 			meals: [],
@@ -597,7 +583,8 @@ describe("Today — nutrition display", () => {
 		};
 		setup({ nutrition: [noMeals] });
 		render(<Today />);
-		expect(screen.getByText(/no meals logged yet/i)).toBeInTheDocument();
+		expect(screen.getByTestId("meal-cards")).toBeInTheDocument();
+		expect(screen.queryByText(/remaining/i)).not.toBeInTheDocument();
 	});
 });
 
@@ -678,44 +665,28 @@ describe("Today — opening modals", () => {
 		expect(modal.dataset.existingId).toBe("5");
 	});
 
-	it("+ Add another meal opens MealModal when a nutrition log already exists", async () => {
-		setup({ nutrition: [NUTRITION_ENTRY] });
-		render(<Today />);
-		await userEvent.click(
-			screen.getByRole("button", { name: /add another meal/i }),
-		);
-		const modal = screen.getByTestId("meal-modal");
-		expect(modal).toBeInTheDocument();
-		expect(modal.dataset.logId).toBe("5");
-	});
-
-	it("+ Add Meal creates a nutrition day log first when none exists", async () => {
+	it("meal boxes can create today's nutrition log when none exists", async () => {
 		api.post.mockResolvedValue({ data: { id: 99 } });
 		setup();
 		render(<Today />);
-		await userEvent.click(screen.getByRole("button", { name: /\+ add meal/i }));
+		await userEvent.click(
+			screen.getByRole("button", { name: "stub-create-log" }),
+		);
 		await waitFor(() => {
 			expect(api.post).toHaveBeenCalledWith(
 				"/nutrition",
 				expect.objectContaining({ logDate: TODAY }),
 			);
 		});
-		await waitFor(() =>
-			expect(screen.getByTestId("meal-modal")).toBeInTheDocument(),
-		);
-		expect(screen.getByTestId("meal-modal").dataset.logId).toBe("99");
 	});
 
-	it("meal Edit button opens MealModal with the meal pre-filled", async () => {
+	it("there is no meal modal or per-meal Edit button any more", () => {
 		setup({ nutrition: [NUTRITION_ENTRY] });
 		render(<Today />);
-		const editButtons = screen.getAllByRole("button", { name: /^Edit$/i });
-		// Exercise edit buttons come before meal edit buttons; get the last two (meals)
-		const mealEditBtn = editButtons[editButtons.length - 1];
-		await userEvent.click(mealEditBtn);
-		const modal = screen.getByTestId("meal-modal");
-		expect(modal).toBeInTheDocument();
-		expect(modal.dataset.existingId).toBe("12"); // Lunch is the last meal
+		expect(screen.queryByTestId("meal-modal")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /add another meal/i }),
+		).not.toBeInTheDocument();
 	});
 
 	it("closing a modal removes it from the page", async () => {

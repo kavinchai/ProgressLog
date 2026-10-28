@@ -167,7 +167,7 @@ class UndoFlowIT extends IntegrationTestBase {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         """
-                            {"mealName": "Breakfast", "calories": 500, "proteinGrams": 35}
+                            {"mealLabel": "Breakfast", "mealName": "Oats", "calories": 500, "proteinGrams": 35}
                         """))
                 .andExpect(status().isOk());
         mockMvc.perform(
@@ -200,6 +200,8 @@ class UndoFlowIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$[0].logDate").value("2026-05-10"))
                 .andExpect(jsonPath("$[0].dayType").value("training"))
                 .andExpect(jsonPath("$[0].meals.length()").value(2))
+                .andExpect(jsonPath("$[0].meals[0].mealLabel").value("Breakfast"))
+                .andExpect(jsonPath("$[0].meals[0].mealName").value("Oats"))
                 .andExpect(jsonPath("$[0].totalCalories").value(1200));
     }
 

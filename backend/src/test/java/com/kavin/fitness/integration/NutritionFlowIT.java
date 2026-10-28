@@ -197,4 +197,58 @@ class NutritionFlowIT extends IntegrationTestBase {
                                 .header("Authorization", "Bearer " + tokenB))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void mealLabel_roundTripsAndOrdersSlotsFirst() throws Exception {
+        MvcResult dayResult =
+                mockMvc.perform(
+                                post("/api/nutrition")
+                                        .header("Authorization", "Bearer " + token)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(
+                                                """
+                            {"logDate": "2026-04-02", "dayType": "training"}
+                            """))
+                        .andExpect(status().isCreated())
+                        .andReturn();
+        long logId =
+                objectMapper
+                        .readTree(dayResult.getResponse().getContentAsString())
+                        .get("id")
+                        .asLong();
+
+        // An extra meal added before Breakfast still sorts after the slots
+        mockMvc.perform(
+                        post("/api/nutrition/" + logId + "/meals")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                            {"mealLabel": "Snack", "mealName": "Protein bar", "calories": 300, "proteinGrams": 23}
+                            """))
+                .andExpect(status().isOk());
+        mockMvc.perform(
+                        post("/api/nutrition/" + logId + "/meals")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                            {"mealLabel": "Breakfast", "mealName": "Oatmeal", "calories": 620, "proteinGrams": 42}
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meals[0].mealLabel").value("Breakfast"))
+                .andExpect(jsonPath("$.meals[0].mealName").value("Oatmeal"))
+                .andExpect(jsonPath("$.meals[1].mealLabel").value("Snack"));
+
+        // Labels longer than 50 characters are rejected
+        mockMvc.perform(
+                        post("/api/nutrition/" + logId + "/meals")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"mealLabel\": \""
+                                                + "x".repeat(51)
+                                                + "\", \"calories\": 1, \"proteinGrams\": 1}"))
+                .andExpect(status().isBadRequest());
+    }
 }

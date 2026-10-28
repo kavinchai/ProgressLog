@@ -108,6 +108,7 @@ public class UndoService {
                                                 "Cannot restore meal — its day log no longer exists. "
                                                         + "Undo the day log first."));
         MealRequest req = new MealRequest();
+        req.setMealLabel(snap.getMealLabel());
         req.setMealName(snap.getMealName());
         req.setCalories(snap.getCalories());
         req.setProteinGrams(snap.getProteinGrams());

@@ -3,7 +3,7 @@ import { useDayActions } from "../hooks/useDayActions";
 import useWeightUnit from "../hooks/useWeightUnit";
 import WeightModal from "./WeightModal";
 import DayInfoModal from "./DayInfoModal";
-import MealModal from "./MealModal";
+import MealCards from "./MealCards";
 import WorkoutBuilderModal from "./WorkoutBuilderModal";
 import EditExerciseModal from "./EditExerciseModal";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
@@ -29,8 +29,6 @@ export default function DayDetail({
 }) {
 	const { unit, toDisplay } = useWeightUnit();
 	const [modal, setModal] = useState(null);
-	const [editMeal, setEditMeal] = useState(null);
-	const [mealLogId, setMealLogId] = useState(null);
 	const [editExercise, setEditExercise] = useState(null);
 	const [editingSteps, setEditingSteps] = useState(false);
 	const [stepsValue, setStepsValue] = useState("");
@@ -65,13 +63,6 @@ export default function DayDetail({
 
 	function close() {
 		setModal(null);
-	}
-
-	async function openAddMeal() {
-		const logId = await getOrCreateNutritionLogId();
-		setMealLogId(logId);
-		setEditMeal(null);
-		setModal("meal");
 	}
 
 	return (
@@ -162,48 +153,20 @@ export default function DayDetail({
 								)}
 							</>
 						)}
-						<button className="btn btn-sm btn-primary" onClick={openAddMeal}>
-							+ Meal
-						</button>
 					</div>
 				</div>
-				{nutritionEntry ? (
-					<div>
-						<div className="day-detail-value">{nutritionEntry.dayType}</div>
-						{meals.length > 0 && (
-							<>
-								<div className="day-meal-list">
-									{meals.map((meal, i) => (
-										<div key={meal.id} className="day-meal-row">
-											<span className="day-meal-name">
-												{meal.mealName || `Meal ${i + 1}`}
-											</span>
-											<span className="muted">
-												{meal.calories} kcal / {meal.proteinGrams}g
-											</span>
-											<button
-												className="btn btn-sm"
-												onClick={() => {
-													setMealLogId(nutritionEntry.id);
-													setEditMeal(meal);
-													setModal("meal");
-												}}
-											>
-												Edit
-											</button>
-										</div>
-									))}
-								</div>
-								<div className="day-nutrition-total">
-									Total: {nutritionEntry.totalCalories ?? 0} kcal /{" "}
-									{nutritionEntry.totalProtein ?? 0}g protein
-								</div>
-							</>
-						)}
-					</div>
-				) : (
-					<div className="day-detail-value">
-						<span className="muted">--</span>
+				{nutritionEntry && (
+					<div className="day-detail-value">{nutritionEntry.dayType}</div>
+				)}
+				<MealCards
+					nutritionEntry={nutritionEntry ?? null}
+					getOrCreateNutritionLogId={getOrCreateNutritionLogId}
+					onSaved={onRefetchN}
+				/>
+				{meals.length > 0 && (
+					<div className="day-nutrition-total">
+						Total: {nutritionEntry.totalCalories ?? 0} kcal /{" "}
+						{nutritionEntry.totalProtein ?? 0}g protein
 					</div>
 				)}
 			</div>
@@ -444,18 +407,6 @@ export default function DayDetail({
 					prefillDate={date}
 					existing={nutritionEntry}
 					onClose={close}
-					onSaved={onRefetchN}
-				/>
-			)}
-			{modal === "meal" && (
-				<MealModal
-					logId={mealLogId}
-					existing={editMeal}
-					onClose={() => {
-						setModal(null);
-						setEditMeal(null);
-						setMealLogId(null);
-					}}
 					onSaved={onRefetchN}
 				/>
 			)}

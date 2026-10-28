@@ -32,6 +32,8 @@ public class ImportService {
     private final NutritionLogRepository nutritionLogRepository;
     private final StepLogRepository stepLogRepository;
     private final MealRepository mealRepository;
+
+    private static final Set<String> LEGACY_SLOT_NAMES = Set.of("breakfast", "lunch", "dinner");
     @PersistenceContext private EntityManager entityManager;
 
     @Transactional
@@ -159,12 +161,24 @@ public class ImportService {
                 }
 
                 for (Map<String, Object> row : mealRows) {
+                    String mealLabel = getString(row, "Label");
                     String mealName = getString(row, "Meal");
                     String caloriesStr = getString(row, "Calories");
                     String proteinStr = getString(row, "Protein");
                     if (mealName == null && caloriesStr == null && proteinStr == null) continue;
+                    // Older exports have no Label column: a meal named after a slot becomes
+                    // that slot's label (same rule as the V10 migration).
+                    if (!row.containsKey("Label")
+                            && mealName != null
+                            && LEGACY_SLOT_NAMES.contains(mealName.trim().toLowerCase())) {
+                        mealLabel =
+                                Character.toUpperCase(mealName.trim().charAt(0))
+                                        + mealName.trim().substring(1).toLowerCase();
+                        mealName = null;
+                    }
                     Meal meal = new Meal();
                     meal.setNutritionLog(log);
+                    meal.setMealLabel(mealLabel);
                     meal.setMealName(mealName != null ? mealName : "");
                     meal.setCalories(
                             caloriesStr != null

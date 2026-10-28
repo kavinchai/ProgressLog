@@ -22,8 +22,11 @@ public class Meal {
     @JoinColumn(name = "nutrition_log_id", nullable = false)
     private NutritionLog nutritionLog;
 
+    @Column(name = "meal_label", length = 50)
+    private String mealLabel; // "Breakfast" | "Lunch" | "Dinner" | user-chosen
+
     @Column(name = "meal_name", length = 100)
-    private String mealName;
+    private String mealName; // what was eaten
 
     @Column(nullable = false)
     private Integer calories;

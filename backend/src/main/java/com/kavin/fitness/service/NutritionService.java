@@ -11,6 +11,7 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.MealRepository;
 import com.kavin.fitness.repository.NutritionLogRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,7 @@ public class NutritionService {
         NutritionLog log = resolveLog(logId, userId);
         Meal meal = new Meal();
         meal.setNutritionLog(log);
+        meal.setMealLabel(request.getMealLabel());
         meal.setMealName(request.getMealName());
         meal.setCalories(request.getCalories());
         meal.setProteinGrams(request.getProteinGrams());
@@ -69,6 +71,7 @@ public class NutritionService {
                                 existingMeal ->
                                         existingMeal.getNutritionLog().getId().equals(logId))
                         .orElseThrow(() -> new EntityNotFoundException("Meal not found"));
+        meal.setMealLabel(request.getMealLabel());
         meal.setMealName(request.getMealName());
         meal.setCalories(request.getCalories());
         meal.setProteinGrams(request.getProteinGrams());
@@ -124,6 +127,7 @@ public class NutritionService {
                         log.getLogDate()),
                 new MealSnapshot(
                         log.getId(),
+                        meal.getMealLabel(),
                         meal.getMealName(),
                         meal.getCalories(),
                         meal.getProteinGrams()));
@@ -131,6 +135,19 @@ public class NutritionService {
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private static final List<String> SLOT_LABELS = List.of("breakfast", "lunch", "dinner");
+
+    /** Breakfast, Lunch, Dinner first; every other meal after them in the order it was added. */
+    private static final Comparator<Meal> MEAL_ORDER =
+            Comparator.comparingInt(NutritionService::slotRank)
+                    .thenComparing(Meal::getId, Comparator.nullsLast(Comparator.naturalOrder()));
+
+    private static int slotRank(Meal meal) {
+        String label = meal.getMealLabel();
+        int idx = label == null ? -1 : SLOT_LABELS.indexOf(label.trim().toLowerCase());
+        return idx == -1 ? SLOT_LABELS.size() : idx;
+    }
 
     private NutritionLog resolveLog(Long logId, Long userId) {
         return nutritionLogRepository
@@ -141,6 +158,7 @@ public class NutritionService {
 
     private MealRequest toMealRequest(Meal meal) {
         MealRequest req = new MealRequest();
+        req.setMealLabel(meal.getMealLabel());
         req.setMealName(meal.getMealName());
         req.setCalories(meal.getCalories());
         req.setProteinGrams(meal.getProteinGrams());
@@ -150,10 +168,12 @@ public class NutritionService {
     private NutritionLogDTO toDTO(NutritionLog log) {
         List<NutritionLogDTO.MealDTO> mealDTOs =
                 log.getMeals().stream()
+                        .sorted(MEAL_ORDER)
                         .map(
                                 meal ->
                                         new NutritionLogDTO.MealDTO(
                                                 meal.getId(),
+                                                meal.getMealLabel(),
                                                 meal.getMealName(),
                                                 meal.getCalories(),
                                                 meal.getProteinGrams()))

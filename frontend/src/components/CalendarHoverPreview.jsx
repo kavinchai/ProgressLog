@@ -88,7 +88,9 @@ function buildContent(type, row) {
 					{meals.map((meal, i) => (
 						<li key={meal.id ?? i} className="cal-hover-item">
 							<span className="cal-hover-item-name">
-								{meal.mealName || `Meal ${i + 1}`}
+								{meal.mealLabel && meal.mealName
+									? `${meal.mealLabel}: ${meal.mealName}`
+									: meal.mealLabel || meal.mealName || `Meal ${i + 1}`}
 							</span>
 							<span className="cal-hover-item-detail">
 								{meal.calories} kcal · {meal.proteinGrams}g

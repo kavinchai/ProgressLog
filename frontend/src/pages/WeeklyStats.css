@@ -193,23 +193,8 @@
 }
 
 /* Meals inside day detail */
-.day-meal-list {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
+.day-detail-section .meal-cards {
 	margin-top: 6px;
-}
-
-.day-meal-row {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	font-size: var(--fs-sm);
-}
-
-.day-meal-name {
-	font-weight: var(--fw-semibold);
-	flex: 1;
 }
 
 .day-nutrition-total {
@@ -274,11 +259,6 @@
 	.weekly-header {
 		flex-wrap: wrap;
 		gap: 8px;
-	}
-
-	.day-meal-row {
-		flex-wrap: wrap;
-		gap: 6px;
 	}
 
 	.day-exercise-row {

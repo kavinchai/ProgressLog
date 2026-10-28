@@ -9,7 +9,7 @@ import usePRs from "../hooks/usePRs";
 import { useDayActions } from "../hooks/useDayActions";
 import WeightModal from "../components/WeightModal";
 import DayInfoModal from "../components/DayInfoModal";
-import MealModal from "../components/MealModal";
+import MealCards from "../components/MealCards";
 import WorkoutBuilderModal from "../components/WorkoutBuilderModal";
 import EditExerciseModal from "../components/EditExerciseModal";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
@@ -26,27 +26,6 @@ import useToday from "../hooks/useToday";
 import { formatDateFull as fmtDate } from "../utils/date";
 import "../pages/WeeklyStats.css";
 import "./Today.css";
-
-// ── Meal card ─────────────────────────────────────────────────────────────────
-
-function MealCard({ meal, index, onEdit }) {
-	return (
-		<div className="meal-card">
-			<div className="meal-card-header">
-				<span className="meal-card-name">
-					{meal.mealName || `Meal ${index + 1}`}
-				</span>
-				<button className="btn btn-sm" onClick={onEdit}>
-					Edit
-				</button>
-			</div>
-			<div className="meal-card-body">
-				<span>{meal.calories} kcal</span>
-				<span>{meal.proteinGrams}g protein</span>
-			</div>
-		</div>
-	);
-}
 
 // ── Exercise cards ────────────────────────────────────────────────────────────
 
@@ -203,8 +182,6 @@ export default function Today() {
 	const [modal, setModal] = useState(null);
 	const [editingEntry, setEditingEntry] = useState(null);
 	const [editExercise, setEditExercise] = useState(null);
-	const [editMeal, setEditMeal] = useState(null);
-	const [mealLogId, setMealLogId] = useState(null);
 	const [appendBlankExercise, setAppendBlankExercise] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -222,7 +199,6 @@ export default function Today() {
 	const [stepsValue, setStepsValue] = useState("");
 	const [stepsSaving, setStepsSaving] = useState(false);
 	const [dayTypeSaving, setDayTypeSaving] = useState(false);
-	const [addingMeal, setAddingMeal] = useState(false);
 
 	const {
 		renamingSession,
@@ -312,19 +288,6 @@ export default function Today() {
 			console.warn("toggleDayType failed:", err);
 		} finally {
 			setDayTypeSaving(false);
-		}
-	}
-
-	async function openAddMeal() {
-		if (addingMeal) return;
-		setAddingMeal(true);
-		try {
-			const logId = await getOrCreateNutritionLogId();
-			setMealLogId(logId);
-			setEditMeal(null);
-			setModal("meal");
-		} finally {
-			setAddingMeal(false);
 		}
 	}
 
@@ -734,102 +697,77 @@ export default function Today() {
 							</div>
 						</div>
 						<div className="section-body">
-							{todayNutritionEntry ? (
-								<>
-									<div className="nutrition-day-info">
-										<DataRow
-											label="Day Type"
-											value={todayNutritionEntry.dayType}
-										/>
-									</div>
-									{meals.length > 0 && (
-										<>
-											<div className="meal-cards">
-												{meals.map((meal, i) => (
-													<MealCard
-														key={meal.id}
-														meal={meal}
-														index={i}
-														onEdit={() => {
-															setMealLogId(todayNutritionEntry.id);
-															setEditMeal(meal);
-															setModal("meal");
-														}}
-													/>
-												))}
-											</div>
-											<div className="nutrition-totals">
-												{(() => {
-													const calTarget =
-														todayNutritionEntry.dayType === "training"
-															? goals.calorieTargetTraining
-															: goals.calorieTargetRest;
-													const calEaten =
-														todayNutritionEntry.totalCalories ?? 0;
-													const protEaten =
-														todayNutritionEntry.totalProtein ?? 0;
-													const calLeft = calTarget - calEaten;
-													const protLeft = goals.proteinTarget - protEaten;
-													return (
-														<>
-															<div className="nutrition-totals-row">
-																<span className="nutrition-totals-label">
-																	Calories
-																</span>
-																<span>
-																	{calEaten} / {calTarget} kcal
-																</span>
-																<span
-																	className={
-																		calLeft <= 0
-																			? "nutrition-goal-met"
-																			: "nutrition-goal-remaining"
-																	}
-																>
-																	{calLeft <= 0
-																		? `+${Math.abs(calLeft)} over`
-																		: `${calLeft} remaining`}
-																</span>
-															</div>
-															<div className="nutrition-totals-row">
-																<span className="nutrition-totals-label">
-																	Protein
-																</span>
-																<span>
-																	{protEaten} / {goals.proteinTarget} g
-																</span>
-																<span
-																	className={
-																		protLeft <= 0
-																			? "nutrition-goal-met"
-																			: "nutrition-goal-remaining"
-																	}
-																>
-																	{protLeft <= 0
-																		? `+${Math.abs(protLeft)}g over`
-																		: `${protLeft}g remaining`}
-																</span>
-															</div>
-														</>
-													);
-												})()}
-											</div>
-										</>
-									)}
-									{meals.length === 0 && (
-										<span className="muted">No meals logged yet.</span>
-									)}
-								</>
-							) : (
-								<span className="muted">No entry for today.</span>
+							{todayNutritionEntry && (
+								<div className="nutrition-day-info">
+									<DataRow
+										label="Day Type"
+										value={todayNutritionEntry.dayType}
+									/>
+								</div>
 							)}
-							<button
-								className="today-add-row"
-								onClick={openAddMeal}
-								disabled={addingMeal}
-							>
-								{meals.length > 0 ? "+ Add another meal" : "+ Add meal"}
-							</button>
+							<MealCards
+								nutritionEntry={todayNutritionEntry ?? null}
+								getOrCreateNutritionLogId={getOrCreateNutritionLogId}
+								onSaved={refetchNutrition}
+							/>
+							{todayNutritionEntry && meals.length > 0 && (
+								<>
+									<div className="nutrition-totals">
+										{(() => {
+											const calTarget =
+												todayNutritionEntry.dayType === "training"
+													? goals.calorieTargetTraining
+													: goals.calorieTargetRest;
+											const calEaten = todayNutritionEntry.totalCalories ?? 0;
+											const protEaten = todayNutritionEntry.totalProtein ?? 0;
+											const calLeft = calTarget - calEaten;
+											const protLeft = goals.proteinTarget - protEaten;
+											return (
+												<>
+													<div className="nutrition-totals-row">
+														<span className="nutrition-totals-label">
+															Calories
+														</span>
+														<span>
+															{calEaten} / {calTarget} kcal
+														</span>
+														<span
+															className={
+																calLeft <= 0
+																	? "nutrition-goal-met"
+																	: "nutrition-goal-remaining"
+															}
+														>
+															{calLeft <= 0
+																? `+${Math.abs(calLeft)} over`
+																: `${calLeft} remaining`}
+														</span>
+													</div>
+													<div className="nutrition-totals-row">
+														<span className="nutrition-totals-label">
+															Protein
+														</span>
+														<span>
+															{protEaten} / {goals.proteinTarget} g
+														</span>
+														<span
+															className={
+																protLeft <= 0
+																	? "nutrition-goal-met"
+																	: "nutrition-goal-remaining"
+															}
+														>
+															{protLeft <= 0
+																? `+${Math.abs(protLeft)}g over`
+																: `${protLeft}g remaining`}
+														</span>
+													</div>
+												</>
+											);
+										})()}
+									</div>
+								</>
+							)}
 						</div>
 					</div>
 				</div>
@@ -861,18 +799,6 @@ export default function Today() {
 					prefillDate={TODAY}
 					existing={editingEntry}
 					onClose={closeModal}
-					onSaved={refetchNutrition}
-				/>
-			)}
-			{modal === "meal" && (
-				<MealModal
-					logId={mealLogId}
-					existing={editMeal}
-					onClose={() => {
-						setModal(null);
-						setEditMeal(null);
-						setMealLogId(null);
-					}}
 					onSaved={refetchNutrition}
 				/>
 			)}
