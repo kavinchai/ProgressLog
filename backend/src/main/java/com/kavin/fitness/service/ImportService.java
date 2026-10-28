@@ -167,7 +167,7 @@ public class ImportService {
                     String proteinStr = getString(row, "Protein");
                     if (mealName == null && caloriesStr == null && proteinStr == null) continue;
                     // Older exports have no Label column: a meal named after a slot becomes
-                    // that slot's label (same rule as the V10 migration).
+                    // that slot's label (same rule as the V18 migration).
                     if (!row.containsKey("Label")
                             && mealName != null
                             && LEGACY_SLOT_NAMES.contains(mealName.trim().toLowerCase())) {
