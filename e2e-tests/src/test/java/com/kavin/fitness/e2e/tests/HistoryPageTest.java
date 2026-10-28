@@ -48,6 +48,7 @@ public class HistoryPageTest extends BaseTest {
 
         api.deleteWorkoutsOnDate(todayDate);
         api.deleteWorkoutsOnDate(pastDate);
+        api.deleteNutritionOnDate(todayDate);
 
         api.logWeight(todayDate, 180.0);
         api.logSteps(todayDate, 8500);
@@ -82,6 +83,7 @@ public class HistoryPageTest extends BaseTest {
                 api.deleteWeightOnDate(todayDate);
                 api.deleteWeightOnDate(pastDate);
                 api.deleteStepsOnDate(todayDate);
+                api.deleteNutritionOnDate(todayDate);
             }
         } catch (Exception ignored) {}
     }
@@ -267,6 +269,28 @@ public class HistoryPageTest extends BaseTest {
                 throw new AssertionError("Expected '" + title + "' chart on the Total page");
             }
         }
+    }
+
+    @Test(priority = 14, dependsOnMethods = "totalCalendarHasCellsForCurrentMonth")
+    public void totalDayPanelEditsAMealFromItsReadLine() {
+        step("open /history/total and select today");
+        history.openTotal(baseUrl);
+        history.clickCalendarDay(todayDate);
+        history.waitForDayPanelTitle(shortDate(LocalDate.now()));
+
+        step("tap Lunch's read line, enter a long name and calories, Done");
+        String lunch = "History E2E turkey sandwich with chips";
+        history.editMealInDayPanel("Lunch", lunch, "640");
+
+        step("the read line shows the full name and calories");
+        history.waitForMealLine("Lunch", lunch);
+        history.waitForMealLine("Lunch", "640 kcal");
+
+        step("reload: the saved name and calories are still there");
+        history.openTotal(baseUrl);
+        history.clickCalendarDay(todayDate);
+        history.waitForMealLine("Lunch", lunch);
+        history.waitForMealLine("Lunch", "640 kcal");
     }
 
     @Test(priority = 13, dependsOnMethods = "totalPageLoadsAndShowsCalendar")

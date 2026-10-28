@@ -481,6 +481,7 @@ export default function TotalStats() {
 									onRefetchWo={refetchWorkouts}
 									onRefetchS={refetchSteps}
 									showDelete={true}
+									compactMeals
 								/>
 							) : (
 								<span className="muted">

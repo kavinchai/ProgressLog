@@ -43,8 +43,12 @@ vi.mock("../components/HistoryCharts", () => ({
 
 // Stub DayDetail — has its own behavior; we only verify it renders with the right date
 vi.mock("../components/DayDetail", () => ({
-	default: ({ date }) => (
-		<div data-testid="day-detail" data-date={date}>
+	default: ({ date, compactMeals }) => (
+		<div
+			data-testid="day-detail"
+			data-date={date}
+			data-compact-meals={String(!!compactMeals)}
+		>
 			DayDetail for {date}
 		</div>
 	),
@@ -179,6 +183,12 @@ describe("TotalStats — selected day panel", () => {
 		await userEvent.click(cell("2026-04-10"));
 		expect(screen.getByTestId("day-detail").dataset.date).toBe("2026-04-10");
 		expect(cell("2026-04-10")).toHaveAttribute("aria-pressed", "true");
+	});
+
+	it("uses compact (tap-to-edit) meals because the side panel is narrow", async () => {
+		render(<TotalStats />);
+		await userEvent.click(cell("2026-04-10"));
+		expect(screen.getByTestId("day-detail").dataset.compactMeals).toBe("true");
 	});
 
 	it("an empty past day can be selected so data can be added", async () => {
