@@ -39,9 +39,13 @@ export function avg(nums) {
 
 // Returns the 7 dates of the current calendar week (Sunday → Saturday) as 'YYYY-MM-DD' strings.
 export function getCurrentWeek() {
-	const today = new Date();
+	return getWeek(0);
+}
+
+// Same as getCurrentWeek, shifted by `offset` weeks (-1 = last week).
+export function getWeek(offset = 0, today = new Date()) {
 	const sunday = new Date(today);
-	sunday.setDate(today.getDate() - today.getDay());
+	sunday.setDate(today.getDate() - today.getDay() + offset * 7);
 	const days = [];
 	for (let i = 0; i < 7; i++) {
 		const d = new Date(sunday);

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import useFetch from "../hooks/useFetch";
+import useAuthStore from "../store/authStore";
 
 vi.mock("../api", () => ({
 	default: { get: vi.fn() },
@@ -103,5 +104,88 @@ describe("useFetch", () => {
 
 		rerender({ ep: "/nutrition" });
 		await waitFor(() => expect(api.get).toHaveBeenCalledWith("/nutrition"));
+	});
+});
+
+describe("useFetch — shared cache", () => {
+	it("a second user of the same endpoint gets cached data instantly, then revalidates", async () => {
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const first = renderHook(() => useFetch("/cached"));
+		await waitFor(() => expect(first.result.current.loading).toBe(false));
+		first.unmount();
+
+		api.get.mockResolvedValue({ data: [{ id: 1 }, { id: 2 }] });
+		const second = renderHook(() => useFetch("/cached"));
+		// Cached value is shown immediately, without a loading state
+		expect(second.result.current.loading).toBe(false);
+		expect(second.result.current.data).toEqual([{ id: 1 }]);
+		// ...and is refreshed in the background
+		await waitFor(() => expect(second.result.current.data).toHaveLength(2));
+		expect(api.get).toHaveBeenCalledTimes(2);
+	});
+
+	it("components mounting together share one request", async () => {
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const a = renderHook(() => useFetch("/shared"));
+		const b = renderHook(() => useFetch("/shared"));
+		await waitFor(() => expect(b.result.current.loading).toBe(false));
+		expect(a.result.current.data).toEqual([{ id: 1 }]);
+		expect(api.get).toHaveBeenCalledTimes(1);
+	});
+
+	it("refetch in one component updates every component on that endpoint", async () => {
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const a = renderHook(() => useFetch("/sync"));
+		const b = renderHook(() => useFetch("/sync"));
+		await waitFor(() => expect(b.result.current.loading).toBe(false));
+
+		api.get.mockResolvedValue({ data: [{ id: 1 }, { id: 9 }] });
+		await act(async () => {
+			a.result.current.refetch();
+		});
+		await waitFor(() => expect(b.result.current.data).toHaveLength(2));
+	});
+
+	it("keeps showing cached data when a background refresh fails", async () => {
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const first = renderHook(() => useFetch("/flaky"));
+		await waitFor(() => expect(first.result.current.loading).toBe(false));
+		first.unmount();
+
+		api.get.mockRejectedValue(new Error("offline"));
+		const second = renderHook(() => useFetch("/flaky"));
+		await waitFor(() => expect(second.result.current.error).toBe("offline"));
+		expect(second.result.current.data).toEqual([{ id: 1 }]);
+	});
+
+	it("logging out clears the cache", async () => {
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const first = renderHook(() => useFetch("/private"));
+		await waitFor(() => expect(first.result.current.loading).toBe(false));
+		first.unmount();
+
+		act(() => {
+			useAuthStore.getState().login("kavin");
+			useAuthStore.getState().logout();
+		});
+
+		api.get.mockReturnValue(new Promise(() => {}));
+		const second = renderHook(() => useFetch("/private"));
+		expect(second.result.current.loading).toBe(true);
+		expect(second.result.current.data).toEqual([]);
+	});
+
+	it("switching to a different user clears the cache", async () => {
+		act(() => useAuthStore.getState().login("alice"));
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const first = renderHook(() => useFetch("/mine"));
+		await waitFor(() => expect(first.result.current.loading).toBe(false));
+		first.unmount();
+
+		act(() => useAuthStore.getState().login("bob"));
+		api.get.mockReturnValue(new Promise(() => {}));
+		const second = renderHook(() => useFetch("/mine"));
+		expect(second.result.current.data).toEqual([]);
+		act(() => useAuthStore.getState().logout());
 	});
 });

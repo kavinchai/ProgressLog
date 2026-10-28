@@ -1,31 +1,36 @@
 package com.kavin.fitness.e2e.pages;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class HistoryPage {
     private final Page page;
 
     private static final String PAGE_TABS = ".page-tabs .page-tab";
     private static final String ACTIVE_TAB = ".page-tabs .page-tab-active";
-    private static final String WEEKLY_TITLE = "span.weekly-title:has-text(\"Weekly\")";
-    private static final String TOTAL_TITLE = "span.weekly-title:has-text(\"Total\")";
-    private static final String WEEKLY_TABLE = ".weekly-table";
-    private static final String WEEKLY_ROWS = ".weekly-table tbody .weekly-row";
-    private static final String TODAY_ROW = ".weekly-table tbody .today-row";
-    private static final String CALENDAR = ".calendar-grid";
-    private static final String CALENDAR_CELLS = ".calendar-cell:not(.calendar-cell-pad)";
+    private static final String WEEKLY_TITLE = ".weekly-page .history-title";
+    private static final String TOTAL_TITLE = ".total-page .history-title";
+    private static final String DAY_CARDS = ".week-strip .week-day";
+    private static final String DAY_PANEL = "section[aria-label='Selected day']";
+    private static final String CALENDAR_CELLS = "[data-testid^='calendar-day-']";
     private static final String MONTH_NAV = ".month-nav";
     private static final String MONTH_PICKER = ".month-picker";
-    private static final String DAY_MODAL_TITLE = ".modal-title";
+
     public HistoryPage(Page page) {
         this.page = page;
     }
 
     private boolean awaitVisible(String selector) {
+        return awaitVisible(page.locator(selector).first());
+    }
+
+    private boolean awaitVisible(Locator locator) {
         try {
-            page.locator(selector).first().waitFor(
-                    new Locator.WaitForOptions().setTimeout(5000));
+            locator.waitFor(new Locator.WaitForOptions().setTimeout(5000));
             return true;
         } catch (Exception e) {
             return false;
@@ -55,44 +60,85 @@ public class HistoryPage {
         page.locator("nav.page-tabs a", new Page.LocatorOptions().setHasText(label)).click();
     }
 
+    private Locator button(String name) {
+        return page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(name));
+    }
+
     // ── Weekly ───────────────────────────────────────────────────────────────
 
-    public boolean isWeeklyTableVisible() {
-        return awaitVisible(WEEKLY_TABLE);
+    public boolean isWeekStripVisible() {
+        return awaitVisible(DAY_CARDS);
     }
 
-    public int getWeeklyRowCount() {
-        return page.locator(WEEKLY_ROWS).count();
+    public int getDayCardCount() {
+        return page.locator(DAY_CARDS).count();
     }
 
-    public boolean hasTodayRow() {
-        return awaitVisible(TODAY_ROW);
+    /** Today's card is outlined and selected by default. */
+    public boolean isTodaySelected() {
+        Locator today = page.locator(".week-strip .week-day--today");
+        return awaitVisible(today) && "true".equals(today.getAttribute("aria-pressed"));
     }
 
-    public void clickFirstWeeklyRow() {
-        page.locator(WEEKLY_ROWS).first().click();
+    public void clickFirstDayCard() {
+        page.locator(DAY_CARDS).first().click();
     }
 
-    public void clickTodayRow() {
-        page.locator(TODAY_ROW).first().click();
+    public void clickTodayCard() {
+        page.locator(".week-strip .week-day--today").click();
     }
 
-    public void clickAddExerciseInExpandedDay() {
-        page.locator("tr.detail-row button:has-text(\"+ Add exercise\")").click();
+    public void clickAddExerciseInDayPanel() {
+        page.locator(DAY_PANEL + " button:has-text(\"+ Add exercise\")").click();
     }
 
-    public boolean isExpandedRowVisible() {
-        return awaitVisible(".weekly-table tbody .detail-row");
+    public boolean dayPanelContains(String text) {
+        return awaitVisible(DAY_PANEL + " :text(\"" + text + "\")");
     }
 
-    public boolean dayDetailContains(String text) {
-        return awaitVisible("tr.detail-row :text(\"" + text + "\")");
+    /** Waits until the selected-day panel's header reads e.g. "Wed 10/28". */
+    public void waitForDayPanelTitle(String title) {
+        assertThat(page.locator(DAY_PANEL + " .history-day-panel-title")).hasText(title);
+    }
+
+    public boolean isChartVisible(String title) {
+        return awaitVisible("section.history-chart-card[aria-label='" + title + "']");
+    }
+
+    public void clickPreviousWeek() {
+        button("Previous week").click();
+    }
+
+    public void clickNextWeek() {
+        button("Next week").click();
+    }
+
+    /** Waits (retrying) until the Next week button is enabled or disabled. */
+    public void waitForNextWeekEnabled(boolean enabled) {
+        if (enabled) {
+            assertThat(button("Next week")).isEnabled();
+        } else {
+            assertThat(button("Next week")).isDisabled();
+        }
+    }
+
+    private Locator thisWeekPill() {
+        return page.locator(".weekly-page .history-pill",
+                new Page.LocatorOptions().setHasText("This week"));
+    }
+
+    public void waitForThisWeekPill() {
+        thisWeekPill().waitFor();
+    }
+
+    public void waitForThisWeekPillHidden() {
+        thisWeekPill().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
     }
 
     // ── Total ────────────────────────────────────────────────────────────────
 
     public boolean isCalendarVisible() {
-        return awaitVisible(CALENDAR);
+        return awaitVisible(CALENDAR_CELLS);
     }
 
     public int getCalendarCellCount() {
@@ -107,20 +153,27 @@ public class HistoryPage {
         page.locator("[data-testid='calendar-day-" + isoDate + "']").click();
     }
 
-    public void waitForDayModal() {
-        page.locator(DAY_MODAL_TITLE).waitFor();
+    public String calendarDayLabel(String isoDate) {
+        return page.locator("[data-testid='calendar-day-" + isoDate + "']").getAttribute("aria-label");
     }
 
-    public boolean dayModalContains(String text) {
-        return awaitVisible(".modal-box :text(\"" + text + "\")");
+    /** Waits until a calendar day's accessible label contains {@code text}. */
+    public void waitForCalendarDayLabel(String isoDate, String text) {
+        page.locator("[data-testid='calendar-day-" + isoDate + "'][aria-label*='" + text + "']")
+                .waitFor();
     }
 
-    public void closeDayModal() {
-        page.locator(".modal-box .modal-close").click();
+    public void selectHeatmapMetric(String metric) {
+        page.locator("[aria-label='Color days by'] button", new Page.LocatorOptions().setHasText(metric))
+                .click();
+    }
+
+    public void closeDayPanel() {
+        button("Close day").click();
     }
 
     public void clickMonthPickerToggle() {
-        page.locator(".month-nav-label .btn").first().click();
+        page.locator(".month-nav-label button").first().click();
     }
 
     public boolean isMonthPickerVisible() {
