@@ -38,6 +38,7 @@ function bodyFrom(fields, slot) {
 function MealCard({
 	slot,
 	meal,
+	compact,
 	autoFocusLabel,
 	saveMeal,
 	removeMeal,
@@ -47,12 +48,18 @@ function MealCard({
 	const toast = useToast();
 	const [fields, setFields] = useState(() => fieldsFrom(meal, slot));
 	const [status, setStatus] = useState(null); // "saving" | "saved" | null
+	// Compact mode (narrow panels): a read line until tapped. New extras open.
+	const [open, setOpen] = useState(!compact || !!autoFocusLabel);
+	const [focusName, setFocusName] = useState(false);
+	const [focusRead, setFocusRead] = useState(false);
 	const fieldsRef = useRef(fields);
 	const savedRef = useRef(fieldsFrom(meal, slot));
 	const idRef = useRef(meal?.id ?? null);
 	const editingRef = useRef(false);
 	const queueRef = useRef(Promise.resolve());
 	const nameRef = useRef(null);
+	const caloriesRef = useRef(null);
+	const proteinRef = useRef(null);
 
 	// Pick up refetched data (e.g. after undo) unless the user is mid-edit.
 	useEffect(() => {
@@ -119,16 +126,55 @@ function MealCard({
 
 	const skipped = slot && fields.name === `Skipped ${slot}`;
 	const groupName = slot ?? (fields.label.trim() || "New meal");
+	const hasMacros = fields.calories !== "" || fields.protein !== "";
+
+	function openEditor() {
+		setFocusName(true);
+		setFocusRead(false);
+		setOpen(true);
+	}
+
+	// Done / Enter on the last field: save, fold back and keep the user's place.
+	function closeEditor() {
+		commit();
+		if (!compact) return;
+		editingRef.current = false;
+		setFocusRead(true);
+		setOpen(false);
+	}
+
+	// Enter: compact mode walks name → kcal → protein → done; otherwise blur (save).
+	function onEnter(e, next) {
+		if (e.key !== "Enter") return;
+		if (!compact) {
+			e.currentTarget.blur();
+		} else if (next) {
+			e.preventDefault();
+			next.current?.focus();
+		} else {
+			e.preventDefault();
+			closeEditor();
+		}
+	}
 
 	return (
 		<div
 			role="group"
 			aria-label={groupName}
 			className={"meal-card" + (skipped ? " meal-card--skipped" : "")}
-			onFocus={() => (editingRef.current = true)}
+			onFocus={(e) => {
+				if (e.target.tagName === "INPUT") editingRef.current = true;
+			}}
+			onMouseDown={(e) => {
+				// Clicking blank space in an open compact editor shouldn't close it.
+				if (compact && open && !e.target.closest("input, button, label")) {
+					e.preventDefault();
+				}
+			}}
 			onBlur={(e) => {
 				if (!e.currentTarget.contains(e.relatedTarget)) {
 					editingRef.current = false;
+					if (compact) setOpen(false);
 				}
 			}}
 		>
@@ -186,10 +232,35 @@ function MealCard({
 				<span className="meal-card-skipped-text">
 					Skipped {slot} · 0 kcal · 0 g
 				</span>
+			) : !open ? (
+				<button
+					type="button"
+					className={
+						"meal-card-read" +
+						(fields.name || hasMacros ? "" : " meal-card-read--empty")
+					}
+					aria-label={`Edit ${groupName.toLowerCase()}`}
+					autoFocus={focusRead}
+					onClick={openEditor}
+				>
+					<span className="meal-card-read-name">
+						{fields.name || "What did you eat?"}
+					</span>
+					<span className="meal-card-read-macros">
+						{hasMacros
+							? `${toInt(fields.calories)} kcal · ${toInt(fields.protein)} g`
+							: "— kcal"}
+					</span>
+				</button>
 			) : (
-				<div className="meal-card-fields">
+				<div
+					className={
+						"meal-card-fields" + (compact ? " meal-card-fields--stacked" : "")
+					}
+				>
 					<input
 						ref={nameRef}
+						autoFocus={focusName}
 						className="modal-input meal-card-name"
 						type="text"
 						placeholder="What did you eat?"
@@ -198,7 +269,7 @@ function MealCard({
 						value={fields.name}
 						onChange={(e) => update({ name: e.target.value })}
 						onBlur={() => commit()}
-						onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+						onKeyDown={(e) => onEnter(e, caloriesRef)}
 					/>
 					<div className="meal-card-unit">
 						<input
@@ -206,11 +277,12 @@ function MealCard({
 							type="number"
 							min="0"
 							placeholder="0"
+							ref={caloriesRef}
 							aria-label="Calories"
 							value={fields.calories}
 							onChange={(e) => update({ calories: e.target.value })}
 							onBlur={() => commit()}
-							onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+							onKeyDown={(e) => onEnter(e, proteinRef)}
 						/>
 						<span aria-hidden="true">kcal</span>
 					</div>
@@ -220,14 +292,27 @@ function MealCard({
 							type="number"
 							min="0"
 							placeholder="0"
+							ref={proteinRef}
 							aria-label="Protein (g)"
 							value={fields.protein}
 							onChange={(e) => update({ protein: e.target.value })}
 							onBlur={() => commit()}
-							onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+							onKeyDown={(e) => onEnter(e, null)}
 						/>
 						<span aria-hidden="true">g</span>
 					</div>
+					{compact && (
+						<button
+							type="button"
+							className="btn btn-sm btn-primary"
+							// Keep focus in the field so Safari (buttons don't take focus)
+							// doesn't fold the editor before the click lands.
+							onMouseDown={(e) => e.preventDefault()}
+							onClick={closeEditor}
+						>
+							Done
+						</button>
+					)}
 				</div>
 			)}
 		</div>
@@ -238,6 +323,7 @@ export default function MealCards({
 	nutritionEntry,
 	getOrCreateNutritionLogId,
 	onSaved,
+	compact = false,
 }) {
 	const meals = nutritionEntry?.meals ?? [];
 	const [drafts, setDrafts] = useState([]); // [{ key, mealId }]
@@ -322,6 +408,7 @@ export default function MealCards({
 					key={slot}
 					slot={slot}
 					meal={slotMeals[slot] ?? null}
+					compact={compact}
 					saveMeal={saveMeal}
 					removeMeal={removeMeal}
 				/>
@@ -331,6 +418,7 @@ export default function MealCards({
 					key={row.key}
 					meal={row.meal}
 					autoFocusLabel={row.autoFocus}
+					compact={compact}
 					saveMeal={saveMeal}
 					removeMeal={removeMeal}
 					onCreated={(id) =>

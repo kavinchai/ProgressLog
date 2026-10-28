@@ -12,8 +12,12 @@ vi.mock("../pages/WeeklyStats.css", () => ({}));
 vi.mock("../pages/History.css", () => ({}));
 
 vi.mock("../components/DayDetail", () => ({
-	default: ({ date }) => (
-		<div data-testid="day-detail" data-date={date}>
+	default: ({ date, compactMeals }) => (
+		<div
+			data-testid="day-detail"
+			data-date={date}
+			data-compact-meals={String(!!compactMeals)}
+		>
 			DayDetail for {date}
 		</div>
 	),
@@ -129,6 +133,11 @@ describe("WeeklyStats — selected day", () => {
 			"true",
 		);
 		expect(screen.getByTestId("day-detail").dataset.date).toBe("2026-05-06");
+	});
+
+	it("keeps the full meal boxes (the panel is full width)", () => {
+		render(<WeeklyStats />);
+		expect(screen.getByTestId("day-detail").dataset.compactMeals).toBe("false");
 	});
 
 	it("clicking another day switches the panel to that day", async () => {

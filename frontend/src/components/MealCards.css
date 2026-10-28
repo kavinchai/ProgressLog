@@ -189,3 +189,57 @@
 		flex: 1 1 0;
 	}
 }
+
+/* Compact mode (narrow panels, e.g. History › Total): read line, tap to edit */
+.meal-card-read {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	width: 100%;
+	min-height: 36px;
+	padding: 7px 10px;
+	font-family: var(--font);
+	font-size: var(--fs);
+	text-align: left;
+	color: var(--fg);
+	background: var(--bg);
+	border: 1px solid transparent;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+}
+
+.meal-card-read:hover {
+	border-color: var(--border-strong);
+}
+
+.meal-card-read--empty {
+	color: var(--muted);
+	background: transparent;
+	border: 1px dashed var(--border-strong);
+}
+
+.meal-card-read-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.meal-card-read-macros {
+	flex: 0 0 auto;
+	font-size: var(--fs-sm);
+	color: var(--muted);
+}
+
+.meal-card-fields--stacked {
+	flex-wrap: wrap;
+}
+
+.meal-card-fields--stacked .meal-card-name {
+	flex-basis: 100%;
+}
+
+.meal-card-fields--stacked .meal-card-unit {
+	flex: 1 1 0;
+}

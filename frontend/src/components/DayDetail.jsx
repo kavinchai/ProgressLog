@@ -26,6 +26,7 @@ export default function DayDetail({
 	onRefetchWo,
 	onRefetchS,
 	showDelete = true,
+	compactMeals = false,
 }) {
 	const { unit, toDisplay } = useWeightUnit();
 	const [modal, setModal] = useState(null);
@@ -162,6 +163,7 @@ export default function DayDetail({
 					nutritionEntry={nutritionEntry ?? null}
 					getOrCreateNutritionLogId={getOrCreateNutritionLogId}
 					onSaved={onRefetchN}
+					compact={compactMeals}
 				/>
 				{meals.length > 0 && (
 					<div className="day-nutrition-total">

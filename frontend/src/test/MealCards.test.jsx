@@ -337,3 +337,227 @@ describe("MealCards — extra meals", () => {
 		expect(screen.queryByTestId("confirm-delete")).not.toBeInTheDocument();
 	});
 });
+
+describe("MealCards — compact (narrow day panel)", () => {
+	const renderCompact = (entry) =>
+		render(
+			<MealCards
+				compact
+				nutritionEntry={entry}
+				getOrCreateNutritionLogId={getOrCreateNutritionLogId}
+				onSaved={onSaved}
+			/>,
+		);
+
+	const LOGGED = logWith([
+		{
+			id: 1,
+			mealLabel: "Breakfast",
+			mealName: "Oatmeal & eggs",
+			calories: 620,
+			proteinGrams: 42,
+		},
+	]);
+
+	it("shows each logged meal as one read line with its full name and macros", () => {
+		renderCompact(LOGGED);
+		const b = within(card("Breakfast"));
+		const line = b.getByRole("button", { name: /edit breakfast/i });
+		expect(line).toHaveTextContent("Oatmeal & eggs");
+		expect(line).toHaveTextContent("620 kcal · 42 g");
+		expect(b.queryByRole("textbox")).not.toBeInTheDocument();
+		expect(b.queryByRole("spinbutton")).not.toBeInTheDocument();
+	});
+
+	it("an empty meal shows a prompt line instead of inputs", () => {
+		renderCompact(logWith([]));
+		const line = within(card("Lunch")).getByRole("button", {
+			name: /edit lunch/i,
+		});
+		expect(line).toHaveTextContent(/what did you eat\?/i);
+	});
+
+	it("tapping the line opens a stacked editor with the name focused", async () => {
+		renderCompact(LOGGED);
+		await userEvent.click(
+			within(card("Breakfast")).getByRole("button", {
+				name: /edit breakfast/i,
+			}),
+		);
+		const b = within(card("Breakfast"));
+		expect(b.getByRole("textbox", { name: /what you ate/i })).toHaveFocus();
+		expect(b.getByRole("spinbutton", { name: /calories/i })).toHaveValue(620);
+		expect(b.getByRole("button", { name: /done/i })).toBeInTheDocument();
+	});
+
+	it("Done saves the change and folds back to the read line", async () => {
+		renderCompact(LOGGED);
+		await userEvent.click(
+			within(card("Breakfast")).getByRole("button", {
+				name: /edit breakfast/i,
+			}),
+		);
+		const name = within(card("Breakfast")).getByRole("textbox", {
+			name: /what you ate/i,
+		});
+		await userEvent.clear(name);
+		await userEvent.type(name, "Oatmeal, eggs & berries");
+		await userEvent.click(
+			within(card("Breakfast")).getByRole("button", { name: /done/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/1`, {
+				mealLabel: "Breakfast",
+				mealName: "Oatmeal, eggs & berries",
+				calories: 620,
+				proteinGrams: 42,
+			}),
+		);
+		const line = within(card("Breakfast")).getByRole("button", {
+			name: /edit breakfast/i,
+		});
+		expect(line).toHaveTextContent("Oatmeal, eggs & berries");
+		expect(
+			within(card("Breakfast")).queryByRole("textbox"),
+		).not.toBeInTheDocument();
+	});
+
+	it("Done saves on its own (the name field keeps focus until Done is clicked)", async () => {
+		renderCompact(LOGGED);
+		await userEvent.click(
+			within(card("Breakfast")).getByRole("button", {
+				name: /edit breakfast/i,
+			}),
+		);
+		const name = within(card("Breakfast")).getByRole("textbox", {
+			name: /what you ate/i,
+		});
+		await userEvent.type(name, "!");
+		await userEvent.click(
+			within(card("Breakfast")).getByRole("button", { name: /done/i }),
+		);
+		await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
+		expect(api.put.mock.calls[0][1].mealName).toBe("Oatmeal & eggs!");
+	});
+
+	it("after Done, focus returns to the meal's read line", async () => {
+		renderCompact(LOGGED);
+		await userEvent.click(
+			within(card("Breakfast")).getByRole("button", {
+				name: /edit breakfast/i,
+			}),
+		);
+		await userEvent.click(
+			within(card("Breakfast")).getByRole("button", { name: /done/i }),
+		);
+		expect(
+			within(card("Breakfast")).getByRole("button", {
+				name: /edit breakfast/i,
+			}),
+		).toHaveFocus();
+	});
+
+	it("Enter moves name → calories → protein, and Enter on protein saves and closes", async () => {
+		renderCompact(logWith([]));
+		await userEvent.click(
+			within(card("Lunch")).getByRole("button", { name: /edit lunch/i }),
+		);
+		const l = () => within(card("Lunch"));
+		await userEvent.type(
+			l().getByRole("textbox", { name: /what you ate/i }),
+			"Burrito{Enter}",
+		);
+		expect(l().getByRole("spinbutton", { name: /calories/i })).toHaveFocus();
+		await userEvent.type(
+			l().getByRole("spinbutton", { name: /calories/i }),
+			"900{Enter}",
+		);
+		expect(l().getByRole("spinbutton", { name: /protein/i })).toHaveFocus();
+		await userEvent.type(
+			l().getByRole("spinbutton", { name: /protein/i }),
+			"45{Enter}",
+		);
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenLastCalledWith(`/nutrition/${LOG_ID}/meals`, {
+				mealLabel: "Lunch",
+				mealName: "Burrito",
+				calories: 900,
+				proteinGrams: 45,
+			}),
+		);
+		expect(l().getByRole("button", { name: /edit lunch/i })).toHaveTextContent(
+			"900 kcal · 45 g",
+		);
+	});
+
+	it("clicking blank space inside the open editor keeps it open", async () => {
+		renderCompact(LOGGED);
+		await userEvent.click(
+			within(card("Breakfast")).getByRole("button", {
+				name: /edit breakfast/i,
+			}),
+		);
+		await userEvent.click(card("Breakfast"));
+		expect(
+			within(card("Breakfast")).getByRole("textbox", { name: /what you ate/i }),
+		).toHaveFocus();
+	});
+
+	it("moving focus to another meal saves and closes the open editor", async () => {
+		renderCompact(logWith([]));
+		await userEvent.click(
+			within(card("Lunch")).getByRole("button", { name: /edit lunch/i }),
+		);
+		await userEvent.type(
+			within(card("Lunch")).getByRole("textbox", { name: /what you ate/i }),
+			"Burrito",
+		);
+		await userEvent.click(
+			within(card("Dinner")).getByRole("button", { name: /edit dinner/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals`, {
+				mealLabel: "Lunch",
+				mealName: "Burrito",
+				calories: 0,
+				proteinGrams: 0,
+			}),
+		);
+		expect(
+			within(card("Lunch")).queryByRole("textbox"),
+		).not.toBeInTheDocument();
+		expect(
+			within(card("Dinner")).getByRole("textbox", { name: /what you ate/i }),
+		).toHaveFocus();
+	});
+
+	it("Skipped still works without opening the editor", async () => {
+		renderCompact(logWith([]));
+		await userEvent.click(
+			within(card("Dinner")).getByRole("checkbox", { name: /skipped/i }),
+		);
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals`, {
+				mealLabel: "Dinner",
+				mealName: "Skipped Dinner",
+				calories: 0,
+				proteinGrams: 0,
+			}),
+		);
+		expect(
+			within(card("Dinner")).getByText(/skipped dinner/i),
+		).toBeInTheDocument();
+	});
+
+	it("a new extra meal opens straight into the editor with its label focused", async () => {
+		renderCompact(logWith([]));
+		await userEvent.click(screen.getByRole("button", { name: /\+ add meal/i }));
+		expect(screen.getByRole("textbox", { name: /meal label/i })).toHaveFocus();
+		expect(
+			screen.getByRole("textbox", { name: /what you ate/i }),
+		).toBeInTheDocument();
+	});
+});
