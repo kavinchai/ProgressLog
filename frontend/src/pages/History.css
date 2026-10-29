@@ -575,6 +575,21 @@
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
+	/* Header stays on one line for every week: the nav already shows the
+	   range, so the "Week of …" title is dropped; only the pill can sit
+	   beside it (current week). */
+	.weekly-page .history-head {
+		flex-wrap: nowrap;
+	}
+
+	.weekly-page .history-title {
+		display: none;
+	}
+
+	.history-nav-label {
+		padding: 0 6px;
+	}
+
 	/* Summary: four stats 2×2, Workouts (with its day dots) full width */
 	.history-kpis {
 		grid-template-columns: repeat(2, minmax(0, 1fr));

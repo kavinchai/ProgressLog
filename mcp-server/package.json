@@ -4,7 +4,8 @@
   "description": "MCP server that lets Claude log workouts, meals, and weight to ProgressLog",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
