@@ -216,7 +216,9 @@ function BoardCard({
 					<h2 className="lb-card-title">{current?.exerciseName ?? "Lifts"}</h2>
 					{current && (
 						<span className="lb-muted">
-							{current.participantCount} lifters · best set (weight, then reps)
+							{current.participantCount} lifter
+							{current.participantCount === 1 ? "" : "s"} · best set (weight,
+							then reps)
 						</span>
 					)}
 				</div>
