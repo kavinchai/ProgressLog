@@ -575,14 +575,28 @@
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-	/* Header stays on one line for every week: the nav already shows the
-	   range, so the "Week of …" title is dropped; only the pill can sit
-	   beside it (current week). */
+	/* Header stays on one line for every week: the "Week of …" title
+	   already names the week, so the nav drops its range label and keeps
+	   just the arrows. */
 	.weekly-page .history-head {
 		flex-wrap: nowrap;
+		gap: 8px;
 	}
 
 	.weekly-page .history-title {
+		font-size: var(--fs-lg);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		min-width: 0;
+	}
+
+	.weekly-page .history-pill,
+	.weekly-page .history-nav {
+		flex: none;
+	}
+
+	.weekly-page .history-nav-label {
 		display: none;
 	}
 

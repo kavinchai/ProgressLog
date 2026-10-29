@@ -72,18 +72,6 @@ public class TestApiClient {
         assertOk(post("/workouts", body), "seed lifting workout " + exerciseName + " on " + sessionDate);
     }
 
-    public void logRunWorkout(String sessionDate, double distanceMiles, int durationSeconds) {
-        String body = "{"
-                + "\"sessionName\":\"Cardio\","
-                + "\"sessionDate\":\"" + sessionDate + "\","
-                + "\"exercises\":[{"
-                + "\"exerciseName\":\"Run\","
-                + "\"sets\":[{\"setNumber\":1,\"reps\":0,\"weightLbs\":0,"
-                + "\"distanceMiles\":" + distanceMiles + ",\"durationSeconds\":" + durationSeconds + "}]"
-                + "}]}";
-        assertOk(post("/workouts", body), "seed run on " + sessionDate);
-    }
-
     public void logWeight(String date, double weightLbs) {
         String body = "{\"logDate\":\"" + date + "\",\"weightLbs\":" + weightLbs + "}";
         assertOk(post("/weight", body), "seed weight on " + date);

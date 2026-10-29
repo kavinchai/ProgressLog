@@ -12,7 +12,7 @@ public class HistoryPage {
 
     private static final String PAGE_TABS = ".page-tabs .page-tab";
     private static final String ACTIVE_TAB = ".page-tabs .page-tab-active";
-    // The header row, not the title: phones hide the "Week of …" title.
+    // The header row, which every Weekly layout renders.
     private static final String WEEKLY_TITLE = ".weekly-page .history-head";
     private static final String TOTAL_TITLE = ".total-page .history-title";
     private static final String DAY_CARDS = ".week-strip .week-day";
@@ -41,6 +41,22 @@ public class HistoryPage {
     public void openWeekly(String baseUrl) {
         page.navigate(baseUrl + "/history/weekly");
         page.locator(WEEKLY_TITLE).waitFor();
+    }
+
+    /** The "Week of …" title text, or "" if it isn't shown. */
+    public String getWeeklyHeading() {
+        Locator title = page.locator(".weekly-page .history-title");
+        return awaitVisible(title) ? title.innerText() : "";
+    }
+
+    /** True when the title's full text fits (not cut off with an ellipsis). */
+    public boolean isWeeklyHeadingUntruncated() {
+        return (Boolean) page.locator(".weekly-page .history-title")
+                .evaluate("el => el.scrollWidth <= el.clientWidth");
+    }
+
+    public boolean isWeeklyRangeLabelVisible() {
+        return page.locator(".weekly-page .history-nav-label").isVisible();
     }
 
     public void openTotal(String baseUrl) {

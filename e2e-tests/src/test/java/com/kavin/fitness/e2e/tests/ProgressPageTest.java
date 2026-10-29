@@ -8,15 +8,14 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.time.LocalDate;
-import java.util.List;
 
 /**
- * Covers the /progress routes (Strength and Cardio tabs). Seeds workout
- * sessions with multiple weights across distinct dates so the page can
- * compute a PR and render the session-history table and chart.
+ * Covers /progress (Strength only). Seeds workout sessions for a lift that
+ * isn't featured, then adds it through the "Choose lifts" dialog so the page
+ * shows its card, chart, session-history table and PR.
  *
  * Seeding throws on failure (see TestApiClient) so backend/auth issues
- * surface as actionable errors rather than empty-sidebar assertions.
+ * surface as actionable errors rather than missing-card assertions.
  */
 public class ProgressPageTest extends BaseTest {
     private ProgressPage progress;
@@ -24,7 +23,6 @@ public class ProgressPageTest extends BaseTest {
     private final java.util.List<String> seededDates = new java.util.ArrayList<>();
 
     private static final String STRENGTH_NAME = "E2E Progress Lift";
-    private static final String CARDIO_NAME = "Run";
 
     @BeforeClass(dependsOnMethods = "setUpDriverAndLogIn")
     public void initPages() {
@@ -37,6 +35,7 @@ public class ProgressPageTest extends BaseTest {
         api = new TestApiClient(apiUrl);
         api.login(username, password);
 
+        // All three dates fall inside the default 3M range.
         LocalDate now = LocalDate.now();
         String[] dates = {
                 now.minusDays(60).toString(),
@@ -50,15 +49,6 @@ public class ProgressPageTest extends BaseTest {
                     STRENGTH_NAME, weights[i], 5);
             seededDates.add(dates[i]);
         }
-
-        String runDate1 = now.minusDays(14).toString();
-        String runDate2 = now.minusDays(3).toString();
-        api.deleteWorkoutsOnDate(runDate1);
-        api.deleteWorkoutsOnDate(runDate2);
-        api.logRunWorkout(runDate1, 3.0, 1500);
-        api.logRunWorkout(runDate2, 5.0, 2400);
-        seededDates.add(runDate1);
-        seededDates.add(runDate2);
 
         // Verify at least one strength session lands in the DB before driving
         // the UI — surfaces auth/API issues with a clear message.
@@ -81,48 +71,78 @@ public class ProgressPageTest extends BaseTest {
         } catch (Exception ignored) {}
     }
 
-    // ── Strength ─────────────────────────────────────────────────────────────
-
     @Test(priority = 1)
-    public void strengthPageLoadsAndShowsTabsAndHeader() {
+    public void strengthPageLoadsWithoutCardioTabs() {
         step("open /progress/strength");
         progress.openStrength(baseUrl);
-
-        step("verify both tabs visible");
-        List<String> tabs = progress.getTabLabels();
-        if (!tabs.contains("Strength") || !tabs.contains("Cardio")) {
-            throw new AssertionError("Expected Strength/Cardio tabs, got: " + tabs);
-        }
-        if (!"Strength".equals(progress.getActiveTabLabel())) {
-            throw new AssertionError("Expected Strength tab to be active");
-        }
 
         step("verify header rendered");
         if (!progress.isStrengthHeaderVisible()) {
             throw new AssertionError("Expected strength header");
         }
+
+        step("verify the lift view rendered (seeded data exists, so no empty state)");
+        if (!progress.isLiftViewVisible()) {
+            throw new AssertionError("Expected the Choose lifts button");
+        }
+
+        step("verify the Strength / Cardio tabs are gone");
+        if (progress.hasProgressTabs()) {
+            throw new AssertionError("Did not expect Strength/Cardio tabs on /progress");
+        }
     }
 
-    @Test(priority = 2, dependsOnMethods = "strengthPageLoadsAndShowsTabsAndHeader")
-    public void strengthSidebarListsSeededExercise() {
-        step("verify sidebar visible with our seeded exercise");
-        if (!progress.isStrengthSidebarVisible()) {
-            throw new AssertionError("Expected strength sidebar visible — "
+    @Test(priority = 2)
+    public void cardioUrlRedirectsToStrength() {
+        step("open the removed /progress/cardio URL");
+        page.navigate(baseUrl + "/progress/cardio");
+
+        step("verify it lands on /progress/strength");
+        if (!progress.isStrengthHeaderVisible()) {
+            throw new AssertionError("Expected strength header after redirect");
+        }
+        if (!"/progress/strength".equals(progress.currentPath())) {
+            throw new AssertionError("Expected /progress/strength, got: " + progress.currentPath());
+        }
+    }
+
+    @Test(priority = 3, dependsOnMethods = "strengthPageLoadsWithoutCardioTabs")
+    public void chooseLiftsAddsSeededLiftCard() {
+        step("open Choose lifts and search for the seeded lift");
+        progress.openStrength(baseUrl);
+        progress.openChooser();
+        progress.searchChooser(STRENGTH_NAME);
+
+        step("tick it and press Done");
+        progress.chooseLift(STRENGTH_NAME);
+        progress.confirmChooser();
+
+        step("verify its card is on the page");
+        if (!progress.isLiftCardVisible(STRENGTH_NAME)) {
+            throw new AssertionError("Expected a card for '" + STRENGTH_NAME + "' — "
                     + "seeded data may not have been created (check TestApiClient errors)");
         }
-        if (progress.getStrengthExerciseCount() == 0) {
-            throw new AssertionError("Expected at least 1 strength exercise in sidebar");
+    }
+
+    @Test(priority = 4, dependsOnMethods = "chooseLiftsAddsSeededLiftCard")
+    public void chosenLiftSurvivesReload() {
+        step("reload the page");
+        progress.reload();
+
+        step("verify the chosen lift is still shown");
+        if (!progress.isLiftCardVisible(STRENGTH_NAME)) {
+            throw new AssertionError("Expected '" + STRENGTH_NAME + "' card after reload");
         }
     }
 
-    @Test(priority = 3, dependsOnMethods = "strengthSidebarListsSeededExercise")
-    public void strengthShowsSessionHistoryAndPR() {
-        step("click our seeded exercise");
-        progress.clickStrengthExercise(STRENGTH_NAME);
+    @Test(priority = 5, dependsOnMethods = "chooseLiftsAddsSeededLiftCard")
+    public void liftCardShowsSessionHistoryAndPR() {
+        step("click the seeded lift's card");
+        progress.clickLiftCard(STRENGTH_NAME);
 
-        step("verify exercise becomes active");
-        if (!progress.isStrengthExerciseActive(STRENGTH_NAME)) {
-            throw new AssertionError("Expected '" + STRENGTH_NAME + "' to be active");
+        step("verify card becomes active");
+        if (!progress.isLiftCardActive(STRENGTH_NAME)) {
+            throw new AssertionError("Expected '" + STRENGTH_NAME + "' card to be active");
         }
 
         step("verify session history table renders");
@@ -148,57 +168,26 @@ public class ProgressPageTest extends BaseTest {
         }
     }
 
-    @Test(priority = 4, dependsOnMethods = "strengthShowsSessionHistoryAndPR")
+    @Test(priority = 6, dependsOnMethods = "liftCardShowsSessionHistoryAndPR")
     public void strengthRangeButtonsToggleActiveState() {
+        step("verify 3M is the default range");
+        if (!progress.isStrengthRangeActive("3M")) {
+            throw new AssertionError("Expected 3M to be active by default");
+        }
+
         step("click 4W range");
         progress.clickStrengthRange("4W");
-
-        step("verify 4W is active and others are not");
         if (!progress.isStrengthRangeActive("4W")) {
             throw new AssertionError("Expected 4W to be active");
         }
-        if (progress.isStrengthRangeActive("All")) {
-            throw new AssertionError("Did not expect 'All' to be active");
+        if (progress.isStrengthRangeActive("3M")) {
+            throw new AssertionError("Did not expect '3M' to be active");
         }
 
-        step("click All to restore");
+        step("click All");
         progress.clickStrengthRange("All");
         if (!progress.isStrengthRangeActive("All")) {
             throw new AssertionError("Expected 'All' to be active after click");
         }
-    }
-
-    // ── Cardio ───────────────────────────────────────────────────────────────
-
-    @Test(priority = 5)
-    public void cardioPageLoadsAndShowsSeededRuns() {
-        step("open /progress/cardio via tab click");
-        progress.openStrength(baseUrl);
-        progress.clickTab("Cardio");
-
-        step("verify Cardio tab is active");
-        if (!"Cardio".equals(progress.getActiveTabLabel())) {
-            throw new AssertionError("Expected Cardio tab active");
-        }
-
-        step("verify cardio header rendered");
-        if (!progress.isCardioHeaderVisible()) {
-            throw new AssertionError("Expected cardio header");
-        }
-
-        step("verify cardio sidebar lists Run");
-        if (!progress.isCardioSidebarVisible()) {
-            throw new AssertionError("Expected cardio sidebar visible — "
-                    + "seeded run data may not have been created (check TestApiClient errors)");
-        }
-        if (progress.getCardioExerciseCount() == 0) {
-            throw new AssertionError("Expected at least 1 cardio exercise in sidebar");
-        }
-    }
-
-    @Test(priority = 6, dependsOnMethods = "cardioPageLoadsAndShowsSeededRuns")
-    public void cardioRunIsSelectable() {
-        step("click 'Run' in sidebar");
-        progress.clickCardioExercise(CARDIO_NAME);
     }
 }

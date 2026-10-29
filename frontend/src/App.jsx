@@ -77,10 +77,6 @@ export default function App() {
 						path="/strength"
 						element={<Navigate to="/progress/strength" replace />}
 					/>
-					<Route
-						path="/cardio"
-						element={<Navigate to="/progress/cardio" replace />}
-					/>
 					<Route path="/community" element={<Community />} />
 					<Route
 						path="/leaderboard"

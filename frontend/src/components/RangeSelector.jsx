@@ -1,7 +1,7 @@
 import { RANGE_OPTIONS } from "../utils/dateRange";
 
-// Time-range button row shared by the Strength and Cardio pages.
-// `classPrefix` ("strength" | "cardio") keeps each page's existing CSS classes.
+// Time-range button row for the Strength page.
+// `classPrefix` ("strength") selects the page's CSS classes.
 export default function RangeSelector({ classPrefix, activeKey, onSelect }) {
 	return (
 		<div className={`${classPrefix}-range-row`}>
