@@ -336,6 +336,28 @@ describe("Strength page — Choose lifts dialog", () => {
 		).toBeInTheDocument();
 	});
 
+	it("labels the range filter and rows, and drops the range filter for All", async () => {
+		const user = userEvent.setup();
+		await renderLoaded();
+		let dialog = await openChooser();
+		expect(
+			within(dialog).getByRole("button", { name: "Trained in 3M · 3" }),
+		).toBeInTheDocument();
+		expect(
+			within(dialog).getByRole("checkbox", { name: /Bench Press/ }),
+		).toHaveAccessibleName(/(today|yesterday|days ago).*lbs/);
+		await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+		await user.click(screen.getByRole("button", { name: "All" }));
+		dialog = await openChooser();
+		expect(
+			within(dialog).queryByRole("button", { name: /Trained in/ }),
+		).not.toBeInTheDocument();
+		expect(
+			within(dialog).getByRole("group", { name: "All lifts" }),
+		).toBeInTheDocument();
+	});
+
 	it("filters the list by search text", async () => {
 		await renderLoaded();
 		const dialog = await openChooser();

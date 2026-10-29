@@ -13,9 +13,13 @@ import useWeightUnit from "../hooks/useWeightUnit";
 import api from "../api";
 import featuredConfig from "../config/featuredExercises.json";
 import SharedCalendar from "./SharedCalendar";
+import ChooseLiftsModal from "../components/ChooseLiftsModal";
+import { loadChosen, saveChosen } from "../utils/chosenLifts";
 import "./Community.css";
 
-const FEATURED = (featuredConfig.strength ?? []).map((n) => n.toLowerCase());
+const FEATURED_NAMES = featuredConfig.strength ?? [];
+const FEATURED = FEATURED_NAMES.map((n) => n.toLowerCase());
+const CHOSEN_KEY = "community.chosenLifts";
 const PREVIEW_ROWS = 5;
 
 function formatDate(iso) {
@@ -32,19 +36,37 @@ const featuredIndex = (name) => {
 	return i === -1 ? FEATURED.length : i;
 };
 
-/** Featured lifts that have a board (in featured order), else the busiest boards. */
-function liftChoices(boards, selected) {
-	const featured = boards
-		.filter((b) => featuredIndex(b.exerciseName) < FEATURED.length)
+const isChosen = (chosen, name) => chosen.has(name.toLowerCase());
+
+/** Chosen lifts that have a board this period, featured ones first. */
+function liftChoices(boards, chosen) {
+	return boards
+		.filter((b) => isChosen(chosen, b.exerciseName))
 		.sort(
 			(a, b) => featuredIndex(a.exerciseName) - featuredIndex(b.exerciseName),
 		)
 		.map((b) => b.exerciseName);
-	const names = featured.length
-		? featured
-		: boards.slice(0, 8).map((b) => b.exerciseName);
-	if (selected && !names.includes(selected)) names.push(selected);
-	return names;
+}
+
+/** Most recent date a top-ten best on this board was set. */
+const latestDate = (board) =>
+	board.entries.reduce(
+		(max, e) => (e.achievedDate > max ? e.achievedDate : max),
+		"",
+	);
+
+/** "You #3" when the viewer is ranked on this lift. */
+function rankLabel(standings, name) {
+	const mine = standings.find((s) => s.exerciseName === name);
+	return mine ? `You #${mine.rank}` : "";
+}
+
+/** Why the board is empty when there are boards but none to show. */
+function noChoiceMessage(signedIn, chosen) {
+	if (!signedIn) return "No featured lifts have been logged this period yet.";
+	if (chosen.size === 0)
+		return "No lifts chosen. Use Choose lifts to pick the exercises to compare.";
+	return "None of your chosen lifts have been logged this period. Try All time or Choose lifts.";
 }
 
 // ── Small controls ──────────────────────────────────────────────────────────
@@ -171,6 +193,7 @@ function BoardRow({ entry, mine, setLabel }) {
 
 function BoardCard({
 	boards,
+	choices,
 	lift,
 	onLift,
 	period,
@@ -178,11 +201,10 @@ function BoardCard({
 	me,
 	standings,
 	setLabel,
+	onChoose,
+	emptyChoice,
 }) {
-	const choices = liftChoices(boards, lift);
-	const current =
-		boards.find((b) => b.exerciseName === lift) ??
-		boards.find((b) => b.exerciseName === choices[0]);
+	const current = boards.find((b) => b.exerciseName === lift);
 	const myStanding = standings.find(
 		(s) => s.exerciseName === current?.exerciseName,
 	);
@@ -198,12 +220,26 @@ function BoardCard({
 						</span>
 					)}
 				</div>
-				<Segmented
-					label="Period"
-					options={PERIOD_OPTIONS}
-					value={period}
-					onChange={onPeriod}
-				/>
+				<div className="lb-board-actions">
+					<Segmented
+						label="Period"
+						options={PERIOD_OPTIONS}
+						value={period}
+						onChange={onPeriod}
+					/>
+					{onChoose && (
+						<button
+							type="button"
+							className="btn btn-sm btn-primary"
+							onClick={onChoose}
+						>
+							Choose lifts{" "}
+							<span className="lb-choose-count">
+								{choices.length} of {boards.length}
+							</span>
+						</button>
+					)}
+				</div>
 			</div>
 			{current ? (
 				<>
@@ -230,9 +266,11 @@ function BoardCard({
 				</>
 			) : (
 				<p className="lb-empty">
-					{period === "month"
-						? "No lifts logged this month yet. Try All time."
-						: "No lifts logged yet."}
+					{boards.length
+						? emptyChoice
+						: period === "month"
+							? "No lifts logged this month yet. Try All time."
+							: "No lifts logged yet."}
 				</p>
 			)}
 		</section>
@@ -259,7 +297,7 @@ function progress(s) {
 	return Math.round((s.bestReps / (s.ahead.bestReps + 1)) * 100);
 }
 
-function Standing({ me, onPick, selected, unit, toDisplay, setLabel }) {
+function Standing({ me, chosen, onPick, selected, unit, toDisplay, setLabel }) {
 	if (!me.sharing) {
 		return (
 			<div className="lb-notice">
@@ -275,9 +313,18 @@ function Standing({ me, onPick, selected, unit, toDisplay, setLabel }) {
 			</div>
 		);
 	}
-	const standings = [...me.standings].sort(
-		(a, b) => featuredIndex(a.exerciseName) - featuredIndex(b.exerciseName),
-	);
+	const standings = me.standings
+		.filter((s) => isChosen(chosen, s.exerciseName))
+		.sort(
+			(a, b) => featuredIndex(a.exerciseName) - featuredIndex(b.exerciseName),
+		);
+	if (!standings.length) {
+		return (
+			<div className="lb-notice">
+				You're not ranked on any of your chosen lifts this period.
+			</div>
+		);
+	}
 	return (
 		<div className="lb-standing">
 			{standings.map((s) => (
@@ -519,6 +566,73 @@ function statusMessage(data, error, authenticated) {
 	);
 }
 
+/** The page for visitors who aren't signed in: a pitch, then the boards. */
+function PublicCommunity({
+	viewSwitch,
+	view,
+	preview,
+	status,
+	data,
+	period,
+	board,
+	setLabel,
+}) {
+	return (
+		<div className="lb-page lb-public">
+			<header className="lb-topbar">
+				<span className="lb-brand">ProgressLog</span>
+				{viewSwitch}
+				<span className="lb-spacer" />
+				<Link to="/login" className="btn btn-ghost">
+					Sign in
+				</Link>
+				<Link to="/login?mode=signup" className="btn btn-primary">
+					Create free account
+				</Link>
+			</header>
+			<div className="lb-wrap">
+				{view === "calendar" ? (
+					<SharedCalendar />
+				) : (
+					<>
+						<Hero board={preview} setLabel={setLabel} />
+						{status ?? (
+							<>
+								<Stats data={data} period={period} />
+								<Steps />
+								{board}
+							</>
+						)}
+					</>
+				)}
+			</div>
+		</div>
+	);
+}
+
+/**
+ * Lifts shown on the board. Signed-out visitors always get the featured lifts;
+ * signed-in users start there and can save their own choice.
+ */
+function useChosenLifts(authenticated, boards) {
+	const [saved, setSaved] = useState(() => loadChosen(CHOSEN_KEY));
+	const chosenNames = (authenticated && saved) || FEATURED_NAMES;
+	const chosen = new Set(chosenNames.map((n) => n.toLowerCase()));
+
+	// Lifts with no board this period aren't in the dialog; keep them chosen.
+	const saveChoice = (names) => {
+		const onBoards = new Set(boards.map((b) => b.exerciseName.toLowerCase()));
+		const next = [
+			...names,
+			...chosenNames.filter((n) => !onBoards.has(n.toLowerCase())),
+		];
+		saveChosen(CHOSEN_KEY, next);
+		setSaved(next);
+	};
+
+	return { chosen, choices: liftChoices(boards, chosen), saveChoice };
+}
+
 export default function Community() {
 	const authenticated = useAuthStore((s) => s.authenticated);
 	const username = useAuthStore((s) => s.username);
@@ -527,6 +641,7 @@ export default function Community() {
 	const [view, setView] = useState("leaderboard");
 	const [period, setPeriod] = useState("month");
 	const [lift, setLift] = useState(null);
+	const [choosing, setChoosing] = useState(false);
 	const { data, error } = useLeaderboard(period);
 
 	const setLabel = (weight, reps) =>
@@ -534,14 +649,16 @@ export default function Community() {
 	const boards = data?.exercises ?? [];
 	const me = authenticated ? data?.me : null;
 	const standings = me?.sharing ? me.standings : [];
+	const { chosen, choices, saveChoice } = useChosenLifts(authenticated, boards);
 	// A lift picked under another period may have no board now; fall back to the first.
-	const selected = boards.some((b) => b.exerciseName === lift)
-		? lift
-		: (liftChoices(boards, null)[0] ?? null);
+	const selected = choices.includes(lift) ? lift : (choices[0] ?? null);
 
 	const board = (
 		<BoardCard
 			boards={boards}
+			choices={choices}
+			onChoose={authenticated ? () => setChoosing(true) : null}
+			emptyChoice={noChoiceMessage(authenticated, chosen)}
 			lift={selected}
 			onLift={setLift}
 			period={period}
@@ -566,38 +683,16 @@ export default function Community() {
 
 	if (!authenticated) {
 		return (
-			<div className="lb-page lb-public">
-				<header className="lb-topbar">
-					<span className="lb-brand">ProgressLog</span>
-					{viewSwitch}
-					<span className="lb-spacer" />
-					<Link to="/login" className="btn btn-ghost">
-						Sign in
-					</Link>
-					<Link to="/login?mode=signup" className="btn btn-primary">
-						Create free account
-					</Link>
-				</header>
-				<div className="lb-wrap">
-					{view === "calendar" ? (
-						<SharedCalendar />
-					) : (
-						<>
-							<Hero
-								board={boards.find((b) => b.exerciseName === selected)}
-								setLabel={setLabel}
-							/>
-							{content ?? (
-								<>
-									<Stats data={data} period={period} />
-									<Steps />
-									{board}
-								</>
-							)}
-						</>
-					)}
-				</div>
-			</div>
+			<PublicCommunity
+				viewSwitch={viewSwitch}
+				view={view}
+				preview={boards.find((b) => b.exerciseName === selected)}
+				status={content}
+				data={data}
+				period={period}
+				board={board}
+				setLabel={setLabel}
+			/>
 		);
 	}
 
@@ -626,6 +721,7 @@ export default function Community() {
 								<h2 className="lb-section-title">Your standing</h2>
 								<Standing
 									me={me}
+									chosen={chosen}
 									selected={selected}
 									onPick={setLift}
 									unit={unit}
@@ -643,6 +739,25 @@ export default function Community() {
 						</div>
 					</>
 				))
+			)}
+			{choosing && (
+				<ChooseLiftsModal
+					lifts={boards.map((b) => ({
+						name: b.exerciseName,
+						lastDate: latestDate(b),
+						stale: false,
+						note: `${b.participantCount} lifter${b.participantCount === 1 ? "" : "s"}`,
+						detail: rankLabel(standings, b.exerciseName),
+					}))}
+					chosen={choices}
+					defaults={liftChoices(boards, new Set(FEATURED))}
+					recentLabel="All lifts"
+					onSave={(names) => {
+						saveChoice(names);
+						setChoosing(false);
+					}}
+					onClose={() => setChoosing(false)}
+				/>
 			)}
 		</div>
 	);

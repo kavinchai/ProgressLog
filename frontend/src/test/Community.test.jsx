@@ -119,6 +119,7 @@ function signIn(username = "kavin") {
 beforeEach(() => {
 	vi.clearAllMocks();
 	useAuthStore.setState({ authenticated: false, username: null });
+	localStorage.clear();
 });
 
 // ── Loading / error / empty ──────────────────────────────────────────────────
@@ -243,6 +244,10 @@ describe("Community — lift board", () => {
 	it("drops a lift that has no board after switching period", async () => {
 		const user = userEvent.setup();
 		signIn();
+		localStorage.setItem(
+			"community.chosenLifts",
+			JSON.stringify(["Bench Press", "Squats", "Overhead Press"]),
+		);
 		const allTime = {
 			...DATA,
 			me: ME,
@@ -297,6 +302,174 @@ describe("Community — lift board", () => {
 		expect(
 			within(lifts).getByRole("button", { name: "Bench Press" }),
 		).toHaveAttribute("aria-pressed", "true");
+	});
+});
+
+// ── Choose lifts ─────────────────────────────────────────────────────────────
+
+const ME_WITH_ZERCHER = {
+	sharing: true,
+	standings: [
+		...ME.standings,
+		{
+			exerciseName: "Zercher Squats",
+			rank: 2,
+			participantCount: 2,
+			bestWeight: 115,
+			bestReps: 5,
+			change: null,
+			ahead: entry(1, "bob", 135, 5),
+		},
+	],
+};
+
+function liftChips() {
+	return within(screen.getByRole("group", { name: "Lift" }))
+		.getAllByRole("button")
+		.map((b) => b.textContent);
+}
+
+describe("Community — choose lifts", () => {
+	it("signed out shows only featured lifts and no chooser", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		await screen.findByRole("table");
+		expect(liftChips()).toEqual(["Bench Press", "Squats"]);
+		expect(
+			screen.queryByRole("button", { name: /choose lifts/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("signed out says so when no featured lift has a board", async () => {
+		mockApiGet.mockResolvedValue({
+			data: { ...DATA, exercises: [DATA.exercises[2]] },
+		});
+		renderCommunity();
+		expect(
+			await screen.findByText(/no featured lifts have been logged/i),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("table")).not.toBeInTheDocument();
+	});
+
+	it("signed in starts on the featured lifts, for chips and standing cards", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
+		renderCommunity();
+		await screen.findByRole("table");
+		expect(liftChips()).toEqual(["Bench Press", "Squats"]);
+		expect(
+			screen.getByRole("button", { name: /choose lifts.*2 of 3/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /zercher squats.*#2/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("adding a lift in Choose lifts shows its chip and standing, and remembers it", async () => {
+		const user = userEvent.setup();
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
+		renderCommunity();
+		await user.click(
+			await screen.findByRole("button", { name: /choose lifts/i }),
+		);
+		const dialog = screen.getByRole("dialog", { name: "Choose lifts" });
+		await user.click(within(dialog).getByLabelText(/zercher squats/i));
+		await user.click(within(dialog).getByRole("button", { name: "Done" }));
+
+		expect(liftChips()).toEqual(["Bench Press", "Squats", "Zercher Squats"]);
+		expect(
+			screen.getByRole("button", { name: /zercher squats.*#2/i }),
+		).toBeInTheDocument();
+		expect(JSON.parse(localStorage.getItem("community.chosenLifts"))).toEqual([
+			"Squats",
+			"Bench Press",
+			"Zercher Squats",
+			// featured lifts with no board this period stay chosen
+			"Bicep Curls",
+			"Lateral Raises",
+			"Lat Pulldowns",
+			"Romanian Deadlifts",
+			"Incline Bench Press",
+		]);
+	});
+
+	it("uses the saved choice on the next visit", async () => {
+		signIn();
+		localStorage.setItem(
+			"community.chosenLifts",
+			JSON.stringify(["Zercher Squats"]),
+		);
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
+		renderCommunity();
+		await screen.findByRole("table");
+		expect(liftChips()).toEqual(["Zercher Squats"]);
+		expect(
+			screen.queryByRole("button", { name: /bench press.*#12/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("signed out ignores a choice saved on this browser", async () => {
+		localStorage.setItem(
+			"community.chosenLifts",
+			JSON.stringify(["Zercher Squats"]),
+		);
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		await screen.findByRole("table");
+		expect(liftChips()).toEqual(["Bench Press", "Squats"]);
+	});
+
+	it("unticking a lift removes it, Cancel changes nothing", async () => {
+		const user = userEvent.setup();
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		await user.click(
+			await screen.findByRole("button", { name: /choose lifts/i }),
+		);
+		let dialog = screen.getByRole("dialog", { name: "Choose lifts" });
+		await user.click(within(dialog).getByLabelText(/^squats/i));
+		await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+		expect(liftChips()).toEqual(["Bench Press", "Squats"]);
+		expect(localStorage.getItem("community.chosenLifts")).toBeNull();
+
+		await user.click(screen.getByRole("button", { name: /choose lifts/i }));
+		dialog = screen.getByRole("dialog", { name: "Choose lifts" });
+		expect(within(dialog).getByLabelText(/^squats/i)).toHaveAccessibleName(
+			/2 lifters.*you #2/i,
+		);
+		await user.click(within(dialog).getByLabelText(/^squats/i));
+		await user.click(within(dialog).getByRole("button", { name: "Done" }));
+		expect(liftChips()).toEqual(["Bench Press"]);
+		expect(
+			JSON.parse(localStorage.getItem("community.chosenLifts")),
+		).not.toContain("Squats");
+	});
+
+	it("says when chosen lifts have no board this period", async () => {
+		signIn();
+		localStorage.setItem(
+			"community.chosenLifts",
+			JSON.stringify(["Overhead Press"]),
+		);
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		expect(
+			await screen.findByText(/none of your chosen lifts have been logged/i),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/not ranked on any of your chosen lifts/i),
+		).toBeInTheDocument();
+	});
+
+	it("explains how to pick lifts when none are chosen", async () => {
+		signIn();
+		localStorage.setItem("community.chosenLifts", JSON.stringify([]));
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		expect(await screen.findByText(/no lifts chosen/i)).toBeInTheDocument();
+		expect(screen.queryByRole("table")).not.toBeInTheDocument();
 	});
 });
 
