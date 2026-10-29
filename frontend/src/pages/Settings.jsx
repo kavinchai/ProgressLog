@@ -602,40 +602,12 @@ function PasswordForm({ onDone, onCancel }) {
 	);
 }
 
-// ── Page ────────────────────────────────────────────────────────────────────
+// ── Privacy group ───────────────────────────────────────────────────────────
 
-export default function Settings() {
-	const navigate = useNavigate();
-	const { goals, loading, saving, error, saveGoals } = useUserProfile();
-	const { unit, toggleUnit, toDisplay } = useWeightUnit();
-	const [, , themeMode, setThemeMode] = useTheme();
+function PrivacyGroup() {
+	const { unit, toDisplay } = useWeightUnit();
 	const username = useAuthStore((s) => s.username);
-	const clearAuth = useAuthStore((s) => s.logout);
-
-	// ── Data hooks (export/import, privacy preview) ──────────────────────────
-	const { data: weightData, refetch: refetchWeight } = useWeightLog();
-	const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
-	const { data: workoutData, refetch: refetchWorkouts } = useWorkouts();
-	const { data: stepData, refetch: refetchSteps } = useSteps();
 	const { data: prs } = usePRs();
-	const exportData = { weightData, nutritionData, workoutData, stepData };
-	const hasData =
-		weightData.length > 0 ||
-		nutritionData.length > 0 ||
-		workoutData.length > 0 ||
-		stepData.length > 0;
-
-	// One editable row open at a time; "Saved!" shows on the row just saved.
-	const [openRow, setOpenRow] = useState(null);
-	const [savedRow, setSavedRow] = useState(null);
-	const [currentEmail, setCurrentEmail] = useState("");
-
-	// ── Import state ─────────────────────────────────────────────────────────
-	const [importResult, setImportResult] = useState(null);
-	const [importing, setImporting] = useState(false);
-	const fileInputRef = useRef(null);
-
-	// ── Privacy state ────────────────────────────────────────────────────────
 	const [privacy, setPrivacy] = useState({
 		shareData: false,
 		shareCalendar: false,
@@ -643,13 +615,6 @@ export default function Settings() {
 	const [privacyLoading, setPrivacyLoading] = useState(true);
 	const [privacySaving, setPrivacySaving] = useState(null);
 	const [privacyError, setPrivacyError] = useState(null);
-
-	useEffect(() => {
-		api
-			.get("/profile/email")
-			.then((res) => setCurrentEmail(res.data.email ?? ""))
-			.catch(() => {});
-	}, []);
 
 	useEffect(() => {
 		api
@@ -663,22 +628,6 @@ export default function Settings() {
 			.catch(() => setPrivacyError("Could not load privacy setting."))
 			.finally(() => setPrivacyLoading(false));
 	}, []);
-
-	useEffect(() => {
-		if (!savedRow) return;
-		const t = setTimeout(() => setSavedRow(null), 3000);
-		return () => clearTimeout(t);
-	}, [savedRow]);
-
-	function toggleRow(row) {
-		setSavedRow(null);
-		setOpenRow((current) => (current === row ? null : row));
-	}
-
-	function finishRow(row) {
-		setOpenRow(null);
-		setSavedRow(row);
-	}
 
 	async function updatePrivacy(key) {
 		const next = { ...privacy, [key]: !privacy[key] };
@@ -694,6 +643,102 @@ export default function Settings() {
 			setPrivacySaving(null);
 		}
 	}
+
+	const topLifts = [...(prs ?? [])]
+		.sort((a, b) => Number(b.maxWeightLbs) - Number(a.maxWeightLbs))
+		.slice(0, 2)
+		.map(
+			(p) => `${p.exerciseName} ${toDisplay(Number(p.maxWeightLbs))} ${unit}`,
+		);
+	const leaderboardHint = topLifts.length
+		? `Others see: ${[username, ...topLifts].join(" · ")}`
+		: "Your username, exercise names and best lifts";
+
+	return (
+		<Group title="Privacy">
+			{privacyLoading ? (
+				<Row label="Loading…" />
+			) : (
+				<>
+					<Row label="Share data on leaderboard" hint={leaderboardHint}>
+						<Switch
+							ariaLabel="Toggle data sharing"
+							on={privacy.shareData}
+							saving={privacySaving === "shareData"}
+							onToggle={() => updatePrivacy("shareData")}
+						/>
+					</Row>
+					<Row label="Share on community calendar" hint="The days you trained">
+						<Switch
+							ariaLabel="Toggle calendar sharing"
+							on={privacy.shareCalendar}
+							saving={privacySaving === "shareCalendar"}
+							onToggle={() => updatePrivacy("shareCalendar")}
+						/>
+					</Row>
+				</>
+			)}
+			{privacyError && (
+				<p className="settings-error settings-row-note">{privacyError}</p>
+			)}
+		</Group>
+	);
+}
+
+// ── Data group (export / import) ────────────────────────────────────────────
+
+function ImportResult({ result }) {
+	if (!result.ok) {
+		return (
+			<p className="settings-error settings-row-note">
+				Import failed — check file format
+			</p>
+		);
+	}
+	return (
+		<div className="settings-row-note">
+			<p className="settings-import-ok">
+				✓ Import complete · {result.fileName}
+			</p>
+			<table className="settings-import-table">
+				<thead>
+					<tr>
+						<th />
+						{IMPORT_TYPES.map((t) => (
+							<th key={t.key}>{t.label}</th>
+						))}
+					</tr>
+				</thead>
+				<tbody>
+					{["Imported", "Skipped"].map((kind) => (
+						<tr key={kind}>
+							<th scope="row">{kind}</th>
+							{IMPORT_TYPES.map((t) => (
+								<td key={t.key}>{result.counts[`${t.key}${kind}`] ?? 0}</td>
+							))}
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	);
+}
+
+function DataGroup() {
+	const { data: weightData, refetch: refetchWeight } = useWeightLog();
+	const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
+	const { data: workoutData, refetch: refetchWorkouts } = useWorkouts();
+	const { data: stepData, refetch: refetchSteps } = useSteps();
+	const exportData = { weightData, nutritionData, workoutData, stepData };
+	const hasData =
+		weightData.length > 0 ||
+		nutritionData.length > 0 ||
+		workoutData.length > 0 ||
+		stepData.length > 0;
+
+	const [importResult, setImportResult] = useState(null);
+	const [importing, setImporting] = useState(false);
+	const fileInputRef = useRef(null);
 
 	async function handleImportJson(e) {
 		const file = e.target.files?.[0];
@@ -718,6 +763,94 @@ export default function Settings() {
 		}
 	}
 
+	return (
+		<Group title="Data">
+			<Row
+				label="Export a backup"
+				hint={hasData ? null : "Log some data to enable export."}
+			>
+				<button
+					className="btn btn-sm"
+					type="button"
+					aria-label="Export as JSON"
+					onClick={() => exportJson(exportData)}
+					disabled={!hasData}
+				>
+					JSON
+				</button>
+				<button
+					className="btn btn-sm"
+					type="button"
+					aria-label="Export as XLSX"
+					onClick={() => exportXlsx(exportData)}
+					disabled={!hasData}
+				>
+					XLSX
+				</button>
+			</Row>
+			<Row
+				label="Import a backup"
+				hint="Restore a JSON export. Duplicates are skipped."
+			>
+				<button
+					className="btn btn-sm"
+					type="button"
+					disabled={importing}
+					onClick={() => fileInputRef.current?.click()}
+				>
+					{importing ? "Importing..." : "Choose JSON file"}
+				</button>
+				<input
+					ref={fileInputRef}
+					type="file"
+					accept=".json"
+					style={{ display: "none" }}
+					onChange={handleImportJson}
+				/>
+			</Row>
+			{importResult && <ImportResult result={importResult} />}
+		</Group>
+	);
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
+
+export default function Settings() {
+	const navigate = useNavigate();
+	const { goals, loading, saving, error, saveGoals } = useUserProfile();
+	const { unit, toggleUnit } = useWeightUnit();
+	const [, , themeMode, setThemeMode] = useTheme();
+	const username = useAuthStore((s) => s.username);
+	const clearAuth = useAuthStore((s) => s.logout);
+
+	// One editable row open at a time; "Saved!" shows on the row just saved.
+	const [openRow, setOpenRow] = useState(null);
+	const [savedRow, setSavedRow] = useState(null);
+	const [currentEmail, setCurrentEmail] = useState("");
+
+	useEffect(() => {
+		api
+			.get("/profile/email")
+			.then((res) => setCurrentEmail(res.data.email ?? ""))
+			.catch(() => {});
+	}, []);
+
+	useEffect(() => {
+		if (!savedRow) return;
+		const t = setTimeout(() => setSavedRow(null), 3000);
+		return () => clearTimeout(t);
+	}, [savedRow]);
+
+	function toggleRow(row) {
+		setSavedRow(null);
+		setOpenRow((current) => (current === row ? null : row));
+	}
+
+	function finishRow(row) {
+		setOpenRow(null);
+		setSavedRow(row);
+	}
+
 	function logout() {
 		api.post("/auth/logout").catch(() => {});
 		clearAuth();
@@ -726,16 +859,6 @@ export default function Settings() {
 	const goalsSummary = loading
 		? "Loading…"
 		: `${goals.calorieTargetTraining.toLocaleString()} / ${goals.calorieTargetRest.toLocaleString()} kcal · ${goals.proteinTarget} g`;
-
-	const topLifts = [...(prs ?? [])]
-		.sort((a, b) => Number(b.maxWeightLbs) - Number(a.maxWeightLbs))
-		.slice(0, 2)
-		.map(
-			(p) => `${p.exerciseName} ${toDisplay(Number(p.maxWeightLbs))} ${unit}`,
-		);
-	const leaderboardHint = topLifts.length
-		? `Others see: ${[username, ...topLifts].join(" · ")}`
-		: "Your username, exercise names and best lifts";
 
 	return (
 		<div className="settings-page">
@@ -787,36 +910,7 @@ export default function Settings() {
 				</Row>
 			</Group>
 
-			<Group title="Privacy">
-				{privacyLoading ? (
-					<Row label="Loading…" />
-				) : (
-					<>
-						<Row label="Share data on leaderboard" hint={leaderboardHint}>
-							<Switch
-								ariaLabel="Toggle data sharing"
-								on={privacy.shareData}
-								saving={privacySaving === "shareData"}
-								onToggle={() => updatePrivacy("shareData")}
-							/>
-						</Row>
-						<Row
-							label="Share on community calendar"
-							hint="The days you trained"
-						>
-							<Switch
-								ariaLabel="Toggle calendar sharing"
-								on={privacy.shareCalendar}
-								saving={privacySaving === "shareCalendar"}
-								onToggle={() => updatePrivacy("shareCalendar")}
-							/>
-						</Row>
-					</>
-				)}
-				{privacyError && (
-					<p className="settings-error settings-row-note">{privacyError}</p>
-				)}
-			</Group>
+			<PrivacyGroup />
 
 			<Group title="Integrations">
 				<button
@@ -832,85 +926,7 @@ export default function Settings() {
 				</button>
 			</Group>
 
-			<Group title="Data">
-				<Row
-					label="Export a backup"
-					hint={hasData ? null : "Log some data to enable export."}
-				>
-					<button
-						className="btn btn-sm"
-						type="button"
-						aria-label="Export as JSON"
-						onClick={() => exportJson(exportData)}
-						disabled={!hasData}
-					>
-						JSON
-					</button>
-					<button
-						className="btn btn-sm"
-						type="button"
-						aria-label="Export as XLSX"
-						onClick={() => exportXlsx(exportData)}
-						disabled={!hasData}
-					>
-						XLSX
-					</button>
-				</Row>
-				<Row
-					label="Import a backup"
-					hint="Restore a JSON export. Duplicates are skipped."
-				>
-					<button
-						className="btn btn-sm"
-						type="button"
-						disabled={importing}
-						onClick={() => fileInputRef.current?.click()}
-					>
-						{importing ? "Importing..." : "Choose JSON file"}
-					</button>
-					<input
-						ref={fileInputRef}
-						type="file"
-						accept=".json"
-						style={{ display: "none" }}
-						onChange={handleImportJson}
-					/>
-				</Row>
-				{importResult && !importResult.ok && (
-					<p className="settings-error settings-row-note">
-						Import failed — check file format
-					</p>
-				)}
-				{importResult?.ok && (
-					<div className="settings-row-note">
-						<p className="settings-import-ok">
-							✓ Import complete · {importResult.fileName}
-						</p>
-						<table className="settings-import-table">
-							<thead>
-								<tr>
-									<th />
-									{IMPORT_TYPES.map((t) => (
-										<th key={t.key}>{t.label}</th>
-									))}
-								</tr>
-							</thead>
-							<tbody>
-								{["Imported", "Skipped"].map((kind) => (
-									<tr key={kind}>
-										<th scope="row">{kind}</th>
-										{IMPORT_TYPES.map((t) => (
-											<td key={t.key}>
-												{importResult.counts[`${t.key}${kind}`] ?? 0}
-											</td>
-										))}
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				)}
-			</Group>
+			<DataGroup />
 
 			<Group title="Account">
 				<EditRow
