@@ -46,10 +46,10 @@ public class SharedCalendarTest extends BaseTest {
 
     @Test(priority = 1)
     public void sharedCalendarHasSubnavTab() {
-        step("open leaderboard and verify the Shared Calendar sub-nav exists");
+        step("open leaderboard and verify the Leaderboard / Calendar view switch exists");
         calendar.open(baseUrl);
         if (!calendar.hasSubnav()) {
-            throw new AssertionError("Expected Leaderboard / Shared Calendar sub-nav buttons");
+            throw new AssertionError("Expected Leaderboard / Calendar view switch buttons");
         }
     }
 

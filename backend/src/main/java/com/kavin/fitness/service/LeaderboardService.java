@@ -6,7 +6,6 @@ import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.ExerciseSetRepository;
 import com.kavin.fitness.repository.UserRepository;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,101 +19,150 @@ import org.springframework.transaction.annotation.Transactional;
 public class LeaderboardService {
 
     private static final int TOP_N_PER_EXERCISE = 10;
-    private static final int TOP_N_LIFTERS = 10;
+    private static final int TOP_N_ACTIVE = 5;
     private static final int ACTIVITY_DAYS = 30;
+    private static final int CHANGE_WINDOW_DAYS = 7;
 
     private final UserRepository userRepository;
     private final ExerciseSetRepository exerciseSetRepository;
 
-    public LeaderboardDTO getLeaderboard() {
+    /**
+     * Strength leaderboards built only from users who opted in.
+     *
+     * @param period "all" for all time; anything else means the current calendar month
+     * @param viewer the signed-in viewer's username, or null when anonymous
+     */
+    public LeaderboardDTO getLeaderboard(String period, String viewer) {
+        return getLeaderboard(period, viewer, LocalDate.now());
+    }
+
+    LeaderboardDTO getLeaderboard(String period, String viewer, LocalDate today) {
+        LocalDate start = "all".equals(period) ? null : today.withDayOfMonth(1);
+
         List<User> sharers = userRepository.findByShareDataTrue();
+        boolean viewerShares =
+                viewer != null && sharers.stream().anyMatch(u -> u.getUsername().equals(viewer));
         if (sharers.isEmpty()) {
-            return new LeaderboardDTO(0, 0, 0, List.of(), List.of(), List.of());
+            return new LeaderboardDTO(
+                    0, 0, 0, 0, List.of(), List.of(), List.of(), notSharing(viewer));
         }
 
         Map<Long, String> userIdToName =
                 sharers.stream().collect(Collectors.toMap(User::getId, User::getUsername));
-        List<Long> userIds = new ArrayList<>(userIdToName.keySet());
+        List<ExerciseSet> sets =
+                exerciseSetRepository.findByUserIdIn(new ArrayList<>(userIdToName.keySet()));
 
-        List<ExerciseSet> sets = exerciseSetRepository.findByUserIdIn(userIds);
-
+        List<ExerciseSet> periodSets =
+                sets.stream().filter(s -> start == null || !date(s).isBefore(start)).toList();
         Set<Long> sessionIds = new HashSet<>();
-        for (ExerciseSet s : sets) sessionIds.add(s.getSession().getId());
+        for (ExerciseSet s : periodSets) sessionIds.add(s.getSession().getId());
 
-        List<LeaderboardDTO.ExerciseLeaderboard> exercises =
-                buildExerciseLeaderboards(sets, userIdToName);
-        List<LeaderboardDTO.TopUser> topLifters = buildTopLifters(sets, userIdToName);
-        List<LeaderboardDTO.ActivityPoint> activity = buildActivity(sets);
+        List<LeaderboardDTO.ExerciseLeaderboard> exercises = new ArrayList<>();
+        List<LeaderboardDTO.Standing> standings = new ArrayList<>();
+        buildBoards(
+                periodSets,
+                today,
+                userIdToName,
+                viewerShares ? viewer : null,
+                exercises,
+                standings);
+
+        LeaderboardDTO.Me me =
+                viewer == null
+                        ? null
+                        : viewerShares
+                                ? new LeaderboardDTO.Me(true, standings)
+                                : notSharing(viewer);
 
         return new LeaderboardDTO(
-                sharers.size(), sessionIds.size(), sets.size(), exercises, topLifters, activity);
+                sharers.size(),
+                sessionIds.size(),
+                periodSets.size(),
+                countPrs(sets, start),
+                exercises,
+                buildMostActive(periodSets, userIdToName),
+                buildActivity(sets, today),
+                me);
     }
 
-    private List<LeaderboardDTO.ExerciseLeaderboard> buildExerciseLeaderboards(
-            List<ExerciseSet> sets, Map<Long, String> userIdToName) {
+    private LeaderboardDTO.Me notSharing(String viewer) {
+        return viewer == null ? null : new LeaderboardDTO.Me(false, List.of());
+    }
 
-        List<LeaderboardDTO.ExerciseLeaderboard> result = new ArrayList<>();
+    private static LocalDate date(ExerciseSet s) {
+        return s.getSession().getSessionDate();
+    }
 
-        // Strength: every exercise grouping that has at least one weighted set (no distance, no
-        // duration).
+    private static boolean isStrength(ExerciseSet s) {
+        return s.getDistanceMiles() == null && s.getDurationSeconds() == null;
+    }
+
+    /** One board per strength exercise, busiest first, plus the viewer's standing on each. */
+    private void buildBoards(
+            List<ExerciseSet> periodSets,
+            LocalDate today,
+            Map<Long, String> userIdToName,
+            String viewer,
+            List<LeaderboardDTO.ExerciseLeaderboard> exercises,
+            List<LeaderboardDTO.Standing> standings) {
+
         Map<String, List<ExerciseSet>> byExercise =
-                sets.stream().collect(Collectors.groupingBy(ExerciseSet::getExerciseName));
+                periodSets.stream()
+                        .filter(LeaderboardService::isStrength)
+                        .collect(Collectors.groupingBy(ExerciseSet::getExerciseName));
+        LocalDate weekAgo = today.minusDays(CHANGE_WINDOW_DAYS);
 
-        for (Map.Entry<String, List<ExerciseSet>> entry : byExercise.entrySet()) {
-            String name = entry.getKey();
-            List<ExerciseSet> exSets = entry.getValue();
+        for (Map.Entry<String, List<ExerciseSet>> e : byExercise.entrySet()) {
+            List<LeaderboardDTO.Entry> ranked = rank(e.getValue(), userIdToName);
+            Map<String, Integer> previous = new HashMap<>();
+            for (LeaderboardDTO.Entry old :
+                    rank(
+                            e.getValue().stream().filter(s -> !date(s).isAfter(weekAgo)).toList(),
+                            userIdToName)) {
+                previous.put(old.getUsername(), old.getRank());
+            }
+            for (LeaderboardDTO.Entry entry : ranked) {
+                Integer was = previous.get(entry.getUsername());
+                entry.setChange(was == null ? null : was - entry.getRank());
+            }
 
-            // Filter to strength-style sets only.
-            List<ExerciseSet> strengthSets =
-                    exSets.stream()
-                            .filter(
-                                    s ->
-                                            s.getDistanceMiles() == null
-                                                    && s.getDurationSeconds() == null)
-                            .collect(Collectors.toList());
-            if (strengthSets.isEmpty()) continue;
-
-            List<LeaderboardDTO.Entry> entries = strengthEntries(strengthSets, userIdToName);
-
-            Set<Long> participants = new HashSet<>();
-            for (ExerciseSet s : strengthSets) participants.add(s.getSession().getUser().getId());
-
-            result.add(
+            exercises.add(
                     new LeaderboardDTO.ExerciseLeaderboard(
-                            name,
-                            "strength",
-                            "weight",
-                            strengthSets.size(),
-                            participants.size(),
-                            entries));
+                            e.getKey(),
+                            e.getValue().size(),
+                            ranked.size(),
+                            ranked.stream().limit(TOP_N_PER_EXERCISE).toList()));
+
+            if (viewer == null) continue;
+            for (LeaderboardDTO.Entry mine : ranked) {
+                if (!mine.getUsername().equals(viewer)) continue;
+                standings.add(
+                        new LeaderboardDTO.Standing(
+                                e.getKey(),
+                                mine.getRank(),
+                                ranked.size(),
+                                mine.getBestWeight(),
+                                mine.getBestReps(),
+                                mine.getAchievedDate(),
+                                mine.getChange(),
+                                mine.getRank() > 1 ? ranked.get(mine.getRank() - 2) : null));
+            }
         }
 
-        result.sort(
+        exercises.sort(
                 Comparator.comparingInt(LeaderboardDTO.ExerciseLeaderboard::getTotalSets)
                         .reversed()
                         .thenComparing(LeaderboardDTO.ExerciseLeaderboard::getExerciseName));
-
-        // Cardio: only runs. Build fixed-category leaderboards.
-        List<ExerciseSet> runSets =
-                sets.stream()
-                        .filter(s -> isRunning(s.getExerciseName()))
-                        .filter(s -> s.getDistanceMiles() != null)
-                        .collect(Collectors.toList());
-
-        result.addAll(buildRunningCategories(runSets, userIdToName));
-
-        return result;
+        List<String> order =
+                exercises.stream()
+                        .map(LeaderboardDTO.ExerciseLeaderboard::getExerciseName)
+                        .toList();
+        standings.sort(Comparator.comparingInt(s -> order.indexOf(s.getExerciseName())));
     }
 
-    private static boolean isRunning(String name) {
-        if (name == null) return false;
-        String n = name.trim().toLowerCase();
-        return n.equals("running") || n.equals("run");
-    }
-
-    private List<LeaderboardDTO.Entry> strengthEntries(
+    /** Every lifter's best set (heavier, then more reps, then earlier), ranked from 1. */
+    private List<LeaderboardDTO.Entry> rank(
             List<ExerciseSet> sets, Map<Long, String> userIdToName) {
-        // Per user: pick the best single set ranked by weight then reps.
         Map<Long, ExerciseSet> bestByUser = new HashMap<>();
         for (ExerciseSet s : sets) {
             Long uid = s.getSession().getUser().getId();
@@ -124,220 +172,107 @@ public class LeaderboardService {
             }
         }
 
-        List<LeaderboardDTO.Entry> entries =
-                bestByUser.entrySet().stream()
-                        .map(
-                                e -> {
-                                    ExerciseSet s = e.getValue();
-                                    BigDecimal score =
-                                            s.getWeightLbs()
-                                                    .multiply(BigDecimal.valueOf(s.getReps()));
-                                    return new LeaderboardDTO.Entry(
-                                            0,
-                                            userIdToName.getOrDefault(e.getKey(), "unknown"),
-                                            score,
-                                            s.getWeightLbs(),
-                                            s.getReps(),
-                                            null,
-                                            null,
-                                            s.getSession().getSessionDate());
-                                })
-                        .sorted(
-                                Comparator.comparing(
-                                                LeaderboardDTO.Entry::getBestWeight,
-                                                Comparator.reverseOrder())
-                                        .thenComparing(
-                                                LeaderboardDTO.Entry::getBestReps,
-                                                Comparator.reverseOrder())
-                                        .thenComparing(LeaderboardDTO.Entry::getAchievedDate))
-                        .limit(TOP_N_PER_EXERCISE)
-                        .collect(Collectors.toList());
+        List<Map.Entry<Long, ExerciseSet>> best = new ArrayList<>(bestByUser.entrySet());
+        best.sort(Map.Entry.comparingByValue(setComparator()));
 
-        for (int i = 0; i < entries.size(); i++) entries.get(i).setRank(i + 1);
+        List<LeaderboardDTO.Entry> entries = new ArrayList<>();
+        for (Map.Entry<Long, ExerciseSet> e : best) {
+            ExerciseSet s = e.getValue();
+            entries.add(
+                    new LeaderboardDTO.Entry(
+                            entries.size() + 1,
+                            userIdToName.getOrDefault(e.getKey(), "unknown"),
+                            s.getWeightLbs(),
+                            s.getReps(),
+                            date(s),
+                            null));
+        }
         return entries;
     }
 
-    // ── Cardio category leaderboards (Running only) ─────────────────────────
-    //
-    //   Categories:
-    //     Longest Run Time  - Longest single-run duration per user (most time in one run).
-    //     Fastest Avg Pace  - Best lifetime average pace (totalDuration / totalDistance) per user.
-
-    private List<LeaderboardDTO.ExerciseLeaderboard> buildRunningCategories(
-            List<ExerciseSet> runSets, Map<Long, String> userIdToName) {
-
-        if (runSets.isEmpty()) return List.of();
-
-        List<LeaderboardDTO.ExerciseLeaderboard> result = new ArrayList<>();
-        result.add(buildLongestRunTime(runSets, userIdToName));
-        result.add(buildFastestAvgPace(runSets, userIdToName));
-
-        result.removeIf(b -> b.getEntries().isEmpty());
-        return result;
-    }
-
     /**
-     * Longest single-run duration per user (longest mile-time = most time spent running in one go).
+     * A PR is a strength set heavier than everything the lifter logged for that exercise on earlier
+     * days. A lifter's first ever set of an exercise doesn't count, and one exercise counts at most
+     * once per day.
      */
-    private LeaderboardDTO.ExerciseLeaderboard buildLongestRunTime(
-            List<ExerciseSet> runSets, Map<Long, String> userIdToName) {
-
-        Map<Long, ExerciseSet> bestByUser = new HashMap<>();
-        for (ExerciseSet s : runSets) {
-            if (s.getDurationSeconds() == null || s.getDurationSeconds() <= 0) continue;
-            Long uid = s.getSession().getUser().getId();
-            ExerciseSet current = bestByUser.get(uid);
-            if (current == null || s.getDurationSeconds() > current.getDurationSeconds()) {
-                bestByUser.put(uid, s);
-            }
-        }
-
-        List<LeaderboardDTO.Entry> entries =
-                bestByUser.entrySet().stream()
-                        .map(
-                                e -> {
-                                    ExerciseSet s = e.getValue();
-                                    return new LeaderboardDTO.Entry(
-                                            0,
-                                            userIdToName.getOrDefault(e.getKey(), "unknown"),
-                                            BigDecimal.valueOf(s.getDurationSeconds()),
-                                            null,
-                                            null,
-                                            s.getDistanceMiles(),
-                                            s.getDurationSeconds(),
-                                            s.getSession().getSessionDate());
-                                })
-                        .sorted(
-                                Comparator.comparing(
-                                                LeaderboardDTO.Entry::getTotalDurationSeconds,
-                                                Comparator.reverseOrder())
-                                        .thenComparing(LeaderboardDTO.Entry::getAchievedDate))
-                        .limit(TOP_N_PER_EXERCISE)
-                        .collect(Collectors.toList());
-
-        for (int i = 0; i < entries.size(); i++) entries.get(i).setRank(i + 1);
-
-        return new LeaderboardDTO.ExerciseLeaderboard(
-                "Longest Run Time", "cardio", "time", runSets.size(), bestByUser.size(), entries);
-    }
-
-    /** Lifetime average pace per user: totalDuration / totalDistance (lower = better). */
-    private LeaderboardDTO.ExerciseLeaderboard buildFastestAvgPace(
-            List<ExerciseSet> runSets, Map<Long, String> userIdToName) {
-
-        Map<Long, BigDecimal> totalDist = new HashMap<>();
-        Map<Long, Integer> totalDur = new HashMap<>();
-        Map<Long, LocalDate> lastDate = new HashMap<>();
-
-        for (ExerciseSet s : runSets) {
-            if (s.getDurationSeconds() == null || s.getDurationSeconds() <= 0) continue;
-            if (s.getDistanceMiles().compareTo(BigDecimal.ZERO) <= 0) continue;
-            Long uid = s.getSession().getUser().getId();
-            totalDist.merge(uid, s.getDistanceMiles(), BigDecimal::add);
-            totalDur.merge(uid, s.getDurationSeconds(), Integer::sum);
-            lastDate.merge(uid, s.getSession().getSessionDate(), (a, b) -> a.isAfter(b) ? a : b);
-        }
-
-        List<LeaderboardDTO.Entry> entries =
-                totalDist.entrySet().stream()
-                        .map(
-                                e -> {
-                                    Long uid = e.getKey();
-                                    BigDecimal dist = e.getValue();
-                                    Integer dur = totalDur.getOrDefault(uid, 0);
-                                    // Pace as sec/mile, rounded to 1 decimal for ranking stability.
-                                    BigDecimal pace =
-                                            BigDecimal.valueOf(dur)
-                                                    .divide(dist, 4, RoundingMode.HALF_UP);
-                                    return new LeaderboardDTO.Entry(
-                                            0,
-                                            userIdToName.getOrDefault(uid, "unknown"),
-                                            pace,
-                                            null,
-                                            null,
-                                            dist,
-                                            dur,
-                                            lastDate.get(uid));
-                                })
-                        .sorted(
-                                Comparator.comparing(LeaderboardDTO.Entry::getScore)
-                                        .thenComparing(LeaderboardDTO.Entry::getAchievedDate))
-                        .limit(TOP_N_PER_EXERCISE)
-                        .collect(Collectors.toList());
-
-        for (int i = 0; i < entries.size(); i++) entries.get(i).setRank(i + 1);
-
-        return new LeaderboardDTO.ExerciseLeaderboard(
-                "Fastest Avg Pace", "cardio", "pace", runSets.size(), totalDist.size(), entries);
-    }
-
-    private List<LeaderboardDTO.TopUser> buildTopLifters(
-            List<ExerciseSet> sets, Map<Long, String> userIdToName) {
-        Map<Long, BigDecimal> volume = new HashMap<>();
-        Map<Long, Integer> setCount = new HashMap<>();
-        Map<Long, Set<Long>> sessions = new HashMap<>();
-
+    private int countPrs(List<ExerciseSet> sets, LocalDate start) {
+        Map<Long, Map<String, List<ExerciseSet>>> byUserAndExercise = new HashMap<>();
         for (ExerciseSet s : sets) {
-            Long uid = s.getSession().getUser().getId();
-            setCount.merge(uid, 1, Integer::sum);
-            sessions.computeIfAbsent(uid, k -> new HashSet<>()).add(s.getSession().getId());
-
-            // Only count strength volume.
-            if (s.getDistanceMiles() == null
-                    && s.getDurationSeconds() == null
-                    && s.getReps() != null
-                    && s.getWeightLbs() != null) {
-                BigDecimal v = s.getWeightLbs().multiply(BigDecimal.valueOf(s.getReps()));
-                volume.merge(uid, v, BigDecimal::add);
-            }
+            if (!isStrength(s)) continue;
+            byUserAndExercise
+                    .computeIfAbsent(s.getSession().getUser().getId(), k -> new HashMap<>())
+                    .computeIfAbsent(s.getExerciseName(), k -> new ArrayList<>())
+                    .add(s);
         }
 
-        List<LeaderboardDTO.TopUser> list =
-                userIdToName.keySet().stream()
-                        .filter(setCount::containsKey)
+        int count = 0;
+        for (Map<String, List<ExerciseSet>> exercises : byUserAndExercise.values()) {
+            for (List<ExerciseSet> list : exercises.values()) {
+                TreeMap<LocalDate, BigDecimal> heaviestByDay = new TreeMap<>();
+                for (ExerciseSet s : list)
+                    heaviestByDay.merge(date(s), s.getWeightLbs(), BigDecimal::max);
+
+                BigDecimal best = null;
+                for (Map.Entry<LocalDate, BigDecimal> day : heaviestByDay.entrySet()) {
+                    boolean inPeriod = start == null || !day.getKey().isBefore(start);
+                    if (best != null && day.getValue().compareTo(best) > 0 && inPeriod) count++;
+                    if (best == null || day.getValue().compareTo(best) > 0) best = day.getValue();
+                }
+            }
+        }
+        return count;
+    }
+
+    private List<LeaderboardDTO.ActiveUser> buildMostActive(
+            List<ExerciseSet> periodSets, Map<Long, String> userIdToName) {
+        Map<Long, Set<Long>> sessions = new HashMap<>();
+        Map<Long, Integer> setCount = new HashMap<>();
+        for (ExerciseSet s : periodSets) {
+            Long uid = s.getSession().getUser().getId();
+            sessions.computeIfAbsent(uid, k -> new HashSet<>()).add(s.getSession().getId());
+            setCount.merge(uid, 1, Integer::sum);
+        }
+
+        List<LeaderboardDTO.ActiveUser> list =
+                sessions.keySet().stream()
                         .map(
                                 uid ->
-                                        new LeaderboardDTO.TopUser(
+                                        new LeaderboardDTO.ActiveUser(
                                                 0,
                                                 userIdToName.get(uid),
-                                                sessions.getOrDefault(uid, Set.of()).size(),
-                                                setCount.getOrDefault(uid, 0),
-                                                volume.getOrDefault(uid, BigDecimal.ZERO)))
+                                                sessions.get(uid).size(),
+                                                setCount.get(uid)))
                         .sorted(
-                                Comparator.comparing(
-                                                LeaderboardDTO.TopUser::getTotalVolumeLbs,
-                                                Comparator.reverseOrder())
-                                        .thenComparingInt(
-                                                (LeaderboardDTO.TopUser u) -> -u.getTotalSets()))
-                        .limit(TOP_N_LIFTERS)
+                                Comparator.comparingInt(LeaderboardDTO.ActiveUser::getSessionCount)
+                                        .reversed()
+                                        .thenComparing(
+                                                Comparator.comparingInt(
+                                                                LeaderboardDTO.ActiveUser
+                                                                        ::getTotalSets)
+                                                        .reversed())
+                                        .thenComparing(LeaderboardDTO.ActiveUser::getUsername))
+                        .limit(TOP_N_ACTIVE)
                         .collect(Collectors.toList());
 
         for (int i = 0; i < list.size(); i++) list.get(i).setRank(i + 1);
         return list;
     }
 
-    private List<LeaderboardDTO.ActivityPoint> buildActivity(List<ExerciseSet> sets) {
-        if (sets.isEmpty()) return List.of();
+    private List<LeaderboardDTO.ActivityPoint> buildActivity(
+            List<ExerciseSet> sets, LocalDate today) {
+        LocalDate cutoff = today.minusDays(ACTIVITY_DAYS - 1);
 
-        LocalDate latest =
-                sets.stream()
-                        .map(s -> s.getSession().getSessionDate())
-                        .max(Comparator.naturalOrder())
-                        .orElse(LocalDate.now());
-        LocalDate cutoff = latest.minusDays(ACTIVITY_DAYS - 1);
-
-        Map<LocalDate, Set<Long>> sessionsPerDay = new TreeMap<>();
-        Map<LocalDate, Integer> setsPerDay = new TreeMap<>();
-
+        Map<LocalDate, Set<Long>> sessionsPerDay = new HashMap<>();
+        Map<LocalDate, Integer> setsPerDay = new HashMap<>();
         for (ExerciseSet s : sets) {
-            LocalDate d = s.getSession().getSessionDate();
-            if (d.isBefore(cutoff)) continue;
+            LocalDate d = date(s);
+            if (d.isBefore(cutoff) || d.isAfter(today)) continue;
             sessionsPerDay.computeIfAbsent(d, k -> new HashSet<>()).add(s.getSession().getId());
             setsPerDay.merge(d, 1, Integer::sum);
         }
 
         List<LeaderboardDTO.ActivityPoint> points = new ArrayList<>();
-        for (LocalDate d = cutoff; !d.isAfter(latest); d = d.plusDays(1)) {
+        for (LocalDate d = cutoff; !d.isAfter(today); d = d.plusDays(1)) {
             points.add(
                     new LeaderboardDTO.ActivityPoint(
                             d,
@@ -351,6 +286,6 @@ public class LeaderboardService {
     private static Comparator<ExerciseSet> setComparator() {
         return Comparator.comparing(ExerciseSet::getWeightLbs, Comparator.reverseOrder())
                 .thenComparing(ExerciseSet::getReps, Comparator.reverseOrder())
-                .thenComparing((ExerciseSet s) -> s.getSession().getSessionDate());
+                .thenComparing(LeaderboardService::date);
     }
 }

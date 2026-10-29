@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import Community from "../pages/Community";
+import useAuthStore from "../store/authStore";
 import { localDateStr } from "../utils/date";
 
 vi.mock("../pages/Community.css", () => ({}));
@@ -27,7 +28,7 @@ vi.mock("../api", () => ({
 	default: { get: (...args) => mockApiGet(...args) },
 }));
 
-function renderLeaderboard() {
+function renderCommunity() {
 	return render(
 		<MemoryRouter>
 			<Community />
@@ -35,465 +36,435 @@ function renderLeaderboard() {
 	);
 }
 
-const LEADERBOARD_DATA = {
-	totalUsers: 3,
-	totalSessions: 15,
-	totalSets: 120,
+function entry(rank, username, bestWeight, bestReps, change = null) {
+	return {
+		rank,
+		username,
+		bestWeight,
+		bestReps,
+		achievedDate: "2026-10-20",
+		change,
+	};
+}
+
+const BENCH_ENTRIES = Array.from({ length: 10 }, (_, i) =>
+	entry(i + 1, `lifter${i + 1}`, 300 - i * 10, 5),
+);
+
+const DATA = {
+	totalUsers: 23,
+	totalSessions: 412,
+	totalSets: 8930,
+	prCount: 31,
 	exercises: [
 		{
-			exerciseName: "Bench Press",
-			type: "strength",
-			metric: "weight",
-			totalSets: 60,
+			exerciseName: "Squats",
+			totalSets: 90,
 			participantCount: 2,
-			entries: [
-				{
-					rank: 1,
-					username: "alice",
-					score: 700,
-					bestWeight: 175,
-					bestReps: 4,
-					totalDistance: null,
-					totalDurationSeconds: null,
-					achievedDate: "2026-05-01",
-				},
-				{
-					rank: 2,
-					username: "bob",
-					score: 600,
-					bestWeight: 150,
-					bestReps: 4,
-					totalDistance: null,
-					totalDurationSeconds: null,
-					achievedDate: "2026-04-20",
-				},
-			],
+			entries: [entry(1, "alice", 405, 2, 1), entry(2, "kavin", 275, 5, -1)],
+		},
+		{
+			exerciseName: "Bench Press",
+			totalSets: 60,
+			participantCount: 18,
+			entries: BENCH_ENTRIES,
+		},
+		{
+			exerciseName: "Zercher Squats",
+			totalSets: 4,
+			participantCount: 1,
+			entries: [entry(1, "bob", 135, 5)],
+		},
+	],
+	mostActive: [
+		{ rank: 1, username: "mira", sessionCount: 19, totalSets: 412 },
+		{ rank: 2, username: "kavin", sessionCount: 17, totalSets: 388 },
+	],
+	activity: [
+		{ date: "2026-10-28", sessionCount: 2, setCount: 20 },
+		{ date: "2026-10-29", sessionCount: 1, setCount: 10 },
+	],
+	me: null,
+};
+
+const ME = {
+	sharing: true,
+	standings: [
+		{
+			exerciseName: "Bench Press",
+			rank: 12,
+			participantCount: 18,
+			bestWeight: 185,
+			bestReps: 5,
+			achievedDate: "2026-10-27",
+			change: 1,
+			ahead: entry(11, "dana", 195, 5),
 		},
 		{
 			exerciseName: "Squats",
-			type: "strength",
-			metric: "weight",
-			totalSets: 30,
-			participantCount: 1,
-			entries: [
-				{
-					rank: 1,
-					username: "bob",
-					score: 600,
-					bestWeight: 200,
-					bestReps: 3,
-					totalDistance: null,
-					totalDurationSeconds: null,
-					achievedDate: "2026-04-15",
-				},
-			],
-		},
-		{
-			exerciseName: "Longest Run Time",
-			type: "cardio",
-			metric: "time",
-			totalSets: 12,
-			participantCount: 1,
-			entries: [
-				{
-					rank: 1,
-					username: "carol",
-					score: 5400,
-					bestWeight: null,
-					bestReps: null,
-					totalDistance: 8.0,
-					totalDurationSeconds: 5400,
-					achievedDate: "2026-05-05",
-				},
-			],
-		},
-		{
-			exerciseName: "Fastest Avg Pace",
-			type: "cardio",
-			metric: "pace",
-			totalSets: 12,
-			participantCount: 1,
-			entries: [
-				// pace = 4500 / 10 = 450 sec/mile = 7:30/mi
-				{
-					rank: 1,
-					username: "carol",
-					score: 450,
-					bestWeight: null,
-					bestReps: null,
-					totalDistance: 10.0,
-					totalDurationSeconds: 4500,
-					achievedDate: "2026-05-02",
-				},
-			],
-		},
-	],
-	topLifters: [
-		{
-			rank: 1,
-			username: "alice",
-			sessionCount: 8,
-			totalSets: 70,
-			totalVolumeLbs: 42000,
-		},
-		{
 			rank: 2,
-			username: "bob",
-			sessionCount: 5,
-			totalSets: 40,
-			totalVolumeLbs: 28000,
+			participantCount: 2,
+			bestWeight: 275,
+			bestReps: 5,
+			change: -1,
+			ahead: entry(1, "alice", 405, 2),
 		},
-		{
-			rank: 3,
-			username: "carol",
-			sessionCount: 2,
-			totalSets: 10,
-			totalVolumeLbs: 5000,
-		},
-	],
-	activity: [
-		{ date: "2026-05-01", sessionCount: 2, setCount: 20 },
-		{ date: "2026-05-02", sessionCount: 1, setCount: 10 },
 	],
 };
 
+function signIn(username = "kavin") {
+	useAuthStore.setState({ authenticated: true, username });
+}
+
 beforeEach(() => {
 	vi.clearAllMocks();
+	useAuthStore.setState({ authenticated: false, username: null });
 });
 
-// ── Topbar ────────────────────────────────────────────────────────────────────
+// ── Loading / error / empty ──────────────────────────────────────────────────
 
-describe("Leaderboard — topbar", () => {
-	it("shows the brand name", () => {
-		mockApiGet.mockReturnValue(new Promise(() => {}));
-		renderLeaderboard();
-		expect(screen.getAllByText(/progresslog/i).length).toBeGreaterThan(0);
-	});
-
-	it("has a Sign In link pointing to /login", () => {
-		mockApiGet.mockReturnValue(new Promise(() => {}));
-		renderLeaderboard();
-		expect(screen.getByRole("link", { name: /sign in/i })).toHaveAttribute(
-			"href",
-			"/login",
-		);
-	});
-
-	it("has a Create Account link pointing to /login?mode=signup", () => {
-		mockApiGet.mockReturnValue(new Promise(() => {}));
-		renderLeaderboard();
-		expect(
-			screen.getByRole("link", { name: /create account/i }),
-		).toHaveAttribute("href", "/login?mode=signup");
-	});
-});
-
-// ── Loading / error / empty states ────────────────────────────────────────────
-
-describe("Leaderboard — loading / error / empty states", () => {
+describe("Community — loading / error / empty states", () => {
 	it("shows loading text while fetching", () => {
 		mockApiGet.mockReturnValue(new Promise(() => {}));
-		renderLeaderboard();
-		expect(screen.getByText(/loading/i)).toBeInTheDocument();
+		renderCommunity();
+		expect(screen.getByText(/loading leaderboard/i)).toBeInTheDocument();
 	});
 
-	it("shows error message when the API call fails with a message", async () => {
+	it("shows the API error message", async () => {
 		mockApiGet.mockRejectedValue({
 			response: { data: { message: "Server error" } },
 		});
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(screen.getByText(/server error/i)).toBeInTheDocument(),
-		);
+		renderCommunity();
+		expect(await screen.findByText(/server error/i)).toBeInTheDocument();
 	});
 
-	it("shows a generic error message when the rejection has no message", async () => {
+	it("shows a generic error when the rejection has no message", async () => {
 		mockApiGet.mockRejectedValue(new Error("network"));
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(screen.getByText(/could not load/i)).toBeInTheDocument(),
-		);
+		renderCommunity();
+		expect(await screen.findByText(/could not load/i)).toBeInTheDocument();
 	});
 
-	it("shows the opt-in empty state when totalUsers is 0", async () => {
-		mockApiGet.mockResolvedValue({
-			data: { ...LEADERBOARD_DATA, totalUsers: 0 },
-		});
-		renderLeaderboard();
+	it("shows the opt-in empty state when no one shares", async () => {
+		mockApiGet.mockResolvedValue({ data: { ...DATA, totalUsers: 0 } });
+		renderCommunity();
+		expect(await screen.findByText(/no one has opted in/i)).toBeInTheDocument();
+	});
+
+	it("says nothing was logged this month when there are sharers but no boards", async () => {
+		mockApiGet.mockResolvedValue({ data: { ...DATA, exercises: [] } });
+		renderCommunity();
+		expect(
+			await screen.findByText(/no lifts logged this month/i),
+		).toBeInTheDocument();
+	});
+});
+
+// ── Fetching and period ──────────────────────────────────────────────────────
+
+describe("Community — period", () => {
+	it("loads this month's boards by default", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
 		await waitFor(() =>
-			expect(screen.getByText(/no one has opted in/i)).toBeInTheDocument(),
+			expect(mockApiGet).toHaveBeenCalledWith("/leaderboard", {
+				params: { period: "month" },
+			}),
+		);
+		expect(
+			await screen.findByRole("button", { name: "This month" }),
+		).toHaveAttribute("aria-pressed", "true");
+	});
+
+	it("switching to All time refetches with period=all", async () => {
+		const user = userEvent.setup();
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		await user.click(await screen.findByRole("button", { name: "All time" }));
+		await waitFor(() =>
+			expect(mockApiGet).toHaveBeenCalledWith("/leaderboard", {
+				params: { period: "all" },
+			}),
+		);
+		expect(screen.getByRole("button", { name: "All time" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
 		);
 	});
 });
 
-// ── Stats strip ───────────────────────────────────────────────────────────────
+// ── Board ────────────────────────────────────────────────────────────────────
 
-describe("Leaderboard — stats strip", () => {
-	it("shows Lifters, Sessions, and Sets labels", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		const { container } = renderLeaderboard();
-		await waitFor(() => {
-			const strip = container.querySelector(".lb-stats");
-			expect(strip).not.toBeNull();
-			expect(within(strip).getByText(/^lifters$/i)).toBeInTheDocument();
-			expect(within(strip).getByText(/^sessions$/i)).toBeInTheDocument();
-			expect(within(strip).getByText(/^sets$/i)).toBeInTheDocument();
-		});
+describe("Community — lift board", () => {
+	it("shows featured lifts as choices, in featured order, and opens on the first", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		const lifts = await screen.findByRole("group", { name: "Lift" });
+		const names = within(lifts)
+			.getAllByRole("button")
+			.map((b) => b.textContent);
+		expect(names).toEqual(["Bench Press", "Squats"]);
+		expect(
+			within(lifts).getByRole("button", { name: "Bench Press" }),
+		).toHaveAttribute("aria-pressed", "true");
 	});
 
-	it("shows the correct totals", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		const { container } = renderLeaderboard();
-		await waitFor(() => {
-			const strip = container.querySelector(".lb-stats");
-			expect(strip).not.toBeNull();
-			expect(within(strip).getByText("3")).toBeInTheDocument(); // totalUsers
-			expect(within(strip).getByText("15")).toBeInTheDocument(); // totalSessions
-			expect(within(strip).getByText("120")).toBeInTheDocument(); // totalSets
-		});
-	});
-});
-
-// ── Top lifters ───────────────────────────────────────────────────────────────
-
-describe("Leaderboard — top lifters table", () => {
-	it("renders usernames in the table", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() => {
-			const card = screen.getByText("Top Lifters").closest(".lb-card");
-			expect(card).not.toBeNull();
-			expect(within(card).getByText("alice")).toBeInTheDocument();
-			expect(within(card).getByText("bob")).toBeInTheDocument();
-			expect(within(card).getByText("carol")).toBeInTheDocument();
-		});
+	it("lists the ranked lifters with their best set", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		const table = await screen.findByRole("table");
+		expect(within(table).getByText("lifter1")).toBeInTheDocument();
+		expect(within(table).getByText("300 lbs × 5")).toBeInTheDocument();
+		expect(within(table).getAllByRole("row")).toHaveLength(11); // header + 10
 	});
 
-	it("shows volume formatted with lbs suffix", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(screen.getByText(/42,000 lbs/i)).toBeInTheDocument(),
-		);
-	});
-});
-
-// ── Exercise leaderboard tabs ─────────────────────────────────────────────────
-
-describe("Leaderboard — exercise type tabs", () => {
-	it("renders Strength and Cardio tab buttons", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() => {
-			expect(
-				screen.getByRole("button", { name: /^strength$/i }),
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole("button", { name: /^cardio$/i }),
-			).toBeInTheDocument();
-		});
-	});
-
-	it("defaults to the Strength tab and shows strength exercise pills", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() => {
-			expect(
-				screen.getByRole("button", { name: /bench press/i }),
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole("button", { name: /squats/i }),
-			).toBeInTheDocument();
-			expect(
-				screen.queryByRole("button", { name: /longest run time/i }),
-			).not.toBeInTheDocument();
-			expect(
-				screen.queryByRole("button", { name: /fastest avg pace/i }),
-			).not.toBeInTheDocument();
-		});
-	});
-
-	it("switching to Cardio shows only Longest Run Time + Fastest Avg Pace pills", async () => {
+	it("choosing another lift shows its board with week movement", async () => {
 		const user = userEvent.setup();
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(
-				screen.getByRole("button", { name: /^cardio$/i }),
-			).toBeInTheDocument(),
-		);
-
-		await user.click(screen.getByRole("button", { name: /^cardio$/i }));
-
-		await waitFor(() => {
-			expect(
-				screen.getByRole("button", { name: /longest run time/i }),
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole("button", { name: /fastest avg pace/i }),
-			).toBeInTheDocument();
-			// Strength pills hidden
-			expect(
-				screen.queryByRole("button", { name: /bench press/i }),
-			).not.toBeInTheDocument();
-			// Any previous categories removed
-			expect(
-				screen.queryByRole("button", { name: /^fastest 5k$/i }),
-			).not.toBeInTheDocument();
-			expect(
-				screen.queryByRole("button", { name: /total distance/i }),
-			).not.toBeInTheDocument();
-			expect(
-				screen.queryByRole("button", { name: /incline walk/i }),
-			).not.toBeInTheDocument();
-		});
-	});
-
-	it("shows the running-only description in the card subtitle when Cardio is selected", async () => {
-		const user = userEvent.setup();
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(
-				screen.getByRole("button", { name: /^cardio$/i }),
-			).toBeInTheDocument(),
-		);
-
-		await user.click(screen.getByRole("button", { name: /^cardio$/i }));
-
-		await waitFor(() =>
-			expect(
-				screen.getByText(
-					/runs only.*longest single-run time.*best lifetime average pace/i,
-				),
-			).toBeInTheDocument(),
-		);
-	});
-
-	it("shows empty state when there are no cardio categories", async () => {
-		const user = userEvent.setup();
-		const strengthOnly = {
-			...LEADERBOARD_DATA,
-			exercises: LEADERBOARD_DATA.exercises.filter(
-				(e) => e.type === "strength",
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		await user.click(
+			within(await screen.findByRole("group", { name: "Lift" })).getByRole(
+				"button",
+				{ name: "Squats" },
 			),
+		);
+		const table = screen.getByRole("table");
+		expect(within(table).getByText("405 lbs × 2")).toBeInTheDocument();
+		expect(within(table).getByLabelText("Up 1")).toBeInTheDocument();
+		expect(within(table).getByLabelText("Down 1")).toBeInTheDocument();
+	});
+
+	it("shows Most active by sessions", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		expect(await screen.findByText("Most active")).toBeInTheDocument();
+		expect(screen.getByText("19 sessions")).toBeInTheDocument();
+	});
+	it("drops a lift that has no board after switching period", async () => {
+		const user = userEvent.setup();
+		signIn();
+		const allTime = {
+			...DATA,
+			me: ME,
+			exercises: [
+				...DATA.exercises,
+				{
+					exerciseName: "Overhead Press",
+					totalSets: 3,
+					participantCount: 1,
+					entries: [entry(1, "kavin", 135, 5)],
+				},
+			],
 		};
-		mockApiGet.mockResolvedValue({ data: strengthOnly });
-		renderLeaderboard();
+		mockApiGet.mockImplementation((url, { params }) =>
+			Promise.resolve({
+				data:
+					params.period === "all"
+						? {
+								...allTime,
+								me: {
+									sharing: true,
+									standings: [
+										...ME.standings,
+										{
+											exerciseName: "Overhead Press",
+											rank: 1,
+											participantCount: 1,
+											bestWeight: 135,
+											bestReps: 5,
+											change: null,
+											ahead: null,
+										},
+									],
+								},
+							}
+						: { ...DATA, me: ME },
+			}),
+		);
+		renderCommunity();
+		await user.click(await screen.findByRole("button", { name: "All time" }));
+		await user.click(
+			await screen.findByRole("button", { name: /overhead press.*#1/i }),
+		);
+		expect(screen.getByText("You're #1")).toBeInTheDocument();
+		await user.click(screen.getByRole("button", { name: "This month" }));
+		const lifts = await screen.findByRole("group", { name: "Lift" });
 		await waitFor(() =>
 			expect(
-				screen.getByRole("button", { name: /^cardio$/i }),
-			).toBeInTheDocument(),
+				within(lifts).queryByRole("button", { name: "Overhead Press" }),
+			).not.toBeInTheDocument(),
 		);
-
-		await user.click(screen.getByRole("button", { name: /^cardio$/i }));
-
-		await waitFor(() =>
-			expect(screen.getByText(/no cardio exercises/i)).toBeInTheDocument(),
-		);
+		expect(
+			within(lifts).getByRole("button", { name: "Bench Press" }),
+		).toHaveAttribute("aria-pressed", "true");
 	});
 });
 
-// ── Exercise board content ────────────────────────────────────────────────────
+// ── Signed out ───────────────────────────────────────────────────────────────
 
-describe("Leaderboard — exercise board content", () => {
-	it("shows the best weight for the default (first strength) exercise", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(screen.getByText("175 lbs × 4 reps")).toBeInTheDocument(),
-		);
-	});
-
-	it("selecting a different strength exercise updates the board", async () => {
-		const user = userEvent.setup();
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(
-				screen.getByRole("button", { name: /squats/i }),
-			).toBeInTheDocument(),
-		);
-
-		await user.click(screen.getByRole("button", { name: /squats/i }));
-
-		await waitFor(() =>
-			expect(screen.getByText("200 lbs × 3 reps")).toBeInTheDocument(),
-		);
-	});
-
-	it("Longest Run Time category shows the duration formatted as time (default cardio category)", async () => {
-		const user = userEvent.setup();
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(
-				screen.getByRole("button", { name: /^cardio$/i }),
-			).toBeInTheDocument(),
-		);
-
-		await user.click(screen.getByRole("button", { name: /^cardio$/i }));
-
-		// 5400 seconds = 90m 00s
-		await waitFor(() =>
-			expect(screen.getByText(/90m 00s/i)).toBeInTheDocument(),
-		);
-	});
-
-	it("Fastest Avg Pace category shows pace formatted as m:ss/mi", async () => {
-		const user = userEvent.setup();
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(
-				screen.getByRole("button", { name: /^cardio$/i }),
-			).toBeInTheDocument(),
-		);
-
-		await user.click(screen.getByRole("button", { name: /^cardio$/i }));
-		await waitFor(() =>
-			expect(
-				screen.getByRole("button", { name: /fastest avg pace/i }),
-			).toBeInTheDocument(),
-		);
-		await user.click(screen.getByRole("button", { name: /fastest avg pace/i }));
-
-		// pace = 4500s / 10mi = 450 sec/mi = 7:30/mi
-		await waitFor(() =>
-			expect(screen.getByText(/7:30\/mi/i)).toBeInTheDocument(),
-		);
-	});
-});
-
-// ── API call ──────────────────────────────────────────────────────────────────
-
-describe("Leaderboard — API", () => {
-	it("calls the /leaderboard endpoint on mount", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(mockApiGet).toHaveBeenCalledWith("/leaderboard"),
-		);
-	});
-});
-
-// ── Shared-calendar sub-navigation ────────────────────────────────────────────
-
-describe("Leaderboard — sub-tabs", () => {
-	it("renders Leaderboard and Shared Calendar sub-tabs", async () => {
-		mockApiGet.mockResolvedValue({ data: LEADERBOARD_DATA });
-		renderLeaderboard();
-		await waitFor(() => {
-			expect(
-				screen.getByRole("button", { name: /^leaderboard$/i }),
-			).toBeInTheDocument();
-			expect(
-				screen.getByRole("button", { name: /^shared calendar$/i }),
-			).toBeInTheDocument();
+describe("Community — signed out", () => {
+	it("has sign-in and sign-up links", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		await screen.findByRole("table");
+		for (const link of screen.getAllByRole("link", { name: /^sign in$/i }))
+			expect(link).toHaveAttribute("href", "/login");
+		const signups = screen.getAllByRole("link", {
+			name: /create free account/i,
 		});
+		expect(signups.length).toBeGreaterThan(0);
+		for (const link of signups)
+			expect(link).toHaveAttribute("href", "/login?mode=signup");
 	});
 
-	it("clicking Shared Calendar fetches /shared-calendar and shows calendar entries", async () => {
+	it("pitches the app and invites the visitor to find their rank", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		expect(
+			await screen.findByRole("heading", { name: /see where you rank/i }),
+		).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: /find out/i })).toHaveAttribute(
+			"href",
+			"/login?mode=signup",
+		);
+		expect(screen.getByText(/how it works/i)).toBeInTheDocument();
+	});
+
+	it("shows community totals for the period", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		expect(await screen.findByText("Lifters sharing")).toBeInTheDocument();
+		expect(screen.getByText("8,930")).toBeInTheDocument();
+		expect(screen.getByText("PRs this month")).toBeInTheDocument();
+		expect(screen.getByText("31")).toBeInTheDocument();
+	});
+
+	it("does not show a personal standing", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		await screen.findByRole("table");
+		expect(screen.queryByText("Your standing")).not.toBeInTheDocument();
+	});
+});
+
+// ── Signed in ────────────────────────────────────────────────────────────────
+
+describe("Community — signed in", () => {
+	it("shows your standing on each lift with the gap to the next spot", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		expect(await screen.findByText("Your standing")).toBeInTheDocument();
+		const bench = screen.getByRole("button", { name: /bench press.*#12/i });
+		expect(within(bench).getByText(/of 18/)).toBeInTheDocument();
+		expect(
+			within(bench).getByText("10 lbs to pass dana (#11)"),
+		).toBeInTheDocument();
+		const squats = screen.getByRole("button", { name: /squats.*#2/i });
+		expect(
+			within(squats).getByText("130 lbs to pass alice (#1)"),
+		).toBeInTheDocument();
+	});
+
+	it("adds your own row under the top ten when you rank lower", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		const table = await screen.findByRole("table");
+		const mine = within(table).getByText("kavin").closest("tr");
+		expect(mine).toHaveClass("lb-row-me");
+		expect(within(mine).getByText("12")).toBeInTheDocument();
+		expect(within(mine).getByText("185 lbs × 5")).toBeInTheDocument();
+		expect(within(mine).getByText("Oct 27")).toBeInTheDocument();
+	});
+
+	it("highlights your row when you're in the top ten", async () => {
+		const user = userEvent.setup();
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		await user.click(
+			await screen.findByRole("button", { name: /squats.*#2/i }),
+		);
+		const table = screen.getByRole("table");
+		expect(within(table).getByText("kavin").closest("tr")).toHaveClass(
+			"lb-row-me",
+		);
+		expect(
+			within(screen.getByRole("group", { name: "Lift" })).getByRole("button", {
+				name: "Squats",
+			}),
+		).toHaveAttribute("aria-pressed", "true");
+	});
+
+	it("asks you to turn on sharing when you're not on the boards", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({
+			data: { ...DATA, me: { sharing: false, standings: [] } },
+		});
+		renderCommunity();
+		expect(
+			await screen.findByText(/turn on sharing to see where you rank/i),
+		).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: /settings/i })).toHaveAttribute(
+			"href",
+			"/settings",
+		);
+	});
+
+	it("counts reps when the lifter ahead has the same weight", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({
+			data: {
+				...DATA,
+				me: {
+					sharing: true,
+					standings: [
+						{
+							exerciseName: "Bench Press",
+							rank: 3,
+							participantCount: 18,
+							bestWeight: 185,
+							bestReps: 6,
+							change: null,
+							ahead: entry(2, "mira", 185, 7),
+						},
+					],
+				},
+			},
+		});
+		renderCommunity();
+		expect(
+			await screen.findByText("2 reps to pass mira (#2)"),
+		).toBeInTheDocument();
+	});
+
+	it("tells a sharing lifter with no lifts this period how to get ranked", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({
+			data: { ...DATA, me: { sharing: true, standings: [] } },
+		});
+		renderCommunity();
+		expect(
+			await screen.findByText(/log a lift this period/i),
+		).toBeInTheDocument();
+	});
+
+	it("has no sign-up pitch", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		await screen.findByRole("table");
+		expect(
+			screen.queryByRole("link", { name: /create free account/i }),
+		).not.toBeInTheDocument();
+	});
+});
+
+// ── Calendar view ────────────────────────────────────────────────────────────
+
+describe("Community — calendar view", () => {
+	it("switching to Calendar fetches /shared-calendar and shows entries", async () => {
 		const user = userEvent.setup();
 		const today = localDateStr(new Date());
 		mockApiGet.mockImplementation((url) => {
@@ -518,24 +489,20 @@ describe("Leaderboard — sub-tabs", () => {
 					},
 				});
 			}
-			return Promise.resolve({ data: LEADERBOARD_DATA });
+			return Promise.resolve({ data: DATA });
 		});
 
-		renderLeaderboard();
-		await waitFor(() =>
-			expect(
-				screen.getByRole("button", { name: /^shared calendar$/i }),
-			).toBeInTheDocument(),
-		);
-
-		await user.click(
-			screen.getByRole("button", { name: /^shared calendar$/i }),
-		);
+		renderCommunity();
+		const view = await screen.findByRole("group", { name: "View" });
+		await user.click(within(view).getByRole("button", { name: "Calendar" }));
 
 		await waitFor(() => {
 			expect(mockApiGet).toHaveBeenCalledWith("/shared-calendar");
 			expect(screen.getByText("dana")).toBeInTheDocument();
 			expect(screen.getByText(/pull-ups/i)).toBeInTheDocument();
 		});
+		expect(
+			within(view).getByRole("button", { name: "Calendar" }),
+		).toHaveAttribute("aria-pressed", "true");
 	});
 });

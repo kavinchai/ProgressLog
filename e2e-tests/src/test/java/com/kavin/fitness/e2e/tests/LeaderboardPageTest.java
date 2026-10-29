@@ -6,9 +6,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * Smoke coverage for /community (leaderboard sub-tab). Seeding community-wide data is impractical
+ * Smoke coverage for /community (leaderboard view). Seeding community-wide data is impractical
  * (depends on other users opting in to share), so these tests only verify the
- * page renders, the hero is shown, and the strength/cardio tabs are wired up.
+ * page renders, the title is shown, and the This month / All time switch is wired up.
  * Empty states are acceptable.
  */
 public class LeaderboardPageTest extends BaseTest {
@@ -21,53 +21,49 @@ public class LeaderboardPageTest extends BaseTest {
     }
 
     @Test(priority = 1)
-    public void leaderboardPageLoadsWithHero() {
-        step("verify hero title rendered");
-        if (!leaderboard.isHeroVisible()) {
-            throw new AssertionError("Expected hero title to render");
+    public void leaderboardPageLoadsWithTitle() {
+        step("verify page title rendered");
+        if (!leaderboard.isTitleVisible()) {
+            throw new AssertionError("Expected page title to render");
         }
-        String title = leaderboard.getHeroTitle();
-        if (!title.toLowerCase().contains("leaderboard")) {
-            throw new AssertionError("Expected hero title to mention 'leaderboard', got: " + title);
+        String title = leaderboard.getTitle();
+        if (!title.toLowerCase().contains("community")) {
+            throw new AssertionError("Expected page title to mention 'community', got: " + title);
         }
     }
 
-    @Test(priority = 2, dependsOnMethods = "leaderboardPageLoadsWithHero")
-    public void exerciseTabsRenderOrEmptyStateShown() {
-        // Either tabs render (totalUsers > 0) or empty-state message is shown.
-        step("verify either tabs render or empty state is shown");
-        boolean tabsPresent = leaderboard.hasExerciseTabs();
+    @Test(priority = 2, dependsOnMethods = "leaderboardPageLoadsWithTitle")
+    public void liftChoicesRenderOrEmptyStateShown() {
+        // Either lift choices render (someone lifted this month) or an empty-state message is shown.
+        step("verify either lift choices render or empty state is shown");
+        boolean liftsPresent = leaderboard.hasLiftChoices();
         boolean emptyShown = leaderboard.isEmptyMessageVisible();
-        if (!tabsPresent && !emptyShown) {
+        if (!liftsPresent && !emptyShown) {
             throw new AssertionError(
-                    "Expected either leaderboard tabs or an empty-state message to appear");
+                    "Expected either lift choices or an empty-state message to appear");
         }
     }
 
-    @Test(priority = 3, dependsOnMethods = "exerciseTabsRenderOrEmptyStateShown")
-    public void switchBetweenStrengthAndCardioTabs() {
-        if (!leaderboard.hasExerciseTabs()) {
-            // No data — nothing to switch. Skip gracefully via assertion that passes.
-            step("no tabs available (empty leaderboard) — skipping switch test");
+    @Test(priority = 3, dependsOnMethods = "liftChoicesRenderOrEmptyStateShown")
+    public void switchBetweenThisMonthAndAllTime() {
+        if (!leaderboard.hasPeriodSwitch()) {
+            // No one shares, so there is no board and no period switch.
+            step("no sharers (empty leaderboard) — skipping period switch test");
             return;
         }
 
-        step("verify Strength is active by default");
-        if (!"Strength".equals(leaderboard.getActiveExerciseTabLabel())) {
-            throw new AssertionError("Expected 'Strength' active, got: "
-                    + leaderboard.getActiveExerciseTabLabel());
+        step("verify This month is active by default");
+        if (!"This month".equals(leaderboard.getActivePeriod())) {
+            throw new AssertionError("Expected 'This month' active, got: "
+                    + leaderboard.getActivePeriod());
         }
 
-        step("click Cardio tab");
-        leaderboard.clickExerciseTab("Cardio");
-        if (!"Cardio".equals(leaderboard.getActiveExerciseTabLabel())) {
-            throw new AssertionError("Expected 'Cardio' active after click");
-        }
+        step("choose All time");
+        leaderboard.choosePeriod("All time");
+        leaderboard.waitForActivePeriod("All time");
 
-        step("switch back to Strength");
-        leaderboard.clickExerciseTab("Strength");
-        if (!"Strength".equals(leaderboard.getActiveExerciseTabLabel())) {
-            throw new AssertionError("Expected 'Strength' active after click");
-        }
+        step("switch back to This month");
+        leaderboard.choosePeriod("This month");
+        leaderboard.waitForActivePeriod("This month");
     }
 }
