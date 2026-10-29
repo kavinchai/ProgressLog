@@ -53,12 +53,13 @@ function Delta({ current, previous, unit = "" }) {
 	);
 }
 
-function Kpi({ label, value, children }) {
+function Kpi({ label, value, children, extra }) {
 	return (
 		<div className="history-kpi" role="group" aria-label={label}>
 			<span className="history-kpi-label">{label}</span>
 			<span className="history-kpi-value">{value}</span>
 			<span className="history-kpi-sub">{children}</span>
+			{extra}
 		</div>
 	);
 }
@@ -103,6 +104,11 @@ function DayCard({
 				<span className="week-day-dow">{dow}</span>
 				<span className="week-day-date">{parseInt(row.date.slice(8))}</span>
 			</span>
+			{/* Phones show just day, date and this workout dot. */}
+			<span
+				className={"week-day-dot" + (row.workout && !future ? " on" : "")}
+				aria-hidden="true"
+			/>
 			{future ? (
 				<span className="week-day-chip week-day-chip--rest">Upcoming</span>
 			) : (
@@ -153,6 +159,7 @@ export default function WeeklyStats() {
 
 	const [offset, setOffset] = useState(0);
 	const [selected, setSelected] = useState(null);
+	const [chartShow, setChartShow] = useState("calories");
 
 	const today = localDateStr(new Date());
 	const days = getWeek(offset);
@@ -255,7 +262,33 @@ export default function WeeklyStats() {
 				<Kpi label="Avg steps" value={fmt(week.steps)}>
 					<Delta current={week.steps} previous={lastWeek.steps} />
 				</Kpi>
-				<Kpi label="Workouts" value={`${week.workouts} / 7`}>
+				<Kpi
+					label="Workouts"
+					value={`${week.workouts} / 7`}
+					extra={
+						<ul className="history-week-dots" aria-label="Workouts this week">
+							{rows.map((r) => {
+								const future = r.date > today;
+								const state = future
+									? "upcoming"
+									: r.workout
+										? "workout"
+										: "no workout";
+								return (
+									<li
+										key={r.date}
+										aria-label={`${DOW[new Date(`${r.date}T12:00:00`).getDay()]}: ${state}`}
+										className={
+											"history-week-dot" +
+											(r.workout && !future ? " on" : "") +
+											(future ? " future" : "")
+										}
+									/>
+								);
+							})}
+						</ul>
+					}
+				>
 					{lastWeek.workouts} last week
 				</Kpi>
 			</div>
@@ -301,21 +334,49 @@ export default function WeeklyStats() {
 				</div>
 			</section>
 
-			<div className="history-charts">
-				<DailyBarChart
-					title="Calories per day"
-					data={chartData("calories")}
-					goal={goals.calorieTargetTraining}
-					color="#d4934e"
-					unit="kcal"
-				/>
-				<DailyBarChart
-					title="Steps per day"
-					data={chartData("steps")}
-					goal={STEPS_GOAL}
-					color="#8a7ec8"
-					unit="steps"
-				/>
+			{/* Phones show one chart at a time; this switch is hidden on desktop. */}
+			<div
+				className="history-seg history-chart-switch"
+				role="group"
+				aria-label="Chart"
+			>
+				{[
+					["calories", "Calories"],
+					["steps", "Steps"],
+				].map(([key, label]) => (
+					<button
+						key={key}
+						type="button"
+						aria-pressed={chartShow === key}
+						onClick={() => setChartShow(key)}
+					>
+						{label}
+					</button>
+				))}
+			</div>
+			<div
+				className="history-charts"
+				data-testid="weekly-charts"
+				data-show={chartShow}
+			>
+				<div className="history-chart-slot" data-chart="calories">
+					<DailyBarChart
+						title="Calories per day"
+						data={chartData("calories")}
+						goal={goals.calorieTargetTraining}
+						color="#d4934e"
+						unit="kcal"
+					/>
+				</div>
+				<div className="history-chart-slot" data-chart="steps">
+					<DailyBarChart
+						title="Steps per day"
+						data={chartData("steps")}
+						goal={STEPS_GOAL}
+						color="#8a7ec8"
+						unit="steps"
+					/>
+				</div>
 			</div>
 		</div>
 	);

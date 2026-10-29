@@ -6,7 +6,7 @@
  * editable DayDetail in the side panel. Below: weight trend, avg calories per
  * week and workout consistency for the chosen range (default 3M).
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TotalStats from "../pages/TotalStats";
@@ -55,6 +55,10 @@ vi.mock("../hooks/useNutrition", () => ({ default: vi.fn() }));
 vi.mock("../hooks/useWorkouts", () => ({ default: vi.fn() }));
 vi.mock("../hooks/useSteps", () => ({ default: vi.fn() }));
 vi.mock("../hooks/useWeightUnit", () => ({ default: vi.fn() }));
+vi.mock("../hooks/useMediaQuery", () => ({
+	default: vi.fn(() => false),
+	MOBILE_QUERY: "(max-width: 640px)",
+}));
 vi.mock("../hooks/useUserProfile", () => ({
 	default: () => ({
 		goals: {
@@ -70,6 +74,7 @@ import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import useWeightUnit from "../hooks/useWeightUnit";
+import useMediaQuery from "../hooks/useMediaQuery";
 
 // Pin "today" so the calendar's active month is deterministic.
 // 2026-04-15 12:00 local time → April 2026
@@ -253,6 +258,71 @@ describe("TotalStats — trends", () => {
 
 		await userEvent.click(screen.getByRole("button", { name: "4W" }));
 		expect(Number(grid().dataset.points)).toBeLessThan(40);
+	});
+});
+
+describe("TotalStats — phones", () => {
+	beforeEach(() => {
+		useMediaQuery.mockReturnValue(true);
+	});
+	afterEach(() => {
+		useMediaQuery.mockReturnValue(false);
+	});
+
+	it("uses a dropdown instead of buttons to pick the heatmap metric", async () => {
+		render(<TotalStats />);
+		expect(
+			screen.queryByRole("group", { name: /color days by/i }),
+		).not.toBeInTheDocument();
+		await userEvent.selectOptions(
+			screen.getByRole("combobox", { name: /color days by/i }),
+			"steps",
+		);
+		expect(within(cell("2026-04-10")).getByText("8,500")).toBeInTheDocument();
+	});
+
+	it("opens the selected day in a bottom sheet instead of below the calendar", async () => {
+		render(<TotalStats />);
+		await userEvent.click(cell("2026-04-10"));
+		const sheet = screen.getByRole("dialog", { name: "Fri 4/10" });
+		expect(within(sheet).getByTestId("day-detail").dataset.date).toBe(
+			"2026-04-10",
+		);
+		expect(
+			screen.queryByRole("region", { name: /selected day/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("previous / next day step through days inside the sheet, never past today", async () => {
+		render(<TotalStats />);
+		await userEvent.click(cell("2026-04-14"));
+		await userEvent.click(screen.getByRole("button", { name: /next day/i }));
+		expect(screen.getByTestId("day-detail").dataset.date).toBe("2026-04-15");
+		expect(screen.getByRole("button", { name: /next day/i })).toBeDisabled();
+		await userEvent.click(
+			screen.getByRole("button", { name: /previous day/i }),
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /previous day/i }),
+		);
+		expect(screen.getByTestId("day-detail").dataset.date).toBe("2026-04-13");
+	});
+
+	it("previous day from the 1st moves the calendar to the previous month", async () => {
+		render(<TotalStats />);
+		await userEvent.click(cell("2026-04-01"));
+		await userEvent.click(
+			screen.getByRole("button", { name: /previous day/i }),
+		);
+		expect(screen.getByTestId("day-detail").dataset.date).toBe("2026-03-31");
+		expect(cell("2026-03-31")).toBeInTheDocument();
+	});
+
+	it("closing the sheet clears the selection", async () => {
+		render(<TotalStats />);
+		await userEvent.click(cell("2026-04-10"));
+		await userEvent.click(screen.getByRole("button", { name: /^close$/i }));
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 	});
 });
 

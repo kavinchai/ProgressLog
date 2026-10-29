@@ -172,6 +172,60 @@ public class HistoryPage {
         button("Close day").click();
     }
 
+    // ── Phone layout (≤640px) ───────────────────────────────────────────────
+
+    public void clickDayCard(String shortDate) {
+        page.locator(DAY_CARDS + "[aria-label='" + shortDate + "']").click();
+    }
+
+    /** Weekly on phones shows one chart at a time, picked by this switch. */
+    public void selectWeeklyChart(String label) {
+        page.locator("[aria-label='Chart'] button", new Page.LocatorOptions().setHasText(label))
+                .click();
+    }
+
+    public void waitForChartShown(String title) {
+        assertThat(page.locator("section.history-chart-card[aria-label='" + title + "']"))
+                .isVisible();
+    }
+
+    public void waitForChartHidden(String title) {
+        assertThat(page.locator("section.history-chart-card[aria-label='" + title + "']"))
+                .isHidden();
+    }
+
+    /** Total on phones picks the heatmap metric with a dropdown. */
+    public void selectHeatmapMetricOnPhone(String value) {
+        page.getByRole(AriaRole.COMBOBOX, new Page.GetByRoleOptions().setName("Color days by"))
+                .selectOption(value);
+    }
+
+    private Locator daySheet(String title) {
+        return page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName(title));
+    }
+
+    public void waitForDaySheet(String title) {
+        assertThat(daySheet(title)).isVisible();
+    }
+
+    public boolean daySheetContains(String title, String text) {
+        return awaitVisible(daySheet(title).getByText(text).first());
+    }
+
+    public void clickPreviousDay() {
+        button("Previous day").click();
+    }
+
+    public void waitForNextDayDisabled() {
+        assertThat(button("Next day")).isDisabled();
+    }
+
+    public void closeDaySheet() {
+        page.locator(".modal-box .modal-close").click();
+        page.locator(".modal-box").waitFor(
+                new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
+    }
+
     public void clickMonthPickerToggle() {
         page.locator(".month-nav-label button").first().click();
     }

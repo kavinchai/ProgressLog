@@ -164,6 +164,40 @@ describe("WeeklyStats — week navigation", () => {
 });
 
 describe("WeeklyStats — summary and charts", () => {
+	it("the Workouts tile marks each day of the week (filled = workout)", () => {
+		setup({
+			workouts: [{ id: 7, sessionDate: "2026-05-04", sessionName: "Pull" }],
+		});
+		render(<WeeklyStats />);
+		const marks = within(
+			screen.getByRole("group", { name: /workouts/i }),
+		).getAllByRole("listitem");
+		expect(marks).toHaveLength(7);
+		expect(marks[1]).toHaveAccessibleName("Mon: workout");
+		expect(marks[0]).toHaveAccessibleName("Sun: no workout");
+		expect(marks[6]).toHaveAccessibleName("Sat: upcoming");
+	});
+
+	it("a Calories / Steps switch picks which chart shows on phones", async () => {
+		vi.useRealTimers();
+		vi.useFakeTimers({
+			toFake: ["Date"],
+			now: new Date(2026, 4, 6, 12, 0, 0),
+			shouldAdvanceTime: true,
+		});
+		render(<WeeklyStats />);
+		const charts = screen.getByTestId("weekly-charts");
+		expect(charts.dataset.show).toBe("calories");
+		expect(screen.getByRole("button", { name: "Calories" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		await userEvent.click(screen.getByRole("button", { name: "Steps" }));
+		expect(charts.dataset.show).toBe("steps");
+		// Both charts stay rendered; CSS shows one at a time on phones only
+		expect(screen.getAllByTestId("daily-chart")).toHaveLength(2);
+	});
+
 	it("shows averages and how weight compares to last week", () => {
 		setup({
 			weight: [

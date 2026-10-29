@@ -540,11 +540,49 @@
 	}
 }
 
+/* Workouts tile: one dot per day of the week */
+.history-week-dots {
+	display: flex;
+	gap: 6px;
+	margin: 4px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.history-week-dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--border-dim);
+	border: 1px solid var(--border-strong);
+}
+
+.history-week-dot.on {
+	background: var(--accent);
+	border-color: var(--accent);
+}
+
+.history-week-dot.future {
+	background: transparent;
+	border-style: dashed;
+}
+
+/* Phone-only pieces, hidden on wider screens */
+.week-day-dot,
+.history-chart-switch {
+	display: none;
+}
+
 /* ── Mobile ── */
 @media (max-width: 640px) {
+	/* Summary: four stats 2×2, Workouts (with its day dots) full width */
 	.history-kpis {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: var(--space-sm);
+	}
+
+	.history-kpis > .history-kpi:nth-child(5) {
+		grid-column: 1 / -1;
 	}
 
 	.history-kpi {
@@ -555,26 +593,84 @@
 		font-size: var(--fs-lg);
 	}
 
-	/* Week strip scrolls sideways instead of squeezing 7 cards */
+	/* Week strip: 7 compact day buttons (day, date, workout dot) across the width */
 	.week-strip {
-		display: flex;
-		overflow-x: auto;
-		scroll-snap-type: x mandatory;
-		margin-left: calc(-1 * var(--space-md));
-		margin-right: calc(-1 * var(--space-md));
-		padding: 4px var(--space-md) 8px;
-	}
-
-	.week-strip > li {
-		flex: 0 0 116px;
-		scroll-snap-align: start;
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+		gap: 4px;
 	}
 
 	.week-day {
-		min-height: 150px;
-		padding: 10px;
+		min-height: 64px;
+		padding: 6px 0;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		border-radius: var(--radius-lg);
 	}
 
+	.week-day-top {
+		flex-direction: column;
+		align-items: center;
+		gap: 0;
+	}
+
+	.week-day-dow {
+		font-size: 10px;
+		letter-spacing: 0;
+	}
+
+	.week-day-date {
+		font-size: var(--fs-lg);
+	}
+
+	.week-day-chip,
+	.week-day-metric,
+	.week-day-metric-row {
+		display: none;
+	}
+
+	.week-day-dot {
+		display: block;
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+	}
+
+	.week-day-dot.on {
+		background: var(--accent);
+	}
+
+	.week-day[aria-pressed="true"] {
+		color: var(--accent-fg);
+		background: var(--accent);
+		box-shadow: none;
+	}
+
+	.week-day[aria-pressed="true"] .week-day-dow {
+		color: var(--accent-fg);
+	}
+
+	.week-day[aria-pressed="true"] .week-day-dot.on {
+		background: var(--accent-fg);
+	}
+
+	/* One chart at a time, picked with the Calories / Steps switch */
+	.history-chart-switch {
+		display: flex;
+		margin-bottom: var(--space-sm);
+	}
+
+	.history-chart-switch button {
+		flex: 1;
+		min-height: 36px;
+	}
+
+	.history-charts[data-show="calories"] [data-chart="steps"],
+	.history-charts[data-show="steps"] [data-chart="calories"] {
+		display: none;
+	}
+
+	/* Total: compact heatmap cells (date, color, workout dot) */
 	.heatmap {
 		gap: 4px;
 	}
@@ -582,11 +678,54 @@
 	.heatmap-cell {
 		aspect-ratio: 1;
 		padding: 4px;
+		align-items: center;
+		justify-content: center;
 		font-size: var(--fs-xs);
+	}
+
+	.heatmap-cell-top {
+		flex-direction: column;
+		justify-content: center;
+		gap: 2px;
 	}
 
 	.heatmap-value {
 		display: none;
+	}
+
+	.history-metric-select {
+		min-height: 36px;
+		padding: 0 10px;
+		font-family: var(--font);
+		font-size: var(--fs-sm);
+		color: var(--fg);
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+	}
+
+	/* Total trends: swipe between charts instead of stacking all three */
+	.history-charts--stacked {
+		display: flex;
+		gap: 10px;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+		margin-left: calc(-1 * var(--space-md));
+		margin-right: calc(-1 * var(--space-md));
+		padding: 0 var(--space-md) 4px;
+	}
+
+	.history-charts--stacked > * {
+		flex: 0 0 86%;
+		scroll-snap-align: center;
+	}
+
+	/* Day sheet: prev / next day controls */
+	.history-sheet-nav {
+		display: flex;
+		justify-content: space-between;
+		gap: var(--space-sm);
+		margin-bottom: var(--space-sm);
 	}
 
 	.history-day-panel-body {
