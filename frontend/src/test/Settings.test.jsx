@@ -1,9 +1,10 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import Settings from "../pages/Settings";
 import useAuthStore from "../store/authStore";
+import useUnitStore from "../store/unitStore";
 
 function renderSettings() {
 	return render(
@@ -15,6 +16,15 @@ function renderSettings() {
 
 // Mock the CSS
 vi.mock("../pages/Settings.css", () => ({}));
+
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async (importOriginal) => ({
+	...(await importOriginal()),
+	useNavigate: () => mockNavigate,
+}));
+
+// Personal records feed the privacy preview
+vi.mock("../hooks/usePRs", () => ({ default: vi.fn() }));
 
 // Mock the api module directly (Settings.jsx calls api.get/post/put directly)
 vi.mock("../api", () => ({
@@ -48,6 +58,7 @@ import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
+import usePRs from "../hooks/usePRs";
 import * as XLSX from "xlsx";
 
 const DEFAULT_GOALS = {
@@ -83,225 +94,444 @@ beforeEach(() => {
 	useNutrition.mockReturnValue({ data: [], refetch: vi.fn() });
 	useWorkouts.mockReturnValue({ data: [], refetch: vi.fn() });
 	useSteps.mockReturnValue({ data: [], refetch: vi.fn() });
+	usePRs.mockReturnValue({ data: [] });
 });
 
-describe("Settings — goals form", () => {
-	it("shows loading indicator while goals are loading", () => {
+// Goals row: shows the current targets; opening it shows the edit form.
+async function openGoals() {
+	await userEvent.click(
+		screen.getByRole("button", { name: /calorie & protein goals/i }),
+	);
+}
+
+describe("Settings — goals row", () => {
+	it("shows loading in the goals row while goals are loading", () => {
 		setupProfile({ loading: true });
 		renderSettings();
 		expect(screen.getAllByText(/loading…/i).length).toBeGreaterThan(0);
 	});
 
-	it("populates form with goals from hook once loaded", () => {
+	it("summarizes the current goals in the row", () => {
 		setupProfile();
 		renderSettings();
-		expect(screen.getByDisplayValue("2600")).toBeInTheDocument();
-		expect(screen.getByDisplayValue("2000")).toBeInTheDocument();
-		expect(screen.getByDisplayValue("180")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /calorie & protein goals/i }),
+		).toHaveTextContent("2,600 / 2,000 kcal · 180 g");
+		expect(screen.queryByLabelText(/training day/i)).not.toBeInTheDocument();
 	});
 
-	it("calls saveGoals with parsed integer values on submit", async () => {
+	it("opens the form under the row, populated with the goals", async () => {
+		setupProfile();
+		renderSettings();
+		await openGoals();
+		expect(
+			screen.getByRole("button", { name: /calorie & protein goals/i }),
+		).toHaveAttribute("aria-expanded", "true");
+		expect(screen.getByLabelText(/training day/i)).toHaveValue(2600);
+		expect(screen.getByLabelText(/rest day/i)).toHaveValue(2000);
+		expect(screen.getByLabelText(/daily protein/i)).toHaveValue(180);
+	});
+
+	it("keeps Save disabled until a value changes and flags unsaved changes", async () => {
+		setupProfile();
+		renderSettings();
+		await openGoals();
+		const save = screen.getByRole("button", { name: /save goals/i });
+		expect(save).toBeDisabled();
+		expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument();
+
+		await userEvent.clear(screen.getByLabelText(/training day/i));
+		await userEvent.type(screen.getByLabelText(/training day/i), "2800");
+
+		expect(save).toBeEnabled();
+		expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
+	});
+
+	it("calls saveGoals with parsed integers, closes the form and shows Saved!", async () => {
 		const saveGoals = vi.fn().mockResolvedValue({});
 		setupProfile({ saveGoals });
 		renderSettings();
+		await openGoals();
 
-		const trainingInput = screen.getByLabelText(/training day/i);
-		await userEvent.clear(trainingInput);
-		await userEvent.type(trainingInput, "2800");
+		await userEvent.clear(screen.getByLabelText(/training day/i));
+		await userEvent.type(screen.getByLabelText(/training day/i), "2800");
 		await userEvent.click(screen.getByRole("button", { name: /save goals/i }));
 
-		await waitFor(() => {
+		await waitFor(() =>
 			expect(saveGoals).toHaveBeenCalledWith({
 				calorieTargetTraining: 2800,
 				calorieTargetRest: 2000,
 				proteinTarget: 180,
-			});
-		});
+			}),
+		);
+		expect(await screen.findByText(/saved!/i)).toBeInTheDocument();
+		expect(screen.queryByLabelText(/training day/i)).not.toBeInTheDocument();
 	});
 
-	it('shows "saved." confirmation after successful save', async () => {
-		const saveGoals = vi.fn().mockResolvedValue({});
+	it("Cancel closes the form without saving", async () => {
+		const saveGoals = vi.fn();
 		setupProfile({ saveGoals });
 		renderSettings();
-
-		await userEvent.click(screen.getByRole("button", { name: /save goals/i }));
-
-		await waitFor(() =>
-			expect(screen.getByText(/saved!/i)).toBeInTheDocument(),
-		);
+		await openGoals();
+		await userEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+		expect(screen.queryByLabelText(/training day/i)).not.toBeInTheDocument();
+		expect(saveGoals).not.toHaveBeenCalled();
 	});
 
-	it("shows hook error when saveGoals rejects", async () => {
-		const saveGoals = vi.fn().mockRejectedValue(new Error("server error"));
-		setupProfile({ error: "Failed to save goals", saveGoals });
+	it("shows the hook error inside the open form", async () => {
+		setupProfile({ error: "Failed to save goals" });
 		renderSettings();
-
+		await openGoals();
 		expect(screen.getByText(/failed to save goals/i)).toBeInTheDocument();
 	});
 });
 
-describe("Settings — account / password verification", () => {
-	it("renders Current Password field by default (not yet verified)", () => {
-		setupProfile();
-		renderSettings();
-		expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
+describe("Settings — preferences", () => {
+	beforeEach(() => {
+		useUnitStore.setState({ unit: "lbs" });
+		localStorage.removeItem("theme");
 	});
 
-	it("does NOT show the credentials form before password is verified", () => {
+	it("weight unit is a lbs | kg choice that switches the unit", async () => {
 		setupProfile();
 		renderSettings();
+		const group = screen.getByRole("group", { name: /weight unit/i });
+		const lbs = within(group).getByRole("button", { name: "lbs" });
+		const kg = within(group).getByRole("button", { name: "kg" });
+		expect(lbs).toHaveAttribute("aria-pressed", "true");
+
+		await userEvent.click(kg);
+
+		expect(useUnitStore.getState().unit).toBe("kg");
+		expect(kg).toHaveAttribute("aria-pressed", "true");
+		expect(lbs).toHaveAttribute("aria-pressed", "false");
+	});
+
+	it("clicking the unit that is already selected keeps it", async () => {
+		setupProfile();
+		renderSettings();
+		const group = screen.getByRole("group", { name: /weight unit/i });
+		await userEvent.click(within(group).getByRole("button", { name: "lbs" }));
+		expect(useUnitStore.getState().unit).toBe("lbs");
+	});
+
+	it("theme offers Light, Dark and System and saves the choice", async () => {
+		setupProfile();
+		renderSettings();
+		const group = screen.getByRole("group", { name: /theme/i });
+		expect(
+			within(group).getByRole("button", { name: "Light" }),
+		).toHaveAttribute("aria-pressed", "true");
+
+		await userEvent.click(within(group).getByRole("button", { name: "Dark" }));
+		expect(localStorage.getItem("theme")).toBe("dark");
+		expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+		await userEvent.click(
+			within(group).getByRole("button", { name: "System" }),
+		);
+		expect(localStorage.getItem("theme")).toBe("system");
+		expect(
+			within(group).getByRole("button", { name: "System" }),
+		).toHaveAttribute("aria-pressed", "true");
+	});
+});
+
+describe("Settings — integrations", () => {
+	it("the Claude row opens the setup page", async () => {
+		setupProfile();
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /claude integration/i }),
+		);
+		expect(mockNavigate).toHaveBeenCalledWith("/claude-setup");
+	});
+});
+
+describe("Settings — privacy preview", () => {
+	it("previews what others see using the top two lifts", async () => {
+		usePRs.mockReturnValue({
+			data: [
+				{ exerciseName: "Curl", maxWeightLbs: 40 },
+				{ exerciseName: "Squats", maxWeightLbs: 275 },
+				{ exerciseName: "Bench Press", maxWeightLbs: 225 },
+			],
+		});
+		setupProfile();
+		renderSettings();
+		expect(
+			await screen.findByText(
+				"Others see: alice · Squats 275 lbs · Bench Press 225 lbs",
+			),
+		).toBeInTheDocument();
+	});
+});
+
+describe("Settings — account rows", () => {
+	async function waitForEmail() {
+		await waitFor(() =>
+			expect(screen.getByRole("button", { name: /^email/i })).toHaveTextContent(
+				"alice@example.com",
+			),
+		);
+	}
+
+	it("shows username and email as rows, with no form open", async () => {
+		setupProfile();
+		renderSettings();
+		expect(
+			screen.getByRole("button", { name: /^username/i }),
+		).toHaveTextContent("alice");
+		await waitForEmail();
+		expect(
+			screen.queryByLabelText(/current password/i),
+		).not.toBeInTheDocument();
+	});
+
+	it("changes the username with the current password", async () => {
+		api.put.mockResolvedValue({ data: { username: "bob" } });
+		setupProfile();
+		renderSettings();
+		await userEvent.click(screen.getByRole("button", { name: /^username/i }));
+		await userEvent.type(screen.getByLabelText(/new username/i), "bob");
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"pw123456",
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /save username/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/credentials", {
+				currentPassword: "pw123456",
+				newUsername: "bob",
+			}),
+		);
+		await waitFor(() => expect(useAuthStore.getState().username).toBe("bob"));
 		expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
 	});
 
-	it("successful password verify reveals the credentials form", async () => {
-		api.post.mockResolvedValue({});
+	it("shows the server error when the username change fails", async () => {
+		api.put.mockRejectedValue({
+			response: { data: { message: "Username already exists" } },
+		});
 		setupProfile();
 		renderSettings();
-
+		await userEvent.click(screen.getByRole("button", { name: /^username/i }));
+		await userEvent.type(screen.getByLabelText(/new username/i), "taken");
 		await userEvent.type(
 			screen.getByLabelText(/current password/i),
-			"mypassword",
+			"pw123456",
 		);
-		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
+		await userEvent.click(
+			screen.getByRole("button", { name: /save username/i }),
+		);
 
-		await waitFor(() => {
-			expect(screen.getByLabelText(/new username/i)).toBeInTheDocument();
-			expect(screen.getByLabelText(/new password/i)).toBeInTheDocument();
-		});
+		expect(
+			await screen.findByText(/username already exists/i),
+		).toBeInTheDocument();
 	});
 
-	it("wrong password shows verify error message", async () => {
+	it("changes the email after verifying the current password", async () => {
+		api.post.mockResolvedValue({});
+		api.put.mockResolvedValue({});
+		setupProfile();
+		renderSettings();
+		await waitForEmail();
+		await userEvent.click(screen.getByRole("button", { name: /^email/i }));
+		await userEvent.type(
+			screen.getByLabelText(/new email/i),
+			"new@example.com",
+		);
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"pw123456",
+		);
+		await userEvent.click(screen.getByRole("button", { name: /save email/i }));
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/email", {
+				email: "new@example.com",
+			}),
+		);
+		expect(api.post).toHaveBeenCalledWith("/profile/verify-password", {
+			password: "pw123456",
+		});
+		await waitFor(() =>
+			expect(screen.getByRole("button", { name: /^email/i })).toHaveTextContent(
+				"new@example.com",
+			),
+		);
+	});
+
+	it("does not save the email when the password is wrong", async () => {
 		api.post.mockRejectedValue({
 			response: { data: { message: "Incorrect password." } },
 		});
 		setupProfile();
 		renderSettings();
-
+		await waitForEmail();
+		await userEvent.click(screen.getByRole("button", { name: /^email/i }));
 		await userEvent.type(
-			screen.getByLabelText(/current password/i),
-			"wrongpass",
+			screen.getByLabelText(/new email/i),
+			"new@example.com",
 		);
-		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
+		await userEvent.type(screen.getByLabelText(/current password/i), "wrong");
+		await userEvent.click(screen.getByRole("button", { name: /save email/i }));
 
-		await waitFor(() =>
-			expect(screen.getByText(/incorrect password/i)).toBeInTheDocument(),
-		);
-		expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
+		expect(await screen.findByText(/incorrect password/i)).toBeInTheDocument();
+		expect(api.put).not.toHaveBeenCalled();
 	});
 
-	it("calls /profile/verify-password with current password", async () => {
+	it("rejects an unchanged email without calling the API", async () => {
+		setupProfile();
+		renderSettings();
+		await waitForEmail();
+		await userEvent.click(screen.getByRole("button", { name: /^email/i }));
+		await userEvent.type(
+			screen.getByLabelText(/new email/i),
+			"alice@example.com",
+		);
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"pw123456",
+		);
+		await userEvent.click(screen.getByRole("button", { name: /save email/i }));
+
+		expect(await screen.findByText(/already your email/i)).toBeInTheDocument();
+		expect(api.post).not.toHaveBeenCalled();
+		expect(api.put).not.toHaveBeenCalled();
+	});
+
+	it("changes the password when the confirmation matches", async () => {
+		api.put.mockResolvedValue({ data: { username: "alice" } });
+		setupProfile();
+		renderSettings();
+		await userEvent.click(screen.getByRole("button", { name: /^password/i }));
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"oldpass1",
+		);
+		await userEvent.type(screen.getByLabelText(/^new password/i), "newpass1");
+		await userEvent.type(
+			screen.getByLabelText(/confirm new password/i),
+			"newpass1",
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /update password/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/credentials", {
+				currentPassword: "oldpass1",
+				newPassword: "newpass1",
+			}),
+		);
+	});
+
+	it("blocks a password change when the confirmation does not match", async () => {
+		setupProfile();
+		renderSettings();
+		await userEvent.click(screen.getByRole("button", { name: /^password/i }));
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"oldpass1",
+		);
+		await userEvent.type(screen.getByLabelText(/^new password/i), "newpass1");
+		await userEvent.type(
+			screen.getByLabelText(/confirm new password/i),
+			"newpass2",
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /update password/i }),
+		);
+
+		expect(
+			await screen.findByText(/passwords don.t match/i),
+		).toBeInTheDocument();
+		expect(api.put).not.toHaveBeenCalled();
+	});
+
+	it("blocks a new password shorter than 6 characters", async () => {
+		setupProfile();
+		renderSettings();
+		await userEvent.click(screen.getByRole("button", { name: /^password/i }));
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"oldpass1",
+		);
+		await userEvent.type(screen.getByLabelText(/^new password/i), "abc");
+		await userEvent.type(screen.getByLabelText(/confirm new password/i), "abc");
+		await userEvent.click(
+			screen.getByRole("button", { name: /update password/i }),
+		);
+
+		expect(
+			await screen.findByText(/must be at least 6 characters/i),
+		).toBeInTheDocument();
+		expect(api.put).not.toHaveBeenCalled();
+	});
+
+	it("Show passwords reveals the password fields", async () => {
+		setupProfile();
+		renderSettings();
+		await userEvent.click(screen.getByRole("button", { name: /^password/i }));
+		expect(screen.getByLabelText(/^new password/i)).toHaveAttribute(
+			"type",
+			"password",
+		);
+		await userEvent.click(screen.getByLabelText(/show passwords/i));
+		expect(screen.getByLabelText(/^new password/i)).toHaveAttribute(
+			"type",
+			"text",
+		);
+	});
+
+	it("opening one row closes the other", async () => {
+		setupProfile();
+		renderSettings();
+		await userEvent.click(screen.getByRole("button", { name: /^username/i }));
+		expect(screen.getByLabelText(/new username/i)).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: /^password/i }));
+		expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
+		expect(screen.getByLabelText(/confirm new password/i)).toBeInTheDocument();
+	});
+
+	it("Log out ends the session", async () => {
 		api.post.mockResolvedValue({});
 		setupProfile();
 		renderSettings();
-
-		await userEvent.type(
-			screen.getByLabelText(/current password/i),
-			"securepass",
-		);
-		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
-
-		await waitFor(() =>
-			expect(api.post).toHaveBeenCalledWith("/profile/verify-password", {
-				password: "securepass",
-			}),
-		);
+		await userEvent.click(screen.getByRole("button", { name: /^log out$/i }));
+		expect(api.post).toHaveBeenCalledWith("/auth/logout");
+		expect(useAuthStore.getState().authenticated).toBe(false);
 	});
 });
 
-describe("Settings — updating credentials", () => {
-	async function verifyPassword() {
-		api.post.mockResolvedValue({});
+describe("Settings — phone layout", () => {
+	beforeEach(() => {
+		window.matchMedia = vi.fn().mockImplementation((query) => ({
+			matches: query === "(max-width: 640px)",
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+		}));
+	});
+
+	afterEach(() => {
+		delete window.matchMedia;
+	});
+
+	it("opens a typed edit in a bottom sheet dialog instead of under the row", async () => {
 		setupProfile();
 		renderSettings();
-		await userEvent.type(screen.getByLabelText(/current password/i), "mypass");
-		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
-		await waitFor(() =>
-			expect(screen.getByLabelText(/new username/i)).toBeInTheDocument(),
-		);
-	}
+		await openGoals();
+		const dialog = screen.getByRole("dialog");
+		expect(within(dialog).getByLabelText(/training day/i)).toHaveValue(2600);
 
-	it("shows validation error when saving with all fields empty", async () => {
-		await verifyPassword();
-		// Clear the email field that was pre-filled
-		await userEvent.clear(screen.getByLabelText(/new email/i));
 		await userEvent.click(
-			screen.getByRole("button", { name: /save account/i }),
+			within(dialog).getByRole("button", { name: /^close$/i }),
 		);
-
-		await waitFor(() =>
-			expect(screen.getByText(/enter a new username/i)).toBeInTheDocument(),
-		);
-	});
-
-	it("calls /profile/credentials when new username is provided", async () => {
-		api.put.mockResolvedValue({ data: { username: "newbob" } });
-		await verifyPassword();
-
-		await userEvent.clear(screen.getByLabelText(/new email/i));
-		await userEvent.type(screen.getByLabelText(/new username/i), "newbob");
-		await userEvent.click(
-			screen.getByRole("button", { name: /save account/i }),
-		);
-
-		await waitFor(() =>
-			expect(api.put).toHaveBeenCalledWith(
-				"/profile/credentials",
-				expect.objectContaining({ newUsername: "newbob" }),
-			),
-		);
-	});
-
-	it("calls /profile/email when new email is provided", async () => {
-		api.put.mockResolvedValue({ data: { username: "alice" } });
-		await verifyPassword();
-
-		const emailInput = screen.getByLabelText(/new email/i);
-		await userEvent.clear(emailInput);
-		await userEvent.type(emailInput, "newalice@example.com");
-		await userEvent.click(
-			screen.getByRole("button", { name: /save account/i }),
-		);
-
-		await waitFor(() =>
-			expect(api.put).toHaveBeenCalledWith("/profile/email", {
-				email: "newalice@example.com",
-			}),
-		);
-	});
-
-	it("resets to the verify-password form after a successful credential update", async () => {
-		api.put.mockResolvedValue({ data: { username: "alice" } });
-		await verifyPassword();
-
-		const emailInput = screen.getByLabelText(/new email/i);
-		await userEvent.clear(emailInput);
-		await userEvent.type(emailInput, "newalice@example.com");
-		await userEvent.click(
-			screen.getByRole("button", { name: /save account/i }),
-		);
-
-		// After success the credentials form is hidden and the password verify form reappears
-		await waitFor(() =>
-			expect(screen.getByLabelText(/current password/i)).toBeInTheDocument(),
-		);
-		expect(screen.queryByLabelText(/new username/i)).not.toBeInTheDocument();
-	});
-
-	it("shows error when credential update fails", async () => {
-		api.put.mockRejectedValue({
-			response: { data: { message: "Username already exists" } },
-		});
-		await verifyPassword();
-
-		await userEvent.type(screen.getByLabelText(/new username/i), "taken");
-		await userEvent.clear(screen.getByLabelText(/new email/i));
-		await userEvent.click(
-			screen.getByRole("button", { name: /save account/i }),
-		);
-
-		await waitFor(() =>
-			expect(screen.getByText(/username already exists/i)).toBeInTheDocument(),
-		);
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 	});
 });
 
@@ -310,7 +540,7 @@ describe("Settings — data export & import", () => {
 		setupProfile();
 		renderSettings();
 		expect(
-			screen.getByText("Data", { selector: ".settings-section-label" }),
+			screen.getByText("Data", { selector: ".settings-group-title" }),
 		).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: /export.*xlsx/i }),
@@ -797,5 +1027,80 @@ describe("Settings — privacy / data sharing", () => {
 			});
 			expect(toggle).toHaveAttribute("aria-pressed", "true");
 		});
+	});
+});
+
+describe("Settings — import refreshes every data type", () => {
+	it("refetches steps after a successful import", async () => {
+		const refetchSteps = vi.fn();
+		useSteps.mockReturnValue({ data: [], refetch: refetchSteps });
+		api.post.mockResolvedValue({
+			data: {
+				weightImported: 0,
+				weightSkipped: 0,
+				nutritionImported: 0,
+				nutritionSkipped: 0,
+				workoutsImported: 0,
+				workoutsSkipped: 0,
+				stepsImported: 3,
+				stepsSkipped: 0,
+			},
+		});
+		setupProfile();
+		renderSettings();
+
+		const file = new File([JSON.stringify({ totalStats: [] })], "data.json", {
+			type: "application/json",
+		});
+		await userEvent.upload(document.querySelector('input[type="file"]'), file);
+
+		await waitFor(() => expect(refetchSteps).toHaveBeenCalled());
+	});
+});
+
+describe("Settings — switches work from the keyboard", () => {
+	it("the data sharing switch toggles with the Space key", async () => {
+		api.put.mockResolvedValue({});
+		setupProfile();
+		renderSettings();
+		const toggle = await screen.findByRole("button", {
+			name: /toggle data sharing/i,
+		});
+		expect(toggle.tagName).toBe("BUTTON");
+
+		toggle.focus();
+		await userEvent.keyboard(" ");
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(
+				"/profile/privacy",
+				expect.objectContaining({ shareData: true }),
+			),
+		);
+	});
+
+	it("the calendar sharing switch is a focusable button", async () => {
+		setupProfile();
+		renderSettings();
+		const toggle = await screen.findByRole("button", {
+			name: /toggle calendar sharing/i,
+		});
+		expect(toggle.tagName).toBe("BUTTON");
+	});
+
+	it("disables a privacy switch while its change is saving", async () => {
+		let finish;
+		api.put.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+		setupProfile();
+		renderSettings();
+		const toggle = await screen.findByRole("button", {
+			name: /toggle data sharing/i,
+		});
+
+		await userEvent.click(toggle);
+		expect(toggle).toBeDisabled();
+
+		finish({});
+		await waitFor(() => expect(toggle).toBeEnabled());
 	});
 });

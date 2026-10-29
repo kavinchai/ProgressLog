@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import useTheme from "../hooks/useTheme";
 
@@ -54,5 +54,34 @@ describe("useTheme", () => {
 		const { result } = renderHook(() => useTheme());
 		act(() => result.current[1](false));
 		expect(localStorage.getItem("theme")).toBe("light");
+	});
+
+	it('"system" follows the OS dark-mode setting', () => {
+		window.matchMedia = vi.fn().mockReturnValue({
+			matches: true,
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+		});
+		localStorage.setItem("theme", "system");
+		const { result } = renderHook(() => useTheme());
+		expect(result.current[0]).toBe(true);
+		expect(result.current[2]).toBe("system");
+		expect(document.documentElement.classList.contains("dark")).toBe(true);
+		delete window.matchMedia;
+	});
+
+	it("setMode saves the mode", () => {
+		const { result } = renderHook(() => useTheme());
+		act(() => result.current[3]("system"));
+		expect(localStorage.getItem("theme")).toBe("system");
+		expect(result.current[2]).toBe("system");
+	});
+
+	it("keeps every caller in sync when one changes the mode", () => {
+		const a = renderHook(() => useTheme());
+		const b = renderHook(() => useTheme());
+		act(() => a.result.current[1](true));
+		expect(b.result.current[0]).toBe(true);
+		expect(b.result.current[2]).toBe("dark");
 	});
 });

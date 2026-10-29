@@ -282,10 +282,9 @@ describe("Strength page — time range", () => {
 		await renderLoaded(RANGED_DATA);
 		const range = screen.getByRole("group", { name: /time range/i });
 		for (const label of ["4W", "6M", "All"]) {
-			expect(within(range).getByRole("button", { name: label })).toHaveAttribute(
-				"aria-pressed",
-				"false",
-			);
+			expect(
+				within(range).getByRole("button", { name: label }),
+			).toHaveAttribute("aria-pressed", "false");
 		}
 		expect(within(range).getByRole("button", { name: "3M" })).toHaveAttribute(
 			"aria-pressed",
@@ -313,8 +312,12 @@ describe("Strength page — Choose lifts dialog", () => {
 		await renderLoaded();
 		const dialog = await openChooser();
 		expect(within(dialog).getAllByRole("checkbox")).toHaveLength(5);
-		expect(within(dialog).getByRole("checkbox", { name: /Bench Press/ })).toBeChecked();
-		expect(within(dialog).getByRole("checkbox", { name: /Bicep Curl/ })).not.toBeChecked();
+		expect(
+			within(dialog).getByRole("checkbox", { name: /Bench Press/ }),
+		).toBeChecked();
+		expect(
+			within(dialog).getByRole("checkbox", { name: /Bicep Curl/ }),
+		).not.toBeChecked();
 	});
 
 	it("groups lifts trained in the range ahead of older ones", async () => {
@@ -325,8 +328,12 @@ describe("Strength page — Choose lifts dialog", () => {
 		});
 		const older = within(dialog).getByRole("group", { name: /older/i });
 		expect(within(recent).getAllByRole("checkbox")).toHaveLength(3);
-		expect(within(older).getByRole("checkbox", { name: /Deadlift/ })).toBeInTheDocument();
-		expect(within(older).getByRole("checkbox", { name: /Old Row/ })).toBeInTheDocument();
+		expect(
+			within(older).getByRole("checkbox", { name: /Deadlift/ }),
+		).toBeInTheDocument();
+		expect(
+			within(older).getByRole("checkbox", { name: /Old Row/ }),
+		).toBeInTheDocument();
 	});
 
 	it("filters the list by search text", async () => {
@@ -344,25 +351,35 @@ describe("Strength page — Choose lifts dialog", () => {
 	it("filters to the selected lifts", async () => {
 		await renderLoaded();
 		const dialog = await openChooser();
-		await userEvent.click(within(dialog).getByRole("button", { name: /^Selected/ }));
+		await userEvent.click(
+			within(dialog).getByRole("button", { name: /^Selected/ }),
+		);
 		expect(within(dialog).getAllByRole("checkbox")).toHaveLength(3);
 	});
 
 	it("adds a lift on Done and remembers it in localStorage", async () => {
 		await renderLoaded();
 		const dialog = await openChooser();
-		await userEvent.click(within(dialog).getByRole("checkbox", { name: /Bicep Curl/ }));
+		await userEvent.click(
+			within(dialog).getByRole("checkbox", { name: /Bicep Curl/ }),
+		);
 		await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 		expect(cardNames()).toContain("Bicep Curl");
-		expect(JSON.parse(localStorage.getItem(STORAGE_KEY))).toContain("Bicep Curl");
+		expect(JSON.parse(localStorage.getItem(STORAGE_KEY))).toContain(
+			"Bicep Curl",
+		);
 	});
 
 	it("discards changes on Cancel", async () => {
 		await renderLoaded();
 		const dialog = await openChooser();
-		await userEvent.click(within(dialog).getByRole("checkbox", { name: /Squat/ }));
-		await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+		await userEvent.click(
+			within(dialog).getByRole("checkbox", { name: /Squat/ }),
+		);
+		await userEvent.click(
+			within(dialog).getByRole("button", { name: "Cancel" }),
+		);
 		expect(cardNames()).toContain("Squat");
 		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
 	});
@@ -381,7 +398,9 @@ describe("Strength page — Choose lifts dialog", () => {
 	it("keeps the selected card valid when it is removed", async () => {
 		await renderLoaded();
 		const dialog = await openChooser();
-		await userEvent.click(within(dialog).getByRole("checkbox", { name: /Bench Press/ }));
+		await userEvent.click(
+			within(dialog).getByRole("checkbox", { name: /Bench Press/ }),
+		);
 		await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
 		expect(screen.getByRole("button", { name: "Squat" })).toHaveAttribute(
 			"aria-pressed",

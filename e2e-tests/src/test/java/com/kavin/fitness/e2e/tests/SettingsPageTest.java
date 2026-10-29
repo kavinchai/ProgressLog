@@ -58,14 +58,20 @@ public class SettingsPageTest extends BaseTest {
         }
     }
 
+    // Save is only enabled when a value changed, so pick a training target
+    // that differs from whatever an earlier run left behind.
+    private String savedTraining;
+
     @Test(priority = 6)
     public void updateGoalsAndSave() {
-        step("enter new goals: training 2500, rest 2000, protein 180");
-        settings.enterTrainingCalories("2500");
+        savedTraining = "2500".equals(settings.getTrainingCalories()) ? "2550" : "2500";
+
+        step("enter new goals: training " + savedTraining + ", rest 2000, protein 180");
+        settings.enterTrainingCalories(savedTraining);
         settings.enterRestCalories("2000");
         settings.enterProteinTarget("180");
 
-        step("click Save Goals");
+        step("click Save goals");
         settings.clickSaveGoals();
 
         step("verify 'Saved!' message appears");
@@ -82,8 +88,8 @@ public class SettingsPageTest extends BaseTest {
         String training = settings.getTrainingCalories();
         String rest = settings.getRestCalories();
         String protein = settings.getProteinTarget();
-        if (!"2500".equals(training)) {
-            throw new AssertionError("Expected training calories '2500' but got: " + training);
+        if (!savedTraining.equals(training)) {
+            throw new AssertionError("Expected training calories '" + savedTraining + "' but got: " + training);
         }
         if (!"2000".equals(rest)) {
             throw new AssertionError("Expected rest calories '2000' but got: " + rest);
@@ -110,11 +116,82 @@ public class SettingsPageTest extends BaseTest {
         settings.waitForActiveUnit(initial);
     }
 
+    @Test(priority = 8, dependsOnMethods = "weightUnitToggleSwitchesUnit")
+    public void weightUnitToggleWorksFromKeyboard() {
+        step("get current active unit");
+        String initial = settings.getActiveWeightUnit();
+        String other = "lbs".equals(initial) ? "kg" : "lbs";
+
+        step("press Enter on the focused, unselected unit");
+        settings.pressOnUnitToggle("Enter");
+        settings.waitForActiveUnit(other);
+
+        step("press Space on the other unit to switch back");
+        settings.pressOnUnitToggle("Space");
+        settings.waitForActiveUnit(initial);
+    }
+
     @Test(priority = 9)
     public void claudeIntegrationButtonVisible() {
         step("verify Claude setup button is visible");
         if (!settings.isClaudeSetupButtonVisible()) {
             throw new AssertionError("Expected Claude integration button to be visible");
+        }
+    }
+
+    @Test(priority = 10)
+    public void themeChoiceAppliesDarkMode() {
+        String initial = settings.getActiveTheme();
+
+        step("choose Dark");
+        settings.chooseTheme("Dark");
+        settings.waitForDarkClass(true);
+
+        step("choose Light");
+        settings.chooseTheme("Light");
+        settings.waitForDarkClass(false);
+
+        step("restore the original theme (" + initial + ")");
+        settings.chooseTheme(initial);
+    }
+
+    @Test(priority = 11)
+    public void accountRowOpensFormAndCancelCloses() {
+        step("open the Password row");
+        settings.openAccountRow("Password");
+        if (!settings.isFieldVisible("Confirm new password")) {
+            throw new AssertionError("Expected the password form to open under its row");
+        }
+
+        step("opening Username closes Password");
+        settings.openAccountRow("Username");
+        if (!settings.isFieldVisible("New username")) {
+            throw new AssertionError("Expected the username form to open");
+        }
+        if (!settings.waitForAccountRowClosed("Password")) {
+            throw new AssertionError("Expected the Password row to close");
+        }
+
+        step("Cancel closes the form");
+        settings.cancelOpenForm();
+        if (!settings.waitForAccountRowClosed("Username")) {
+            throw new AssertionError("Expected the Username row to close after Cancel");
+        }
+    }
+
+    @Test(priority = 12)
+    public void phoneOpensGoalsInBottomSheet() {
+        step("switch to phone width and reload");
+        page.setViewportSize(390, 844);
+        try {
+            settings.open(baseUrl);
+
+            step("open the goals row");
+            if (!settings.isGoalsFormInDialog()) {
+                throw new AssertionError("Expected the goals form in a bottom-sheet dialog on phones");
+            }
+        } finally {
+            page.setViewportSize(1920, 1080);
         }
     }
 }
