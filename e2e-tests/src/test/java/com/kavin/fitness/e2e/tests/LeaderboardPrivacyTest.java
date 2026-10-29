@@ -53,6 +53,7 @@ public class LeaderboardPrivacyTest extends BaseTest {
     public void leaderboardDoesNotShowUserByDefault() {
         step("navigate to leaderboard with shareData=false");
         leaderboard.open(baseUrl);
+        leaderboard.chooseLift("Bench Press"); // the seeded lift
 
         step("verify test user is NOT on the leaderboard");
         boolean onBoard = leaderboard.isUsernameOnBoard(testUsername);
@@ -73,8 +74,9 @@ public class LeaderboardPrivacyTest extends BaseTest {
 
         step("navigate to leaderboard and verify user IS on the board");
         leaderboard.open(baseUrl);
+        leaderboard.chooseLift("Bench Press"); // the seeded lift
 
-        boolean onBoard = leaderboard.isUsernameOnBoard(testUsername);
+        boolean onBoard = leaderboard.awaitUsernameOnBoard(testUsername);
         if (!onBoard) {
             throw new AssertionError("Expected user '" + testUsername
                     + "' to appear on leaderboard after enabling shareData");
@@ -92,6 +94,7 @@ public class LeaderboardPrivacyTest extends BaseTest {
 
         step("navigate to leaderboard and verify user is NO LONGER on the board");
         leaderboard.open(baseUrl);
+        leaderboard.chooseLift("Bench Press"); // the seeded lift
 
         boolean onBoard = leaderboard.isUsernameOnBoard(testUsername);
         if (onBoard) {
@@ -115,8 +118,10 @@ public class LeaderboardPrivacyTest extends BaseTest {
         nav.clickSidebarLink("Community");
         nav.waitForUrlContains("/community");
         waitForPageLoad();
+        leaderboard.waitForLoaded();
+        leaderboard.chooseLift("Bench Press");
 
-        boolean onBoardAfterOn = leaderboard.isUsernameOnBoard(testUsername);
+        boolean onBoardAfterOn = leaderboard.awaitUsernameOnBoard(testUsername);
         if (!onBoardAfterOn) {
             throw new AssertionError("Expected user on leaderboard after enabling shareData via sidebar nav");
         }
@@ -135,6 +140,8 @@ public class LeaderboardPrivacyTest extends BaseTest {
         nav.clickSidebarLink("Community");
         nav.waitForUrlContains("/community");
         waitForPageLoad();
+        leaderboard.waitForLoaded();
+        leaderboard.chooseLift("Bench Press");
 
         boolean onBoardAfterOff = leaderboard.isUsernameOnBoard(testUsername);
         if (onBoardAfterOff) {

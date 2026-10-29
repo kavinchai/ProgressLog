@@ -211,7 +211,7 @@ WorkoutApp/
 │       │   ├── Progress.jsx               ← sub-router for Strength / Cardio
 │       │   ├── Strength.jsx       + .css  ← progressive overload chart
 │       │   ├── Cardio.jsx         + .css  ← cardio progression and milestones
-│       │   ├── Community.jsx      + .css  ← community page (Leaderboard + Shared Calendar sub-tabs)
+│       │   ├── Community.jsx      + .css  ← community page (your standing, monthly lift boards, calendar view)
 │       │   ├── SharedCalendar.jsx + .css  ← shared community workout calendar
 │       │   ├── Settings.jsx       + .css  ← profile, goals, credentials, units, privacy
 │       │   └── ClaudeSetup.jsx    + .css  ← Claude AI / MCP setup guide

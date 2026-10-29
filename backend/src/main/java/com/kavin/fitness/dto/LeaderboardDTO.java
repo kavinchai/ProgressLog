@@ -15,11 +15,13 @@ import lombok.Setter;
 public class LeaderboardDTO {
 
     private int totalUsers;
-    private int totalSessions;
-    private int totalSets;
+    private int totalSessions; // within the period
+    private int totalSets; // within the period
+    private int prCount; // new best weights set within the period
     private List<ExerciseLeaderboard> exercises;
-    private List<TopUser> topLifters;
-    private List<ActivityPoint> activity;
+    private List<ActiveUser> mostActive;
+    private List<ActivityPoint> activity; // last 30 days, ending today
+    private Me me; // null for anonymous viewers
 
     @Getter
     @Setter
@@ -27,11 +29,9 @@ public class LeaderboardDTO {
     @AllArgsConstructor
     public static class ExerciseLeaderboard {
         private String exerciseName;
-        private String type; // "strength" | "cardio"
-        private String metric; // "weight" | "time" | "distance" | "count"
         private int totalSets;
         private int participantCount;
-        private List<Entry> entries;
+        private List<Entry> entries; // top 10
     }
 
     @Getter
@@ -41,24 +41,21 @@ public class LeaderboardDTO {
     public static class Entry {
         private int rank;
         private String username;
-        private BigDecimal score; // strength: best weight × reps; cardio: total distance (mi)
-        private BigDecimal bestWeight; // nullable for cardio
-        private Integer bestReps; // nullable for cardio
-        private BigDecimal totalDistance; // nullable for strength
-        private Integer totalDurationSeconds; // nullable for strength
+        private BigDecimal bestWeight;
+        private Integer bestReps;
         private LocalDate achievedDate;
+        private Integer change; // places gained (+) or lost (-) since a week ago; null if new
     }
 
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class TopUser {
+    public static class ActiveUser {
         private int rank;
         private String username;
         private int sessionCount;
         private int totalSets;
-        private BigDecimal totalVolumeLbs; // sum of (weight × reps) across strength sets
     }
 
     @Getter
@@ -69,5 +66,30 @@ public class LeaderboardDTO {
         private LocalDate date;
         private int sessionCount;
         private int setCount;
+    }
+
+    /** The signed-in viewer's own standing. */
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Me {
+        private boolean sharing;
+        private List<Standing> standings;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Standing {
+        private String exerciseName;
+        private int rank;
+        private int participantCount;
+        private BigDecimal bestWeight;
+        private Integer bestReps;
+        private LocalDate achievedDate;
+        private Integer change;
+        private Entry ahead; // the lifter one place above; null when first
     }
 }

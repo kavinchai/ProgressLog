@@ -6,8 +6,8 @@ import com.microsoft.playwright.Page;
 public class SharedCalendarPage {
     private final Page page;
 
-    private static final String SUBNAV_LEADERBOARD = "button.lb-subnav-btn:has-text(\"Leaderboard\")";
-    private static final String SUBNAV_CALENDAR    = "button.lb-subnav-btn:has-text(\"Shared Calendar\")";
+    private static final String SUBNAV_LEADERBOARD = "[role='group'][aria-label='View'] button:has-text(\"Leaderboard\")";
+    private static final String SUBNAV_CALENDAR    = "[role='group'][aria-label='View'] button:has-text(\"Calendar\")";
     private static final String VIEW_TAB_WEEK      = ".sc-view-tabs button:has-text(\"Week\")";
     private static final String VIEW_TAB_MONTH     = ".sc-view-tabs button:has-text(\"Month\")";
     private static final String GRID               = ".calendar-grid";
