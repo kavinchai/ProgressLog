@@ -1,6 +1,5 @@
 package com.kavin.fitness.controller;
 
-import com.kavin.fitness.dto.CardioProgressDTO;
 import com.kavin.fitness.dto.MilestoneDTO;
 import com.kavin.fitness.dto.PREntryDTO;
 import com.kavin.fitness.dto.StrengthProgressDTO;
@@ -32,13 +31,6 @@ public class ProgressController {
     @GetMapping("/prs")
     public ResponseEntity<List<PREntryDTO>> getPRs(@AuthenticationPrincipal UserDetails principal) {
         return ResponseEntity.ok(progressService.getPRs(userResolver.resolve(principal).getId()));
-    }
-
-    @GetMapping("/cardio")
-    public ResponseEntity<List<CardioProgressDTO>> getCardioProgress(
-            @AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(
-                progressService.getCardioProgress(userResolver.resolve(principal).getId()));
     }
 
     @GetMapping("/milestones")

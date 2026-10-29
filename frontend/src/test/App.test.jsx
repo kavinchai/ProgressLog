@@ -21,7 +21,6 @@ vi.mock("../pages/TotalStats", () => ({
 vi.mock("../pages/Strength", () => ({
 	default: () => <div>Strength Page</div>,
 }));
-vi.mock("../pages/Cardio", () => ({ default: () => <div>Cardio Page</div> }));
 vi.mock("../pages/Settings", () => ({
 	default: () => <div>Settings Page</div>,
 }));
@@ -113,20 +112,17 @@ describe("App routing — authenticated", () => {
 		window.history.pushState({}, "", "/progress");
 		render(<App />);
 		expect(await screen.findByText("Strength Page")).toBeInTheDocument();
-		expect(screen.getByRole("link", { name: "Strength" })).toHaveAttribute(
-			"href",
-			"/progress/strength",
-		);
-		expect(screen.getByRole("link", { name: "Cardio" })).toHaveAttribute(
-			"href",
-			"/progress/cardio",
-		);
+		expect(window.location.pathname).toBe("/progress/strength");
+		expect(
+			screen.queryByRole("link", { name: "Cardio" }),
+		).not.toBeInTheDocument();
 	});
 
-	it("routes Progress cardio tab to cardio progress", async () => {
+	it("redirects the removed cardio progress URL to strength", async () => {
 		window.history.pushState({}, "", "/progress/cardio");
 		render(<App />);
-		expect(await screen.findByText("Cardio Page")).toBeInTheDocument();
+		expect(await screen.findByText("Strength Page")).toBeInTheDocument();
+		expect(window.location.pathname).toBe("/progress/strength");
 	});
 
 	it("keeps old progress URLs working through redirects", async () => {

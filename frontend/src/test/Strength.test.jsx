@@ -1,12 +1,14 @@
 /**
- * Strength page — sidebar list + detail panel layout.
+ * Strength page — "choose your lifts" card grid + detail.
  *
  * The page is structured as:
- *   1. Sidebar list of tracked exercises (scrollable to support many entries)
- *   2. Detail panel for the active lift, containing:
- *      - Stat row (current max, sessions, improvement, last trained)
- *      - Weight progression chart (always visible — not behind a toggle)
- *      - Session history table sorted by date descending; PR row highlighted
+ *   1. Header: sort, time range, and a "Choose lifts" button
+ *   2. A card per chosen lift (kept in localStorage; defaults to the
+ *      featured lifts the user has logged). Lifts not trained in the
+ *      selected range stay on the page, dimmed.
+ *   3. Detail for the selected card: stat row, chart, session history table
+ *   4. "Choose lifts" dialog: every logged lift with a checkbox, search,
+ *      filter chips, and lifts trained in the range listed first.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
@@ -25,6 +27,10 @@ vi.mock("recharts", () => ({
 	ResponsiveContainer: ({ children }) => <div>{children}</div>,
 }));
 
+vi.mock("../config/featuredExercises.json", () => ({
+	default: { strength: ["Bench Press", "Squat", "Deadlift"] },
+}));
+
 const mockApiGet = vi.fn();
 vi.mock("../api", () => ({
 	default: { get: (...args) => mockApiGet(...args) },
@@ -34,56 +40,57 @@ vi.mock("../hooks/useWeightUnit", () => ({
 	default: () => ({ unit: "lbs", toDisplay: (v) => v, toggleUnit: vi.fn() }),
 }));
 
+const STORAGE_KEY = "strength.chosenLifts";
+
+const s = (sessionDate, maxWeightLbs, setCount = 3, repScheme = "5/5/5") => ({
+	sessionDate,
+	maxWeightLbs,
+	setCount,
+	repScheme,
+});
+
+// Fake today: 2026-04-15. 3M cutoff = 2026-01-15, 4W cutoff = 2026-03-18.
 const STRENGTH_DATA = [
 	{
 		exerciseName: "Bench Press",
 		data: [
-			{
-				sessionDate: "2026-04-01",
-				maxWeightLbs: 135,
-				setCount: 3,
-				repScheme: "8/8/8",
-			},
-			{
-				sessionDate: "2026-04-08",
-				maxWeightLbs: 145,
-				setCount: 3,
-				repScheme: "6/6/6",
-			},
-			{
-				sessionDate: "2026-04-15",
-				maxWeightLbs: 155,
-				setCount: 3,
-				repScheme: "5/5/5",
-			},
+			s("2026-04-01", 135, 3, "8/8/8"),
+			s("2026-04-08", 145, 3, "6/6/6"),
+			s("2026-04-15", 155, 3, "5/5/5"),
 		],
 	},
 	{
 		exerciseName: "Squat",
-		data: [
-			{
-				sessionDate: "2026-04-05",
-				maxWeightLbs: 185,
-				setCount: 5,
-				repScheme: "5/5/5/5/5",
-			},
-			{
-				sessionDate: "2026-04-12",
-				maxWeightLbs: 195,
-				setCount: 5,
-				repScheme: "5/5/5/5/5",
-			},
-		],
+		data: [s("2026-04-05", 185, 5), s("2026-04-12", 195, 5)],
 	},
+	{ exerciseName: "Deadlift", data: [s("2025-09-01", 225)] },
+	{ exerciseName: "Bicep Curl", data: [s("2026-04-10", 30)] },
+	{ exerciseName: "Old Row", data: [s("2025-06-01", 100)] },
 ];
 
+const cardNames = () =>
+	within(screen.getByTestId("lift-grid"))
+		.getAllByRole("button")
+		.map((b) => b.getAttribute("aria-label"));
+
+async function renderLoaded(data = STRENGTH_DATA) {
+	mockApiGet.mockResolvedValue({ data });
+	render(<Strength />);
+	await screen.findByTestId("lift-grid");
+}
+
+async function openChooser() {
+	await userEvent.click(screen.getByRole("button", { name: /choose lifts/i }));
+	return screen.getByRole("dialog");
+}
+
 beforeEach(() => {
-	// Pin "today" to 2026-04-15 noon so "last trained" is deterministic
 	vi.useFakeTimers({
 		toFake: ["Date"],
 		now: new Date(2026, 3, 15, 12, 0, 0),
 	});
 	vi.clearAllMocks();
+	localStorage.clear();
 });
 
 afterEach(() => {
@@ -112,340 +119,273 @@ describe("Strength page — states", () => {
 			expect(screen.getByText(/no strength data/i)).toBeInTheDocument();
 		});
 	});
+
+	it("has no Cardio content", async () => {
+		await renderLoaded();
+		expect(screen.queryByText(/cardio/i)).not.toBeInTheDocument();
+	});
 });
 
-describe("Strength page — sidebar list", () => {
-	beforeEach(() => {
-		mockApiGet.mockResolvedValue({ data: STRENGTH_DATA });
+describe("Strength page — chosen lift cards", () => {
+	it("defaults to the featured lifts the user has logged", async () => {
+		await renderLoaded();
+		expect(cardNames()).toEqual(["Bench Press", "Squat", "Deadlift"]);
+		expect(screen.getByText(/3 lifts/i)).toBeInTheDocument();
 	});
 
-	it("renders a list item button for each tracked exercise", async () => {
-		render(<Strength />);
-		await screen.findByRole("button", { name: "Bench Press" });
-		expect(screen.getByRole("button", { name: "Squat" })).toBeInTheDocument();
+	it("falls back to the most recently trained lifts when no featured lift is logged", async () => {
+		await renderLoaded([
+			{ exerciseName: "Old Row", data: [s("2025-06-01", 100)] },
+			{ exerciseName: "Bicep Curl", data: [s("2026-04-10", 30)] },
+		]);
+		expect(cardNames()).toEqual(["Bicep Curl", "Old Row"]);
 	});
 
-	it("auto-selects the first exercise on mount", async () => {
-		render(<Strength />);
-		const bench = await screen.findByRole("button", { name: "Bench Press" });
-		expect(bench).toHaveAttribute("aria-pressed", "true");
+	it("uses the lifts saved in localStorage, ignoring ones no longer logged", async () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify(["Old Row", "Bicep Curl", "Gone Lift"]),
+		);
+		await renderLoaded();
+		expect(cardNames()).toEqual(["Bicep Curl", "Old Row"]);
+	});
+
+	it("shows current max and change in the range on each card", async () => {
+		await renderLoaded();
+		const bench = screen.getByRole("button", { name: "Bench Press" });
+		expect(bench).toHaveTextContent("155 lbs");
+		expect(bench).toHaveTextContent("+20 lbs");
+	});
+
+	it("dims a chosen lift that was not trained in the selected range", async () => {
+		await renderLoaded();
+		const deadlift = screen.getByRole("button", { name: "Deadlift" });
+		expect(deadlift).toHaveClass("lift-card-stale");
+		expect(deadlift).toHaveTextContent(/not trained in 3M/i);
+	});
+
+	it("selects the first card by default", async () => {
+		await renderLoaded();
+		expect(screen.getByRole("button", { name: "Bench Press" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		expect(screen.getByRole("button", { name: "Squat" })).toHaveAttribute(
+			"aria-pressed",
+			"false",
+		);
+	});
+});
+
+describe("Strength page — sort", () => {
+	it("sorts by most recent by default", async () => {
+		await renderLoaded();
+		const sort = screen.getByRole("group", { name: /sort lifts/i });
+		expect(
+			within(sort).getByRole("button", { name: "Recent" }),
+		).toHaveAttribute("aria-pressed", "true");
+		expect(cardNames()).toEqual(["Bench Press", "Squat", "Deadlift"]);
+	});
+
+	it("sorts by biggest change, untrained lifts last", async () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify(["Deadlift", "Squat", "Bench Press"]),
+		);
+		await renderLoaded();
+		const sort = screen.getByRole("group", { name: /sort lifts/i });
+		await userEvent.click(within(sort).getByRole("button", { name: "Change" }));
+		expect(cardNames()).toEqual(["Bench Press", "Squat", "Deadlift"]);
+	});
+
+	it("sorts A–Z", async () => {
+		await renderLoaded();
+		const sort = screen.getByRole("group", { name: /sort lifts/i });
+		await userEvent.click(within(sort).getByRole("button", { name: "A–Z" }));
+		expect(cardNames()).toEqual(["Bench Press", "Deadlift", "Squat"]);
+	});
+});
+
+describe("Strength page — detail for the selected lift", () => {
+	it("shows current max, sessions, improvement and last trained", async () => {
+		await renderLoaded();
+		expect(
+			within(screen.getByTestId("stat-current-max")).getByText(/155/),
+		).toBeInTheDocument();
+		expect(
+			within(screen.getByTestId("stat-sessions")).getByText("3"),
+		).toBeInTheDocument();
+		expect(
+			within(screen.getByTestId("stat-improvement")).getByText(/\+20/),
+		).toBeInTheDocument();
+		expect(
+			within(screen.getByTestId("stat-last-trained")).getByText(/Today/i),
+		).toBeInTheDocument();
+	});
+
+	it("updates the detail when another card is clicked", async () => {
+		await renderLoaded();
 		const squat = screen.getByRole("button", { name: "Squat" });
-		expect(squat).toHaveAttribute("aria-pressed", "false");
-	});
-
-	it("switches active exercise when a different list item is clicked", async () => {
-		render(<Strength />);
-		const squat = await screen.findByRole("button", { name: "Squat" });
 		await userEvent.click(squat);
 		expect(squat).toHaveAttribute("aria-pressed", "true");
-		const bench = screen.getByRole("button", { name: "Bench Press" });
-		expect(bench).toHaveAttribute("aria-pressed", "false");
+		expect(
+			within(screen.getByTestId("stat-current-max")).getByText(/195/),
+		).toBeInTheDocument();
+		expect(
+			within(screen.getByTestId("stat-sessions")).getByText("2"),
+		).toBeInTheDocument();
+		expect(
+			within(screen.getByTestId("stat-last-trained")).getByText(/3 days ago/i),
+		).toBeInTheDocument();
 	});
 
-	it("shows the total exercise count in the sidebar header", async () => {
-		render(<Strength />);
-		const sidebar = await screen.findByTestId("strength-sidebar");
-		// 2 exercises in STRENGTH_DATA
-		expect(within(sidebar).getByText(/2/)).toBeInTheDocument();
+	it("renders the chart", async () => {
+		await renderLoaded();
+		expect(screen.getByTestId("line-chart")).toBeInTheDocument();
 	});
 
-	it("shows current max next to each exercise name in the sidebar", async () => {
-		render(<Strength />);
-		const sidebar = await screen.findByTestId("strength-sidebar");
-		// Bench Press current max = 155, Squat current max = 195
-		expect(within(sidebar).getByText(/155/)).toBeInTheDocument();
-		expect(within(sidebar).getByText(/195/)).toBeInTheDocument();
-	});
-
-	it("sorts exercises by session frequency descending (most sessions first)", async () => {
-		const frequencyData = [
-			{
-				exerciseName: "Deadlift",
-				data: [
-					{
-						sessionDate: "2026-04-01",
-						maxWeightLbs: 225,
-						setCount: 3,
-						repScheme: "5/5/5",
-					},
-				],
-			},
-			{
-				exerciseName: "Overhead Press",
-				data: [
-					{
-						sessionDate: "2026-04-01",
-						maxWeightLbs: 95,
-						setCount: 3,
-						repScheme: "8/8/8",
-					},
-					{
-						sessionDate: "2026-04-08",
-						maxWeightLbs: 100,
-						setCount: 3,
-						repScheme: "8/8/8",
-					},
-					{
-						sessionDate: "2026-04-15",
-						maxWeightLbs: 105,
-						setCount: 3,
-						repScheme: "8/8/8",
-					},
-				],
-			},
-		];
-		mockApiGet.mockResolvedValue({ data: frequencyData });
-		render(<Strength />);
-		const sidebar = await screen.findByTestId("strength-sidebar");
-		const buttons = within(sidebar).getAllByRole("button");
-		// Overhead Press (3 sessions) must appear before Deadlift (1 session)
-		expect(buttons[0]).toHaveTextContent("Overhead Press");
-		expect(buttons[1]).toHaveTextContent("Deadlift");
-	});
-});
-
-describe("Strength page — stat row for active exercise", () => {
-	beforeEach(() => {
-		mockApiGet.mockResolvedValue({ data: STRENGTH_DATA });
-	});
-
-	it("shows current max for the active exercise", async () => {
-		render(<Strength />);
-		const card = await screen.findByTestId("stat-current-max");
-		expect(within(card).getByText(/155/)).toBeInTheDocument();
-	});
-
-	it("shows total session count", async () => {
-		render(<Strength />);
-		const card = await screen.findByTestId("stat-sessions");
-		expect(within(card).getByText("3")).toBeInTheDocument();
-	});
-
-	it("shows improvement since first session", async () => {
-		render(<Strength />);
-		const card = await screen.findByTestId("stat-improvement");
-		// 155 - 135 = +20
-		expect(within(card).getByText(/\+20/)).toBeInTheDocument();
-	});
-
-	it('shows "today" when last session was today', async () => {
-		render(<Strength />);
-		const card = await screen.findByTestId("stat-last-trained");
-		expect(within(card).getByText(/Today/i)).toBeInTheDocument();
-	});
-
-	it("shows N days ago for older sessions", async () => {
-		render(<Strength />);
-		await screen.findByRole("button", { name: "Squat" });
-		await userEvent.click(screen.getByRole("button", { name: "Squat" }));
-		const card = await screen.findByTestId("stat-last-trained");
-		// Squat last trained 2026-04-12; today is 2026-04-15 → 3 days ago
-		expect(within(card).getByText(/3 days ago/i)).toBeInTheDocument();
-	});
-
-	it("updates stats when active exercise changes", async () => {
-		render(<Strength />);
-		await screen.findByRole("button", { name: "Squat" });
-		await userEvent.click(screen.getByRole("button", { name: "Squat" }));
-		const max = await screen.findByTestId("stat-current-max");
-		expect(within(max).getByText(/195/)).toBeInTheDocument();
-		const sessions = screen.getByTestId("stat-sessions");
-		expect(within(sessions).getByText("2")).toBeInTheDocument();
-	});
-});
-
-describe("Strength page — session history table", () => {
-	beforeEach(() => {
-		mockApiGet.mockResolvedValue({ data: STRENGTH_DATA });
-	});
-
-	it("renders the chart for the active exercise without needing a toggle", async () => {
-		render(<Strength />);
-		expect(await screen.findByTestId("line-chart")).toBeInTheDocument();
-	});
-
-	it("renders one row per session", async () => {
-		render(<Strength />);
-		const table = await screen.findByTestId("session-history-table");
-		const rows = within(table).getAllByRole("row");
-		// Header row + 3 sessions for Bench Press
-		expect(rows).toHaveLength(4);
-	});
-
-	it("sorts sessions by date descending (most recent first)", async () => {
-		render(<Strength />);
-		const table = await screen.findByTestId("session-history-table");
-		const rows = within(table).getAllByRole("row").slice(1); // skip header
-		// Most recent (2026-04-15) should be first
+	it("lists sessions newest first and highlights the PR row", async () => {
+		await renderLoaded();
+		const table = screen.getByTestId("session-history-table");
+		const rows = within(table).getAllByRole("row").slice(1);
+		expect(rows).toHaveLength(3);
 		expect(rows[0]).toHaveTextContent("2026-04-15");
-		expect(rows[1]).toHaveTextContent("2026-04-08");
 		expect(rows[2]).toHaveTextContent("2026-04-01");
+		expect(rows[0]).toHaveClass("strength-pr-row");
+		expect(rows[2]).not.toHaveClass("strength-pr-row");
 	});
 
-	it("highlights the PR row (max-weight session) with a distinct class", async () => {
-		render(<Strength />);
-		const table = await screen.findByTestId("session-history-table");
-		const rows = within(table).getAllByRole("row").slice(1);
-		// Bench Press PR is the 155 lb session on 2026-04-15
-		const prRow = rows.find((r) => r.textContent.includes("155"));
-		expect(prRow).toHaveClass("strength-pr-row");
-	});
-
-	it("does not highlight non-PR rows", async () => {
-		render(<Strength />);
-		const table = await screen.findByTestId("session-history-table");
-		const rows = within(table).getAllByRole("row").slice(1);
-		const nonPrRow = rows.find((r) => r.textContent.includes("135"));
-		expect(nonPrRow).not.toHaveClass("strength-pr-row");
+	it("shows a no-sessions message for a lift not trained in the range", async () => {
+		await renderLoaded();
+		await userEvent.click(screen.getByRole("button", { name: "Deadlift" }));
+		expect(
+			screen.getByText(/no sessions in selected range/i),
+		).toBeInTheDocument();
 	});
 });
 
-// Fake date: 2026-04-15
-// 4W cutoff:  2026-03-18  (28 days back)
-// 3M cutoff:  2026-01-15  (90 days back)
-// 6M cutoff:  2025-10-17  (180 days back)
+// Fake today: 2026-04-15 → 4W 2026-03-18, 3M 2026-01-15, 6M 2025-10-17
 const RANGED_DATA = [
 	{
 		exerciseName: "Bench Press",
 		data: [
-			{
-				sessionDate: "2025-09-01",
-				maxWeightLbs: 100,
-				setCount: 3,
-				repScheme: "8/8/8",
-			}, // beyond 6M
-			{
-				sessionDate: "2026-01-01",
-				maxWeightLbs: 115,
-				setCount: 3,
-				repScheme: "8/8/8",
-			}, // within 6M, beyond 3M
-			{
-				sessionDate: "2026-02-01",
-				maxWeightLbs: 125,
-				setCount: 3,
-				repScheme: "8/8/8",
-			}, // within 3M, beyond 4W
-			{
-				sessionDate: "2026-04-01",
-				maxWeightLbs: 135,
-				setCount: 3,
-				repScheme: "8/8/8",
-			}, // within 4W
+			s("2025-09-01", 100), // beyond 6M
+			s("2026-01-01", 115), // within 6M
+			s("2026-02-01", 125), // within 3M
+			s("2026-04-01", 135), // within 4W
 		],
 	},
 ];
 
-describe("Strength page — time range filter", () => {
-	beforeEach(() => {
-		mockApiGet.mockResolvedValue({ data: RANGED_DATA });
-	});
-
-	it("renders all four range buttons", async () => {
-		render(<Strength />);
-		const rangeGroup = await screen.findByRole("group", {
-			name: /time range/i,
-		});
-		expect(
-			within(rangeGroup).getByRole("button", { name: "4W" }),
-		).toBeInTheDocument();
-		expect(
-			within(rangeGroup).getByRole("button", { name: "3M" }),
-		).toBeInTheDocument();
-		expect(
-			within(rangeGroup).getByRole("button", { name: "6M" }),
-		).toBeInTheDocument();
-		expect(
-			within(rangeGroup).getByRole("button", { name: "All" }),
-		).toBeInTheDocument();
-	});
-
-	it('selects "All" by default', async () => {
-		render(<Strength />);
-		const rangeGroup = await screen.findByRole("group", {
-			name: /time range/i,
-		});
-		expect(
-			within(rangeGroup).getByRole("button", { name: "All" }),
-		).toHaveAttribute("aria-pressed", "true");
-		expect(
-			within(rangeGroup).getByRole("button", { name: "4W" }),
-		).toHaveAttribute("aria-pressed", "false");
-	});
-
-	it("selects clicked range button and deselects others", async () => {
-		render(<Strength />);
-		const rangeGroup = await screen.findByRole("group", {
-			name: /time range/i,
-		});
-		const btn4W = within(rangeGroup).getByRole("button", { name: "4W" });
-		await userEvent.click(btn4W);
-		expect(btn4W).toHaveAttribute("aria-pressed", "true");
-		expect(
-			within(rangeGroup).getByRole("button", { name: "All" }),
-		).toHaveAttribute("aria-pressed", "false");
-	});
-
-	it("sessions stat reflects only sessions in the selected range", async () => {
-		render(<Strength />);
-		// Default All → 4 sessions
-		const sessionsCard = await screen.findByTestId("stat-sessions");
-		expect(within(sessionsCard).getByText("4")).toBeInTheDocument();
-
-		// Switch to 4W → only 2026-04-01 qualifies (1 session)
-		const rangeGroup = screen.getByRole("group", { name: /time range/i });
-		await userEvent.click(
-			within(rangeGroup).getByRole("button", { name: "4W" }),
+describe("Strength page — time range", () => {
+	it("renders the four range buttons with 3M selected by default", async () => {
+		await renderLoaded(RANGED_DATA);
+		const range = screen.getByRole("group", { name: /time range/i });
+		for (const label of ["4W", "6M", "All"]) {
+			expect(within(range).getByRole("button", { name: label })).toHaveAttribute(
+				"aria-pressed",
+				"false",
+			);
+		}
+		expect(within(range).getByRole("button", { name: "3M" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
 		);
-		expect(within(sessionsCard).getByText("1")).toBeInTheDocument();
 	});
 
-	it("sessions stat updates correctly for 3M and 6M ranges", async () => {
-		render(<Strength />);
-		await screen.findByTestId("stat-sessions");
-		const rangeGroup = screen.getByRole("group", { name: /time range/i });
+	it("session stat reflects only sessions in the selected range", async () => {
+		await renderLoaded(RANGED_DATA);
+		const range = screen.getByRole("group", { name: /time range/i });
+		const sessions = () =>
+			within(screen.getByTestId("stat-sessions")).getByText(/\d+/).textContent;
+		expect(sessions()).toBe("2");
+		await userEvent.click(within(range).getByRole("button", { name: "4W" }));
+		expect(sessions()).toBe("1");
+		await userEvent.click(within(range).getByRole("button", { name: "6M" }));
+		expect(sessions()).toBe("3");
+		await userEvent.click(within(range).getByRole("button", { name: "All" }));
+		expect(sessions()).toBe("4");
+	});
+});
 
-		// 3M: 2026-02-01 and 2026-04-01 qualify (2 sessions)
-		await userEvent.click(
-			within(rangeGroup).getByRole("button", { name: "3M" }),
-		);
-		expect(
-			within(screen.getByTestId("stat-sessions")).getByText("2"),
-		).toBeInTheDocument();
-
-		// 6M: adds 2026-01-01 (3 sessions)
-		await userEvent.click(
-			within(rangeGroup).getByRole("button", { name: "6M" }),
-		);
-		expect(
-			within(screen.getByTestId("stat-sessions")).getByText("3"),
-		).toBeInTheDocument();
+describe("Strength page — Choose lifts dialog", () => {
+	it("lists every logged lift with chosen ones checked", async () => {
+		await renderLoaded();
+		const dialog = await openChooser();
+		expect(within(dialog).getAllByRole("checkbox")).toHaveLength(5);
+		expect(within(dialog).getByRole("checkbox", { name: /Bench Press/ })).toBeChecked();
+		expect(within(dialog).getByRole("checkbox", { name: /Bicep Curl/ })).not.toBeChecked();
 	});
 
-	it("shows no-sessions message when range has no data", async () => {
-		mockApiGet.mockResolvedValue({
-			data: [
-				{
-					exerciseName: "Old Lift",
-					data: [
-						{
-							sessionDate: "2025-01-01",
-							maxWeightLbs: 100,
-							setCount: 3,
-							repScheme: "5/5/5",
-						},
-					],
-				},
-			],
+	it("groups lifts trained in the range ahead of older ones", async () => {
+		await renderLoaded();
+		const dialog = await openChooser();
+		const recent = within(dialog).getByRole("group", {
+			name: /trained in the last 3 months/i,
 		});
-		render(<Strength />);
-		await screen.findByRole("button", { name: "Old Lift" });
-		const rangeGroup = screen.getByRole("group", { name: /time range/i });
-		await userEvent.click(
-			within(rangeGroup).getByRole("button", { name: "4W" }),
+		const older = within(dialog).getByRole("group", { name: /older/i });
+		expect(within(recent).getAllByRole("checkbox")).toHaveLength(3);
+		expect(within(older).getByRole("checkbox", { name: /Deadlift/ })).toBeInTheDocument();
+		expect(within(older).getByRole("checkbox", { name: /Old Row/ })).toBeInTheDocument();
+	});
+
+	it("filters the list by search text", async () => {
+		await renderLoaded();
+		const dialog = await openChooser();
+		await userEvent.type(
+			within(dialog).getByRole("searchbox", { name: /search exercises/i }),
+			"row",
 		);
-		expect(
-			screen.getByText(/no sessions in selected range/i),
-		).toBeInTheDocument();
+		const boxes = within(dialog).getAllByRole("checkbox");
+		expect(boxes).toHaveLength(1);
+		expect(boxes[0]).toHaveAccessibleName(/Old Row/);
+	});
+
+	it("filters to the selected lifts", async () => {
+		await renderLoaded();
+		const dialog = await openChooser();
+		await userEvent.click(within(dialog).getByRole("button", { name: /^Selected/ }));
+		expect(within(dialog).getAllByRole("checkbox")).toHaveLength(3);
+	});
+
+	it("adds a lift on Done and remembers it in localStorage", async () => {
+		await renderLoaded();
+		const dialog = await openChooser();
+		await userEvent.click(within(dialog).getByRole("checkbox", { name: /Bicep Curl/ }));
+		await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		expect(cardNames()).toContain("Bicep Curl");
+		expect(JSON.parse(localStorage.getItem(STORAGE_KEY))).toContain("Bicep Curl");
+	});
+
+	it("discards changes on Cancel", async () => {
+		await renderLoaded();
+		const dialog = await openChooser();
+		await userEvent.click(within(dialog).getByRole("checkbox", { name: /Squat/ }));
+		await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+		expect(cardNames()).toContain("Squat");
+		expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+	});
+
+	it("resets to the featured lifts", async () => {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(["Old Row"]));
+		await renderLoaded();
+		const dialog = await openChooser();
+		await userEvent.click(
+			within(dialog).getByRole("button", { name: /reset to featured/i }),
+		);
+		await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+		expect(cardNames()).toEqual(["Bench Press", "Squat", "Deadlift"]);
+	});
+
+	it("keeps the selected card valid when it is removed", async () => {
+		await renderLoaded();
+		const dialog = await openChooser();
+		await userEvent.click(within(dialog).getByRole("checkbox", { name: /Bench Press/ }));
+		await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+		expect(screen.getByRole("button", { name: "Squat" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
 	});
 });

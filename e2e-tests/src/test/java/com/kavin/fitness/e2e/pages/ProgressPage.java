@@ -2,39 +2,33 @@ package com.kavin.fitness.e2e.pages;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.WaitForSelectorState;
-
-import java.util.List;
 
 public class ProgressPage {
     private final Page page;
 
-    private static final String PAGE_TABS = ".page-tabs .page-tab";
-    private static final String ACTIVE_TAB = ".page-tabs .page-tab-active";
     private static final String STRENGTH_HEADER = ".strength-header h1";
-    private static final String CARDIO_HEADER = ".cardio-header h1";
-    private static final String STRENGTH_SIDEBAR = "[data-testid='strength-sidebar']";
-    private static final String CARDIO_SIDEBAR = "[data-testid='cardio-sidebar']";
-    private static final String STRENGTH_SIDEBAR_ITEMS = ".strength-sidebar-item";
-    private static final String CARDIO_SIDEBAR_ITEMS = ".cardio-sidebar-item";
-    private static final String STRENGTH_RANGE_BTNS = ".strength-range-btn";
+    private static final String PAGE_TABS = "nav.page-tabs";
+    private static final String RANGE_BTNS = "[aria-label='Time range'] .strength-range-btn";
     private static final String SESSION_TABLE = "[data-testid='session-history-table']";
-    private static final String STRENGTH_EMPTY = ".strength-empty";
-    private static final String CARDIO_EMPTY = ".cardio-empty";
     private static final String LOADING = ".loading-state";
 
     public ProgressPage(Page page) {
         this.page = page;
     }
 
-    private boolean awaitVisible(String selector) {
+    private boolean awaitVisible(Locator locator) {
         try {
-            page.locator(selector).first().waitFor(
-                    new Locator.WaitForOptions().setTimeout(5000));
+            locator.first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
             return true;
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private boolean awaitVisible(String selector) {
+        return awaitVisible(page.locator(selector));
     }
 
     public void openStrength(String baseUrl) {
@@ -42,8 +36,8 @@ public class ProgressPage {
         waitForLoaded();
     }
 
-    public void openCardio(String baseUrl) {
-        page.navigate(baseUrl + "/progress/cardio");
+    public void reload() {
+        page.reload();
         waitForLoaded();
     }
 
@@ -54,61 +48,83 @@ public class ProgressPage {
         }
     }
 
-    public List<String> getTabLabels() {
-        return page.locator(PAGE_TABS).allInnerTexts();
+    public String currentPath() {
+        return java.net.URI.create(page.url()).getPath();
     }
-
-    public String getActiveTabLabel() {
-        Locator el = page.locator(ACTIVE_TAB);
-        return el.count() == 0 ? "" : el.first().innerText();
-    }
-
-    public void clickTab(String label) {
-        page.locator("nav.page-tabs a", new Page.LocatorOptions().setHasText(label)).click();
-        waitForLoaded();
-    }
-
-    // ── Strength ─────────────────────────────────────────────────────────────
 
     public boolean isStrengthHeaderVisible() {
         return awaitVisible(STRENGTH_HEADER);
     }
 
-    public boolean isStrengthSidebarVisible() {
-        return awaitVisible(STRENGTH_SIDEBAR);
+    /** The lift view (not the empty state) rendered: the Choose lifts button is there. */
+    public boolean isLiftViewVisible() {
+        return awaitVisible(page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Choose lifts")));
     }
 
-    public boolean isStrengthEmptyStateVisible() {
-        return awaitVisible(STRENGTH_EMPTY);
+    /** True when the old Strength / Cardio sub-tabs are on the page. */
+    public boolean hasProgressTabs() {
+        return page.locator(PAGE_TABS).count() > 0
+                || page.getByRole(AriaRole.LINK,
+                        new Page.GetByRoleOptions().setName("Cardio").setExact(true)).count() > 0;
     }
 
-    public int getStrengthExerciseCount() {
-        return page.locator(STRENGTH_SIDEBAR_ITEMS).count();
+    // ── Choose lifts dialog ──────────────────────────────────────────────────
+
+    private Locator chooser() {
+        return page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("Choose lifts"));
     }
 
-    public void clickStrengthExercise(String name) {
-        Locator item = page.locator(STRENGTH_SIDEBAR_ITEMS, new Page.LocatorOptions().setHas(
-                page.locator(".strength-sidebar-item-name", new Page.LocatorOptions().setHasText(name))));
-        if (item.count() == 0) {
-            throw new AssertionError("Strength exercise '" + name + "' not in sidebar");
-        }
-        item.first().click();
+    public void openChooser() {
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Choose lifts")).click();
+        chooser().waitFor();
     }
 
-    public boolean isStrengthExerciseActive(String name) {
-        Locator item = page.locator(STRENGTH_SIDEBAR_ITEMS, new Page.LocatorOptions().setHas(
-                page.locator(".strength-sidebar-item-name", new Page.LocatorOptions().setHasText(name))));
-        if (item.count() == 0) return false;
-        String classes = item.first().getAttribute("class");
-        return classes != null && classes.contains("strength-sidebar-item-active");
+    public void searchChooser(String text) {
+        chooser().getByRole(AriaRole.SEARCHBOX, new Locator.GetByRoleOptions().setName("Search exercises"))
+                .fill(text);
     }
+
+    /** Ticks the lift's checkbox (no-op if already ticked). */
+    public void chooseLift(String name) {
+        chooser().getByRole(AriaRole.CHECKBOX, new Locator.GetByRoleOptions().setName(name)).check();
+    }
+
+    public void confirmChooser() {
+        chooser().getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Done")).click();
+        chooser().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+    }
+
+    // ── Lift cards ───────────────────────────────────────────────────────────
+
+    private Locator liftCard(String name) {
+        return page.locator("[data-testid='lift-grid'] .lift-card[aria-label='" + name + "']");
+    }
+
+    public boolean isLiftCardVisible(String name) {
+        return awaitVisible(liftCard(name));
+    }
+
+    public void clickLiftCard(String name) {
+        liftCard(name).click();
+    }
+
+    /** Waits for the lift's card to be the selected one (detail shows that lift). */
+    public boolean isLiftCardActive(String name) {
+        return awaitVisible(page.locator(
+                "[data-testid='lift-grid'] .lift-card[aria-label='" + name + "'][aria-pressed='true']"))
+                && awaitVisible(page.locator(".strength-detail-head h2",
+                        new Page.LocatorOptions().setHasText(name)));
+    }
+
+    // ── Detail ───────────────────────────────────────────────────────────────
 
     public boolean isSessionTableVisible() {
         return awaitVisible(SESSION_TABLE);
     }
 
     public int getSessionRowCount() {
-        return page.locator("[data-testid='session-history-table'] tbody tr").count();
+        return page.locator(SESSION_TABLE + " tbody tr").count();
     }
 
     public String getCurrentMaxValue() {
@@ -121,11 +137,11 @@ public class ProgressPage {
     }
 
     public boolean hasPRBadge() {
-        return awaitVisible(".strength-pr-tag");
+        return awaitVisible(".strength-cell-weight .strength-pr-tag");
     }
 
     public void clickStrengthRange(String label) {
-        Locator btn = page.locator(STRENGTH_RANGE_BTNS, new Page.LocatorOptions().setHasText(label));
+        Locator btn = page.locator(RANGE_BTNS, new Page.LocatorOptions().setHasText(label));
         if (btn.count() == 0) {
             throw new AssertionError("Strength range '" + label + "' not found");
         }
@@ -133,36 +149,7 @@ public class ProgressPage {
     }
 
     public boolean isStrengthRangeActive(String label) {
-        Locator btn = page.locator(STRENGTH_RANGE_BTNS, new Page.LocatorOptions().setHasText(label));
-        if (btn.count() == 0) return false;
-        String classes = btn.first().getAttribute("class");
-        return classes != null && classes.contains("strength-range-btn-active");
-    }
-
-    // ── Cardio ───────────────────────────────────────────────────────────────
-
-    public boolean isCardioHeaderVisible() {
-        return awaitVisible(CARDIO_HEADER);
-    }
-
-    public boolean isCardioSidebarVisible() {
-        return awaitVisible(CARDIO_SIDEBAR);
-    }
-
-    public boolean isCardioEmptyStateVisible() {
-        return awaitVisible(CARDIO_EMPTY);
-    }
-
-    public int getCardioExerciseCount() {
-        return page.locator(CARDIO_SIDEBAR_ITEMS).count();
-    }
-
-    public void clickCardioExercise(String name) {
-        Locator item = page.locator(CARDIO_SIDEBAR_ITEMS, new Page.LocatorOptions().setHas(
-                page.locator(".cardio-sidebar-item-name", new Page.LocatorOptions().setHasText(name))));
-        if (item.count() == 0) {
-            throw new AssertionError("Cardio exercise '" + name + "' not in sidebar");
-        }
-        item.first().click();
+        Locator btn = page.locator(RANGE_BTNS, new Page.LocatorOptions().setHasText(label));
+        return btn.count() > 0 && "true".equals(btn.first().getAttribute("aria-pressed"));
     }
 }

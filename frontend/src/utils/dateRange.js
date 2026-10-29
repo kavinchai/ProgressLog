@@ -1,6 +1,6 @@
 import { localDateStr } from "./date";
 
-// Time-range options shared by the Strength and Cardio progress pages.
+// Time-range options for the Strength progress page.
 export const RANGE_OPTIONS = [
 	{ key: "4W", label: "4W", days: 28 },
 	{ key: "3M", label: "3M", days: 90 },

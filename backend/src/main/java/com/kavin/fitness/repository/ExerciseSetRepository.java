@@ -31,17 +31,6 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSet, Long> 
     List<ExerciseSet> findByUserIdAndExerciseNameOrderByDate(
             @Param("userId") Long userId, @Param("name") String exerciseName);
 
-    /**
-     * Returns all cardio exercise sets (those with a non-null distanceMiles) for a user, ordered by
-     * date.
-     */
-    @Query(
-            "SELECT e FROM ExerciseSet e "
-                    + "JOIN e.session s "
-                    + "WHERE s.user.id = :userId AND e.distanceMiles IS NOT NULL "
-                    + "ORDER BY s.sessionDate ASC, e.exerciseName ASC, e.setNumber ASC")
-    List<ExerciseSet> findCardioSetsByUserId(@Param("userId") Long userId);
-
     /** Returns all exercise sets for the given user IDs, joined with sessions for date access. */
     @Query(
             "SELECT e FROM ExerciseSet e "

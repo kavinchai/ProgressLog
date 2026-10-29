@@ -55,6 +55,26 @@ public class HistoryMobileTest extends BaseTest {
                 + " " + d.getMonthValue() + "/" + d.getDayOfMonth();
     }
 
+    @Test(priority = 0)
+    public void weeklyHeaderShowsWeekOfTitle() {
+        step("open /history/weekly at phone width");
+        history.openWeekly(baseUrl);
+
+        step("the full 'Week of …' title is shown");
+        String heading = history.getWeeklyHeading();
+        if (!heading.startsWith("Week of ")) {
+            throw new AssertionError("Expected a 'Week of …' title, got: '" + heading + "'");
+        }
+        if (!history.isWeeklyHeadingUntruncated()) {
+            throw new AssertionError("Expected the 'Week of …' title to fit without an ellipsis");
+        }
+
+        step("the nav keeps only its arrows (the title already names the week)");
+        if (history.isWeeklyRangeLabelVisible()) {
+            throw new AssertionError("Did not expect the week range label at phone width");
+        }
+    }
+
     @Test(priority = 1)
     public void weeklyShowsOneChartAtATime() {
         step("open /history/weekly at phone width");
