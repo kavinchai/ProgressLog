@@ -123,7 +123,7 @@
 	margin-bottom: 12px;
 }
 
-.lb-card-head > div:not(.lb-seg) {
+.lb-card-head > div:not(.lb-seg):not(.lb-board-actions) {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
@@ -598,9 +598,19 @@
 		font-size: var(--fs-xl);
 	}
 
-	/* Standing cards scroll sideways instead of stacking. */
+	.lb-head {
+		align-items: flex-start;
+	}
+
+	.lb-seg button {
+		min-height: 28px;
+		padding: 0 9px;
+	}
+
+	/* Standing cards: compact, scrolling sideways instead of stacking. */
 	.lb-standing {
 		display: flex;
+		gap: 8px;
 		overflow-x: auto;
 		scrollbar-width: none;
 		margin: 0 -16px;
@@ -608,11 +618,60 @@
 	}
 
 	.lb-stand {
-		flex: 0 0 168px;
+		flex: 0 0 136px;
+		gap: 2px;
+		padding: 8px 10px;
+		border-radius: var(--radius-md);
+	}
+
+	.lb-stand-rank {
+		font-size: var(--fs-lg);
+	}
+
+	.lb-bar {
+		height: 4px;
+		margin: 2px 0;
 	}
 
 	.lb-card {
 		padding: 14px 12px;
+	}
+
+	/* Period switch and Choose lifts share one row under the title. */
+	.lb-card-head {
+		gap: 8px;
+		margin-bottom: 10px;
+	}
+
+	.lb-board-actions {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.lb-board-actions .btn {
+		margin: 0;
+		min-height: 34px;
+		padding: 0 10px;
+		font-size: 11px;
+		white-space: nowrap;
+	}
+
+	.lb-board-actions .lb-seg button {
+		padding: 0 8px;
+		font-size: 11px;
+	}
+
+	.lb-board-actions .lb-choose-count {
+		margin-left: 4px;
+	}
+
+	.lb-chips {
+		gap: 6px;
+	}
+
+	.lb-chip {
+		min-height: 30px;
+		padding: 0 12px;
 	}
 
 	.lb-col-date {
