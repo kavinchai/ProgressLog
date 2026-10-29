@@ -565,14 +565,14 @@ Examples:
 
 	mcp.tool(
 		"log_meal",
-		"Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros. Breakfast, lunch and dinner are one slot per day: logging one fills (replaces) that day's existing slot instead of adding a second. Any other meal type adds a new meal.",
+		"Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros. Always set mealLabel to the meal the user named (\"for dinner I had…\" → \"Dinner\"). Breakfast, lunch and dinner are one slot per day: logging one fills (replaces) that day's existing slot instead of adding a second. Any other meal type adds a new meal.",
 		{
+			// Required in the schema Claude sees so it always fills it in, but a
+			// missing value (older cached tool lists) is still accepted as "".
 			mealLabel: z
-				.string()
-				.max(50)
-				.optional()
+				.preprocess((v) => v ?? "", z.string().max(50))
 				.describe(
-					'Which meal the user said it was, e.g. "for breakfast I had…" → "Breakfast", "as a snack…" → "Snack". Breakfast / Lunch / Dinner fill that day\'s slot; anything else becomes a new meal with this label. Omit when the user doesn\'t say which meal.',
+					'Required. The meal the user named: "for breakfast/lunch/dinner I had…" → "Breakfast" / "Lunch" / "Dinner" (these fill that day\'s slot); another meal type they named → that, e.g. "Snack", "Pre-workout". Use "" only if they named no meal type. Never put the meal type in mealName instead.',
 				),
 			mealName: z
 				.string()

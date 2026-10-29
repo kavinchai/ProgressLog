@@ -142,3 +142,70 @@ describe("planMealWrite", () => {
 		assert.equal(plan.body.mealName, null);
 	});
 });
+
+describe("planMealWrite — meal type only in the name", () => {
+	const dinnerSlot = [
+		{ id: 9, mealLabel: "Dinner", mealName: null, calories: 0, proteinGrams: 0 },
+	];
+
+	it("takes a leading meal type off the name and fills that slot", () => {
+		const plan = planMealWrite(dinnerSlot, {
+			...meal,
+			mealName: "Dinner: Cava bowl",
+		});
+		assert.equal(plan.method, "PUT");
+		assert.equal(plan.mealId, 9);
+		assert.equal(plan.body.mealLabel, "Dinner");
+		assert.equal(plan.body.mealName, "Cava bowl");
+	});
+
+	it("handles other separators and casing", () => {
+		assert.equal(
+			planMealWrite([], { ...meal, mealName: "lunch - chicken wrap" }).body
+				.mealName,
+			"chicken wrap",
+		);
+		assert.equal(
+			planMealWrite([], { ...meal, mealName: "BREAKFAST" }).body.mealLabel,
+			"Breakfast",
+		);
+		assert.equal(
+			planMealWrite([], { ...meal, mealName: "Breakfast" }).body.mealName,
+			null,
+		);
+	});
+
+	it("uses a meal type named later in the name but keeps the name", () => {
+		const plan = planMealWrite([], {
+			...meal,
+			mealName: "Leftover pasta for lunch",
+		});
+		assert.equal(plan.body.mealLabel, "Lunch");
+		assert.equal(plan.body.mealName, "Leftover pasta for lunch");
+	});
+
+	it("an explicit label wins over the name", () => {
+		const plan = planMealWrite([], {
+			...meal,
+			mealLabel: "Snack",
+			mealName: "Breakfast burrito",
+		});
+		assert.equal(plan.body.mealLabel, "Snack");
+		assert.equal(plan.body.mealName, "Breakfast burrito");
+	});
+
+	it("doesn't match a meal type inside another word", () => {
+		const plan = planMealWrite([], { ...meal, mealName: "Lunchables" });
+		assert.equal(plan.body.mealLabel, null);
+	});
+
+	it("an empty label falls back to the name", () => {
+		const plan = planMealWrite([], {
+			...meal,
+			mealLabel: "",
+			mealName: "Dinner — steak",
+		});
+		assert.equal(plan.body.mealLabel, "Dinner");
+		assert.equal(plan.body.mealName, "steak");
+	});
+});
