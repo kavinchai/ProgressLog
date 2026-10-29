@@ -3,6 +3,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import express from "express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
+import { planMealWrite } from "./mealSlots.js";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -564,14 +565,14 @@ Examples:
 
 	mcp.tool(
 		"log_meal",
-		"Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros.",
+		"Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros. Breakfast, lunch and dinner are one slot per day: logging one fills (replaces) that day's existing slot instead of adding a second. Any other meal type adds a new meal.",
 		{
 			mealLabel: z
 				.string()
 				.max(50)
 				.optional()
 				.describe(
-					'Which meal this is: "Breakfast", "Lunch", "Dinner", or a custom label like "Snack". Use one of the first three whenever the user names that meal.',
+					'Which meal the user said it was, e.g. "for breakfast I had…" → "Breakfast", "as a snack…" → "Snack". Breakfast / Lunch / Dinner fill that day\'s slot; anything else becomes a new meal with this label. Omit when the user doesn\'t say which meal.',
 				),
 			mealName: z
 				.string()
@@ -587,7 +588,7 @@ Examples:
 				.enum(["training", "rest"])
 				.optional()
 				.describe(
-					'Whether this is a training or rest day. Defaults to "training".',
+					'Whether this is a training or rest day. Only set it when the user says so; when omitted the day keeps its current type ("training" for a new day).',
 				),
 		},
 		withDedup(
@@ -603,31 +604,51 @@ Examples:
 			}) => {
 				const logDate = date ?? todayStr();
 
-				// Step 1: Ensure a nutrition day log exists (upsert)
-				const dayLog = await api("POST", "/nutrition", {
-					logDate,
-					dayType: dayType ?? "training",
-				});
+				// Step 1: Find the day log (with its meals). Only create / update it
+				// when it's missing or the user named a day type, so logging a meal
+				// doesn't flip a rest day back to training.
+				const logs = await api("GET", "/nutrition");
+				let dayLog = logs.find((l) => l.logDate === logDate);
+				if (!dayLog || (dayType && dayType !== dayLog.dayType)) {
+					dayLog = await api("POST", "/nutrition", {
+						logDate,
+						dayType: dayType ?? dayLog?.dayType ?? "training",
+					});
+				}
 
-				// Step 2: Add the meal to that day log
-				const result = await api("POST", `/nutrition/${dayLog.id}/meals`, {
-					mealLabel: mealLabel ?? null,
-					mealName: mealName ?? null,
+				// Step 2: Fill the existing Breakfast / Lunch / Dinner slot, or add a meal
+				const plan = planMealWrite(dayLog.meals, {
+					mealLabel,
+					mealName,
 					calories,
 					proteinGrams,
 				});
+				const result =
+					plan.method === "PUT"
+						? await api(
+								"PUT",
+								`/nutrition/${dayLog.id}/meals/${plan.mealId}`,
+								plan.body,
+							)
+						: await api("POST", `/nutrition/${dayLog.id}/meals`, plan.body);
 
 				const totalCal = result.totalCalories ?? calories;
 				const totalProt = result.totalProtein ?? proteinGrams;
-				const what = [mealLabel, mealName && `"${mealName}"`]
+				const what = [
+					plan.body.mealLabel,
+					plan.body.mealName && `"${plan.body.mealName}"`,
+				]
 					.filter(Boolean)
 					.join(" ");
+				const replaced = plan.replaced
+					? ` (replaced ${plan.replaced.mealName ? `"${plan.replaced.mealName}"` : "the previous entry"}, ${plan.replaced.calories} kcal)`
+					: "";
 
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Logged meal${what ? ` ${what}` : ""}: ${calories} kcal, ${proteinGrams}g protein on ${logDate}\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
+							text: `${plan.replaced ? "Updated" : "Logged"} meal${what ? ` ${what}` : ""}: ${calories} kcal, ${proteinGrams}g protein on ${logDate}${replaced}\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
 						},
 					],
 				};

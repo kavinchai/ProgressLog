@@ -12,7 +12,8 @@ public class HistoryPage {
 
     private static final String PAGE_TABS = ".page-tabs .page-tab";
     private static final String ACTIVE_TAB = ".page-tabs .page-tab-active";
-    private static final String WEEKLY_TITLE = ".weekly-page .history-title";
+    // The header row, not the title: phones hide the "Week of …" title.
+    private static final String WEEKLY_TITLE = ".weekly-page .history-head";
     private static final String TOTAL_TITLE = ".total-page .history-title";
     private static final String DAY_CARDS = ".week-strip .week-day";
     private static final String DAY_PANEL = "section[aria-label='Selected day']";

@@ -82,8 +82,22 @@ describe("WeeklyStats — week strip", () => {
 	it('labels the current week "This week" and disables Next', () => {
 		render(<WeeklyStats />);
 		expect(screen.getByText(/this week/i)).toBeInTheDocument();
-		expect(screen.getByText("May 3 – May 9")).toBeInTheDocument();
+		expect(screen.getByText("May 3 – 9")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /next week/i })).toBeDisabled();
+	});
+
+	it("shows the month only once unless the week crosses months", async () => {
+		vi.useRealTimers();
+		vi.useFakeTimers({
+			toFake: ["Date"],
+			now: new Date(2026, 4, 6, 12, 0, 0),
+			shouldAdvanceTime: true,
+		});
+		render(<WeeklyStats />);
+		await userEvent.click(
+			screen.getByRole("button", { name: /previous week/i }),
+		);
+		expect(screen.getByText("Apr 26 – May 2")).toBeInTheDocument();
 	});
 
 	it("renders one card per day, Sunday to Saturday", () => {

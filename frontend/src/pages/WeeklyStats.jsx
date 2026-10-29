@@ -34,6 +34,11 @@ const monthDay = (iso) => {
 	const [, m, d] = iso.split("-");
 	return `${MONTHS[parseInt(m) - 1]} ${parseInt(d)}`;
 };
+// "Oct 25 – 31", or "Sep 27 – Oct 3" when the week spans two months.
+const weekRange = (start, end) =>
+	start.slice(0, 7) === end.slice(0, 7)
+		? `${monthDay(start)} – ${parseInt(end.slice(8))}`
+		: `${monthDay(start)} – ${monthDay(end)}`;
 const pct = (value, goal) =>
 	value == null || !goal ? 0 : Math.min(100, Math.round((value / goal) * 100));
 const fmt = (n) => (n == null ? "--" : Math.round(n).toLocaleString());
@@ -220,7 +225,7 @@ export default function WeeklyStats() {
 						‹
 					</button>
 					<span className="history-nav-label">
-						{monthDay(days[0])} – {monthDay(days[6])}
+						{weekRange(days[0], days[6])}
 					</span>
 					<button
 						type="button"
