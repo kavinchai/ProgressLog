@@ -3,6 +3,7 @@ package com.kavin.fitness.e2e.pages;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class LeaderboardPage {
     private final Page page;
@@ -101,6 +102,67 @@ public class LeaderboardPage {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // ── Choose lifts dialog (signed in) ──────────────────────────────────────
+
+    private Locator chooser() {
+        return page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("Choose lifts"));
+    }
+
+    public void openChooser() {
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Choose lifts")).click();
+        chooser().waitFor();
+    }
+
+    /** Ticks the lift's checkbox in the dialog (no-op if already ticked). */
+    public void tickLiftInChooser(String name) {
+        chooser().getByRole(AriaRole.CHECKBOX, new Locator.GetByRoleOptions().setName(name)).check();
+    }
+
+    /** Waits up to 5s for the lift to be listed in the dialog. */
+    public boolean awaitLiftInChooser(String name) {
+        try {
+            chooser().getByRole(AriaRole.CHECKBOX, new Locator.GetByRoleOptions().setName(name))
+                    .waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isLiftTickedInChooser(String name) {
+        return chooser().getByRole(AriaRole.CHECKBOX, new Locator.GetByRoleOptions().setName(name)).isChecked();
+    }
+
+    public void cancelChooser() {
+        chooser().getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Cancel")).click();
+        chooser().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+    }
+
+    public void confirmChooser() {
+        chooser().getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Done")).click();
+        chooser().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+    }
+
+    private Locator liftChip(String name) {
+        return page.locator("[role='group'][aria-label='Lift']").getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName(name).setExact(true));
+    }
+
+    /** Waits up to 5s for the lift to be one of the board's lift chips. */
+    public boolean awaitLiftChip(String name) {
+        try {
+            liftChip(name).waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** True if the lift is a chip right now (call after waitForLoaded). */
+    public boolean hasLiftChip(String name) {
+        return liftChip(name).count() > 0;
     }
 
     /** Returns the total lifter count shown in the stats banner, or 0 if not present. */

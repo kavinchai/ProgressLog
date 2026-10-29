@@ -160,120 +160,6 @@
 	align-items: start;
 }
 
-/* ── Choose lifts dialog ── */
-.choose-lifts {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.choose-lifts .modal-input {
-	width: 100%;
-}
-
-.choose-chips {
-	display: flex;
-	gap: 6px;
-	flex-wrap: wrap;
-}
-
-.choose-chip {
-	font-family: var(--font);
-	font-size: var(--fs-xs);
-	min-height: 32px;
-	padding: 0 12px;
-	border-radius: var(--radius-full);
-	border: 1px solid var(--border);
-	background: var(--bg-card);
-	color: var(--fg);
-	cursor: pointer;
-}
-
-.choose-chip-on {
-	background: var(--accent);
-	border-color: var(--accent);
-	color: var(--accent-fg);
-	font-weight: var(--fw-semibold);
-}
-
-.choose-list {
-	max-height: min(50vh, 420px);
-	overflow-y: auto;
-	border: 1px solid var(--border-dim);
-	border-radius: var(--radius-md);
-}
-
-.choose-group-title {
-	position: sticky;
-	top: 0;
-	padding: 8px 12px 6px;
-	background: var(--bg);
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-semibold);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	color: var(--muted);
-}
-
-.choose-row {
-	display: grid;
-	grid-template-columns: 18px minmax(0, 1fr) auto;
-	align-items: center;
-	gap: 12px;
-	min-height: 46px;
-	padding: 0 12px;
-	border-top: 1px solid var(--border-dim);
-	font-size: var(--fs-sm);
-	cursor: pointer;
-}
-
-.choose-row input {
-	width: 18px;
-	height: 18px;
-	margin: 0;
-	accent-color: var(--accent);
-}
-
-.choose-row-on {
-	background: var(--accent-light);
-}
-
-.choose-row-name {
-	font-weight: var(--fw-semibold);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.choose-row-last {
-	margin-left: 8px;
-	font-weight: var(--fw-normal);
-	font-size: var(--fs-xs);
-	color: var(--muted);
-}
-
-.choose-row-max {
-	font-size: var(--fs-xs);
-	color: var(--muted);
-}
-
-.choose-empty {
-	padding: var(--space-md);
-	text-align: center;
-	color: var(--muted);
-	font-size: var(--fs-sm);
-}
-
-.choose-footer {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.choose-footer-spacer {
-	flex: 1;
-}
-
 /* ── Time range selector ── */
 .strength-range-row {
 	display: flex;
@@ -531,10 +417,6 @@
 		width: 84px;
 		height: 30px;
 		flex: none;
-	}
-
-	.choose-list {
-		max-height: 55vh;
 	}
 
 	.strength-stats-grid {

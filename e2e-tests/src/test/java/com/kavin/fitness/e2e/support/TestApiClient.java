@@ -98,6 +98,25 @@ public class TestApiClient {
         }
     }
 
+    /** Delete the sessions on a date with the given name; other sessions that day are kept. */
+    public void deleteWorkoutsOnDate(String date, String sessionName) {
+        HttpResponse<String> list = get("/workouts?date=" + date);
+        if (list.statusCode() >= 300) {
+            Reporter.log("WARN: list workouts " + date + " -> HTTP " + list.statusCode(), true);
+            return;
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "\\{\"id\"\\s*:\\s*(\\d+)\\s*,\\s*\"sessionDate\"\\s*:\\s*\"[^\"]*\"\\s*,"
+                        + "\\s*\"sessionName\"\\s*:\\s*\"" + java.util.regex.Pattern.quote(sessionName) + "\"")
+                .matcher(list.body());
+        while (m.find()) {
+            HttpResponse<String> r = delete("/workouts/" + m.group(1));
+            if (r.statusCode() >= 300) {
+                Reporter.log("WARN: delete workout " + m.group(1) + " -> HTTP " + r.statusCode(), true);
+            }
+        }
+    }
+
     /** Delete the weight entry for a given date. No-op if none exists. */
     public void deleteWeightOnDate(String date) {
         deleteEntriesOnDate("/weight", date, "weight");

@@ -149,6 +149,19 @@
 	min-width: 0;
 }
 
+.lb-board-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.lb-choose-count {
+	margin-left: 6px;
+	font-weight: var(--fw-normal);
+	opacity: 0.85;
+}
+
 /* ── Your standing ── */
 .lb-section {
 	margin-bottom: var(--space-lg);
