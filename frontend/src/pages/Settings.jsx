@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
+import Modal from "../components/Modal";
 import useUserProfile from "../hooks/useUserProfile";
 import useAuthStore from "../store/authStore";
 import useWeightUnit from "../hooks/useWeightUnit";
@@ -8,419 +9,690 @@ import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
+import usePRs from "../hooks/usePRs";
+import useTheme from "../hooks/useTheme";
+import useMediaQuery, { MOBILE_QUERY } from "../hooks/useMediaQuery";
 import { buildDayRows } from "../utils/stats";
 import { groupByExercise } from "../utils/workout";
 import { formatDateShort as formatDate } from "../utils/date";
 import api from "../api";
 import "./Settings.css";
 
-function PrivacyToggle({
-	label,
-	ariaLabel,
-	on,
-	disabled,
-	onToggle,
-	saving = false,
-}) {
+const MIN_PASSWORD = 6;
+
+// ── Export / import helpers ─────────────────────────────────────────────────
+
+function buildExportData({ weightData, nutritionData, workoutData, stepData }) {
+	const allDates = [
+		...new Set([
+			...weightData.map((x) => x.logDate),
+			...nutritionData.map((x) => x.logDate),
+			...workoutData.map((x) => x.sessionDate),
+			...stepData.map((x) => x.logDate),
+		]),
+	].sort((a, b) => b.localeCompare(a));
+
+	const rows = buildDayRows(
+		allDates,
+		weightData,
+		nutritionData,
+		workoutData,
+		stepData,
+	);
+
+	const statsData = rows.map((row) => ({
+		Date: formatDate(row.date),
+		Weight: row.weight != null ? row.weight : "",
+		Calories: row.calories != null ? row.calories : "",
+		Protein: row.protein != null ? row.protein : "",
+		Steps: row.steps != null ? row.steps : "",
+		Workout: row.workout ?? "",
+	}));
+
+	const workoutRows = [];
+	const cardioRows = [];
+
+	for (const row of rows) {
+		if (!row.workoutEntry?.exerciseSets?.length) continue;
+		const allSets = row.workoutEntry.exerciseSets;
+
+		const strengthSets = allSets.filter(
+			(s) => s.distanceMiles == null && s.durationSeconds == null,
+		);
+		const cardioSets = allSets.filter(
+			(s) => s.distanceMiles != null || s.durationSeconds != null,
+		);
+
+		const groups = groupByExercise(strengthSets);
+		for (const g of groups) {
+			const exportRow = {
+				Date: formatDate(row.date),
+				Exercise: g.name,
+				Weight: g.weight,
+			};
+			for (const s of g.sets) {
+				exportRow[`Set ${s.setNumber}`] = s.reps != null ? s.reps : "";
+			}
+			workoutRows.push(exportRow);
+		}
+
+		for (const s of cardioSets) {
+			cardioRows.push({
+				Date: formatDate(row.date),
+				Exercise: s.exerciseName,
+				Set: s.setNumber,
+				"Distance (mi)":
+					s.distanceMiles != null ? parseFloat(s.distanceMiles) : "",
+				"Duration (sec)": s.durationSeconds != null ? s.durationSeconds : "",
+			});
+		}
+	}
+
+	const maxSets = workoutRows.reduce((max, row) => {
+		const nums = Object.keys(row)
+			.filter((k) => k.startsWith("Set "))
+			.map((k) => parseInt(k.replace("Set ", "")));
+		return Math.max(max, ...nums, 0);
+	}, 0);
+	const setHeaders = Array.from({ length: maxSets }, (_, i) => `Set ${i + 1}`);
+	const normalizedWorkoutRows = workoutRows.map((row) => {
+		const normalized = {
+			Date: row.Date,
+			Exercise: row.Exercise,
+			Weight: row.Weight,
+		};
+		for (const h of setHeaders) normalized[h] = row[h] ?? "";
+		return normalized;
+	});
+
+	// Build nutrition rows (one per meal) from the raw nutritionData hook
+	const nutritionRows = [];
+	for (const entry of nutritionData) {
+		if (!entry.meals?.length) continue;
+		for (const meal of entry.meals) {
+			const dayType =
+				(entry.dayType ?? "training").charAt(0).toUpperCase() +
+				(entry.dayType ?? "training").slice(1);
+			nutritionRows.push({
+				Date: formatDate(entry.logDate),
+				"Day Type": dayType,
+				Label: meal.mealLabel ?? "",
+				Meal: meal.mealName ?? "",
+				Calories: meal.calories ?? "",
+				Protein: meal.proteinGrams ?? "",
+			});
+		}
+	}
+
+	return { statsData, normalizedWorkoutRows, cardioRows, nutritionRows };
+}
+
+function exportXlsx(data) {
+	const { statsData, normalizedWorkoutRows, cardioRows, nutritionRows } =
+		buildExportData(data);
+	const ws1 = XLSX.utils.json_to_sheet(statsData);
+	const ws2 = XLSX.utils.json_to_sheet(
+		normalizedWorkoutRows.length
+			? normalizedWorkoutRows
+			: [{ Date: "", Exercise: "", Weight: "" }],
+	);
+	const ws3 = XLSX.utils.json_to_sheet(
+		cardioRows.length
+			? cardioRows
+			: [
+					{
+						Date: "",
+						Exercise: "",
+						Set: "",
+						"Distance (mi)": "",
+						"Duration (sec)": "",
+					},
+				],
+	);
+	const ws4 = XLSX.utils.json_to_sheet(
+		nutritionRows.length
+			? nutritionRows
+			: [
+					{
+						Date: "",
+						"Day Type": "",
+						Label: "",
+						Meal: "",
+						Calories: "",
+						Protein: "",
+					},
+				],
+	);
+	const wb = XLSX.utils.book_new();
+	XLSX.utils.book_append_sheet(wb, ws1, "Total Stats");
+	XLSX.utils.book_append_sheet(wb, ws2, "Workouts");
+	XLSX.utils.book_append_sheet(wb, ws3, "Cardio");
+	XLSX.utils.book_append_sheet(wb, ws4, "Nutrition");
+	XLSX.writeFile(wb, "total-stats.xlsx");
+}
+
+function exportJson(data) {
+	const { statsData, normalizedWorkoutRows, cardioRows, nutritionRows } =
+		buildExportData(data);
+	const json = JSON.stringify(
+		{
+			totalStats: statsData,
+			workouts: normalizedWorkoutRows,
+			cardio: cardioRows,
+			nutrition: nutritionRows,
+		},
+		null,
+		2,
+	);
+	const blob = new Blob([json], { type: "application/json" });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = "total-stats.json";
+	a.click();
+	URL.revokeObjectURL(url);
+}
+
+const IMPORT_TYPES = [
+	{ key: "weight", label: "Weight" },
+	{ key: "nutrition", label: "Meals" },
+	{ key: "workouts", label: "Workouts" },
+	{ key: "steps", label: "Steps" },
+];
+
+// ── Building blocks ─────────────────────────────────────────────────────────
+
+function Group({ title, children }) {
+	const id = `settings-group-${title.toLowerCase()}`;
 	return (
-		<div className="settings-field">
-			<label>{label}</label>
-			<div className="settings-input-row">
-				<button
-					type="button"
-					className="unit-toggle"
-					onClick={onToggle}
-					disabled={disabled}
-					aria-label={ariaLabel}
-					aria-pressed={on}
-				>
-					<span className={`unit-toggle-label${!on ? " active" : ""}`}>
-						Off
-					</span>
-					<span className={`toggle-track${on ? " on" : ""}`}>
-						<span className="toggle-thumb" />
-					</span>
-					<span className={`unit-toggle-label${on ? " active" : ""}`}>On</span>
-				</button>
-				{saving && <span className="settings-saved">Saving…</span>}
-			</div>
+		<section className="settings-group" aria-labelledby={id}>
+			<h2 id={id} className="settings-group-title">
+				{title}
+			</h2>
+			<div className="settings-list">{children}</div>
+		</section>
+	);
+}
+
+function Row({ label, hint, children }) {
+	return (
+		<div className="settings-row">
+			<span className="settings-row-text">
+				<span className="settings-row-label">{label}</span>
+				{hint && <span className="settings-row-hint">{hint}</span>}
+			</span>
+			<span className="settings-row-control">{children}</span>
 		</div>
 	);
 }
 
-export default function Settings() {
-	const navigate = useNavigate();
-	const { goals, loading, saving, error, saveGoals } = useUserProfile();
-	const { unit, toggleUnit } = useWeightUnit();
-	const username = useAuthStore((s) => s.username);
-	const login = useAuthStore((s) => s.login);
+// A row whose form opens under it on desktop, or in a bottom sheet on phones.
+function EditRow({ label, value, saved, open, disabled, onToggle, children }) {
+	const isMobile = useMediaQuery(MOBILE_QUERY);
+	return (
+		<div className={"settings-edit" + (open ? " settings-edit-open" : "")}>
+			<button
+				type="button"
+				className="settings-row settings-row-button"
+				aria-expanded={open}
+				disabled={disabled}
+				onClick={onToggle}
+			>
+				<span className="settings-row-main">
+					<span className="settings-row-label">{label}</span>
+					{saved && <span className="settings-saved">Saved!</span>}
+					<span className="settings-value">{value}</span>
+				</span>
+				<span className="settings-chevron" aria-hidden="true">
+					{open && !isMobile ? "⌃" : "›"}
+				</span>
+			</button>
+			{open &&
+				(isMobile ? (
+					<Modal title={label} onClose={onToggle}>
+						{children}
+					</Modal>
+				) : (
+					<div className="settings-editor">{children}</div>
+				))}
+		</div>
+	);
+}
 
-	// ── Data hooks (export/import) ───────────────────────────────────────────
-	const { data: weightData, refetch: refetchWeight } = useWeightLog();
-	const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
-	const { data: workoutData, refetch: refetchWorkouts } = useWorkouts();
-	const { data: stepData, refetch: refetchSteps } = useSteps();
-	const hasData =
-		weightData.length > 0 ||
-		nutritionData.length > 0 ||
-		workoutData.length > 0 ||
-		stepData.length > 0;
+function Segmented({ label, options, value, onChange }) {
+	return (
+		<div className="settings-seg" role="group" aria-label={label}>
+			{options.map((o) => (
+				<button
+					key={o.value}
+					type="button"
+					aria-pressed={value === o.value}
+					className={value === o.value ? "on" : ""}
+					onClick={() => onChange(o.value)}
+				>
+					{o.label}
+				</button>
+			))}
+		</div>
+	);
+}
 
-	// ── Goals form state ─────────────────────────────────────────────────────
-	const [form, setForm] = useState({
-		calorieTargetTraining: "",
-		calorieTargetRest: "",
-		proteinTarget: "",
-	});
-	const [saved, setSaved] = useState(false);
+function Switch({ ariaLabel, on, saving, onToggle }) {
+	return (
+		<>
+			{saving && <span className="settings-saved">Saving…</span>}
+			<span className="settings-value">{on ? "On" : "Off"}</span>
+			<button
+				type="button"
+				className={"settings-switch" + (on ? " on" : "")}
+				aria-label={ariaLabel}
+				aria-pressed={on}
+				disabled={saving}
+				onClick={onToggle}
+			/>
+		</>
+	);
+}
 
-	// ── Account / verify state ───────────────────────────────────────────────
-	const [currentPassword, setCurrentPassword] = useState("");
-	const [passwordVerified, setPasswordVerified] = useState(false);
-	const [verifying, setVerifying] = useState(false);
-	const [verifyError, setVerifyError] = useState(null);
-	const [credForm, setCredForm] = useState({
-		newUsername: "",
-		newPassword: "",
-		email: "",
-	});
-	// The saved email; the form field is only sent when it differs from this.
-	const [currentEmail, setCurrentEmail] = useState("");
-	const [credSaving, setCredSaving] = useState(false);
-	const [credSaved, setCredSaved] = useState(false);
-	const [credError, setCredError] = useState(null);
+function Field({ id, label, children }) {
+	return (
+		<div className="settings-field">
+			<label htmlFor={id}>{label}</label>
+			{children}
+		</div>
+	);
+}
 
-	// ── Import state ─────────────────────────────────────────────────────────
-	const [importStatus, setImportStatus] = useState(null);
-	const [importing, setImporting] = useState(false);
-	const fileInputRef = useRef(null);
+function FormActions({ submitLabel, busy, disabled, onCancel, children }) {
+	return (
+		<div className="settings-actions">
+			<button
+				className="btn btn-primary"
+				type="submit"
+				disabled={busy || disabled}
+			>
+				{busy ? "Saving..." : submitLabel}
+			</button>
+			<button className="btn" type="button" onClick={onCancel}>
+				Cancel
+			</button>
+			{children}
+		</div>
+	);
+}
 
-	// ── Privacy state ────────────────────────────────────────────────────────
-	const [shareData, setShareData] = useState(false);
-	const [shareCalendar, setShareCalendar] = useState(false);
-	const [privacyLoading, setPrivacyLoading] = useState(true);
-	const [privacySaving, setPrivacySaving] = useState(false);
-	const [privacyError, setPrivacyError] = useState(null);
+const apiError = (err, fallback) => err.response?.data?.message ?? fallback;
 
-	// ── Load email on mount ──────────────────────────────────────────────────
-	useEffect(() => {
-		api
-			.get("/profile/email")
-			.then((res) => {
-				setCurrentEmail(res.data.email ?? "");
-				setCredForm((f) => ({ ...f, email: res.data.email ?? "" }));
-			})
-			.catch(() => {});
-	}, []);
+// ── Forms ───────────────────────────────────────────────────────────────────
 
-	// ── Load privacy on mount ───────────────────────────────────────────────
-	useEffect(() => {
-		api
-			.get("/profile/privacy")
-			.then((res) => {
-				setShareData(Boolean(res.data.shareData));
-				setShareCalendar(Boolean(res.data.shareCalendar));
-			})
-			.catch(() => setPrivacyError("Could not load privacy setting."))
-			.finally(() => setPrivacyLoading(false));
-	}, []);
+function GoalsForm({ goals, saving, error, saveGoals, onSaved, onCancel }) {
+	const initial = {
+		calorieTargetTraining: String(goals.calorieTargetTraining ?? ""),
+		calorieTargetRest: String(goals.calorieTargetRest ?? ""),
+		proteinTarget: String(goals.proteinTarget ?? ""),
+	};
+	const [form, setForm] = useState(initial);
+	const dirty = Object.keys(initial).some((k) => form[k] !== initial[k]);
 
-	async function updatePrivacy(key) {
-		const current = key === "shareData" ? shareData : shareCalendar;
-		const setter = key === "shareData" ? setShareData : setShareCalendar;
-		setPrivacySaving(true);
-		setPrivacyError(null);
-		setter(!current); // optimistic
-		try {
-			await api.put("/profile/privacy", {
-				shareData,
-				shareCalendar,
-				[key]: !current,
-			});
-		} catch (err) {
-			setter(current); // revert
-			setPrivacyError(
-				err.response?.data?.message ?? "Failed to update privacy.",
-			);
-		} finally {
-			setPrivacySaving(false);
-		}
-	}
-
-	// ── Sync goals form when hook resolves ──────────────────────────────────
-	useEffect(() => {
-		if (!loading) {
-			setForm({
-				calorieTargetTraining: goals.calorieTargetTraining,
-				calorieTargetRest: goals.calorieTargetRest,
-				proteinTarget: goals.proteinTarget,
-			});
-		}
-	}, [loading, goals]);
-
-	// ── Goals handlers ───────────────────────────────────────────────────────
 	async function handleSubmit(e) {
 		e.preventDefault();
-		setSaved(false);
 		try {
 			await saveGoals({
 				calorieTargetTraining: parseInt(form.calorieTargetTraining, 10),
 				calorieTargetRest: parseInt(form.calorieTargetRest, 10),
 				proteinTarget: parseInt(form.proteinTarget, 10),
 			});
-			setSaved(true);
-			setTimeout(() => setSaved(false), 3000);
+			onSaved();
 		} catch {
 			/* error shown via hook */
 		}
 	}
 
-	function handleChange(e) {
-		const { name, value } = e.target;
-		setSaved(false);
-		setForm((f) => ({ ...f, [name]: value }));
-	}
+	const input = (name, label, unit) => (
+		<Field id={name} label={label}>
+			<span className="settings-suffix">
+				<input
+					id={name}
+					name={name}
+					type="number"
+					min="1"
+					className="settings-input"
+					value={form[name]}
+					onChange={(e) => setForm((f) => ({ ...f, [name]: e.target.value }))}
+					required
+				/>
+				<span>{unit}</span>
+			</span>
+		</Field>
+	);
 
-	// ── Account handlers ─────────────────────────────────────────────────────
-	function handleCredChange(e) {
-		const { name, value } = e.target;
-		setCredSaved(false);
-		setCredError(null);
-		setCredForm((f) => ({ ...f, [name]: value }));
-	}
+	return (
+		<form className="settings-form" onSubmit={handleSubmit}>
+			<div className="settings-fields">
+				{input("calorieTargetTraining", "Training day", "kcal")}
+				{input("calorieTargetRest", "Rest day", "kcal")}
+				{input("proteinTarget", "Daily protein", "g")}
+			</div>
+			<p className="settings-hint">
+				Today uses the training or rest target based on the day type you pick.
+			</p>
+			{error && <p className="settings-error">{error}</p>}
+			<FormActions
+				submitLabel="Save goals"
+				busy={saving}
+				disabled={!dirty}
+				onCancel={onCancel}
+			>
+				{dirty && <span className="settings-dirty">● Unsaved changes</span>}
+			</FormActions>
+		</form>
+	);
+}
 
-	async function handleVerify(e) {
+function CurrentPassword({ value, onChange }) {
+	return (
+		<Field id="currentPassword" label="Current password">
+			<input
+				id="currentPassword"
+				type="password"
+				autoComplete="current-password"
+				className="settings-input"
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+				required
+			/>
+		</Field>
+	);
+}
+
+function UsernameForm({ onDone, onCancel }) {
+	const login = useAuthStore((s) => s.login);
+	const [newUsername, setNewUsername] = useState("");
+	const [currentPassword, setCurrentPassword] = useState("");
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState(null);
+
+	async function handleSubmit(e) {
 		e.preventDefault();
-		setVerifyError(null);
-		setVerifying(true);
+		setError(null);
+		setBusy(true);
 		try {
-			await api.post("/profile/verify-password", { password: currentPassword });
-			setPasswordVerified(true);
+			const res = await api.put("/profile/credentials", {
+				currentPassword,
+				newUsername: newUsername.trim(),
+			});
+			login(res.data.username);
+			onDone();
 		} catch (err) {
-			setVerifyError(err.response?.data?.message ?? "Incorrect password.");
+			setError(apiError(err, "Failed to change username."));
 		} finally {
-			setVerifying(false);
+			setBusy(false);
 		}
 	}
 
-	async function handleCredSubmit(e) {
+	return (
+		<form className="settings-form" onSubmit={handleSubmit}>
+			<div className="settings-fields settings-fields-2">
+				<Field id="newUsername" label="New username">
+					<input
+						id="newUsername"
+						type="text"
+						autoComplete="username"
+						className="settings-input"
+						value={newUsername}
+						onChange={(e) => setNewUsername(e.target.value)}
+						minLength={3}
+						maxLength={50}
+						required
+					/>
+				</Field>
+				<CurrentPassword
+					value={currentPassword}
+					onChange={setCurrentPassword}
+				/>
+			</div>
+			{error && <p className="settings-error">{error}</p>}
+			<FormActions
+				submitLabel="Save username"
+				busy={busy}
+				onCancel={onCancel}
+			/>
+		</form>
+	);
+}
+
+function EmailForm({ currentEmail, onDone, onCancel }) {
+	const [email, setEmail] = useState("");
+	const [currentPassword, setCurrentPassword] = useState("");
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState(null);
+
+	async function handleSubmit(e) {
 		e.preventDefault();
-		setCredSaved(false);
-		setCredError(null);
-		const newEmail = credForm.email.trim();
-		const emailChanged = newEmail !== "" && newEmail !== currentEmail;
-		if (!credForm.newUsername.trim() && !credForm.newPassword && !emailChanged) {
-			setCredError("Enter a new username, password, or email.");
+		setError(null);
+		const newEmail = email.trim();
+		if (newEmail === currentEmail) {
+			setError("That's already your email.");
 			return;
 		}
-		setCredSaving(true);
+		setBusy(true);
 		try {
-			const promises = [];
-			if (credForm.newUsername.trim() || credForm.newPassword) {
-				promises.push(
-					api
-						.put("/profile/credentials", {
-							currentPassword,
-							newUsername: credForm.newUsername.trim() || undefined,
-							newPassword: credForm.newPassword || undefined,
-						})
-						.then((res) => login(res.data.username)),
-				);
-			}
-			if (emailChanged) {
-				promises.push(api.put("/profile/email", { email: newEmail }));
-			}
-			await Promise.all(promises);
-			if (emailChanged) setCurrentEmail(newEmail);
-			setCurrentPassword("");
-			setPasswordVerified(false);
-			setCredForm((f) => ({
-				newUsername: "",
-				newPassword: "",
-				email: f.email,
-			}));
-			setCredSaved(true);
-			setTimeout(() => setCredSaved(false), 3000);
+			await api.post("/profile/verify-password", { password: currentPassword });
+			await api.put("/profile/email", { email: newEmail });
+			onDone(newEmail);
 		} catch (err) {
-			setCredError(err.response?.data?.message ?? "Failed to update account.");
+			setError(apiError(err, "Failed to change email."));
 		} finally {
-			setCredSaving(false);
+			setBusy(false);
 		}
 	}
 
-	// ── Export / Import helpers ──────────────────────────────────────────────
-	function buildExportData() {
-		const allDates = [
-			...new Set([
-				...weightData.map((x) => x.logDate),
-				...nutritionData.map((x) => x.logDate),
-				...workoutData.map((x) => x.sessionDate),
-				...stepData.map((x) => x.logDate),
-			]),
-		].sort((a, b) => b.localeCompare(a));
+	return (
+		<form className="settings-form" onSubmit={handleSubmit}>
+			<div className="settings-fields settings-fields-2">
+				<Field id="newEmail" label="New email">
+					<input
+						id="newEmail"
+						type="email"
+						autoComplete="email"
+						className="settings-input"
+						placeholder={currentEmail}
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						required
+					/>
+				</Field>
+				<CurrentPassword
+					value={currentPassword}
+					onChange={setCurrentPassword}
+				/>
+			</div>
+			{error && <p className="settings-error">{error}</p>}
+			<FormActions submitLabel="Save email" busy={busy} onCancel={onCancel} />
+		</form>
+	);
+}
 
-		const rows = buildDayRows(
-			allDates,
-			weightData,
-			nutritionData,
-			workoutData,
-			stepData,
-		);
+function PasswordForm({ onDone, onCancel }) {
+	const [form, setForm] = useState({ current: "", next: "", confirm: "" });
+	const [show, setShow] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState(null);
+	const type = show ? "text" : "password";
+	const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
-		const statsData = rows.map((row) => ({
-			Date: formatDate(row.date),
-			Weight: row.weight != null ? row.weight : "",
-			Calories: row.calories != null ? row.calories : "",
-			Protein: row.protein != null ? row.protein : "",
-			Steps: row.steps != null ? row.steps : "",
-			Workout: row.workout ?? "",
-		}));
-
-		const workoutRows = [];
-		const cardioRows = [];
-
-		for (const row of rows) {
-			if (!row.workoutEntry?.exerciseSets?.length) continue;
-			const allSets = row.workoutEntry.exerciseSets;
-
-			const strengthSets = allSets.filter(
-				(s) => s.distanceMiles == null && s.durationSeconds == null,
-			);
-			const cardioSets = allSets.filter(
-				(s) => s.distanceMiles != null || s.durationSeconds != null,
-			);
-
-			const groups = groupByExercise(strengthSets);
-			for (const g of groups) {
-				const exportRow = {
-					Date: formatDate(row.date),
-					Exercise: g.name,
-					Weight: g.weight,
-				};
-				for (const s of g.sets) {
-					exportRow[`Set ${s.setNumber}`] = s.reps != null ? s.reps : "";
-				}
-				workoutRows.push(exportRow);
-			}
-
-			for (const s of cardioSets) {
-				cardioRows.push({
-					Date: formatDate(row.date),
-					Exercise: s.exerciseName,
-					Set: s.setNumber,
-					"Distance (mi)":
-						s.distanceMiles != null ? parseFloat(s.distanceMiles) : "",
-					"Duration (sec)": s.durationSeconds != null ? s.durationSeconds : "",
-				});
-			}
+	async function handleSubmit(e) {
+		e.preventDefault();
+		setError(null);
+		if (form.next.length < MIN_PASSWORD) {
+			setError(`New password must be at least ${MIN_PASSWORD} characters.`);
+			return;
 		}
-
-		const maxSets = workoutRows.reduce((max, row) => {
-			const nums = Object.keys(row)
-				.filter((k) => k.startsWith("Set "))
-				.map((k) => parseInt(k.replace("Set ", "")));
-			return Math.max(max, ...nums, 0);
-		}, 0);
-		const setHeaders = Array.from(
-			{ length: maxSets },
-			(_, i) => `Set ${i + 1}`,
-		);
-		const normalizedWorkoutRows = workoutRows.map((row) => {
-			const normalized = {
-				Date: row.Date,
-				Exercise: row.Exercise,
-				Weight: row.Weight,
-			};
-			for (const h of setHeaders) normalized[h] = row[h] ?? "";
-			return normalized;
-		});
-
-		// Build nutrition rows (one per meal) from the raw nutritionData hook
-		const nutritionRows = [];
-		for (const entry of nutritionData) {
-			if (!entry.meals?.length) continue;
-			for (const meal of entry.meals) {
-				const dayType =
-					(entry.dayType ?? "training").charAt(0).toUpperCase() +
-					(entry.dayType ?? "training").slice(1);
-				nutritionRows.push({
-					Date: formatDate(entry.logDate),
-					"Day Type": dayType,
-					Label: meal.mealLabel ?? "",
-					Meal: meal.mealName ?? "",
-					Calories: meal.calories ?? "",
-					Protein: meal.proteinGrams ?? "",
-				});
-			}
+		if (form.next !== form.confirm) {
+			setError("Passwords don't match.");
+			return;
 		}
-
-		return { statsData, normalizedWorkoutRows, cardioRows, nutritionRows };
+		setBusy(true);
+		try {
+			await api.put("/profile/credentials", {
+				currentPassword: form.current,
+				newPassword: form.next,
+			});
+			onDone();
+		} catch (err) {
+			setError(apiError(err, "Failed to change password."));
+		} finally {
+			setBusy(false);
+		}
 	}
 
-	function handleExportXlsx() {
-		const { statsData, normalizedWorkoutRows, cardioRows, nutritionRows } =
-			buildExportData();
-		const ws1 = XLSX.utils.json_to_sheet(statsData);
-		const ws2 = XLSX.utils.json_to_sheet(
-			normalizedWorkoutRows.length
-				? normalizedWorkoutRows
-				: [{ Date: "", Exercise: "", Weight: "" }],
-		);
-		const ws3 = XLSX.utils.json_to_sheet(
-			cardioRows.length
-				? cardioRows
-				: [
-						{
-							Date: "",
-							Exercise: "",
-							Set: "",
-							"Distance (mi)": "",
-							"Duration (sec)": "",
-						},
-					],
-		);
-		const ws4 = XLSX.utils.json_to_sheet(
-			nutritionRows.length
-				? nutritionRows
-				: [
-						{
-							Date: "",
-							"Day Type": "",
-							Label: "",
-							Meal: "",
-							Calories: "",
-							Protein: "",
-						},
-					],
-		);
-		const wb = XLSX.utils.book_new();
-		XLSX.utils.book_append_sheet(wb, ws1, "Total Stats");
-		XLSX.utils.book_append_sheet(wb, ws2, "Workouts");
-		XLSX.utils.book_append_sheet(wb, ws3, "Cardio");
-		XLSX.utils.book_append_sheet(wb, ws4, "Nutrition");
-		XLSX.writeFile(wb, "total-stats.xlsx");
+	return (
+		<form className="settings-form" onSubmit={handleSubmit}>
+			<div className="settings-fields">
+				<Field id="currentPassword" label="Current password">
+					<input
+						id="currentPassword"
+						type={type}
+						autoComplete="current-password"
+						className="settings-input"
+						value={form.current}
+						onChange={set("current")}
+						required
+					/>
+				</Field>
+				<Field id="newPassword" label="New password">
+					<input
+						id="newPassword"
+						type={type}
+						autoComplete="new-password"
+						className="settings-input"
+						value={form.next}
+						onChange={set("next")}
+						required
+					/>
+				</Field>
+				<Field id="confirmPassword" label="Confirm new password">
+					<input
+						id="confirmPassword"
+						type={type}
+						autoComplete="new-password"
+						className="settings-input"
+						value={form.confirm}
+						onChange={set("confirm")}
+						required
+					/>
+				</Field>
+			</div>
+			<label className="settings-check">
+				<input
+					type="checkbox"
+					checked={show}
+					onChange={(e) => setShow(e.target.checked)}
+				/>
+				Show passwords
+			</label>
+			<p className="settings-hint">At least {MIN_PASSWORD} characters.</p>
+			{error && <p className="settings-error">{error}</p>}
+			<FormActions
+				submitLabel="Update password"
+				busy={busy}
+				onCancel={onCancel}
+			/>
+		</form>
+	);
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
+
+export default function Settings() {
+	const navigate = useNavigate();
+	const { goals, loading, saving, error, saveGoals } = useUserProfile();
+	const { unit, toggleUnit, toDisplay } = useWeightUnit();
+	const [, , themeMode, setThemeMode] = useTheme();
+	const username = useAuthStore((s) => s.username);
+	const clearAuth = useAuthStore((s) => s.logout);
+
+	// ── Data hooks (export/import, privacy preview) ──────────────────────────
+	const { data: weightData, refetch: refetchWeight } = useWeightLog();
+	const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
+	const { data: workoutData, refetch: refetchWorkouts } = useWorkouts();
+	const { data: stepData, refetch: refetchSteps } = useSteps();
+	const { data: prs } = usePRs();
+	const exportData = { weightData, nutritionData, workoutData, stepData };
+	const hasData =
+		weightData.length > 0 ||
+		nutritionData.length > 0 ||
+		workoutData.length > 0 ||
+		stepData.length > 0;
+
+	// One editable row open at a time; "Saved!" shows on the row just saved.
+	const [openRow, setOpenRow] = useState(null);
+	const [savedRow, setSavedRow] = useState(null);
+	const [currentEmail, setCurrentEmail] = useState("");
+
+	// ── Import state ─────────────────────────────────────────────────────────
+	const [importResult, setImportResult] = useState(null);
+	const [importing, setImporting] = useState(false);
+	const fileInputRef = useRef(null);
+
+	// ── Privacy state ────────────────────────────────────────────────────────
+	const [privacy, setPrivacy] = useState({
+		shareData: false,
+		shareCalendar: false,
+	});
+	const [privacyLoading, setPrivacyLoading] = useState(true);
+	const [privacySaving, setPrivacySaving] = useState(null);
+	const [privacyError, setPrivacyError] = useState(null);
+
+	useEffect(() => {
+		api
+			.get("/profile/email")
+			.then((res) => setCurrentEmail(res.data.email ?? ""))
+			.catch(() => {});
+	}, []);
+
+	useEffect(() => {
+		api
+			.get("/profile/privacy")
+			.then((res) =>
+				setPrivacy({
+					shareData: Boolean(res.data.shareData),
+					shareCalendar: Boolean(res.data.shareCalendar),
+				}),
+			)
+			.catch(() => setPrivacyError("Could not load privacy setting."))
+			.finally(() => setPrivacyLoading(false));
+	}, []);
+
+	useEffect(() => {
+		if (!savedRow) return;
+		const t = setTimeout(() => setSavedRow(null), 3000);
+		return () => clearTimeout(t);
+	}, [savedRow]);
+
+	function toggleRow(row) {
+		setSavedRow(null);
+		setOpenRow((current) => (current === row ? null : row));
 	}
 
-	function handleExportJson() {
-		const { statsData, normalizedWorkoutRows, cardioRows, nutritionRows } =
-			buildExportData();
-		const json = JSON.stringify(
-			{
-				totalStats: statsData,
-				workouts: normalizedWorkoutRows,
-				cardio: cardioRows,
-				nutrition: nutritionRows,
-			},
-			null,
-			2,
-		);
-		const blob = new Blob([json], { type: "application/json" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = "total-stats.json";
-		a.click();
-		URL.revokeObjectURL(url);
+	function finishRow(row) {
+		setOpenRow(null);
+		setSavedRow(row);
+	}
+
+	async function updatePrivacy(key) {
+		const next = { ...privacy, [key]: !privacy[key] };
+		setPrivacySaving(key);
+		setPrivacyError(null);
+		setPrivacy(next); // optimistic
+		try {
+			await api.put("/profile/privacy", next);
+		} catch (err) {
+			setPrivacy(privacy); // revert
+			setPrivacyError(apiError(err, "Failed to update privacy."));
+		} finally {
+			setPrivacySaving(null);
+		}
 	}
 
 	async function handleImportJson(e) {
@@ -430,422 +702,265 @@ export default function Settings() {
 		if (!file) return;
 
 		setImporting(true);
-		setImportStatus(null);
+		setImportResult(null);
 		try {
-			const text = await file.text();
-			const payload = JSON.parse(text);
+			const payload = JSON.parse(await file.text());
 			const res = await api.post("/import", payload);
-			const {
-				weightImported,
-				weightSkipped,
-				nutritionImported,
-				nutritionSkipped,
-				workoutsImported,
-				workoutsSkipped,
-				stepsImported = 0,
-				stepsSkipped = 0,
-			} = res.data;
-			setImportStatus({
-				ok: true,
-				message: `imported: ${weightImported} weight, ${nutritionImported} nutrition, ${workoutsImported} workouts, ${stepsImported} steps  |  skipped: ${weightSkipped} weight, ${nutritionSkipped} nutrition, ${workoutsSkipped} workouts, ${stepsSkipped} steps`,
-			});
+			setImportResult({ ok: true, fileName: file.name, counts: res.data });
 			refetchWeight();
 			refetchNutrition();
 			refetchWorkouts();
 			refetchSteps();
 		} catch {
-			setImportStatus({
-				ok: false,
-				message: "Import failed — check file format",
-			});
+			setImportResult({ ok: false });
 		} finally {
 			setImporting(false);
 		}
 	}
 
-	// ── Render ──────────────────────────────────────────────────────────────
+	function logout() {
+		api.post("/auth/logout").catch(() => {});
+		clearAuth();
+	}
+
+	const goalsSummary = loading
+		? "Loading…"
+		: `${goals.calorieTargetTraining.toLocaleString()} / ${goals.calorieTargetRest.toLocaleString()} kcal · ${goals.proteinTarget} g`;
+
+	const topLifts = [...(prs ?? [])]
+		.sort((a, b) => Number(b.maxWeightLbs) - Number(a.maxWeightLbs))
+		.slice(0, 2)
+		.map(
+			(p) => `${p.exerciseName} ${toDisplay(Number(p.maxWeightLbs))} ${unit}`,
+		);
+	const leaderboardHint = topLifts.length
+		? `Others see: ${[username, ...topLifts].join(" · ")}`
+		: "Your username, exercise names and best lifts";
+
 	return (
 		<div className="settings-page">
-			<div className="settings-header">
-				<h1 className="settings-title">Settings</h1>
-				<p className="settings-sub">
-					Manage your account, goals, and preferences
-				</p>
-			</div>
+			<h1 className="settings-title">Settings</h1>
 
-			{/* ── Goals ── */}
-			<section className="settings-card">
-				<header className="settings-card-head">
-					<h2 className="settings-card-title">Goals</h2>
-					<p className="settings-card-desc">
-						Calorie and protein targets used across stats pages.
-					</p>
-				</header>
-				<div className="settings-card-body">
-					{loading ? (
-						<p className="settings-loading">Loading…</p>
-					) : (
-						<form onSubmit={handleSubmit}>
-							<div className="settings-grid-2">
-								<div className="settings-field-stacked">
-									<label htmlFor="calorieTargetTraining">Training Day</label>
-									<div className="settings-input-row">
-										<input
-											id="calorieTargetTraining"
-											name="calorieTargetTraining"
-											type="number"
-											min="1"
-											value={form.calorieTargetTraining}
-											onChange={handleChange}
-											required
-										/>
-										<span className="settings-unit">kcal</span>
-									</div>
-								</div>
+			<Group title="Goals">
+				<EditRow
+					label="Calorie & protein goals"
+					value={goalsSummary}
+					saved={savedRow === "goals"}
+					open={openRow === "goals"}
+					disabled={loading}
+					onToggle={() => toggleRow("goals")}
+				>
+					<GoalsForm
+						goals={goals}
+						saving={saving}
+						error={error}
+						saveGoals={saveGoals}
+						onSaved={() => finishRow("goals")}
+						onCancel={() => toggleRow("goals")}
+					/>
+				</EditRow>
+			</Group>
 
-								<div className="settings-field-stacked">
-									<label htmlFor="calorieTargetRest">Rest Day</label>
-									<div className="settings-input-row">
-										<input
-											id="calorieTargetRest"
-											name="calorieTargetRest"
-											type="number"
-											min="1"
-											value={form.calorieTargetRest}
-											onChange={handleChange}
-											required
-										/>
-										<span className="settings-unit">kcal</span>
-									</div>
-								</div>
-							</div>
+			<Group title="Preferences">
+				<Row label="Weight unit">
+					<Segmented
+						label="Weight unit"
+						options={[
+							{ value: "lbs", label: "lbs" },
+							{ value: "kg", label: "kg" },
+						]}
+						value={unit}
+						onChange={(next) => next !== unit && toggleUnit()}
+					/>
+				</Row>
+				<Row label="Theme">
+					<Segmented
+						label="Theme"
+						options={[
+							{ value: "light", label: "Light" },
+							{ value: "dark", label: "Dark" },
+							{ value: "system", label: "System" },
+						]}
+						value={themeMode}
+						onChange={setThemeMode}
+					/>
+				</Row>
+			</Group>
 
-							<div className="settings-field-stacked">
-								<label htmlFor="proteinTarget">Daily Protein</label>
-								<div className="settings-input-row">
-									<input
-										id="proteinTarget"
-										name="proteinTarget"
-										type="number"
-										min="1"
-										value={form.proteinTarget}
-										onChange={handleChange}
-										required
-									/>
-									<span className="settings-unit">g</span>
-								</div>
-							</div>
-
-							{error && <p className="settings-error">{error}</p>}
-
-							<div className="settings-actions">
-								<button
-									className="btn btn-primary"
-									type="submit"
-									disabled={saving}
-								>
-									{saving ? "Saving..." : "Save Goals"}
-								</button>
-								{saved && <span className="settings-saved">Saved!</span>}
-							</div>
-						</form>
-					)}
-				</div>
-			</section>
-
-			{/* ── Preferences ── */}
-			<section className="settings-card">
-				<header className="settings-card-head">
-					<h2 className="settings-card-title">Preferences</h2>
-					<p className="settings-card-desc">
-						Display options for stats and history pages.
-					</p>
-				</header>
-				<div className="settings-card-body">
-					<div className="settings-field">
-						<label>Weight Unit</label>
-						<div className="settings-input-row">
-							<button
-								type="button"
-								className="unit-toggle"
-								onClick={toggleUnit}
-								aria-label="Toggle weight unit"
-								aria-pressed={unit === "kg"}
-							>
-								<span
-									className={`unit-toggle-label${unit === "lbs" ? " active" : ""}`}
-								>
-									lbs
-								</span>
-								<span className={`toggle-track${unit === "kg" ? " on" : ""}`}>
-									<span className="toggle-thumb" />
-								</span>
-								<span
-									className={`unit-toggle-label${unit === "kg" ? " active" : ""}`}
-								>
-									kg
-								</span>
-							</button>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* ── Privacy ── */}
-			<section className="settings-card">
-				<header className="settings-card-head">
-					<h2 className="settings-card-title">Privacy</h2>
-					<p className="settings-card-desc">
-						Choose whether your workout data appears in public community views.
-						Only your username, exercise names, and aggregated stats are shown.
-					</p>
-				</header>
-				<div className="settings-card-body">
-					{privacyLoading ? (
-						<p className="settings-loading">Loading…</p>
-					) : (
-						<>
-							<PrivacyToggle
-								label="Share Data on Leaderboard"
+			<Group title="Privacy">
+				{privacyLoading ? (
+					<Row label="Loading…" />
+				) : (
+					<>
+						<Row label="Share data on leaderboard" hint={leaderboardHint}>
+							<Switch
 								ariaLabel="Toggle data sharing"
-								on={shareData}
-								disabled={privacySaving}
-								saving={privacySaving}
+								on={privacy.shareData}
+								saving={privacySaving === "shareData"}
 								onToggle={() => updatePrivacy("shareData")}
 							/>
-
-							<PrivacyToggle
-								label="Share on Community Calendar"
+						</Row>
+						<Row
+							label="Share on community calendar"
+							hint="The days you trained"
+						>
+							<Switch
 								ariaLabel="Toggle calendar sharing"
-								on={shareCalendar}
-								disabled={privacySaving}
+								on={privacy.shareCalendar}
+								saving={privacySaving === "shareCalendar"}
 								onToggle={() => updatePrivacy("shareCalendar")}
 							/>
+						</Row>
+					</>
+				)}
+				{privacyError && (
+					<p className="settings-error settings-row-note">{privacyError}</p>
+				)}
+			</Group>
 
-							{privacyError && <p className="settings-error">{privacyError}</p>}
-						</>
-					)}
-				</div>
-			</section>
+			<Group title="Integrations">
+				<button
+					type="button"
+					className="settings-row settings-row-button"
+					onClick={() => navigate("/claude-setup")}
+				>
+					<span className="settings-row-label">Claude integration</span>
+					<span className="settings-value">Set up</span>
+					<span className="settings-chevron" aria-hidden="true">
+						›
+					</span>
+				</button>
+			</Group>
 
-			{/* ── Integrations ── */}
-			<section className="settings-card">
-				<header className="settings-card-head">
-					<h2 className="settings-card-title">Integrations</h2>
-					<p className="settings-card-desc">
-						Log workouts, meals, and steps by chatting with Claude.
-					</p>
-				</header>
-				<div className="settings-card-body">
+			<Group title="Data">
+				<Row
+					label="Export a backup"
+					hint={hasData ? null : "Log some data to enable export."}
+				>
 					<button
-						className="btn btn-primary"
-						onClick={() => navigate("/claude-setup")}
+						className="btn btn-sm"
+						type="button"
+						aria-label="Export as JSON"
+						onClick={() => exportJson(exportData)}
+						disabled={!hasData}
 					>
-						Set up Claude integration →
+						JSON
 					</button>
-				</div>
-			</section>
-
-			{/* ── Data ── */}
-			<section className="settings-card">
-				<header className="settings-card-head">
-					<h2 className="settings-card-title settings-section-label">Data</h2>
-					<p className="settings-card-desc">
-						Back up your stats, move them to another device, or restore from a
-						previous export.
+					<button
+						className="btn btn-sm"
+						type="button"
+						aria-label="Export as XLSX"
+						onClick={() => exportXlsx(exportData)}
+						disabled={!hasData}
+					>
+						XLSX
+					</button>
+				</Row>
+				<Row
+					label="Import a backup"
+					hint="Restore a JSON export. Duplicates are skipped."
+				>
+					<button
+						className="btn btn-sm"
+						type="button"
+						disabled={importing}
+						onClick={() => fileInputRef.current?.click()}
+					>
+						{importing ? "Importing..." : "Choose JSON file"}
+					</button>
+					<input
+						ref={fileInputRef}
+						type="file"
+						accept=".json"
+						style={{ display: "none" }}
+						onChange={handleImportJson}
+					/>
+				</Row>
+				{importResult && !importResult.ok && (
+					<p className="settings-error settings-row-note">
+						Import failed — check file format
 					</p>
-				</header>
-				<div className="settings-card-body">
-					<div className="data-grid">
-						<div className="data-card">
-							<div className="data-card-header">
-								<span className="data-card-title">Export</span>
-								<span className="data-card-sub">
-									Download a copy of all your logged data.
-								</span>
-							</div>
-							<div className="data-card-body">
-								<button
-									className="btn btn-primary data-btn"
-									onClick={handleExportJson}
-									disabled={!hasData}
-								>
-									<span className="data-btn-label">Export as JSON</span>
-								</button>
-								<button
-									className="btn data-btn"
-									onClick={handleExportXlsx}
-									disabled={!hasData}
-								>
-									<span className="data-btn-label">Export as XLSX</span>
-								</button>
-							</div>
-							{!hasData && (
-								<p className="settings-help" style={{ margin: 0 }}>
-									Log some data to enable export.
-								</p>
-							)}
-						</div>
-
-						<div className="data-card">
-							<div className="data-card-header">
-								<span className="data-card-title">Import</span>
-								<span className="data-card-sub">
-									Restore a JSON export. Existing entries are kept; duplicates
-									are skipped.
-								</span>
-							</div>
-							<div className="data-card-body">
-								<button
-									className="btn data-btn"
-									disabled={importing}
-									onClick={() => fileInputRef.current?.click()}
-								>
-									<span className="data-btn-label">
-										{importing ? "Importing..." : "Choose JSON file"}
-									</span>
-								</button>
-								<input
-									ref={fileInputRef}
-									type="file"
-									accept=".json"
-									style={{ display: "none" }}
-									onChange={handleImportJson}
-								/>
-							</div>
-							{importStatus && (
-								<p
-									className={
-										"data-status" +
-										(importStatus.ok ? " data-status-ok" : " data-status-err")
-									}
-								>
-									{importStatus.message}
-								</p>
-							)}
-						</div>
+				)}
+				{importResult?.ok && (
+					<div className="settings-row-note">
+						<p className="settings-import-ok">
+							✓ Import complete · {importResult.fileName}
+						</p>
+						<table className="settings-import-table">
+							<thead>
+								<tr>
+									<th />
+									{IMPORT_TYPES.map((t) => (
+										<th key={t.key}>{t.label}</th>
+									))}
+								</tr>
+							</thead>
+							<tbody>
+								{["Imported", "Skipped"].map((kind) => (
+									<tr key={kind}>
+										<th scope="row">{kind}</th>
+										{IMPORT_TYPES.map((t) => (
+											<td key={t.key}>
+												{importResult.counts[`${t.key}${kind}`] ?? 0}
+											</td>
+										))}
+									</tr>
+								))}
+							</tbody>
+						</table>
 					</div>
-				</div>
-			</section>
+				)}
+			</Group>
 
-			{/* ── Account ── */}
-			<section className="settings-card">
-				<header className="settings-card-head">
-					<h2 className="settings-card-title">Account</h2>
-					<p className="settings-card-desc">
-						Update your username, email, or password. Verify your current
-						password to make changes.
-					</p>
-				</header>
-				<div className="settings-card-body">
-					<div className="settings-identity">
-						<div className="settings-identity-item">
-							<span className="settings-identity-label">Username</span>
-							<span className="settings-identity-value">{username ?? "—"}</span>
-						</div>
-						<div className="settings-identity-item">
-							<span className="settings-identity-label">Email</span>
-							<span className="settings-identity-value">
-								{currentEmail || "—"}
-							</span>
-						</div>
-					</div>
-
-					{!passwordVerified ? (
-						<form onSubmit={handleVerify} className="settings-credentials-form">
-							<div className="settings-field">
-								<label htmlFor="currentPassword">Current Password</label>
-								<div className="settings-input-row">
-									<input
-										id="currentPassword"
-										name="currentPassword"
-										type="password"
-										autoComplete="current-password"
-										value={currentPassword}
-										onChange={(e) => {
-											setCurrentPassword(e.target.value);
-											setVerifyError(null);
-										}}
-										required
-									/>
-								</div>
-							</div>
-
-							{verifyError && <p className="settings-error">{verifyError}</p>}
-
-							<div className="settings-actions">
-								<button
-									className="btn btn-primary"
-									type="submit"
-									disabled={verifying}
-								>
-									{verifying ? "Verifying..." : "Verify"}
-								</button>
-							</div>
-						</form>
-					) : (
-						<form
-							onSubmit={handleCredSubmit}
-							className="settings-credentials-form"
-						>
-							<div className="settings-field">
-								<label htmlFor="email">New Email</label>
-								<div className="settings-input-row">
-									<input
-										id="email"
-										name="email"
-										type="email"
-										autoComplete="email"
-										value={credForm.email}
-										onChange={handleCredChange}
-									/>
-								</div>
-							</div>
-
-							<div className="settings-field">
-								<label htmlFor="newUsername">New Username</label>
-								<div className="settings-input-row">
-									<input
-										id="newUsername"
-										name="newUsername"
-										type="text"
-										autoComplete="username"
-										value={credForm.newUsername}
-										onChange={handleCredChange}
-									/>
-								</div>
-							</div>
-
-							<div className="settings-field">
-								<label htmlFor="newPassword">New Password</label>
-								<div className="settings-input-row">
-									<input
-										id="newPassword"
-										name="newPassword"
-										type="password"
-										autoComplete="new-password"
-										value={credForm.newPassword}
-										onChange={handleCredChange}
-									/>
-								</div>
-							</div>
-
-							{credError && <p className="settings-error">{credError}</p>}
-
-							<div className="settings-actions">
-								<button
-									className="btn btn-primary"
-									type="submit"
-									disabled={credSaving}
-								>
-									{credSaving ? "Saving..." : "Save Account"}
-								</button>
-								{credSaved && <span className="settings-saved">Saved!</span>}
-							</div>
-						</form>
-					)}
-				</div>
-			</section>
+			<Group title="Account">
+				<EditRow
+					label="Username"
+					value={username ?? "—"}
+					saved={savedRow === "username"}
+					open={openRow === "username"}
+					onToggle={() => toggleRow("username")}
+				>
+					<UsernameForm
+						onDone={() => finishRow("username")}
+						onCancel={() => toggleRow("username")}
+					/>
+				</EditRow>
+				<EditRow
+					label="Email"
+					value={currentEmail || "—"}
+					saved={savedRow === "email"}
+					open={openRow === "email"}
+					onToggle={() => toggleRow("email")}
+				>
+					<EmailForm
+						currentEmail={currentEmail}
+						onDone={(newEmail) => {
+							setCurrentEmail(newEmail);
+							finishRow("email");
+						}}
+						onCancel={() => toggleRow("email")}
+					/>
+				</EditRow>
+				<EditRow
+					label="Password"
+					value="••••••••"
+					saved={savedRow === "password"}
+					open={openRow === "password"}
+					onToggle={() => toggleRow("password")}
+				>
+					<PasswordForm
+						onDone={() => finishRow("password")}
+						onCancel={() => toggleRow("password")}
+					/>
+				</EditRow>
+				<button
+					type="button"
+					className="settings-row settings-row-button settings-logout"
+					onClick={logout}
+				>
+					<span className="settings-row-label">Log out</span>
+				</button>
+			</Group>
 		</div>
 	);
 }
