@@ -110,6 +110,21 @@ public class SettingsPageTest extends BaseTest {
         settings.waitForActiveUnit(initial);
     }
 
+    @Test(priority = 8, dependsOnMethods = "weightUnitToggleSwitchesUnit")
+    public void weightUnitToggleWorksFromKeyboard() {
+        step("get current active unit");
+        String initial = settings.getActiveWeightUnit();
+        String other = "lbs".equals(initial) ? "kg" : "lbs";
+
+        step("press Enter on the focused unit switch");
+        settings.pressOnUnitToggle("Enter");
+        settings.waitForActiveUnit(other);
+
+        step("press Space to switch back");
+        settings.pressOnUnitToggle("Space");
+        settings.waitForActiveUnit(initial);
+    }
+
     @Test(priority = 9)
     public void claudeIntegrationButtonVisible() {
         step("verify Claude setup button is visible");

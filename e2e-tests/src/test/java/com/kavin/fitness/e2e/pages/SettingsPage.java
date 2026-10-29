@@ -15,8 +15,8 @@ public class SettingsPage {
     private static final String PROTEIN_INPUT = "#proteinTarget";
     private static final String SAVE_GOALS = "button.btn-primary:has-text(\"Save Goals\")";
     private static final String SAVED_MESSAGE = ".settings-saved";
-    private static final String UNIT_TOGGLE = ".unit-toggle[aria-label='Toggle weight unit']";
-    private static final String ACTIVE_UNIT = ".unit-toggle-label.active";
+    private static final String UNIT_TOGGLE = "button.unit-toggle[aria-label='Toggle weight unit']";
+    private static final String ACTIVE_UNIT = UNIT_TOGGLE + " .unit-toggle-label.active";
     private static final String CLAUDE_SETUP_BTN = "button:has-text(\"Claude integration\")";
 
     public SettingsPage(Page page) {
@@ -95,6 +95,13 @@ public class SettingsPage {
         page.locator(UNIT_TOGGLE).click();
     }
 
+    /** Focuses the unit switch and presses a key on it (no mouse). */
+    public void pressOnUnitToggle(String key) {
+        Locator toggle = page.locator(UNIT_TOGGLE);
+        toggle.focus();
+        toggle.press(key);
+    }
+
     public void waitForActiveUnit(String unit) {
         page.locator(ACTIVE_UNIT + ":has-text(\"" + unit + "\")").waitFor();
     }
@@ -106,7 +113,7 @@ public class SettingsPage {
     // ── Privacy / share-data toggle ─────────────────────────────────────────
 
     private static final String PRIVACY_SECTION = "h2.settings-card-title:has-text(\"Privacy\")";
-    private static final String SHARE_DATA_TOGGLE = "div.unit-toggle[aria-label='Toggle data sharing']";
+    private static final String SHARE_DATA_TOGGLE = "button.unit-toggle[aria-label='Toggle data sharing']";
     private static final String SHARE_DATA_ACTIVE_LABEL = SHARE_DATA_TOGGLE + " .unit-toggle-label.active";
     private static final String PRIVACY_SAVING = ".settings-saved:has-text(\"Saving\")";
 
@@ -139,7 +146,7 @@ public class SettingsPage {
 
     // ── Share-calendar toggle ───────────────────────────────────────────────
 
-    private static final String CALENDAR_TOGGLE       = "div.unit-toggle[aria-label='Toggle calendar sharing']";
+    private static final String CALENDAR_TOGGLE       = "button.unit-toggle[aria-label='Toggle calendar sharing']";
     private static final String CALENDAR_ACTIVE_LABEL = CALENDAR_TOGGLE + " .unit-toggle-label.active";
 
     public String getShareCalendarState() {

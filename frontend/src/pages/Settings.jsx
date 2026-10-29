@@ -26,21 +26,22 @@ function PrivacyToggle({
 		<div className="settings-field">
 			<label>{label}</label>
 			<div className="settings-input-row">
-				<div
+				<button
+					type="button"
 					className="unit-toggle"
-					onClick={disabled ? undefined : onToggle}
-					role="button"
+					onClick={onToggle}
+					disabled={disabled}
 					aria-label={ariaLabel}
 					aria-pressed={on}
 				>
 					<span className={`unit-toggle-label${!on ? " active" : ""}`}>
 						Off
 					</span>
-					<div className={`toggle-track${on ? " on" : ""}`}>
-						<div className="toggle-thumb" />
-					</div>
+					<span className={`toggle-track${on ? " on" : ""}`}>
+						<span className="toggle-thumb" />
+					</span>
 					<span className={`unit-toggle-label${on ? " active" : ""}`}>On</span>
-				</div>
+				</button>
 				{saving && <span className="settings-saved">Saving…</span>}
 			</div>
 		</div>
@@ -58,7 +59,7 @@ export default function Settings() {
 	const { data: weightData, refetch: refetchWeight } = useWeightLog();
 	const { data: nutritionData, refetch: refetchNutrition } = useNutrition();
 	const { data: workoutData, refetch: refetchWorkouts } = useWorkouts();
-	const { data: stepData } = useSteps();
+	const { data: stepData, refetch: refetchSteps } = useSteps();
 	const hasData =
 		weightData.length > 0 ||
 		nutritionData.length > 0 ||
@@ -83,6 +84,8 @@ export default function Settings() {
 		newPassword: "",
 		email: "",
 	});
+	// The saved email; the form field is only sent when it differs from this.
+	const [currentEmail, setCurrentEmail] = useState("");
 	const [credSaving, setCredSaving] = useState(false);
 	const [credSaved, setCredSaved] = useState(false);
 	const [credError, setCredError] = useState(null);
@@ -103,7 +106,10 @@ export default function Settings() {
 	useEffect(() => {
 		api
 			.get("/profile/email")
-			.then((res) => setCredForm((f) => ({ ...f, email: res.data.email })))
+			.then((res) => {
+				setCurrentEmail(res.data.email ?? "");
+				setCredForm((f) => ({ ...f, email: res.data.email ?? "" }));
+			})
 			.catch(() => {});
 	}, []);
 
@@ -201,11 +207,9 @@ export default function Settings() {
 		e.preventDefault();
 		setCredSaved(false);
 		setCredError(null);
-		if (
-			!credForm.newUsername.trim() &&
-			!credForm.newPassword &&
-			!credForm.email.trim()
-		) {
+		const newEmail = credForm.email.trim();
+		const emailChanged = newEmail !== "" && newEmail !== currentEmail;
+		if (!credForm.newUsername.trim() && !credForm.newPassword && !emailChanged) {
 			setCredError("Enter a new username, password, or email.");
 			return;
 		}
@@ -223,12 +227,11 @@ export default function Settings() {
 						.then((res) => login(res.data.username)),
 				);
 			}
-			if (credForm.email.trim()) {
-				promises.push(
-					api.put("/profile/email", { email: credForm.email.trim() }),
-				);
+			if (emailChanged) {
+				promises.push(api.put("/profile/email", { email: newEmail }));
 			}
 			await Promise.all(promises);
+			if (emailChanged) setCurrentEmail(newEmail);
 			setCurrentPassword("");
 			setPasswordVerified(false);
 			setCredForm((f) => ({
@@ -449,6 +452,7 @@ export default function Settings() {
 			refetchWeight();
 			refetchNutrition();
 			refetchWorkouts();
+			refetchSteps();
 		} catch {
 			setImportStatus({
 				ok: false,
@@ -561,26 +565,27 @@ export default function Settings() {
 					<div className="settings-field">
 						<label>Weight Unit</label>
 						<div className="settings-input-row">
-							<div
+							<button
+								type="button"
 								className="unit-toggle"
 								onClick={toggleUnit}
-								role="button"
 								aria-label="Toggle weight unit"
+								aria-pressed={unit === "kg"}
 							>
 								<span
 									className={`unit-toggle-label${unit === "lbs" ? " active" : ""}`}
 								>
 									lbs
 								</span>
-								<div className={`toggle-track${unit === "kg" ? " on" : ""}`}>
-									<div className="toggle-thumb" />
-								</div>
+								<span className={`toggle-track${unit === "kg" ? " on" : ""}`}>
+									<span className="toggle-thumb" />
+								</span>
 								<span
 									className={`unit-toggle-label${unit === "kg" ? " active" : ""}`}
 								>
 									kg
 								</span>
-							</div>
+							</button>
 						</div>
 					</div>
 				</div>
@@ -741,7 +746,7 @@ export default function Settings() {
 						<div className="settings-identity-item">
 							<span className="settings-identity-label">Email</span>
 							<span className="settings-identity-value">
-								{credForm.email || "—"}
+								{currentEmail || "—"}
 							</span>
 						</div>
 					</div>

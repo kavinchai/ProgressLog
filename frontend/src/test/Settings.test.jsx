@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import Settings from "../pages/Settings";
 import useAuthStore from "../store/authStore";
+import useUnitStore from "../store/unitStore";
 
 function renderSettings() {
 	return render(
@@ -797,5 +798,172 @@ describe("Settings — privacy / data sharing", () => {
 			});
 			expect(toggle).toHaveAttribute("aria-pressed", "true");
 		});
+	});
+});
+
+describe("Settings — import refreshes every data type", () => {
+	it("refetches steps after a successful import", async () => {
+		const refetchSteps = vi.fn();
+		useSteps.mockReturnValue({ data: [], refetch: refetchSteps });
+		api.post.mockResolvedValue({
+			data: {
+				weightImported: 0,
+				weightSkipped: 0,
+				nutritionImported: 0,
+				nutritionSkipped: 0,
+				workoutsImported: 0,
+				workoutsSkipped: 0,
+				stepsImported: 3,
+				stepsSkipped: 0,
+			},
+		});
+		setupProfile();
+		renderSettings();
+
+		const file = new File([JSON.stringify({ totalStats: [] })], "data.json", {
+			type: "application/json",
+		});
+		await userEvent.upload(document.querySelector('input[type="file"]'), file);
+
+		await waitFor(() => expect(refetchSteps).toHaveBeenCalled());
+	});
+});
+
+describe("Settings — unchanged email is not re-saved", () => {
+	async function verifyPassword() {
+		api.post.mockResolvedValue({});
+		setupProfile();
+		renderSettings();
+		await waitFor(() =>
+			expect(screen.getAllByText("alice@example.com").length).toBeGreaterThan(0),
+		);
+		await userEvent.type(screen.getByLabelText(/current password/i), "mypass");
+		await userEvent.click(screen.getByRole("button", { name: /verify/i }));
+		await screen.findByLabelText(/new username/i);
+	}
+
+	it("does not PUT /profile/email when only the username changes", async () => {
+		api.put.mockResolvedValue({ data: { username: "newbob" } });
+		await verifyPassword();
+
+		await userEvent.type(screen.getByLabelText(/new username/i), "newbob");
+		await userEvent.click(
+			screen.getByRole("button", { name: /save account/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(
+				"/profile/credentials",
+				expect.objectContaining({ newUsername: "newbob" }),
+			),
+		);
+		expect(api.put).not.toHaveBeenCalledWith(
+			"/profile/email",
+			expect.anything(),
+		);
+	});
+
+	it("keeps the saved email in the Account summary while typing a new one", async () => {
+		await verifyPassword();
+
+		const emailInput = screen.getByLabelText(/new email/i);
+		await userEvent.clear(emailInput);
+		await userEvent.type(emailInput, "typing@example.com");
+
+		expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+		expect(screen.queryByText("typing@example.com")).not.toBeInTheDocument();
+	});
+
+	it("shows the new email in the Account summary after it is saved", async () => {
+		api.put.mockResolvedValue({});
+		await verifyPassword();
+
+		const emailInput = screen.getByLabelText(/new email/i);
+		await userEvent.clear(emailInput);
+		await userEvent.type(emailInput, "new@example.com");
+		await userEvent.click(
+			screen.getByRole("button", { name: /save account/i }),
+		);
+
+		expect(await screen.findByText("new@example.com")).toBeInTheDocument();
+		expect(screen.queryByText("alice@example.com")).not.toBeInTheDocument();
+	});
+
+	it("shows the validation error when nothing was changed", async () => {
+		await verifyPassword();
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /save account/i }),
+		);
+
+		expect(
+			await screen.findByText(/enter a new username/i),
+		).toBeInTheDocument();
+		expect(api.put).not.toHaveBeenCalled();
+	});
+});
+
+describe("Settings — switches work from the keyboard", () => {
+	beforeEach(() => {
+		useUnitStore.setState({ unit: "lbs" });
+	});
+
+	it("the weight unit switch is a focusable button that reports its state", async () => {
+		setupProfile();
+		renderSettings();
+		const toggle = screen.getByRole("button", { name: /toggle weight unit/i });
+		expect(toggle.tagName).toBe("BUTTON");
+		expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+		toggle.focus();
+		await userEvent.keyboard("{Enter}");
+
+		expect(useUnitStore.getState().unit).toBe("kg");
+		expect(toggle).toHaveAttribute("aria-pressed", "true");
+	});
+
+	it("the data sharing switch toggles with the Space key", async () => {
+		api.put.mockResolvedValue({});
+		setupProfile();
+		renderSettings();
+		const toggle = await screen.findByRole("button", {
+			name: /toggle data sharing/i,
+		});
+		expect(toggle.tagName).toBe("BUTTON");
+
+		toggle.focus();
+		await userEvent.keyboard(" ");
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(
+				"/profile/privacy",
+				expect.objectContaining({ shareData: true }),
+			),
+		);
+	});
+
+	it("the calendar sharing switch is a focusable button", async () => {
+		setupProfile();
+		renderSettings();
+		const toggle = await screen.findByRole("button", {
+			name: /toggle calendar sharing/i,
+		});
+		expect(toggle.tagName).toBe("BUTTON");
+	});
+
+	it("disables a privacy switch while its change is saving", async () => {
+		let finish;
+		api.put.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+		setupProfile();
+		renderSettings();
+		const toggle = await screen.findByRole("button", {
+			name: /toggle data sharing/i,
+		});
+
+		await userEvent.click(toggle);
+		expect(toggle).toBeDisabled();
+
+		finish({});
+		await waitFor(() => expect(toggle).toBeEnabled());
 	});
 });
