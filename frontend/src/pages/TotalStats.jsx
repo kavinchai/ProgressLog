@@ -6,6 +6,8 @@ import useSteps from "../hooks/useSteps";
 import useUserProfile from "../hooks/useUserProfile";
 import useWeightUnit from "../hooks/useWeightUnit";
 import DayDetail from "../components/DayDetail";
+import Modal from "../components/Modal";
+import useMediaQuery, { MOBILE_QUERY } from "../hooks/useMediaQuery";
 import RangeSelector from "../components/RangeSelector";
 import {
 	DailyBarChart,
@@ -81,18 +83,20 @@ export default function TotalStats() {
 	const { goals } = useUserProfile();
 	const { unit, toDisplay } = useWeightUnit();
 
+	const isMobile = useMediaQuery(MOBILE_QUERY);
 	const [selectedDay, setSelectedDay] = useState(null);
 	const dayPanelRef = useRef(null);
 
-	// The day panel sits below the calendar, so bring it into view on select.
+	// Desktop: the day panel sits below the calendar, so bring it into view.
+	// Phones open the day in a bottom sheet instead.
 	useEffect(() => {
-		if (selectedDay) {
+		if (selectedDay && !isMobile) {
 			dayPanelRef.current?.scrollIntoView?.({
 				behavior: "smooth",
 				block: "start",
 			});
 		}
-	}, [selectedDay]);
+	}, [selectedDay, isMobile]);
 	const [logMonth, setLogMonth] = useState(null);
 	const [picker, setPicker] = useState(null);
 	const [metric, setMetric] = useState("calories");
@@ -193,6 +197,16 @@ export default function TotalStats() {
 		},
 	};
 	const active = METRICS[metric];
+
+	// Previous / next day inside the phone sheet; follows into the adjacent month.
+	function stepDay(delta) {
+		const d = new Date(`${selectedDay}T00:00:00`);
+		d.setDate(d.getDate() + delta);
+		const next = localDateStr(d);
+		if (next > today) return;
+		if (next.slice(0, 7) !== activeMonth) setLogMonth(next.slice(0, 7));
+		setSelectedDay(next);
+	}
 
 	function goMonth(ym) {
 		setLogMonth(ym);
@@ -369,18 +383,37 @@ export default function TotalStats() {
 
 			<div className="history-day-panel">
 				<div className="history-day-panel-head">
-					<div className="history-seg" role="group" aria-label="Color days by">
-						{Object.entries(METRICS).map(([key, m]) => (
-							<button
-								key={key}
-								type="button"
-								aria-pressed={metric === key}
-								onClick={() => setMetric(key)}
-							>
-								{m.label}
-							</button>
-						))}
-					</div>
+					{isMobile ? (
+						<select
+							className="history-metric-select"
+							aria-label="Color days by"
+							value={metric}
+							onChange={(e) => setMetric(e.target.value)}
+						>
+							{Object.entries(METRICS).map(([key, m]) => (
+								<option key={key} value={key}>
+									{m.label}
+								</option>
+							))}
+						</select>
+					) : (
+						<div
+							className="history-seg"
+							role="group"
+							aria-label="Color days by"
+						>
+							{Object.entries(METRICS).map(([key, m]) => (
+								<button
+									key={key}
+									type="button"
+									aria-pressed={metric === key}
+									onClick={() => setMetric(key)}
+								>
+									{m.label}
+								</button>
+							))}
+						</div>
+					)}
 					<span className="heatmap-legend">
 						<span>less</span>
 						{[0.12, 0.35, 0.6, 0.9].map((a) => (
@@ -459,8 +492,49 @@ export default function TotalStats() {
 				</div>
 			</div>
 
-			{/* Selected day opens full width under the calendar (like Weekly). */}
-			{selectedRow && (
+			{/* Phones: the selected day opens in a bottom sheet. */}
+			{selectedRow && isMobile && (
+				<Modal
+					title={shortDate(selectedDay)}
+					onClose={() => setSelectedDay(null)}
+				>
+					<div className="history-sheet-nav">
+						<button
+							type="button"
+							className="btn btn-sm"
+							aria-label="Previous day"
+							onClick={() => stepDay(-1)}
+						>
+							‹ Previous
+						</button>
+						<button
+							type="button"
+							className="btn btn-sm"
+							aria-label="Next day"
+							disabled={selectedDay >= today}
+							onClick={() => stepDay(1)}
+						>
+							Next ›
+						</button>
+					</div>
+					<DayDetail
+						key={selectedDay}
+						date={selectedDay}
+						weightEntry={selectedRow.weightEntry}
+						nutritionEntry={selectedRow.nutritionEntry}
+						workoutEntry={selectedRow.workoutEntry}
+						stepEntry={selectedRow.stepEntry}
+						onRefetchW={refetchWeight}
+						onRefetchN={refetchNutrition}
+						onRefetchWo={refetchWorkouts}
+						onRefetchS={refetchSteps}
+						showDelete={true}
+					/>
+				</Modal>
+			)}
+
+			{/* Desktop: the selected day opens full width under the calendar. */}
+			{selectedRow && !isMobile && (
 				<section
 					ref={dayPanelRef}
 					className="history-day-panel"
