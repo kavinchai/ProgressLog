@@ -1,9 +1,11 @@
 package com.kavin.fitness.controller;
 
+import com.kavin.fitness.dto.ExerciseMatchesDTO;
 import com.kavin.fitness.dto.ExerciseRequest;
 import com.kavin.fitness.dto.RenameSessionRequest;
 import com.kavin.fitness.dto.WorkoutSessionDTO;
 import com.kavin.fitness.dto.WorkoutSessionRequest;
+import com.kavin.fitness.service.ExerciseNameService;
 import com.kavin.fitness.service.WorkoutService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class WorkoutController {
 
     private final WorkoutService workoutService;
+    private final ExerciseNameService exerciseNameService;
     private final UserResolver userResolver;
 
     @GetMapping("/exercise-names")
@@ -30,6 +33,14 @@ public class WorkoutController {
             @AuthenticationPrincipal UserDetails principal) {
         return ResponseEntity.ok(
                 workoutService.getDistinctExerciseNames(userResolver.resolve(principal).getId()));
+    }
+
+    /** Existing lift names that a typed name may refer to ("lat pull down" → Lat Pulldowns). */
+    @GetMapping("/exercise-matches")
+    public ResponseEntity<ExerciseMatchesDTO> getExerciseMatches(
+            @AuthenticationPrincipal UserDetails principal, @RequestParam String name) {
+        return ResponseEntity.ok(
+                exerciseNameService.findMatches(userResolver.resolve(principal).getId(), name));
     }
 
     @GetMapping

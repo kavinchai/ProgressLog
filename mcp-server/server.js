@@ -4,6 +4,7 @@ import express from "express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { planMealWrite } from "./mealSlots.js";
+import { planExerciseNames } from "./nameMatches.js";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -171,6 +172,7 @@ function createMcpServer(apiKey) {
 		"log_workout",
 		`Log a strength/lifting workout session. Use ONLY for exercises with reps and weight (e.g. Bench Press, Squat, Deadlift).
 ProgressLog only tracks lifts: runs, walks, cardio, sports and timed holds (e.g. planks) can't be logged — tell the user that instead of logging them.
+Names are matched to the lifts the user already logs: a clear spelling variant is saved under the existing name (e.g. "lat pull down" → "Lat Pulldowns"). If a name is ambiguous, nothing is logged and the result lists the options — ask the user which they meant, then call again with that exact name (or put the name in keepNames if it's a new lift).
 Examples:
   "5x5 bench press at 135 lbs" → exercises: [{ exerciseName: "Bench Press", sets: [{setNumber:1,reps:5,weightLbs:135}, ...] }]
   "3 sets of 10 squats at 185 lbs" → exercises: [{ exerciseName: "Squat", sets: [{setNumber:1,reps:10,weightLbs:185}, ...] }]`,
@@ -210,14 +212,50 @@ Examples:
 				)
 				.min(1)
 				.describe("Array of strength exercises performed"),
+			keepNames: z
+				.array(z.string())
+				.optional()
+				.describe(
+					"Exercise names the user confirmed are new lifts — logged exactly as given, without matching to existing names.",
+				),
 		},
 		withDedup(
 			apiKey,
 			"log_workout",
-			async ({ sessionName, date, exercises }) => {
+			async ({ sessionName, date, exercises, keepNames }) => {
 				const targetDate = date ?? todayStr();
+
+				// Point each name at the lift the user already logs, or ask first.
+				const typedNames = [...new Set(exercises.map((e) => e.exerciseName))];
+				const matchesByName = Object.fromEntries(
+					await Promise.all(
+						typedNames.map(async (name) => [
+							name,
+							await api(
+								"GET",
+								`/workouts/exercise-matches?name=${encodeURIComponent(name)}`,
+							).catch(() => ({})),
+						]),
+					),
+				);
+				const plan = planExerciseNames(typedNames, matchesByName, keepNames);
+				if (plan.ask.length > 0) {
+					const lines = plan.ask.map(
+						(a) =>
+							`• "${a.name}" could be ${a.options.map((o) => `"${o}"`).join(" or ")}`,
+					);
+					return {
+						content: [
+							{
+								type: "text",
+								text: `Nothing logged yet — some names match more than one existing lift:\n${lines.join("\n")}\nAsk the user which they meant (or whether it's a new lift), then call log_workout again with the exact name, or list a new lift in keepNames.`,
+							},
+						],
+					};
+				}
+
 				const mappedExercises = exercises.map((e) => ({
-					exerciseName: e.exerciseName,
+					exerciseName: plan.names[e.exerciseName],
 					sets: e.sets.map((s) => ({
 						setNumber: s.setNumber,
 						reps: s.reps,
@@ -231,18 +269,21 @@ Examples:
 					mappedExercises,
 				);
 
-				const summary = exercises
+				const summary = mappedExercises
 					.map((e) => {
 						const setsDesc = e.sets.map((s) => describeSet(s)).join(", ");
 						return `• ${e.exerciseName}: ${setsDesc}`;
 					})
 					.join("\n");
+				const renamedNote = plan.renamed.length
+					? `\n(Used existing names: ${plan.renamed.map((r) => `"${r.from}" → ${r.to}`).join(", ")})`
+					: "";
 
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Logged workout${sessionName ? ` "${sessionName}"` : ""} on ${result.sessionDate}:\n${summary}`,
+							text: `Logged workout${sessionName ? ` "${sessionName}"` : ""} on ${result.sessionDate}:\n${summary}${renamedNote}`,
 						},
 					],
 				};

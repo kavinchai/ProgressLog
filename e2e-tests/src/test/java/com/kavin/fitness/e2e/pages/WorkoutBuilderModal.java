@@ -1,6 +1,8 @@
 package com.kavin.fitness.e2e.pages;
 
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.AriaRole;
 
 public class WorkoutBuilderModal {
     private final Page page;
@@ -56,6 +58,43 @@ public class WorkoutBuilderModal {
 
     public void enterReps(int idx, String reps) {
         page.locator(".wbm-set-row input[placeholder='0']").nth(idx * 2 + 1).fill(reps);
+    }
+
+    // ── Name matching ("Did you mean…?") ─────────────────────────────────────
+
+    /** Moves focus out of the exercise name field (to the session name). */
+    public void leaveExerciseName() {
+        page.locator(SESSION_NAME).click();
+    }
+
+    private Locator didYouMean() {
+        return page.locator(".wbm-did[role='status']");
+    }
+
+    /** Waits up to 5s for "Did you mean {name}?"; false if it never shows. */
+    public boolean awaitDidYouMean(String name) {
+        try {
+            didYouMean().filter(new Locator.FilterOptions().setHasText("Did you mean " + name))
+                    .first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void useSuggestedName(String name) {
+        didYouMean().getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Use " + name).setExact(true)).click();
+    }
+
+    /** Waits for the "✓ Matches your existing lift" note after a name is accepted. */
+    public boolean awaitMatchesExistingLift() {
+        try {
+            page.locator(".wbm-name-ok").first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void clickAddSet(int exerciseIdx) {

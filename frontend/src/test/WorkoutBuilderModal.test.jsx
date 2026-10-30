@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WorkoutBuilderModal from "../components/WorkoutBuilderModal";
 
@@ -10,12 +10,15 @@ vi.mock("../components/WorkoutBuilderModal.css", () => ({}));
 vi.mock("../components/Modal.css", () => ({}));
 
 import api from "../api";
+import { clearMatchCache } from "../utils/exerciseMatches";
 
 const onClose = vi.fn();
 const onSaved = vi.fn();
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	clearMatchCache();
+	localStorage.clear();
 	api.get.mockImplementation((url) => {
 		if (url === "/workouts/exercise-names")
 			return Promise.resolve({ data: ["Bench Press", "Squat", "Deadlift"] });
@@ -526,5 +529,199 @@ describe("WorkoutBuilderModal — form submission", () => {
 		await waitFor(() =>
 			expect(screen.getByText(/failed to save/i)).toBeInTheDocument(),
 		);
+	});
+});
+
+// ── Name matching ("Did you mean…?") ───────────────────────────────────────
+
+const LAT = { name: "Lat Pulldowns", yourSessions: 31, lifters: 1 };
+const RDL = { name: "Romanian Deadlifts", yourSessions: 11, lifters: 1 };
+const MATCHES = {
+	"Lat Pull Down": { exact: null, same: [LAT], possible: [] },
+	"Lat Pulldowns": { exact: LAT, same: [], possible: [] },
+	"Romanian Deadlift": { exact: null, same: [RDL], possible: [] },
+};
+
+function mockMatches() {
+	api.get.mockImplementation((url, config) => {
+		if (url === "/workouts/exercise-names")
+			return Promise.resolve({ data: ["Lat Pulldowns", "Romanian Deadlifts"] });
+		if (url === "/workouts/exercise-matches")
+			return Promise.resolve({
+				data: MATCHES[config.params.name] ?? {
+					exact: null,
+					same: [],
+					possible: [],
+				},
+			});
+		return Promise.resolve({ data: [] });
+	});
+}
+
+async function typeExercise(name, { weight = "100", reps = "10" } = {}) {
+	await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+	const input = screen.getAllByPlaceholderText(/exercise name/i).at(-1);
+	await userEvent.type(input, name);
+	const zeros = screen.getAllByPlaceholderText("0");
+	await userEvent.type(zeros.at(-2), weight);
+	await userEvent.type(zeros.at(-1), reps);
+	return input;
+}
+
+describe("WorkoutBuilderModal — name matching", () => {
+	beforeEach(mockMatches);
+
+	it("lists the existing lift first under Same lift? while typing", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		await userEvent.type(
+			screen.getByPlaceholderText(/exercise name/i),
+			"Lat Pull Down",
+		);
+
+		const list = await screen.findByRole("listbox", {
+			name: /exercise suggestions/i,
+		});
+		expect(within(list).getByText("Same lift?")).toBeInTheDocument();
+		const option = within(list).getAllByRole("option")[0];
+		expect(option).toHaveTextContent("Lat Pulldowns");
+		expect(option).toHaveTextContent(/you · 31 sessions/);
+	});
+
+	it("asks Did you mean…? after leaving the field, and Use swaps the name", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		const input = await typeExercise("Lat Pull Down");
+
+		const card = await screen.findByRole("status");
+		expect(card).toHaveTextContent(/did you mean lat pulldowns\?/i);
+		await userEvent.click(
+			within(card).getByRole("button", { name: /use lat pulldowns/i }),
+		);
+
+		expect(input).toHaveValue("Lat Pulldowns");
+		expect(screen.queryByText(/did you mean/i)).not.toBeInTheDocument();
+		expect(
+			await screen.findByText(/matches your existing lift/i),
+		).toBeInTheDocument();
+	});
+
+	it("Keep saves the typed name and doesn't ask about it again", async () => {
+		const { unmount } = render(
+			<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />,
+		);
+		await typeExercise("Lat Pull Down");
+		await userEvent.click(
+			await screen.findByRole("button", { name: /keep .lat pull down./i }),
+		);
+		expect(screen.queryByText(/did you mean/i)).not.toBeInTheDocument();
+		unmount();
+
+		api.post.mockResolvedValue({});
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await typeExercise("Lat Pull Down");
+		// Save waits for the lookup, so this proves the kept name isn't flagged.
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		await waitFor(() => expect(api.post).toHaveBeenCalled());
+		expect(api.post.mock.calls[0][1].exercises[0].exerciseName).toBe(
+			"Lat Pull Down",
+		);
+		expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+	});
+
+	it("lists loose matches under Maybe", async () => {
+		MATCHES["incline press"] = {
+			exact: null,
+			same: [],
+			possible: [{ name: "Incline Bench Press", yourSessions: 0, lifters: 2 }],
+		};
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		await userEvent.type(
+			screen.getByPlaceholderText(/exercise name/i),
+			"incline press",
+		);
+		const list = await screen.findByRole("listbox", {
+			name: /exercise suggestions/i,
+		});
+		expect(await within(list).findByText("Maybe")).toBeInTheDocument();
+		expect(within(list).getByRole("option")).toHaveTextContent(
+			/incline bench press.*2 lifters/i,
+		);
+		expect(within(list).queryByText("Same lift?")).not.toBeInTheDocument();
+	});
+
+	it("doesn't flag a name you already use, even if a variant exists", async () => {
+		MATCHES["Lat Pulldown"] = {
+			exact: { name: "Lat Pulldown", yourSessions: 4, lifters: 1 },
+			same: [LAT],
+			possible: [],
+		};
+		api.post.mockResolvedValue({});
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await typeExercise("Lat Pulldown");
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		await waitFor(() => expect(api.post).toHaveBeenCalled());
+		expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+	});
+
+	it("checks close names on save; Use existing names saves the existing name", async () => {
+		api.post.mockResolvedValue({});
+		render(
+			<WorkoutBuilderModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		await typeExercise("Romanian Deadlift", { weight: "185", reps: "8" });
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+		const check = await screen.findByRole("alertdialog", {
+			name: /similar names/i,
+		});
+		expect(check).toHaveTextContent(/romanian deadlift.*romanian deadlifts/i);
+		expect(api.post).not.toHaveBeenCalled();
+
+		await userEvent.click(
+			within(check).getByRole("button", { name: /use existing names/i }),
+		);
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith("/workouts", {
+				sessionDate: "2026-01-05",
+				sessionName: null,
+				exercises: [
+					{
+						exerciseName: "Romanian Deadlifts",
+						sets: [{ setNumber: 1, reps: 8, weightLbs: 185 }],
+					},
+				],
+			}),
+		);
+	});
+
+	it("Save as typed keeps the typed name", async () => {
+		api.post.mockResolvedValue({});
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await typeExercise("Romanian Deadlift");
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		await userEvent.click(
+			await screen.findByRole("button", { name: /save as typed/i }),
+		);
+
+		await waitFor(() => expect(api.post).toHaveBeenCalled());
+		expect(api.post.mock.calls[0][1].exercises[0].exerciseName).toBe(
+			"Romanian Deadlift",
+		);
+	});
+
+	it("a new lift with no close names saves straight away", async () => {
+		api.post.mockResolvedValue({});
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		await typeExercise("Hip Thrust");
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+		await waitFor(() => expect(api.post).toHaveBeenCalled());
+		expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+		expect(screen.queryByText(/did you mean/i)).not.toBeInTheDocument();
 	});
 });

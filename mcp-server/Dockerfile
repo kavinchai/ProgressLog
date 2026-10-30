@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY server.js mealSlots.js ./
+COPY server.js mealSlots.js nameMatches.js ./
 
 EXPOSE 3100
 
