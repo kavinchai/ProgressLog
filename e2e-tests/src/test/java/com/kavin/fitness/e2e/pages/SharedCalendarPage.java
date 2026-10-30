@@ -8,11 +8,12 @@ public class SharedCalendarPage {
 
     private static final String SUBNAV_LEADERBOARD = "[role='group'][aria-label='View'] button:has-text(\"Leaderboard\")";
     private static final String SUBNAV_CALENDAR    = "[role='group'][aria-label='View'] button:has-text(\"Calendar\")";
-    private static final String VIEW_TAB_WEEK      = ".sc-view-tabs button:has-text(\"Week\")";
-    private static final String VIEW_TAB_MONTH     = ".sc-view-tabs button:has-text(\"Month\")";
-    private static final String GRID               = ".calendar-grid";
-    private static final String DAY_ENTRY          = ".sc-day-entry";
-    private static final String DAY_USER           = ".sc-day-user";
+    private static final String VIEW_TAB_WEEK      = "[role='group'][aria-label='Calendar range'] button:has-text(\"Week\")";
+    private static final String VIEW_TAB_MONTH     = "[role='group'][aria-label='Calendar range'] button:has-text(\"Month\")";
+    private static final String GRID               = ".sc-grid";
+    // The day panel (open on today by default on desktop) lists one row per lifter.
+    private static final String DAY_ROW            = ".sc-side .sc-row";
+    private static final String DAY_USER           = ".sc-side .sc-row-name";
     private static final String EMPTY              = ".sc-empty";
 
     public SharedCalendarPage(Page page) {
@@ -65,15 +66,49 @@ public class SharedCalendarPage {
         }
     }
 
-    /** Returns true if the given username appears on at least one day-cell entry. */
-    public boolean isUsernameOnCalendar(String username) {
-        return page.locator(DAY_USER + ":has-text(\"" + username + "\")").count() > 0;
+    // :text-is matches the name's own text, so the signed-in user's row
+    // ("qaf-test" + a "You" tag) still matches "qaf-test".
+    private Locator userRow(String username) {
+        return page.locator(DAY_USER + ":text-is(\"" + username + "\")");
     }
 
-    /** Returns true if the given session name appears in any day-cell activity label. */
+    /** Waits up to 5s for the username to be listed in the open day's panel (today by default). */
+    public boolean isUsernameOnCalendar(String username) {
+        try {
+            userRow(username).first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** True once the day panel has rendered and does not list the username. */
+    public boolean isUsernameAbsentFromCalendar(String username) {
+        page.locator(".sc-side").waitFor(new Locator.WaitForOptions().setTimeout(5000));
+        return userRow(username).count() == 0;
+    }
+
+    /** Opens the lifter's row in the day panel to show their sets. */
+    public void expandRow(String username) {
+        page.locator(DAY_ROW, new Page.LocatorOptions().setHas(userRow(username)))
+                .locator(".sc-row-button").click();
+    }
+
+    /** Waits up to 5s for a set line, e.g. "5 reps @ 95 lbs", in the day panel. */
+    public boolean isSetLineVisible(String text) {
+        try {
+            page.locator(".sc-side .sc-detail-sets li:has-text(\"" + text + "\")").first()
+                    .waitFor(new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** True if the session name is shown as a lifter's activity in the open day's panel. */
     public boolean isSessionNameOnCalendar(String sessionName) {
         try {
-            page.locator(".sc-day-activities:has-text(\"" + sessionName + "\")")
+            page.locator(".sc-side .sc-row-label:has-text(\"" + sessionName + "\")")
                     .first().waitFor(new Locator.WaitForOptions().setTimeout(5000));
             return true;
         } catch (Exception e) {
@@ -82,7 +117,7 @@ public class SharedCalendarPage {
     }
 
     public int dayEntryCount() {
-        return page.locator(DAY_ENTRY).count();
+        return page.locator(DAY_ROW).count();
     }
 
     public boolean isEmptyStateVisible() {

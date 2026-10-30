@@ -61,7 +61,7 @@ public class SharedCalendarTest extends BaseTest {
         if (!calendar.awaitCalendarVisible()) {
             throw new AssertionError("Shared Calendar view never rendered");
         }
-        if (calendar.isUsernameOnCalendar(testUsername)) {
+        if (!calendar.isUsernameAbsentFromCalendar(testUsername)) {
             throw new AssertionError("Expected user '" + testUsername
                     + "' NOT on shared calendar when shareCalendar=false");
         }
@@ -86,34 +86,40 @@ public class SharedCalendarTest extends BaseTest {
                     + "' on shared calendar after enabling shareCalendar");
         }
 
-        step("verify session name appears on the calendar cell");
+        step("verify session name appears in today's day panel");
         if (!calendar.isSessionNameOnCalendar("Shared Calendar Test")) {
             throw new AssertionError("Expected session name 'Shared Calendar Test' to appear on the calendar");
+        }
+
+        step("open the user's row and verify the seeded set is listed");
+        calendar.expandRow(testUsername);
+        if (!calendar.isSetLineVisible("5 reps @ 95 lbs")) {
+            throw new AssertionError("Expected the seeded Overhead Press set '5 reps @ 95 lbs' in the open row");
         }
     }
 
     @Test(priority = 4, dependsOnMethods = "enablingToggleShowsUserOnCalendar")
     public void weekAndMonthViewsBothShowUser() {
-        step("with shareCalendar already ON, verify default week view shows user");
+        step("with shareCalendar already ON, verify default month view shows user");
         calendar.open(baseUrl);
         calendar.clickSharedCalendarTab();
         calendar.awaitCalendarVisible();
         if (!calendar.isUsernameOnCalendar(testUsername)) {
-            throw new AssertionError("Expected user on default (week) view");
+            throw new AssertionError("Expected user on default (month) view");
         }
 
-        step("switch to month view and verify user still visible");
-        calendar.clickMonthView();
-        calendar.awaitCalendarVisible();
-        if (!calendar.isUsernameOnCalendar(testUsername)) {
-            throw new AssertionError("Expected user on month view");
-        }
-
-        step("switch back to week view");
+        step("switch to week view and verify user still visible");
         calendar.clickWeekView();
         calendar.awaitCalendarVisible();
         if (!calendar.isUsernameOnCalendar(testUsername)) {
-            throw new AssertionError("Expected user on week view after switching back");
+            throw new AssertionError("Expected user on week view");
+        }
+
+        step("switch back to month view");
+        calendar.clickMonthView();
+        calendar.awaitCalendarVisible();
+        if (!calendar.isUsernameOnCalendar(testUsername)) {
+            throw new AssertionError("Expected user on month view after switching back");
         }
     }
 
@@ -131,7 +137,7 @@ public class SharedCalendarTest extends BaseTest {
         calendar.clickSharedCalendarTab();
         calendar.awaitCalendarVisible();
 
-        if (calendar.isUsernameOnCalendar(testUsername)) {
+        if (!calendar.isUsernameAbsentFromCalendar(testUsername)) {
             throw new AssertionError("Expected user '" + testUsername
                     + "' NOT on shared calendar after disabling shareCalendar");
         }

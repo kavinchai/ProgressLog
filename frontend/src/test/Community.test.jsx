@@ -636,6 +636,29 @@ describe("Community — signed in", () => {
 
 // ── Calendar view ────────────────────────────────────────────────────────────
 
+describe("Community — header", () => {
+	it("shows the sharing count on the leaderboard but not on the calendar", async () => {
+		const user = userEvent.setup();
+		signIn();
+		mockApiGet.mockImplementation((url) =>
+			Promise.resolve({
+				data:
+					url === "/shared-calendar"
+						? { totalUsers: 1, entries: [] }
+						: { ...DATA, me: ME },
+			}),
+		);
+		renderCommunity();
+		expect(await screen.findByText(/23 lifters sharing/)).toBeInTheDocument();
+		await user.click(
+			within(screen.getByRole("group", { name: "View" })).getByRole("button", {
+				name: "Calendar",
+			}),
+		);
+		expect(screen.queryByText(/23 lifters sharing/)).not.toBeInTheDocument();
+	});
+});
+
 describe("Community — calendar view", () => {
 	it("switching to Calendar fetches /shared-calendar and shows entries", async () => {
 		const user = userEvent.setup();

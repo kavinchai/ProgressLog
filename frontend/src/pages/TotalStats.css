@@ -34,100 +34,6 @@
 	border-color: var(--accent) !important;
 }
 
-.calendar-wrap {
-	padding: 10px 10px 5px;
-	container-type: inline-size;
-}
-
-.calendar-weekdays {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	gap: 4px;
-	margin-bottom: 4px;
-}
-
-.calendar-weekday {
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-semibold);
-	color: var(--muted);
-	text-align: center;
-	text-transform: capitalize;
-	letter-spacing: 0.02em;
-	padding: 2px 0;
-}
-
-.calendar-grid {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	grid-template-rows: repeat(5, 1fr);
-	gap: 4px;
-}
-
-.calendar-cell {
-	display: flex;
-	flex-direction: column;
-	gap: 3px;
-	aspect-ratio: 1 / 1;
-	padding: 5px 5px 6px;
-	background: var(--bg);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-md);
-	font-family: var(--font);
-	color: var(--fg);
-	text-align: left;
-	cursor: pointer;
-	overflow: hidden;
-	transition:
-		background var(--transition-fast),
-		border-color var(--transition-fast);
-}
-
-.calendar-cell:hover:not(:disabled) {
-	background: var(--hover-bg);
-	border-color: var(--accent);
-}
-
-.calendar-cell-today {
-	border-color: var(--accent);
-	box-shadow: 0 0 0 1px var(--accent);
-}
-
-.calendar-cell-pad {
-	background: transparent;
-	border: 1px dashed var(--border-dim);
-	min-height: 0;
-	cursor: default;
-	opacity: 0.3;
-}
-
-.calendar-cell-date {
-	font-size: clamp(0.7rem, 1.6cqw, var(--fs-sm));
-	font-weight: var(--fw-semibold);
-	color: var(--fg);
-	line-height: 1;
-}
-
-.calendar-cell-today .calendar-cell-date {
-	color: var(--accent);
-}
-
-/* ── Tablet / narrow desktop ── */
-@media (max-width: 900px) {
-	.calendar-wrap {
-		padding: 8px;
-	}
-
-	.calendar-grid,
-	.calendar-weekdays {
-		gap: 3px;
-	}
-
-	.calendar-cell {
-		padding: 4px 4px 5px;
-		border-radius: var(--radius-sm);
-	}
-}
-
 /* ── Mobile ── */
 @media (max-width: 640px) {
 	.month-nav {
@@ -139,24 +45,5 @@
 	.month-picker {
 		gap: 4px;
 		padding: 8px 12px;
-	}
-
-	.calendar-wrap {
-		padding: 4px;
-	}
-
-	.calendar-grid,
-	.calendar-weekdays {
-		gap: 2px;
-	}
-
-	.calendar-cell {
-		padding: 3px 3px 4px;
-		gap: 3px;
-	}
-
-	.calendar-weekday {
-		font-size: 9px;
-		padding: 1px 0;
 	}
 }
