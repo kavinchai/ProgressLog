@@ -704,7 +704,7 @@ export default function Community() {
 			<header className="lb-head">
 				<div>
 					<h1 className="lb-title">Community</h1>
-					{data && data.totalUsers > 0 && (
+					{view === "leaderboard" && data && data.totalUsers > 0 && (
 						<span className="lb-muted">
 							{data.totalUsers} lifters sharing ·{" "}
 							{period === "month" ? month : "all time"}

@@ -1,3 +1,6 @@
+/* Community calendar — month (or week) grid with a day panel beside it
+   (a bottom sheet on phones). */
+
 .sc-wrap {
 	width: 100%;
 }
@@ -14,108 +17,331 @@
 	color: var(--danger, #d33);
 }
 
-.sc-stats {
+/* ── Toolbar ── */
+.sc-toolbar {
 	display: flex;
-	justify-content: center;
-	gap: 24px;
-	padding: 12px 0 8px;
-	color: var(--muted);
-	font-size: 13px;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 10px;
+	margin-bottom: var(--space-md);
 }
 
-.sc-view-tabs-row {
-	display: flex;
-	justify-content: center;
+.sc-spacer {
+	flex: 1;
 }
 
-.sc-view-tabs {
-	margin: 4px 0 8px;
-}
-
-.sc-view-tabs button.page-tab {
-	border: none;
-	background: transparent;
-	font-family: var(--font);
-	cursor: pointer;
-}
-
-.sc-view-tabs button.page-tab.page-tab-active {
-	background: var(--accent-light);
-}
-
-.sc-range-label {
-	text-align: center;
-	color: var(--muted);
-	font-size: var(--fs-sm);
-	margin-bottom: 8px;
-}
-
-.sc-day-cell {
-	cursor: default;
-	align-items: stretch;
-	text-align: left;
-}
-
-.sc-day-entries {
-	display: flex;
-	flex-direction: column;
+.sc-nav {
+	display: inline-flex;
+	align-items: center;
 	gap: 4px;
-	margin-top: 4px;
-	overflow: hidden;
 }
 
-.sc-day-entry {
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	text-align: left;
-	gap: 2px;
-	padding: 3px 6px;
-	border: none;
-	border-radius: 4px;
-	background: var(--sc-user-bg);
-	font-family: inherit;
-	font-size: 11px;
+.sc-nav button {
+	width: 32px;
+	height: 32px;
+	border-radius: var(--radius-md);
+	border: 1px solid var(--border);
+	background: var(--bg-card);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: var(--fs-lg);
+	line-height: 1;
 	cursor: pointer;
-	overflow: hidden;
 }
 
-.sc-day-entry:hover {
-	filter: brightness(0.95);
+.sc-nav button:hover {
+	background: var(--hover-bg);
 }
 
-.sc-day-entry:focus-visible {
-	outline: 2px solid var(--sc-user-fg);
+.sc-range {
+	min-width: 140px;
+	text-align: center;
+	font-weight: var(--fw-bold);
+}
+
+.sc-seg {
+	display: inline-flex;
+	gap: 2px;
+	padding: 3px;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+}
+
+.sc-seg button {
+	font-family: var(--font);
+	font-size: var(--fs-xs);
+	min-height: 28px;
+	padding: 0 12px;
+	border: none;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--muted);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.sc-seg button.on {
+	background: var(--bg-card);
+	color: var(--fg);
+	font-weight: var(--fw-semibold);
+	box-shadow: var(--shadow-xs);
+}
+
+.sc-nav button:focus-visible,
+.sc-seg button:focus-visible,
+.sc-cell:focus-visible,
+.sc-row-button:focus-visible {
+	outline: 2px solid var(--accent);
 	outline-offset: 1px;
 }
 
-.sc-day-user {
-	font-weight: 600;
-	color: var(--sc-user-fg);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+/* ── Grid + side panel ── */
+.sc-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 320px;
+	gap: var(--space-lg);
+	align-items: start;
 }
 
-.sc-day-activities {
-	color: var(--sc-user-fg);
-	opacity: 0.75;
+.sc-grid {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+}
+
+.sc-weekday {
+	padding: 8px 10px;
 	font-size: 10px;
-	white-space: nowrap;
+	font-weight: var(--fw-bold);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--muted);
+	background: var(--bg);
+	border-bottom: 1px solid var(--border);
+}
+
+.sc-cell {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+	min-height: 92px;
+	padding: 8px;
+	border: none;
+	border-right: 1px solid var(--border-dim);
+	border-bottom: 1px solid var(--border-dim);
+	background: transparent;
+	color: var(--fg);
+	font-family: var(--font);
+	text-align: left;
+	cursor: pointer;
+}
+
+.sc-cell:nth-child(7n) {
+	border-right: none;
+}
+
+.sc-cell:hover:not(.sc-cell-pad) {
+	background: var(--hover-bg);
+}
+
+.sc-cell-pad {
+	background: var(--bg);
+	cursor: default;
+}
+
+.sc-cell-date {
+	display: inline-grid;
+	place-items: center;
+	min-width: 22px;
+	height: 22px;
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-semibold);
+}
+
+.sc-cell-today .sc-cell-date {
+	border-radius: 50%;
+	background: var(--accent);
+	color: #fff;
+}
+
+.sc-cell-on {
+	background: var(--accent-light);
+	box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.sc-cell-on:hover {
+	background: var(--accent-light);
+}
+
+/* A dot in the corner marks days the viewer trained. */
+.sc-cell-mine::after,
+.sc-legend-dot {
+	content: "";
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--accent);
+}
+
+.sc-cell-mine::after {
+	position: absolute;
+	top: 9px;
+	right: 9px;
+}
+
+.sc-legend {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 8px 0 0;
+	font-size: var(--fs-xs);
+}
+
+.sc-stack {
+	display: flex;
+	align-items: center;
+}
+
+.sc-stack .sc-av + .sc-av {
+	margin-left: -6px;
+}
+
+.sc-av {
+	display: inline-grid;
+	place-items: center;
+	flex: none;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	border: 2px solid var(--bg-card);
+	color: #fff;
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-bold);
+}
+
+.sc-av-sm {
+	width: 20px;
+	height: 20px;
+	font-size: 9px;
+	border-width: 1.5px;
+}
+
+.sc-more {
+	margin-left: 4px;
+	font-size: 10px;
+	font-weight: var(--fw-bold);
+	color: var(--muted);
+}
+
+.sc-cell-count {
+	margin-top: auto;
+	font-size: 10px;
+	color: var(--muted);
+}
+
+/* ── Day panel ── */
+.sc-side {
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-xs);
+	padding: 14px 16px;
+	min-width: 0;
+}
+
+.sc-panel-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: 6px;
+	font-size: var(--fs-xs);
+}
+
+.sc-panel-head h3 {
+	margin: 0;
+	font-size: var(--fs-md);
+}
+
+.sc-row {
+	border-bottom: 1px solid var(--border-dim);
+}
+
+.sc-row:last-child {
+	border-bottom: none;
+}
+
+.sc-row-button {
+	display: grid;
+	grid-template-columns: 32px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 10px 0;
+	border: none;
+	background: transparent;
+	color: var(--fg);
+	font-family: var(--font);
+	text-align: left;
+	cursor: pointer;
+}
+
+.sc-row-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.sc-row-name {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+}
+
+.sc-row-label {
+	font-size: var(--fs-xs);
+	color: var(--muted);
 	overflow: hidden;
 	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.sc-detail-session-names {
+.sc-row-me .sc-row-name {
+	color: var(--accent-deep);
+}
+
+.sc-you {
+	font-size: 9px;
+	font-weight: var(--fw-bold);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #fff;
+	background: var(--accent);
+	border-radius: var(--radius-full);
+	padding: 1px 6px;
+}
+
+.sc-chev {
 	color: var(--muted);
-	font-size: var(--fs-sm);
-	margin-bottom: 12px;
 }
 
+.sc-row .sc-detail-list {
+	padding: 0 0 12px 42px;
+}
+
+/* ── Workout details (inside an open row) ── */
 .sc-detail-list {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 10px;
 }
 
 .sc-detail-exercise {
@@ -125,7 +351,8 @@
 }
 
 .sc-detail-name {
-	font-weight: 600;
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
 	color: var(--fg);
 }
 
@@ -137,5 +364,60 @@
 	flex-direction: column;
 	gap: 2px;
 	color: var(--muted);
+	font-size: var(--fs-xs);
 	font-variant-numeric: tabular-nums;
+}
+
+/* ── Tablet ── */
+@media (max-width: 960px) {
+	.sc-layout {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* ── Phone: compact dates with one dot per lifter; the day opens in a sheet ── */
+@media (max-width: 640px) {
+	.sc-range {
+		min-width: 110px;
+	}
+
+	.sc-seg button {
+		padding: 0 9px;
+	}
+
+	.sc-weekday {
+		padding: 6px 0;
+		text-align: center;
+	}
+
+	.sc-cell {
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		min-height: 50px;
+		padding: 4px 0;
+	}
+
+	.sc-cell-count,
+	.sc-more {
+		display: none;
+	}
+
+	.sc-stack .sc-av + .sc-av {
+		margin-left: 2px;
+	}
+
+	.sc-av-sm {
+		width: 6px;
+		height: 6px;
+		border: none;
+		font-size: 0;
+	}
+
+	.sc-cell-mine::after {
+		top: 4px;
+		right: 4px;
+		width: 5px;
+		height: 5px;
+	}
 }
