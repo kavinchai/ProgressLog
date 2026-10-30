@@ -17,9 +17,11 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSet, Long> 
     @Query("DELETE FROM ExerciseSet e WHERE e.session.id = :sessionId")
     void deleteBySessionId(@Param("sessionId") Long sessionId);
 
+    // Lift names only: older cardio rows (with a distance or duration) are left out.
     @Query(
             "SELECT DISTINCT e.exerciseName FROM ExerciseSet e "
                     + "JOIN e.session s WHERE s.user.id = :userId "
+                    + "AND e.distanceMiles IS NULL AND e.durationSeconds IS NULL "
                     + "ORDER BY e.exerciseName ASC")
     List<String> findDistinctExerciseNamesByUserId(@Param("userId") Long userId);
 

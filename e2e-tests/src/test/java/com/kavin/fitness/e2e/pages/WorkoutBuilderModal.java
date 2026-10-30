@@ -1,6 +1,5 @@
 package com.kavin.fitness.e2e.pages;
 
-import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 
 public class WorkoutBuilderModal {
@@ -13,7 +12,6 @@ public class WorkoutBuilderModal {
     private static final String SAVE = ".modal-box >> button:text-is(\"Save\")";
     private static final String EXERCISE_NAME_INPUTS = "input[placeholder*='exercise name' i]";
     private static final String ADD_SET_BTNS = "button:has-text(\"+ Set\")";
-    private static final String TYPE_SELECTS = ".wbm-type-select";
 
     public WorkoutBuilderModal(Page page) {
         this.page = page;
@@ -44,12 +42,6 @@ public class WorkoutBuilderModal {
         page.locator(ADD_EXERCISE).first().click();
     }
 
-    /** Pick a type ("Lifting" | "Timed" | "Run") on the segmented control of the given exercise block. */
-    public void selectType(int exerciseIdx, String label) {
-        page.locator(TYPE_SELECTS).nth(exerciseIdx)
-                .locator("button:text-is(\"" + label + "\")").click();
-    }
-
     public void waitForExerciseCount(int count) {
         page.locator(EXERCISE_NAME_INPUTS).nth(count - 1).waitFor();
     }
@@ -64,25 +56,6 @@ public class WorkoutBuilderModal {
 
     public void enterReps(int idx, String reps) {
         page.locator(".wbm-set-row input[placeholder='0']").nth(idx * 2 + 1).fill(reps);
-    }
-
-    public void enterDistance(int idx, String distance) {
-        page.locator(".wbm-set-row--cardio input[placeholder='0']").nth(idx * 3).fill(distance);
-    }
-
-    public void enterRunMinutes(int idx, String minutes) {
-        page.locator(".wbm-set-row--cardio input[placeholder='0']").nth(idx * 3 + 1).fill(minutes);
-    }
-
-    public void enterRunSeconds(int idx, String seconds) {
-        page.locator(".wbm-set-row--cardio input[placeholder='0']").nth(idx * 3 + 2).fill(seconds);
-    }
-
-    public void enterDuration(int idx, String h, String m, String s) {
-        Locator cardioInputs = page.locator(".wbm-set-row--cardio input[placeholder='0']");
-        cardioInputs.nth(idx * 3).fill(h);
-        cardioInputs.nth(idx * 3 + 1).fill(m);
-        cardioInputs.nth(idx * 3 + 2).fill(s);
     }
 
     public void clickAddSet(int exerciseIdx) {

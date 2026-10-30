@@ -22,7 +22,7 @@ public class WorkoutMultiExerciseTest extends BaseTest {
     }
 
     @Test(priority = 1)
-    public void addMultipleExerciseTypesInOneSession() {
+    public void addMultipleExercisesInOneSession() {
         step("open workout builder");
         today.clickAddWorkout();
         workout.waitUntilVisible();
@@ -34,20 +34,19 @@ public class WorkoutMultiExerciseTest extends BaseTest {
         workout.enterWeight(0, "95");
         workout.enterReps(0, "10");
 
-        step("add Run: 2 mi, 18m 0s (name auto-filled by Run type)");
+        step("add lifting exercise: Bicep Curls 30x12");
         workout.clickAddExercise();
         workout.waitForExerciseCount(2);
-        workout.selectType(1, "Run");
-        workout.enterDistance(0, "2");
-        workout.enterRunMinutes(0, "18");
-        workout.enterRunSeconds(0, "0");
+        workout.enterExerciseName(1, "Bicep Curls");
+        workout.enterWeight(1, "30");
+        workout.enterReps(1, "12");
 
-        step("add Timed exercise: Yoga 0h 30m 0s");
+        step("add lifting exercise: Lateral Raises 20x15");
         workout.clickAddExercise();
         workout.waitForExerciseCount(3);
-        workout.selectType(2, "Timed");
-        workout.enterExerciseName(2, "Yoga");
-        workout.enterDuration(1, "0", "30", "0");
+        workout.enterExerciseName(2, "Lateral Raises");
+        workout.enterWeight(2, "20");
+        workout.enterReps(2, "15");
 
         step("save workout");
         workout.save();
@@ -55,28 +54,28 @@ public class WorkoutMultiExerciseTest extends BaseTest {
 
         step("verify all three exercises displayed");
         today.waitForExercise("Overhead Press");
-        today.waitForExerciseDetail("Overhead Press", "95");
-        today.waitForExercise("Run");
-        today.waitForExerciseDetail("Run", "2 mi");
-        today.waitForExercise("Yoga");
-        today.waitForExerciseDetail("Yoga", "30m");
+        today.waitForExerciseDetail("Overhead Press", "95 lbs");
+        today.waitForExercise("Bicep Curls");
+        today.waitForExerciseDetail("Bicep Curls", "30 lbs");
+        today.waitForExercise("Lateral Raises");
+        today.waitForExerciseDetail("Lateral Raises", "20 lbs");
     }
 
-    @Test(priority = 2, dependsOnMethods = "addMultipleExerciseTypesInOneSession")
+    @Test(priority = 2, dependsOnMethods = "addMultipleExercisesInOneSession")
     public void deleteMiddleExerciseLeavesOthers() {
-        step("click Edit on Run exercise");
+        step("click Edit on Bicep Curls");
         today.clickEditExercise(1);
-        editModal.waitUntilTitleContains("Run");
+        editModal.waitUntilTitleContains("Bicep Curls");
 
-        step("delete Run exercise");
+        step("delete Bicep Curls");
         editModal.deleteExercise();
         waitForModalClosed();
 
-        step("verify Run is gone but others remain");
-        if (today.isExerciseVisible("Run")) {
-            throw new AssertionError("Expected Run to be deleted");
+        step("verify Bicep Curls is gone but others remain");
+        if (!today.waitForExerciseGone("Bicep Curls")) {
+            throw new AssertionError("Expected Bicep Curls to be deleted");
         }
         today.waitForExercise("Overhead Press");
-        today.waitForExercise("Yoga");
+        today.waitForExercise("Lateral Raises");
     }
 }

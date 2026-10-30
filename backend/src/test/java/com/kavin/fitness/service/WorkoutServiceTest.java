@@ -330,6 +330,84 @@ class WorkoutServiceTest {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
+    // ── lifts only: older cardio rows are never returned ─────────────────────
+
+    @Test
+    void getWorkoutSessions_leavesOutCardioSetsAndCardioOnlySessions() {
+        WorkoutSession mixed = sessionWithId(20L, LocalDate.of(2026, 4, 1));
+        mixed.getExerciseSets().add(set(mixed, "Bench Press", 5, "185", null, null));
+        mixed.getExerciseSets().add(set(mixed, "Run", 0, "0", "3.10", 1600));
+        WorkoutSession runOnly = sessionWithId(21L, LocalDate.of(2026, 4, 2));
+        runOnly.getExerciseSets().add(set(runOnly, "Run", 0, "0", "2.00", 1000));
+        WorkoutSession timedOnly = sessionWithId(22L, LocalDate.of(2026, 4, 3));
+        timedOnly.getExerciseSets().add(set(timedOnly, "Plank", 0, "0", null, 60));
+        WorkoutSession empty = sessionWithId(23L, LocalDate.of(2026, 4, 4));
+        when(workoutSessionRepository.findByUserIdWithSetsOrderByDateAsc(1L))
+                .thenReturn(List.of(mixed, runOnly, timedOnly, empty));
+
+        List<WorkoutSessionDTO> result = workoutService.getWorkoutSessions(1L, null);
+
+        assertEquals(List.of(20L, 23L), result.stream().map(WorkoutSessionDTO::getId).toList());
+        assertEquals(
+                List.of("Bench Press"),
+                result.get(0).getExerciseSets().stream()
+                        .map(WorkoutSessionDTO.SetDTO::getExerciseName)
+                        .toList());
+    }
+
+    @Test
+    void getWorkoutSession_leavesOutCardioSets() {
+        WorkoutSession mixed = sessionWithId(30L, LocalDate.of(2026, 4, 1));
+        mixed.getExerciseSets().add(set(mixed, "Squats", 5, "225", null, null));
+        mixed.getExerciseSets().add(set(mixed, "Incline Walk", 0, "0", null, 900));
+        when(workoutSessionRepository.findById(30L)).thenReturn(Optional.of(mixed));
+
+        WorkoutSessionDTO dto = workoutService.getWorkoutSession(30L, 1L);
+
+        assertEquals(1, dto.getExerciseSets().size());
+        assertEquals("Squats", dto.getExerciseSets().get(0).getExerciseName());
+    }
+
+    @Test
+    void getWorkoutSessions_forADate_alsoLeavesOutCardioOnlySessions() {
+        LocalDate day = LocalDate.of(2026, 4, 5);
+        WorkoutSession lift = sessionWithId(40L, day);
+        lift.getExerciseSets().add(set(lift, "Bench Press", 5, "185", null, null));
+        WorkoutSession run = sessionWithId(41L, day);
+        run.getExerciseSets().add(set(run, "Run", 0, "0", "3.00", 1500));
+        when(workoutSessionRepository.findByUserIdAndSessionDate(1L, day))
+                .thenReturn(List.of(lift, run));
+
+        List<WorkoutSessionDTO> result = workoutService.getWorkoutSessions(1L, day);
+
+        assertEquals(List.of(40L), result.stream().map(WorkoutSessionDTO::getId).toList());
+    }
+
+    @Test
+    void getWorkoutsByExercise_forACardioName_returnsNothing() {
+        WorkoutSession run = sessionWithId(50L, LocalDate.of(2026, 4, 6));
+        ExerciseSet runSet = set(run, "Run", 0, "0", "3.00", 1500);
+        run.getExerciseSets().add(runSet);
+        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Run"))
+                .thenReturn(List.of(runSet));
+        when(workoutSessionRepository.findById(50L)).thenReturn(Optional.of(run));
+
+        assertTrue(workoutService.getWorkoutsByExercise(1L, "Run").isEmpty());
+    }
+
+    private static ExerciseSet set(
+            WorkoutSession s, String name, int reps, String weight, String miles, Integer seconds) {
+        ExerciseSet e = new ExerciseSet();
+        e.setSession(s);
+        e.setExerciseName(name);
+        e.setSetNumber(1);
+        e.setReps(reps);
+        e.setWeightLbs(new BigDecimal(weight));
+        e.setDistanceMiles(miles == null ? null : new BigDecimal(miles));
+        e.setDurationSeconds(seconds);
+        return e;
+    }
+
     private WorkoutSession sessionWithId(Long id, LocalDate date) {
         WorkoutSession s = new WorkoutSession();
         s.setUser(user);

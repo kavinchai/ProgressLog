@@ -1,6 +1,6 @@
 # ProgressLog — Full-Stack Fitness Tracker
 
-Personal fitness tracking application: daily logging for weight, nutrition, workouts, and steps, with strength progression analytics, personal records, cardio tracking, a community leaderboard and shared calendar, Google Calendar integration, and Claude AI integration via MCP.
+Personal fitness tracking application: daily logging for weight, nutrition, workouts, and steps, with strength progression analytics, personal records, a community leaderboard and shared calendar, Google Calendar integration, and Claude AI integration via MCP.
 
 ---
 
@@ -14,7 +14,7 @@ Personal fitness tracking application: daily logging for weight, nutrition, work
 │   (plain CSS modules)      (JWT in localStorage)  (13 pages)        │
 │                                                                     │
 │   Pages: Splash · Login · Today · History (Weekly · Total) ·        │
-│          Progress (Strength · Cardio) ·                             │
+│          Progress (Strength) ·                                      │
 │          Community (Leaderboard + Shared Calendar) ·                │
 │          Settings · ClaudeSetup                                     │
 │                                                                     │
@@ -208,9 +208,8 @@ WorkoutApp/
 │       │   ├── History.jsx                ← sub-router for WeeklyStats / TotalStats
 │       │   ├── WeeklyStats.jsx    + .css  ← week strip, selected day, daily calorie/steps charts
 │       │   ├── TotalStats.jsx     + .css  ← month heatmap, day panel, weight/calorie/workout trends
-│       │   ├── Progress.jsx               ← sub-router for Strength / Cardio
+│       │   ├── Progress.jsx               ← Progress route (Strength)
 │       │   ├── Strength.jsx       + .css  ← progressive overload chart
-│       │   ├── Cardio.jsx         + .css  ← cardio progression and milestones
 │       │   ├── Community.jsx      + .css  ← community page (your standing, monthly lift boards, calendar view)
 │       │   ├── SharedCalendar.jsx + .css  ← shared community workout calendar
 │       │   ├── Settings.jsx       + .css  ← profile, goals, credentials, units, privacy
@@ -234,7 +233,6 @@ WorkoutApp/
 │           ├── WeeklyStats.test.jsx
 │           ├── TotalStats.test.jsx
 │           ├── Strength.test.jsx
-│           ├── Cardio.test.jsx
 │           ├── Community.test.jsx
 │           ├── SharedCalendar.test.jsx
 │           ├── Modal.test.jsx
@@ -417,8 +415,6 @@ ProgressLog ships an MCP server that exposes your fitness data to Claude. Once c
 | ---------------------- | -------------------------------------------------------- |
 | `log_weight`           | Log body weight for a date                               |
 | `log_workout`          | Log a strength session (reps + weight)                   |
-| `log_cardio`           | Log a run, ride, or distance-based cardio activity       |
-| `log_activity`         | Log a timed activity with no distance (Muay Thai, yoga…) |
 | `log_meal`             | Log a meal with calories and protein                     |
 | `edit_meal`            | Correct a previously logged meal's label, name, calories, protein |
 | `log_steps`            | Log step count for a date                                |
@@ -628,13 +624,13 @@ Flyway runs migrations automatically when the backend starts. V1–V6 build the 
 - **Daily tracking** — Log weight, meals (inline Breakfast / Lunch / Dinner boxes with skip, plus labelled extra meals), workouts, and steps from the Today page
 - **lbs/kg toggle** — Switch between imperial and metric weight display in Settings; preference is persisted
 - **Workout builder** — Build sessions exercise-by-exercise with sets, reps, and weight
-- **Cardio logging** — Log runs and distance-based cardio with distance + duration, or timed activities (Muay Thai, yoga, etc.)
+- **Lifts only** — Workouts are reps × weight; runs, walks, sports and timed holds aren't tracked (older cardio rows stay in the database but are never shown)
 - **Steps tracking** — Standalone daily step count logging, separate from nutrition
 - **Nutrition goals** — Set calorie targets for training/rest days and a protein target; track adherence
 - **Strength progression** — Chart weight lifted over time per exercise, sorted by peak weight
 - **Personal records** — Automatically computed PRs per exercise
 - **Weekly & lifetime stats** — Aggregated views of calorie, protein, and workout trends
-- **Community leaderboard** — Opt-in rankings per exercise (strength + cardio categories) and top lifters
+- **Community leaderboard** — Opt-in monthly rankings per lift, your standing, and most active lifters
 - **Shared community calendar** — Opt-in calendar showing other users' workouts; click an entry for the full session detail
 - **Undo deletes** — Recently deleted entries can be restored from a per-user deletion journal
 - **Data import** — Bulk import historical data from CSV or Excel

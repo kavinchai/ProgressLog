@@ -72,14 +72,7 @@ const CALENDAR_DATA = {
 			username: "bob",
 			sessionDate: TODAY,
 			sets: [
-				{
-					exerciseName: "Run",
-					setNumber: 1,
-					reps: 0,
-					weightLbs: 0,
-					distanceMiles: 3.2,
-					durationSeconds: 1695,
-				},
+				{ exerciseName: "Deadlift", setNumber: 1, reps: 5, weightLbs: 315 },
 			],
 		},
 	],
@@ -213,7 +206,7 @@ describe("SharedCalendar — day panel", () => {
 		expect(dayButton(TODAY)).toHaveAttribute("aria-pressed", "true");
 		expect(within(panel).getByText(/1 lifter trained/i)).toBeInTheDocument();
 		expect(within(panel).getByText("bob")).toBeInTheDocument();
-		expect(within(panel).getByText("Run")).toBeInTheDocument();
+		expect(within(panel).getByText("Deadlift")).toBeInTheDocument();
 	});
 
 	it("picking another day lists its lifters; a row opens in place to show the sets", async () => {

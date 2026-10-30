@@ -56,13 +56,6 @@
 	align-items: center;
 }
 
-/* Cardio variant: Distance | Min | Sec */
-.wbm-set-row--cardio,
-.wbm-sets--cardio .wbm-sets-head,
-.wbm-sets-head--cardio {
-	grid-template-columns: 1fr 1fr 1fr;
-}
-
 .wbm-set-num {
 	font-size: var(--fs-sm);
 	color: var(--muted);
@@ -128,45 +121,6 @@
 	background: var(--hover-bg);
 }
 
-/* 3-way exercise type selector (Lifting | Timed | Run) */
-.wbm-type-select {
-	display: inline-flex;
-	align-self: flex-start;
-	margin-bottom: 10px;
-	border: 1px solid var(--border-dim);
-	border-radius: var(--radius-md);
-	overflow: hidden;
-}
-
-.wbm-type-option {
-	font-family: var(--font);
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-medium);
-	color: var(--muted);
-	background: transparent;
-	border: none;
-	padding: 6px 16px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition:
-		background var(--transition-fast),
-		color var(--transition-fast);
-}
-
-.wbm-type-option:not(:last-child) {
-	border-right: 1px solid var(--border-dim);
-}
-
-.wbm-type-option:hover:not(.wbm-type-option--active) {
-	background: var(--hover-bg);
-}
-
-.wbm-type-option--active {
-	color: var(--accent);
-	background: var(--accent-light);
-	font-weight: var(--fw-semibold);
-}
-
 /* ── Mobile ── */
 @media (max-width: 640px) {
 	.wbm-exercise-block {
@@ -175,18 +129,5 @@
 
 	.wbm-suggestions {
 		max-width: calc(100vw - 80px);
-	}
-
-	/* Full-width segmented control with larger tap targets on phones */
-	.wbm-type-select {
-		display: flex;
-		width: 100%;
-	}
-
-	.wbm-type-option {
-		flex: 1;
-		padding: 9px 0;
-		font-size: var(--fs-sm);
-		text-align: center;
 	}
 }

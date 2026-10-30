@@ -44,6 +44,8 @@ public class SharedCalendarService {
                                                 s.getSessionDate(),
                                                 s.getSessionName(),
                                                 toSets(s.getExerciseSets())))
+                        // a session that only held older cardio rows has nothing to show
+                        .filter(e -> !e.getSets().isEmpty())
                         .collect(Collectors.toList());
 
         return new SharedCalendarDTO(sharers.size(), entries);
@@ -51,6 +53,7 @@ public class SharedCalendarService {
 
     private static List<SharedCalendarDTO.Set> toSets(List<ExerciseSet> sets) {
         return sets.stream()
+                .filter(s -> !s.isCardio())
                 .sorted(
                         Comparator.comparing(
                                         ExerciseSet::getExerciseName,
@@ -64,9 +67,7 @@ public class SharedCalendarService {
                                         s.getExerciseName(),
                                         s.getSetNumber(),
                                         s.getReps(),
-                                        s.getWeightLbs(),
-                                        s.getDistanceMiles(),
-                                        s.getDurationSeconds()))
+                                        s.getWeightLbs()))
                 .collect(Collectors.toList());
     }
 }

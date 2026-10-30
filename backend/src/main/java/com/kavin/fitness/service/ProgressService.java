@@ -43,9 +43,7 @@ public class ProgressService {
             List<ExerciseSet> sets =
                     exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, name);
             if (sets.isEmpty()) continue;
-            if (sets.stream()
-                    .anyMatch(s -> s.getDistanceMiles() != null || s.getDurationSeconds() != null))
-                continue;
+            if (sets.stream().anyMatch(ExerciseSet::isCardio)) continue;
 
             // Group by session date, then by weight descending
             Map<LocalDate, List<ExerciseSet>> byDate =
@@ -126,10 +124,8 @@ public class ProgressService {
             List<ExerciseSet> sets =
                     exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, name);
             if (sets.isEmpty()) continue;
-            // Skip cardio/timed — PRs only apply to weighted lifts
-            if (sets.stream()
-                    .anyMatch(s -> s.getDistanceMiles() != null || s.getDurationSeconds() != null))
-                continue;
+            // Skip older cardio/timed rows — PRs only apply to lifts
+            if (sets.stream().anyMatch(ExerciseSet::isCardio)) continue;
 
             // Group by (date, weight). Each group is one "candidate": (weight, setCount,
             // maxRepsInSet, date)

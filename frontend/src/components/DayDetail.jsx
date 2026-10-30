@@ -8,12 +8,7 @@ import WorkoutBuilderModal from "./WorkoutBuilderModal";
 import EditExerciseModal from "./EditExerciseModal";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import api from "../api";
-import {
-	groupByExercise,
-	detectType,
-	formatDuration,
-	calcPace,
-} from "../utils/workout";
+import { groupByExercise } from "../utils/workout";
 
 export default function DayDetail({
 	date,
@@ -345,7 +340,7 @@ export default function DayDetail({
 								>
 									<div className="day-exercise-row">
 										<span className="day-exercise-name">{g.name}</span>
-										{detectType(g.sets) === "lifting" && g.weight != null && (
+										{g.weight != null && (
 											<span className="muted">
 												{toDisplay(g.weight)} {unit}
 											</span>
@@ -365,18 +360,7 @@ export default function DayDetail({
 										</button>
 									</div>
 									<div className="day-exercise-reps">
-										{detectType(g.sets) === "run"
-											? g.sets
-													.map(
-														(s) =>
-															`${s.distanceMiles ?? "--"} mi / ${formatDuration(s.durationSeconds)}${calcPace(s.distanceMiles, s.durationSeconds) ? ` (${calcPace(s.distanceMiles, s.durationSeconds)})` : ""}`,
-													)
-													.join("  ")
-											: detectType(g.sets) === "timed"
-												? g.sets
-														.map((s) => formatDuration(s.durationSeconds))
-														.join("  ")
-												: g.sets.map((s) => s.reps ?? "--").join("  ")}
+										{g.sets.map((s) => s.reps ?? "--").join("  ")}
 									</div>
 								</div>
 							))}

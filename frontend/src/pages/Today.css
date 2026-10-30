@@ -152,12 +152,6 @@
 	color: var(--muted);
 }
 
-/* Cardio variant: 4 columns (Set | Distance | Time | Pace) */
-.exercise-sets-head--cardio,
-.exercise-set-row--cardio {
-	grid-template-columns: 36px 1fr 1fr 1fr;
-}
-
 .nutrition-day-info {
 	margin-bottom: 12px;
 }

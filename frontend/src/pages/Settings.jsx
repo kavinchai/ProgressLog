@@ -50,20 +50,11 @@ function buildExportData({ weightData, nutritionData, workoutData, stepData }) {
 	}));
 
 	const workoutRows = [];
-	const cardioRows = [];
 
 	for (const row of rows) {
 		if (!row.workoutEntry?.exerciseSets?.length) continue;
-		const allSets = row.workoutEntry.exerciseSets;
 
-		const strengthSets = allSets.filter(
-			(s) => s.distanceMiles == null && s.durationSeconds == null,
-		);
-		const cardioSets = allSets.filter(
-			(s) => s.distanceMiles != null || s.durationSeconds != null,
-		);
-
-		const groups = groupByExercise(strengthSets);
+		const groups = groupByExercise(row.workoutEntry.exerciseSets);
 		for (const g of groups) {
 			const exportRow = {
 				Date: formatDate(row.date),
@@ -74,17 +65,6 @@ function buildExportData({ weightData, nutritionData, workoutData, stepData }) {
 				exportRow[`Set ${s.setNumber}`] = s.reps != null ? s.reps : "";
 			}
 			workoutRows.push(exportRow);
-		}
-
-		for (const s of cardioSets) {
-			cardioRows.push({
-				Date: formatDate(row.date),
-				Exercise: s.exerciseName,
-				Set: s.setNumber,
-				"Distance (mi)":
-					s.distanceMiles != null ? parseFloat(s.distanceMiles) : "",
-				"Duration (sec)": s.durationSeconds != null ? s.durationSeconds : "",
-			});
 		}
 	}
 
@@ -124,11 +104,11 @@ function buildExportData({ weightData, nutritionData, workoutData, stepData }) {
 		}
 	}
 
-	return { statsData, normalizedWorkoutRows, cardioRows, nutritionRows };
+	return { statsData, normalizedWorkoutRows, nutritionRows };
 }
 
 function exportXlsx(data) {
-	const { statsData, normalizedWorkoutRows, cardioRows, nutritionRows } =
+	const { statsData, normalizedWorkoutRows, nutritionRows } =
 		buildExportData(data);
 	const ws1 = XLSX.utils.json_to_sheet(statsData);
 	const ws2 = XLSX.utils.json_to_sheet(
@@ -137,19 +117,6 @@ function exportXlsx(data) {
 			: [{ Date: "", Exercise: "", Weight: "" }],
 	);
 	const ws3 = XLSX.utils.json_to_sheet(
-		cardioRows.length
-			? cardioRows
-			: [
-					{
-						Date: "",
-						Exercise: "",
-						Set: "",
-						"Distance (mi)": "",
-						"Duration (sec)": "",
-					},
-				],
-	);
-	const ws4 = XLSX.utils.json_to_sheet(
 		nutritionRows.length
 			? nutritionRows
 			: [
@@ -166,19 +133,17 @@ function exportXlsx(data) {
 	const wb = XLSX.utils.book_new();
 	XLSX.utils.book_append_sheet(wb, ws1, "Total Stats");
 	XLSX.utils.book_append_sheet(wb, ws2, "Workouts");
-	XLSX.utils.book_append_sheet(wb, ws3, "Cardio");
-	XLSX.utils.book_append_sheet(wb, ws4, "Nutrition");
+	XLSX.utils.book_append_sheet(wb, ws3, "Nutrition");
 	XLSX.writeFile(wb, "total-stats.xlsx");
 }
 
 function exportJson(data) {
-	const { statsData, normalizedWorkoutRows, cardioRows, nutritionRows } =
+	const { statsData, normalizedWorkoutRows, nutritionRows } =
 		buildExportData(data);
 	const json = JSON.stringify(
 		{
 			totalStats: statsData,
 			workouts: normalizedWorkoutRows,
-			cardio: cardioRows,
 			nutrition: nutritionRows,
 		},
 		null,

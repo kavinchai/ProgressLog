@@ -3,54 +3,20 @@ import api from "../api";
 import useWeightUnit, { toDisplay, fromDisplay } from "../hooks/useWeightUnit";
 
 export function emptySet(num) {
-	return {
-		setNumber: num,
-		reps: "",
-		weightLbs: "",
-		distanceMiles: "",
-		durationHours: "",
-		durationMinutes: "",
-		durationSeconds: "",
-	};
+	return { setNumber: num, reps: "", weightLbs: "" };
 }
 
 export function emptyExercise() {
-	return { exerciseName: "", type: "lifting", sets: [emptySet(1)] };
-}
-
-const TYPE_OPTIONS = [
-	{ value: "lifting", label: "Lifting" },
-	{ value: "timed", label: "Timed" },
-	{ value: "run", label: "Run" },
-];
-
-function detectType(sets) {
-	const hasDist = (sets ?? []).some((s) => s.distanceMiles != null);
-	const hasDur = (sets ?? []).some((s) => s.durationSeconds != null);
-	if (hasDist) return "run";
-	if (hasDur) return "timed";
-	return "lifting";
+	return { exerciseName: "", sets: [emptySet(1)] };
 }
 
 export function exercisesToForm(exercises, unit = "lbs") {
 	return (exercises ?? []).map((ex) => ({
 		exerciseName: ex.exerciseName,
-		type: detectType(ex.sets),
 		sets: (ex.sets ?? []).map((s) => ({
 			setNumber: s.setNumber,
 			reps: String(s.reps),
 			weightLbs: String(toDisplay(s.weightLbs, unit) ?? ""),
-			distanceMiles: s.distanceMiles != null ? String(s.distanceMiles) : "",
-			durationHours:
-				s.durationSeconds != null
-					? String(Math.floor(s.durationSeconds / 3600))
-					: "",
-			durationMinutes:
-				s.durationSeconds != null
-					? String(Math.floor((s.durationSeconds % 3600) / 60))
-					: "",
-			durationSeconds:
-				s.durationSeconds != null ? String(s.durationSeconds % 60) : "",
 		})),
 	}));
 }
@@ -60,25 +26,11 @@ export function exercisesToPayload(exercises, unit = "lbs") {
 		.filter((ex) => ex.exerciseName.trim())
 		.map((ex) => ({
 			exerciseName: ex.exerciseName.trim(),
-			sets: ex.sets.map((s) => {
-				const base = {
-					setNumber: s.setNumber,
-					reps: parseInt(s.reps) || 0,
-					weightLbs: fromDisplay(s.weightLbs, unit) || 0,
-				};
-				if (ex.type === "run") {
-					const mins = parseInt(s.durationMinutes) || 0;
-					const secs = parseInt(s.durationSeconds) || 0;
-					base.distanceMiles = parseFloat(s.distanceMiles) || null;
-					base.durationSeconds = mins * 60 + secs || null;
-				} else if (ex.type === "timed") {
-					const hours = parseInt(s.durationHours) || 0;
-					const mins = parseInt(s.durationMinutes) || 0;
-					const secs = parseInt(s.durationSeconds) || 0;
-					base.durationSeconds = hours * 3600 + mins * 60 + secs || null;
-				}
-				return base;
-			}),
+			sets: ex.sets.map((s) => ({
+				setNumber: s.setNumber,
+				reps: parseInt(s.reps) || 0,
+				weightLbs: fromDisplay(s.weightLbs, unit) || 0,
+			})),
 		}));
 }
 
@@ -139,23 +91,6 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 
 	function addExercise() {
 		onChange((prev) => [...prev, emptyExercise()]);
-	}
-
-	function setType(exerciseIndex, type) {
-		onChange((prev) =>
-			prev.map((ex, i) => {
-				if (i !== exerciseIndex) return ex;
-				const next = { ...ex, type };
-				if (type === "run" && !ex.exerciseName.trim()) {
-					// Runs need a name or they're dropped on save; default it when blank.
-					next.exerciseName = "Run";
-				} else if (type !== "run" && ex.exerciseName === "Run") {
-					// Leaving Run clears the auto-filled name so the user can type their own.
-					next.exerciseName = "";
-				}
-				return next;
-			}),
-		);
 	}
 
 	function removeExercise(exerciseIndex) {
@@ -246,214 +181,64 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 								</button>
 							</div>
 
-							<div
-								className="wbm-type-select"
-								role="group"
-								aria-label="Exercise type"
-							>
-								{TYPE_OPTIONS.map((opt) => (
-									<button
-										key={opt.value}
-										type="button"
-										className={`wbm-type-option${ex.type === opt.value ? " wbm-type-option--active" : ""}`}
-										aria-pressed={ex.type === opt.value}
-										onClick={() => setType(exerciseIndex, opt.value)}
-									>
-										{opt.label}
-									</button>
+							<div className="wbm-sets">
+								<div className="wbm-sets-head">
+									<span>Set</span>
+									<span>Weight ({unit})</span>
+									<span>Reps</span>
+									<span></span>
+								</div>
+								{ex.sets.map((s, setIndex) => (
+									<div key={setIndex} className="wbm-set-row">
+										<span className="wbm-set-num">{s.setNumber}</span>
+										<input
+											className="modal-input wbm-set-input"
+											type="number"
+											step="0.5"
+											min="0"
+											placeholder="0"
+											value={s.weightLbs}
+											onChange={(e) =>
+												updateSet(
+													exerciseIndex,
+													setIndex,
+													"weightLbs",
+													e.target.value,
+												)
+											}
+										/>
+										<input
+											className="modal-input wbm-set-input"
+											type="number"
+											min="0"
+											placeholder="0"
+											value={s.reps}
+											onChange={(e) =>
+												updateSet(
+													exerciseIndex,
+													setIndex,
+													"reps",
+													e.target.value,
+												)
+											}
+										/>
+										<button
+											type="button"
+											className="btn btn-sm"
+											onClick={() => removeSet(exerciseIndex, setIndex)}
+										>
+											&times;
+										</button>
+									</div>
 								))}
 							</div>
-
-							<div
-								className={`wbm-sets${ex.type !== "lifting" ? " wbm-sets--cardio" : ""}`}
+							<button
+								type="button"
+								className="btn btn-sm wbm-add-set"
+								onClick={() => addSet(exerciseIndex)}
 							>
-								{ex.type === "run" ? (
-									<>
-										<div className="wbm-sets-head wbm-sets-head--cardio">
-											<span>Distance (mi)</span>
-											<span>Min</span>
-											<span>Sec</span>
-										</div>
-										{ex.sets.slice(0, 1).map((s, setIndex) => (
-											<div
-												key={setIndex}
-												className="wbm-set-row wbm-set-row--cardio"
-											>
-												<input
-													className="modal-input wbm-set-input"
-													type="number"
-													step="0.01"
-													min="0"
-													placeholder="0"
-													value={s.distanceMiles}
-													onChange={(e) =>
-														updateSet(
-															exerciseIndex,
-															setIndex,
-															"distanceMiles",
-															e.target.value,
-														)
-													}
-												/>
-												<input
-													className="modal-input wbm-set-input"
-													type="number"
-													min="0"
-													placeholder="0"
-													value={s.durationMinutes}
-													onChange={(e) =>
-														updateSet(
-															exerciseIndex,
-															setIndex,
-															"durationMinutes",
-															e.target.value,
-														)
-													}
-												/>
-												<input
-													className="modal-input wbm-set-input"
-													type="number"
-													min="0"
-													max="59"
-													placeholder="0"
-													value={s.durationSeconds}
-													onChange={(e) =>
-														updateSet(
-															exerciseIndex,
-															setIndex,
-															"durationSeconds",
-															e.target.value,
-														)
-													}
-												/>
-											</div>
-										))}
-									</>
-								) : ex.type === "timed" ? (
-									<>
-										<div className="wbm-sets-head wbm-sets-head--cardio">
-											<span>Hr</span>
-											<span>Min</span>
-											<span>Sec</span>
-										</div>
-										{ex.sets.slice(0, 1).map((s, setIndex) => (
-											<div
-												key={setIndex}
-												className="wbm-set-row wbm-set-row--cardio"
-											>
-												<input
-													className="modal-input wbm-set-input"
-													type="number"
-													min="0"
-													placeholder="0"
-													value={s.durationHours}
-													onChange={(e) =>
-														updateSet(
-															exerciseIndex,
-															setIndex,
-															"durationHours",
-															e.target.value,
-														)
-													}
-												/>
-												<input
-													className="modal-input wbm-set-input"
-													type="number"
-													min="0"
-													max="59"
-													placeholder="0"
-													value={s.durationMinutes}
-													onChange={(e) =>
-														updateSet(
-															exerciseIndex,
-															setIndex,
-															"durationMinutes",
-															e.target.value,
-														)
-													}
-												/>
-												<input
-													className="modal-input wbm-set-input"
-													type="number"
-													min="0"
-													max="59"
-													placeholder="0"
-													value={s.durationSeconds}
-													onChange={(e) =>
-														updateSet(
-															exerciseIndex,
-															setIndex,
-															"durationSeconds",
-															e.target.value,
-														)
-													}
-												/>
-											</div>
-										))}
-									</>
-								) : (
-									<>
-										<div className="wbm-sets-head">
-											<span>Set</span>
-											<span>Weight ({unit})</span>
-											<span>Reps</span>
-											<span></span>
-										</div>
-										{ex.sets.map((s, setIndex) => (
-											<div key={setIndex} className="wbm-set-row">
-												<span className="wbm-set-num">{s.setNumber}</span>
-												<input
-													className="modal-input wbm-set-input"
-													type="number"
-													step="0.5"
-													min="0"
-													placeholder="0"
-													value={s.weightLbs}
-													onChange={(e) =>
-														updateSet(
-															exerciseIndex,
-															setIndex,
-															"weightLbs",
-															e.target.value,
-														)
-													}
-												/>
-												<input
-													className="modal-input wbm-set-input"
-													type="number"
-													min="0"
-													placeholder="0"
-													value={s.reps}
-													onChange={(e) =>
-														updateSet(
-															exerciseIndex,
-															setIndex,
-															"reps",
-															e.target.value,
-														)
-													}
-												/>
-												<button
-													type="button"
-													className="btn btn-sm"
-													onClick={() => removeSet(exerciseIndex, setIndex)}
-												>
-													&times;
-												</button>
-											</div>
-										))}
-									</>
-								)}
-							</div>
-							{ex.type === "lifting" && (
-								<button
-									type="button"
-									className="btn btn-sm wbm-add-set"
-									onClick={() => addSet(exerciseIndex)}
-								>
-									+ Set
-								</button>
-							)}
+								+ Set
+							</button>
 						</div>
 					))}
 				</div>

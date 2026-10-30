@@ -4,12 +4,7 @@ import Modal from "../components/Modal";
 import useAuthStore from "../store/authStore";
 import useMediaQuery, { MOBILE_QUERY } from "../hooks/useMediaQuery";
 import { getWeek, localDateStr } from "../utils/date";
-import {
-	groupByExercise,
-	detectType,
-	formatDuration,
-	calcPace,
-} from "../utils/workout";
+import { groupByExercise } from "../utils/workout";
 import "./SharedCalendar.css";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -105,23 +100,7 @@ function mergeByUser(entries) {
 	});
 }
 
-function SetLine({ set, type }) {
-	if (type === "run") {
-		const dist =
-			set.distanceMiles != null
-				? `${Number(set.distanceMiles).toFixed(2)} mi`
-				: "--";
-		const dur = formatDuration(set.durationSeconds);
-		const pace = calcPace(set.distanceMiles, set.durationSeconds);
-		return (
-			<span>
-				{dist} · {dur}
-				{pace ? ` (${pace})` : ""}
-			</span>
-		);
-	}
-	if (type === "timed")
-		return <span>{formatDuration(set.durationSeconds)}</span>;
+function SetLine({ set }) {
 	const reps = set.reps ?? "--";
 	return (
 		<span>
@@ -138,14 +117,13 @@ function WorkoutDetails({ sets }) {
 	return (
 		<div className="sc-detail-list">
 			{groups.map((g) => {
-				const type = detectType(g.sets);
 				return (
 					<div key={`${g.name}-${g.weight}`} className="sc-detail-exercise">
 						<div className="sc-detail-name">{g.name}</div>
 						<ul className="sc-detail-sets">
 							{g.sets.map((s, i) => (
 								<li key={i}>
-									<SetLine set={s} type={type} />
+									<SetLine set={s} />
 								</li>
 							))}
 						</ul>
