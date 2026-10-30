@@ -196,7 +196,7 @@ public class ImportService {
             }
         }
 
-        // ── Workouts (strength + cardio) ──────────────────────────────────────
+        // ── Workouts (lifts only; an older backup's "cardio" rows are ignored) ──
         // Group strength rows by date
         Map<LocalDate, List<Map<String, Object>>> strengthByDate = new LinkedHashMap<>();
         if (request.getWorkouts() != null) {
@@ -207,22 +207,7 @@ public class ImportService {
             }
         }
 
-        // Group cardio rows by date
-        Map<LocalDate, List<Map<String, Object>>> cardioByDate = new LinkedHashMap<>();
-        if (request.getCardio() != null) {
-            for (Map<String, Object> row : request.getCardio()) {
-                LocalDate date = parseDate(getString(row, "Date"));
-                if (date == null) continue;
-                cardioByDate.computeIfAbsent(date, d -> new ArrayList<>()).add(row);
-            }
-        }
-
-        // All dates with any workout data
-        Set<LocalDate> allWorkoutDates = new LinkedHashSet<>();
-        allWorkoutDates.addAll(strengthByDate.keySet());
-        allWorkoutDates.addAll(cardioByDate.keySet());
-
-        for (LocalDate date : allWorkoutDates) {
+        for (LocalDate date : strengthByDate.keySet()) {
             // Bulk-delete existing sessions (and their exercise sets) for this date
             workoutSessionRepository.bulkDeleteExerciseSetsByUserAndDate(user.getId(), date);
             workoutSessionRepository.deleteByUserIdAndSessionDate(user.getId(), date);
@@ -262,27 +247,6 @@ public class ImportService {
                     localSetIndex++;
                 }
                 setOffsets.put(exerciseName, previousSetCount + localSetIndex - 1);
-            }
-
-            // Add cardio sets
-            for (Map<String, Object> row : cardioByDate.getOrDefault(date, List.of())) {
-                String exerciseName = getString(row, "Exercise");
-                Object setObj = row.get("Set");
-                if (exerciseName == null || setObj == null) continue;
-
-                String distStr = getString(row, "Distance (mi)");
-                String durStr = getString(row, "Duration (sec)");
-                if (distStr == null && durStr == null) continue;
-
-                ExerciseSet exerciseSet = new ExerciseSet();
-                exerciseSet.setSession(session);
-                exerciseSet.setExerciseName(exerciseName);
-                exerciseSet.setSetNumber(Integer.parseInt(setObj.toString()));
-                exerciseSet.setReps(0);
-                exerciseSet.setWeightLbs(BigDecimal.ZERO);
-                if (distStr != null) exerciseSet.setDistanceMiles(new BigDecimal(distStr));
-                if (durStr != null) exerciseSet.setDurationSeconds(Integer.parseInt(durStr));
-                session.getExerciseSets().add(exerciseSet);
             }
 
             workoutSessionRepository.save(session);

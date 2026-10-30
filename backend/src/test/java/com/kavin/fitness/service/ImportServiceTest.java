@@ -97,73 +97,39 @@ class ImportServiceTest {
         assertEquals(0, result.getStepsImported());
     }
 
-    // ── cardio import ─────────────────────────────────────────────────────────
+    // ── older backups with cardio ─────────────────────────────────────────────
 
     @Test
-    void importData_importsCardioSetWithDistanceAndDuration() {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("Date", "4/1/26");
-        row.put("Exercise", "Running");
-        row.put("Set", "1");
-        row.put("Distance (mi)", "3.1");
-        row.put("Duration (sec)", "1800");
-        ImportRequest req = new ImportRequest();
-        req.setCardio(List.of(row));
+    void importData_olderBackupWithCardioRows_importsOnlyTheLifts() throws Exception {
+        // Backups made before cardio was removed have a "cardio" section; it's ignored.
+        String json =
+                """
+                {"workouts": [{"Date": "4/1/26", "Exercise": "Bench Press", "Weight": "135",
+                               "Set 1": "8"}],
+                 "cardio": [{"Date": "4/1/26", "Exercise": "Running", "Set": "1",
+                             "Distance (mi)": "3.1", "Duration (sec)": "1800"},
+                            {"Date": "4/2/26", "Exercise": "Running", "Set": "1",
+                             "Distance (mi)": "2.0", "Duration (sec)": "1200"}]}
+                """;
+        ImportRequest req =
+                new com.fasterxml.jackson.databind.ObjectMapper()
+                        .configure(
+                                com.fasterxml.jackson.databind.DeserializationFeature
+                                        .FAIL_ON_UNKNOWN_PROPERTIES,
+                                false)
+                        .readValue(json, ImportRequest.class);
 
         WorkoutSession savedSession = new WorkoutSession();
         when(workoutSessionRepository.save(any())).thenReturn(savedSession);
 
         ImportResultDTO result = importService.importData(user, req);
 
+        // Only 4/1 (the Bench Press day) becomes a workout; the run-only 4/2 is skipped.
         assertEquals(1, result.getWorkoutsImported());
-        verify(workoutSessionRepository, atLeastOnce()).save(any());
-    }
-
-    @Test
-    void importData_importsTimedCardioSetWithoutDistance() {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("Date", "4/2/26");
-        row.put("Exercise", "Jump Rope");
-        row.put("Set", "1");
-        row.put("Distance (mi)", "");
-        row.put("Duration (sec)", "600");
-        ImportRequest req = new ImportRequest();
-        req.setCardio(List.of(row));
-
-        WorkoutSession savedSession = new WorkoutSession();
-        when(workoutSessionRepository.save(any())).thenReturn(savedSession);
-
-        ImportResultDTO result = importService.importData(user, req);
-
-        assertEquals(1, result.getWorkoutsImported());
-    }
-
-    @Test
-    void importData_combinesStrengthAndCardioSetsForSameDate() {
-        Map<String, Object> strengthRow = new LinkedHashMap<>();
-        strengthRow.put("Date", "4/1/26");
-        strengthRow.put("Exercise", "Bench Press");
-        strengthRow.put("Weight", "135");
-        strengthRow.put("Set 1", "8");
-
-        Map<String, Object> cardioRow = new LinkedHashMap<>();
-        cardioRow.put("Date", "4/1/26");
-        cardioRow.put("Exercise", "Running");
-        cardioRow.put("Set", "1");
-        cardioRow.put("Distance (mi)", "3.1");
-        cardioRow.put("Duration (sec)", "1800");
-
-        ImportRequest req = new ImportRequest();
-        req.setWorkouts(List.of(strengthRow));
-        req.setCardio(List.of(cardioRow));
-
-        WorkoutSession savedSession = new WorkoutSession();
-        when(workoutSessionRepository.save(any())).thenReturn(savedSession);
-
-        ImportResultDTO result = importService.importData(user, req);
-
-        // Both sets end up in a single session for 4/1/26
-        assertEquals(1, result.getWorkoutsImported());
+        assertEquals(1, savedSession.getExerciseSets().size());
+        assertTrue(
+                savedSession.getExerciseSets().stream()
+                        .allMatch(s -> s.getExerciseName().equals("Bench Press") && !s.isCardio()));
     }
 
     // ── nutrition import ──────────────────────────────────────────────────────
@@ -355,24 +321,5 @@ class ImportServiceTest {
         verify(nutritionLogRepository).save(captor.capture());
         assertEquals("Imported", captor.getValue().getMeals().get(0).getMealName());
         assertEquals(1, result.getNutritionImported());
-    }
-
-    @Test
-    void importData_handlesNullCardioSection_backwardCompat() {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("Date", "4/1/26");
-        row.put("Exercise", "Squat");
-        row.put("Weight", "225");
-        row.put("Set 1", "5");
-
-        ImportRequest req = new ImportRequest();
-        req.setWorkouts(List.of(row));
-        // req.setCardio intentionally left null
-
-        WorkoutSession savedSession = new WorkoutSession();
-        when(workoutSessionRepository.save(any())).thenReturn(savedSession);
-
-        // Should not throw
-        assertDoesNotThrow(() -> importService.importData(user, req));
     }
 }

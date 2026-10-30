@@ -27,14 +27,6 @@ public class EditExerciseModal {
         page.locator(".modal-box .wbm-set-row .wbm-set-input").nth(setIdx * 2).fill(weight);
     }
 
-    public void editDistance(int setIdx, String distance) {
-        page.locator(".modal-box .wbm-set-row--cardio input[placeholder='0']").nth(setIdx * 3).fill(distance);
-    }
-
-    public void editMinutes(int setIdx, String minutes) {
-        page.locator(".modal-box .wbm-set-row--cardio input[placeholder='0']").nth(setIdx * 3 + 1).fill(minutes);
-    }
-
     public void save() {
         page.locator(SAVE).first().click();
     }

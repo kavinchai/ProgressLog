@@ -94,7 +94,7 @@ public class LeaderboardService {
     }
 
     private static boolean isStrength(ExerciseSet s) {
-        return s.getDistanceMiles() == null && s.getDurationSeconds() == null;
+        return !s.isCardio();
     }
 
     /** One board per strength exercise, busiest first, plus the viewer's standing on each. */

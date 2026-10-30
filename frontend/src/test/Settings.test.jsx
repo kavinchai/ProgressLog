@@ -668,47 +668,19 @@ const NUTRITION_DATA = [
 	},
 ];
 
-const WORKOUT_WITH_CARDIO = [
-	{
-		sessionDate: "2026-04-01",
-		exerciseSets: [
-			{
-				exerciseName: "Bench Press",
-				setNumber: 1,
-				reps: 8,
-				weightLbs: "135",
-				completed: true,
-			},
-			{
-				exerciseName: "Running",
-				setNumber: 1,
-				reps: 0,
-				weightLbs: "0",
-				distanceMiles: "3.1",
-				durationSeconds: 1800,
-			},
-		],
-	},
-];
-
 describe("Settings — export handles nutrition meals", () => {
 	beforeEach(() => {
 		setupProfile();
 		useNutrition.mockReturnValue({ data: NUTRITION_DATA, refetch: vi.fn() });
 	});
 
-	it("XLSX export creates four sheets including Nutrition", async () => {
+	it("XLSX export creates three sheets including Nutrition", async () => {
 		renderSettings();
 		await userEvent.click(
 			screen.getByRole("button", { name: /export.*xlsx/i }),
 		);
 		const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
-		expect(sheetNames).toEqual([
-			"Total Stats",
-			"Workouts",
-			"Cardio",
-			"Nutrition",
-		]);
+		expect(sheetNames).toEqual(["Total Stats", "Workouts", "Nutrition"]);
 	});
 
 	it("JSON export includes a nutrition key with per-meal rows", async () => {
@@ -813,30 +785,29 @@ describe("Settings — export handles nutrition meals", () => {
 	});
 });
 
-describe("Settings — export handles cardio sets", () => {
+describe("Settings — export is lifts only", () => {
 	beforeEach(() => {
 		setupProfile();
 		useWorkouts.mockReturnValue({
-			data: WORKOUT_WITH_CARDIO,
+			data: [
+				{
+					sessionDate: "2026-04-01",
+					exerciseSets: [
+						{
+							exerciseName: "Bench Press",
+							setNumber: 1,
+							reps: 8,
+							weightLbs: "135",
+							completed: true,
+						},
+					],
+				},
+			],
 			refetch: vi.fn(),
 		});
 	});
 
-	it("XLSX export creates four sheets: Total Stats, Workouts, Cardio, Nutrition", async () => {
-		renderSettings();
-		await userEvent.click(
-			screen.getByRole("button", { name: /export.*xlsx/i }),
-		);
-		const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
-		expect(sheetNames).toEqual([
-			"Total Stats",
-			"Workouts",
-			"Cardio",
-			"Nutrition",
-		]);
-	});
-
-	it("JSON export includes a cardio key with cardio rows", async () => {
+	it("JSON export has no cardio section", async () => {
 		let capturedJson = null;
 		const OrigBlob = global.Blob;
 		global.Blob = class {
@@ -853,35 +824,8 @@ describe("Settings — export handles cardio sets", () => {
 		);
 
 		const parsed = JSON.parse(capturedJson);
-		expect(parsed).toHaveProperty("cardio");
-		expect(parsed.cardio).toEqual(
-			expect.arrayContaining([
-				expect.objectContaining({ Exercise: "Running", Set: 1 }),
-			]),
-		);
-		global.Blob = OrigBlob;
-	});
-
-	it("cardio sets do not appear in the workouts section of JSON", async () => {
-		let capturedJson = null;
-		const OrigBlob = global.Blob;
-		global.Blob = class {
-			constructor(data) {
-				capturedJson = data[0];
-			}
-		};
-		global.URL.createObjectURL = vi.fn(() => "blob:x");
-		global.URL.revokeObjectURL = vi.fn();
-
-		renderSettings();
-		await userEvent.click(
-			screen.getByRole("button", { name: /export.*json/i }),
-		);
-
-		const parsed = JSON.parse(capturedJson);
-		const workoutExercises = parsed.workouts.map((r) => r.Exercise);
-		expect(workoutExercises).not.toContain("Running");
-		expect(workoutExercises).toContain("Bench Press");
+		expect(parsed).not.toHaveProperty("cardio");
+		expect(parsed.workouts.map((r) => r.Exercise)).toEqual(["Bench Press"]);
 		global.Blob = OrigBlob;
 	});
 });

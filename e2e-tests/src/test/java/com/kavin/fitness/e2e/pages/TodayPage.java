@@ -195,22 +195,24 @@ public class TodayPage {
         }
     }
 
-    public void assertExerciseDoesNotShowWeight(String name) {
-        // exercise-card containing both the name and an 'lbs' label = bad.
-        int matches = page.locator(".exercise-card",
-                new Page.LocatorOptions().setHasText(name))
-                .locator(":text(\"lbs\")").count();
-        if (matches > 0) {
-            throw new AssertionError("Expected no weight display for " + name + " but found one");
-        }
-    }
-
     public void clickEditExercise(int index) {
         page.locator(".exercise-card .btn.btn-sm").nth(index).click();
     }
 
     public boolean isTextVisible(String text) {
         return page.locator(":text(\"" + text + "\")").count() > 0;
+    }
+
+    /** Waits up to 5s for the exercise's card to disappear; false if it's still there. */
+    public boolean waitForExerciseGone(String name) {
+        try {
+            page.locator("span.exercise-card-name", new Page.LocatorOptions().setHasText(name))
+                    .first().waitFor(new Locator.WaitForOptions()
+                            .setState(WaitForSelectorState.DETACHED).setTimeout(5000));
+            return true;
+        } catch (com.microsoft.playwright.TimeoutError e) {
+            return false;
+        }
     }
 
     public boolean isExerciseVisible(String name) {

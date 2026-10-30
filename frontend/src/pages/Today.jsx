@@ -14,12 +14,7 @@ import WorkoutBuilderModal from "../components/WorkoutBuilderModal";
 import EditExerciseModal from "../components/EditExerciseModal";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import DailyProgressBar from "../components/DailyProgressBar";
-import {
-	groupByExercise,
-	detectType,
-	formatDuration,
-	calcPace,
-} from "../utils/workout";
+import { groupByExercise } from "../utils/workout";
 import { mergeWorkoutSessions } from "../utils/stats";
 import useWeightUnit from "../hooks/useWeightUnit";
 import useToday from "../hooks/useToday";
@@ -30,7 +25,6 @@ import "./Today.css";
 // ── Exercise cards ────────────────────────────────────────────────────────────
 
 function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
-	const type = detectType(sets);
 	const { unit, toDisplay } = useWeightUnit();
 
 	return (
@@ -38,11 +32,9 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
 			<div className="exercise-card-header">
 				<span className="exercise-card-name">
 					{name}
-					{type === "lifting" && (
-						<span className="exercise-card-weight">
-							{toDisplay(weight)} {unit}
-						</span>
-					)}
+					<span className="exercise-card-weight">
+						{toDisplay(weight)} {unit}
+					</span>
 					{isPR && <span className="pr-badge">PR</span>}
 				</span>
 				<button className="btn btn-sm" onClick={onEdit}>
@@ -50,70 +42,22 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
 				</button>
 			</div>
 			<div className="exercise-card-sets">
-				{type === "run" ? (
-					<>
-						<div
-							className="exercise-sets-head exercise-sets-head--cardio"
-							style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-						>
-							<span>Distance</span>
-							<span>Time</span>
-							<span>Pace</span>
+				<>
+					<div className="exercise-sets-head">
+						<span>Set</span>
+						<span>Weight</span>
+						<span>Reps</span>
+					</div>
+					{sets.map((s) => (
+						<div key={s.id} className="exercise-set-row">
+							<span>{s.setNumber}</span>
+							<span>
+								{toDisplay(s.weightLbs)} {unit}
+							</span>
+							<span>{s.reps}</span>
 						</div>
-						{sets.map((s) => (
-							<div
-								key={s.id}
-								className="exercise-set-row exercise-set-row--cardio"
-								style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-							>
-								<span>
-									{s.distanceMiles != null ? `${s.distanceMiles} mi` : "--"}
-								</span>
-								<span>{formatDuration(s.durationSeconds)}</span>
-								<span>
-									{calcPace(s.distanceMiles, s.durationSeconds) ?? "--"}
-								</span>
-							</div>
-						))}
-					</>
-				) : type === "timed" ? (
-					<>
-						<div
-							className="exercise-sets-head"
-							style={{ gridTemplateColumns: "36px 1fr" }}
-						>
-							<span>#</span>
-							<span>Duration</span>
-						</div>
-						{sets.map((s, i) => (
-							<div
-								key={s.id}
-								className="exercise-set-row"
-								style={{ gridTemplateColumns: "36px 1fr" }}
-							>
-								<span>{i + 1}</span>
-								<span>{formatDuration(s.durationSeconds)}</span>
-							</div>
-						))}
-					</>
-				) : (
-					<>
-						<div className="exercise-sets-head">
-							<span>Set</span>
-							<span>Weight</span>
-							<span>Reps</span>
-						</div>
-						{sets.map((s) => (
-							<div key={s.id} className="exercise-set-row">
-								<span>{s.setNumber}</span>
-								<span>
-									{toDisplay(s.weightLbs)} {unit}
-								</span>
-								<span>{s.reps}</span>
-							</div>
-						))}
-					</>
-				)}
+					))}
+				</>
 			</div>
 		</div>
 	);

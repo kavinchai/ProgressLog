@@ -36,11 +36,20 @@ public class ExerciseSet {
     @Column(nullable = false)
     private Boolean completed = true;
 
-    /** Cardio: distance in miles (nullable — only set for cardio exercises). */
+    // The app only logs lifts now. Older rows may still hold a distance or a
+    // duration (runs, walks, timed holds); they are kept in the database but
+    // left out of everything the API returns — see isCardio().
+
+    /** Cardio: distance in miles (nullable — only set on older cardio rows). */
     @Column(name = "distance_miles", precision = 6, scale = 2)
     private BigDecimal distanceMiles;
 
-    /** Cardio: duration in seconds (nullable — only set for cardio exercises). */
+    /** Cardio: duration in seconds (nullable — only set on older cardio / timed rows). */
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
+
+    /** True for an older run / walk / timed row, which the app no longer shows. */
+    public boolean isCardio() {
+        return distanceMiles != null || durationSeconds != null;
+    }
 }

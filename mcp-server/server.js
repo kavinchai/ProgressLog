@@ -23,25 +23,8 @@ function resolveApiKey(req) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDuration(seconds) {
-	const h = Math.floor(seconds / 3600);
-	const m = Math.floor((seconds % 3600) / 60);
-	const s = seconds % 60;
-	return (
-		[h ? `${h}h` : "", m ? `${m}m` : "", s ? `${s}s` : ""]
-			.filter(Boolean)
-			.join(" ") || "0s"
-	);
-}
-
+// Only lifts are tracked; every set is reps × weight.
 function describeSet(s) {
-	if (s.distanceMiles != null || s.durationSeconds != null) {
-		const parts = [];
-		if (s.distanceMiles != null) parts.push(`${s.distanceMiles} mi`);
-		if (s.durationSeconds != null)
-			parts.push(formatDuration(s.durationSeconds));
-		return parts.join(" in ");
-	}
 	return `${s.reps ?? 0} reps @ ${s.weightLbs ?? 0} lbs`;
 }
 
@@ -187,7 +170,7 @@ function createMcpServer(apiKey) {
 	mcp.tool(
 		"log_workout",
 		`Log a strength/lifting workout session. Use ONLY for exercises with reps and weight (e.g. Bench Press, Squat, Deadlift).
-Do NOT use this for runs, cardio, or timed activities — use log_cardio or log_activity instead.
+ProgressLog only tracks lifts: runs, walks, cardio, sports and timed holds (e.g. planks) can't be logged — tell the user that instead of logging them.
 Examples:
   "5x5 bench press at 135 lbs" → exercises: [{ exerciseName: "Bench Press", sets: [{setNumber:1,reps:5,weightLbs:135}, ...] }]
   "3 sets of 10 squats at 185 lbs" → exercises: [{ exerciseName: "Squat", sets: [{setNumber:1,reps:10,weightLbs:185}, ...] }]`,
@@ -267,136 +250,6 @@ Examples:
 		),
 	);
 
-	// ── Tool: log_cardio ─────────────────────────────────────────────────────
-
-	mcp.tool(
-		"log_cardio",
-		`Log a run, bike ride, row, or any cardio activity where both distance and duration are known. Always use this (not log_workout) for any run or distance-based cardio.
-Do NOT use this for activities with no distance (use log_activity instead).
-Examples:
-  "1.53 mile run in 14 mins" → activityName: "Run", distanceMiles: 1.53, durationSeconds: 840
-  "10 mile bike ride in 45 mins" → activityName: "Cycling", distanceMiles: 10, durationSeconds: 2700`,
-		{
-			activityName: z
-				.string()
-				.describe('Name of the activity, e.g. "Run", "Cycling", "Rowing"'),
-			distanceMiles: z.number().min(0).describe("Distance covered in miles"),
-			durationSeconds: z
-				.number()
-				.int()
-				.min(1)
-				.describe("Total duration in seconds"),
-			sessionName: z
-				.string()
-				.optional()
-				.describe(
-					'Optional session label. Defaults to "activityName distanceMiles mi".',
-				),
-			date: z
-				.string()
-				.optional()
-				.describe("Date in YYYY-MM-DD format. Defaults to today."),
-		},
-		withDedup(
-			apiKey,
-			"log_cardio",
-			async ({
-				activityName,
-				distanceMiles,
-				durationSeconds,
-				sessionName,
-				date,
-			}) => {
-				const targetDate = date ?? todayStr();
-				const exercise = {
-					exerciseName: activityName,
-					sets: [
-						{
-							setNumber: 1,
-							reps: 0,
-							weightLbs: 0,
-							distanceMiles,
-							durationSeconds,
-						},
-					],
-				};
-
-				const result = await logExercisesToDate(
-					targetDate,
-					sessionName ?? `${activityName} ${distanceMiles} mi`,
-					[exercise],
-				);
-
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Logged ${activityName}: ${distanceMiles} mi in ${formatDuration(durationSeconds)} on ${result.sessionDate}`,
-						},
-					],
-				};
-			},
-		),
-	);
-
-	// ── Tool: log_activity ────────────────────────────────────────────────────
-
-	mcp.tool(
-		"log_activity",
-		`Log a timed activity with no distance — martial arts, yoga, sports, classes, etc. Always use this (not log_workout) for any non-lifting, non-distance activity.
-Only duration is recorded; reps and weight are not applicable.
-Examples:
-  "1 hour Muay Thai" → activityName: "Muay Thai", durationSeconds: 3600
-  "45 min yoga" → activityName: "Yoga", durationSeconds: 2700
-  "30 min boxing" → activityName: "Boxing", durationSeconds: 1800`,
-		{
-			activityName: z
-				.string()
-				.describe(
-					'Name of the activity, e.g. "Muay Thai", "Yoga", "Boxing", "Basketball", "Soccer"',
-				),
-			durationSeconds: z
-				.number()
-				.int()
-				.min(1)
-				.describe("Total duration of the activity in seconds"),
-			sessionName: z
-				.string()
-				.optional()
-				.describe("Optional session label. Defaults to activityName."),
-			date: z
-				.string()
-				.optional()
-				.describe("Date in YYYY-MM-DD format. Defaults to today."),
-		},
-		withDedup(
-			apiKey,
-			"log_activity",
-			async ({ activityName, durationSeconds, sessionName, date }) => {
-				const targetDate = date ?? todayStr();
-				const exercise = {
-					exerciseName: activityName,
-					sets: [{ setNumber: 1, reps: 0, weightLbs: 0, durationSeconds }],
-				};
-
-				const result = await logExercisesToDate(
-					targetDate,
-					sessionName ?? activityName,
-					[exercise],
-				);
-
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Logged ${activityName}: ${formatDuration(durationSeconds)} on ${result.sessionDate}`,
-						},
-					],
-				};
-			},
-		),
-	);
-
 	// ── Tool: get_workout_by_date ─────────────────────────────────────────────
 
 	mcp.tool(
@@ -465,17 +318,6 @@ Examples:
 										.describe("Set number starting from 1"),
 									reps: z.number().int().min(0).describe("Number of reps"),
 									weightLbs: z.number().min(0).describe("Weight in pounds"),
-									distanceMiles: z
-										.number()
-										.min(0)
-										.optional()
-										.describe("Distance in miles (for cardio)"),
-									durationSeconds: z
-										.number()
-										.int()
-										.min(0)
-										.optional()
-										.describe("Duration in seconds (for cardio)"),
 								}),
 							)
 							.describe("Array of sets for this exercise"),

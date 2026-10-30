@@ -36,7 +36,5 @@ public class SharedCalendarDTO {
         private Integer setNumber;
         private Integer reps;
         private BigDecimal weightLbs;
-        private BigDecimal distanceMiles;
-        private Integer durationSeconds;
     }
 }
