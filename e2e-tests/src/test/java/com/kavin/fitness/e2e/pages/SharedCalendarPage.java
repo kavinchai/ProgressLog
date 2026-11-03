@@ -94,7 +94,9 @@ public class SharedCalendarPage {
 
     /** Opens the lifter's row in the day panel to show their sets. */
     public void expandRow(String username) {
-        page.locator(DAY_ROW, new Page.LocatorOptions().setHas(userRow(username)))
+        // The has-locator is matched inside each row, so it can't include .sc-side.
+        page.locator(DAY_ROW, new Page.LocatorOptions().setHas(
+                        page.locator(".sc-row-name:text-is(\"" + username + "\")")))
                 .locator(".sc-row-button").click();
     }
 
