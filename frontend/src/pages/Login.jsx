@@ -20,6 +20,7 @@ export default function Login() {
 
 	async function handleSubmit(e) {
 		e.preventDefault();
+		if (loading) return;
 		setError("");
 		setLoading(true);
 		try {

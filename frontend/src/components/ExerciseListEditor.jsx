@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../api";
-import useWeightUnit, { toDisplay, fromDisplay } from "../hooks/useWeightUnit";
+import useWeightUnit from "../hooks/useWeightUnit";
 import featuredConfig from "../config/featuredExercises.json";
 import {
 	fetchMatches,
@@ -8,43 +8,12 @@ import {
 	suggestionFor as closeSuggestion,
 	usageLabel,
 } from "../utils/exerciseMatches";
+import { emptyExercise, emptySet } from "../utils/workout";
 
 const FEATURED = new Set(
 	(featuredConfig.strength ?? []).map((n) => n.toLowerCase()),
 );
 const MATCH_DELAY_MS = 250;
-
-export function emptySet(num) {
-	return { setNumber: num, reps: "", weightLbs: "" };
-}
-
-export function emptyExercise() {
-	return { exerciseName: "", sets: [emptySet(1)] };
-}
-
-export function exercisesToForm(exercises, unit = "lbs") {
-	return (exercises ?? []).map((ex) => ({
-		exerciseName: ex.exerciseName,
-		sets: (ex.sets ?? []).map((s) => ({
-			setNumber: s.setNumber,
-			reps: String(s.reps),
-			weightLbs: String(toDisplay(s.weightLbs, unit) ?? ""),
-		})),
-	}));
-}
-
-export function exercisesToPayload(exercises, unit = "lbs") {
-	return exercises
-		.filter((ex) => ex.exerciseName.trim())
-		.map((ex) => ({
-			exerciseName: ex.exerciseName.trim(),
-			sets: ex.sets.map((s) => ({
-				setNumber: s.setNumber,
-				reps: parseInt(s.reps) || 0,
-				weightLbs: fromDisplay(s.weightLbs, unit) || 0,
-			})),
-		}));
-}
 
 /** Existing-lift matches for each typed name, looked up shortly after typing stops. */
 function useNameMatches(exercises) {
@@ -203,6 +172,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 										className="modal-input wbm-exercise-name"
 										type="text"
 										placeholder="Exercise name"
+										aria-label="Exercise name"
 										value={ex.exerciseName}
 										onChange={(e) => {
 											updateExerciseName(exerciseIndex, e.target.value);
@@ -259,6 +229,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 											step="0.5"
 											min="0"
 											placeholder="0"
+											aria-label={`Set ${s.setNumber} weight`}
 											value={s.weightLbs}
 											onChange={(e) =>
 												updateSet(
@@ -274,6 +245,7 @@ export default function ExerciseListEditor({ exercises, onChange }) {
 											type="number"
 											min="0"
 											placeholder="0"
+											aria-label={`Set ${s.setNumber} reps`}
 											value={s.reps}
 											onChange={(e) =>
 												updateSet(

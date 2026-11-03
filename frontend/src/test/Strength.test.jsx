@@ -241,7 +241,7 @@ describe("Strength page — detail for the selected lift", () => {
 
 	it("renders the chart", async () => {
 		await renderLoaded();
-		expect(screen.getByTestId("line-chart")).toBeInTheDocument();
+		expect(await screen.findByTestId("line-chart")).toBeInTheDocument();
 	});
 
 	it("lists sessions newest first and highlights the PR row", async () => {

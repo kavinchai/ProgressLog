@@ -48,6 +48,7 @@ export default function EditExerciseModal({
 
 	async function submit(e) {
 		e.preventDefault();
+		if (saving) return;
 		setErr("");
 		setSaving(true);
 		try {
@@ -71,6 +72,7 @@ export default function EditExerciseModal({
 	}
 
 	async function deleteExercise() {
+		if (saving) return;
 		setSaving(true);
 		try {
 			await api.delete("/workouts/" + sessionId + "/exercises", {

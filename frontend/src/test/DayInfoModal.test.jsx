@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DayInfoModal from "../components/DayInfoModal";
 
@@ -151,5 +151,35 @@ describe("DayInfoModal — editing existing entry", () => {
 				}),
 			);
 		});
+	});
+});
+
+describe("DayInfoModal — double submit", () => {
+	it("sends one request when the form is submitted again while saving", () => {
+		api.post.mockReturnValue(new Promise(() => {}));
+		const { container } = render(
+			<DayInfoModal
+				prefillDate="2026-01-05"
+				onClose={vi.fn()}
+				onSaved={vi.fn()}
+			/>,
+		);
+		const form = container.querySelector("form");
+		fireEvent.submit(form);
+		fireEvent.submit(form);
+		expect(api.post).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("DayInfoModal — labels", () => {
+	it("ties the Day Type label to its select", () => {
+		render(
+			<DayInfoModal
+				prefillDate="2026-01-05"
+				onClose={vi.fn()}
+				onSaved={vi.fn()}
+			/>,
+		);
+		expect(screen.getByLabelText("Day Type").tagName).toBe("SELECT");
 	});
 });

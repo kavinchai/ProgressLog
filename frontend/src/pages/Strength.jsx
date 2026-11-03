@@ -1,13 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import {
-	LineChart,
-	Line,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip,
-	ResponsiveContainer,
-} from "recharts";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import api from "../api";
 import useWeightUnit from "../hooks/useWeightUnit";
 import { formatDate } from "../utils/date";
@@ -17,6 +8,10 @@ import ChooseLiftsModal from "../components/ChooseLiftsModal";
 import { loadChosen, saveChosen, sortLifts } from "../utils/chosenLifts";
 import featuredConfig from "../config/featuredExercises.json";
 import "./Strength.css";
+
+const StrengthLineChart = lazy(
+	() => import("../components/charts/StrengthLineChart"),
+);
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,7 +51,7 @@ function computeStats(sessions, toDisplay) {
 	const maxLbs = Math.max(...byDate.map((s) => Number(s.maxWeightLbs)));
 	const prDate = byDate.find(
 		(s) => Number(s.maxWeightLbs) === maxLbs,
-	).sessionDate;
+	)?.sessionDate;
 	const improvLbs = Number(last.maxWeightLbs) - Number(first.maxWeightLbs);
 	return {
 		currentMax: toDisplay(maxLbs),
@@ -84,83 +79,15 @@ function StrengthChart({ sessions, prWeightLbs, unit, toDisplay }) {
 	const pad = (maxVal - minVal) * 0.15 || 5;
 
 	return (
-		<ResponsiveContainer width="100%" height={240}>
-			<LineChart
-				data={chartData}
-				margin={{ top: 12, right: 16, bottom: 0, left: 0 }}
-			>
-				<CartesianGrid
-					strokeDasharray="2 4"
-					stroke="var(--border-dim)"
-					vertical={false}
-				/>
-				<XAxis
-					dataKey="label"
-					tick={{
-						fill: "var(--muted)",
-						fontSize: 11,
-						fontFamily: "var(--font)",
-					}}
-					axisLine={{ stroke: "var(--border-dim)" }}
-					tickLine={false}
-				/>
-				<YAxis
-					domain={[minVal - pad, maxVal + pad]}
-					tick={{
-						fill: "var(--muted)",
-						fontSize: 11,
-						fontFamily: "var(--font)",
-					}}
-					axisLine={false}
-					tickLine={false}
-					tickFormatter={(v) => v}
-					width={48}
-				/>
-				<Tooltip
-					content={({ active, payload, label }) =>
-						active && payload?.length ? (
-							<div className="chart-tooltip">
-								<div className="chart-tooltip-label">{label}</div>
-								<div className="chart-tooltip-value">
-									{payload[0].value} {unit}
-									{payload[0].payload.isPR && (
-										<span className="chart-pr-tag"> PR</span>
-									)}
-								</div>
-							</div>
-						) : null
-					}
-				/>
-				<Line
-					type="linear"
-					dataKey="weight"
-					stroke="var(--accent)"
-					strokeWidth={2}
-					dot={({ cx, cy, payload, index }) =>
-						payload.isPR ? (
-							<circle
-								key={`pr-${index}`}
-								cx={cx}
-								cy={cy}
-								r={6}
-								fill="var(--accent)"
-								stroke="var(--bg-card)"
-								strokeWidth={2}
-							/>
-						) : (
-							<circle
-								key={`dot-${index}`}
-								cx={cx}
-								cy={cy}
-								r={3}
-								fill="var(--accent)"
-							/>
-						)
-					}
-					activeDot={{ r: 5, fill: "var(--accent)" }}
-				/>
-			</LineChart>
-		</ResponsiveContainer>
+		<Suspense fallback={<div style={{ height: 240 }} />}>
+			<StrengthLineChart
+				chartData={chartData}
+				minVal={minVal}
+				maxVal={maxVal}
+				pad={pad}
+				unit={unit}
+			/>
+		</Suspense>
 	);
 }
 

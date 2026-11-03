@@ -4,6 +4,7 @@ import {
 	useState,
 	useCallback,
 	useRef,
+	useMemo,
 } from "react";
 import { AlertTriangle } from "lucide-react";
 import "./Toast.css";
@@ -40,8 +41,13 @@ export function ToastProvider({ children }) {
 		[show],
 	);
 
+	const value = useMemo(
+		() => ({ error, show, dismiss }),
+		[error, show, dismiss],
+	);
+
 	return (
-		<ToastContext.Provider value={{ error, show, dismiss }}>
+		<ToastContext.Provider value={value}>
 			{children}
 			<ToastViewport toasts={toasts} onDismiss={dismiss} />
 		</ToastContext.Provider>
@@ -53,18 +59,18 @@ function ToastViewport({ toasts, onDismiss }) {
 	return (
 		<div className="toast-viewport" aria-live="polite">
 			{toasts.map((t) => (
-				<button
-					key={t.id}
-					type="button"
-					role="status"
-					className={`toast toast--${t.variant}`}
-					onClick={() => onDismiss(t.id)}
-				>
-					{t.variant === "error" && (
-						<AlertTriangle size={16} className="toast-icon" />
-					)}
-					<span className="toast-message">{t.message}</span>
-				</button>
+				<div key={t.id} role="status">
+					<button
+						type="button"
+						className={`toast toast--${t.variant}`}
+						onClick={() => onDismiss(t.id)}
+					>
+						{t.variant === "error" && (
+							<AlertTriangle size={16} className="toast-icon" />
+						)}
+						<span className="toast-message">{t.message}</span>
+					</button>
+				</div>
 			))}
 		</div>
 	);

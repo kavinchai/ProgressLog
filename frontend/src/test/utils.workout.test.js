@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { groupByExercise, canonicalExerciseName } from "../utils/workout";
+import {
+	groupByExercise,
+	canonicalExerciseName,
+	emptySet,
+	emptyExercise,
+	exercisesToForm,
+	exercisesToPayload,
+} from "../utils/workout";
 
 describe("canonicalExerciseName", () => {
 	it('maps "Lat raises" to "Lateral Raises"', () => {
@@ -104,5 +111,37 @@ describe("groupByExercise", () => {
 		];
 		const result = groupByExercise(sets);
 		expect(result[0].weight).toBe(95.5);
+	});
+});
+
+describe("workout form helpers", () => {
+	it("emptyExercise starts with one blank set", () => {
+		expect(emptyExercise()).toEqual({
+			exerciseName: "",
+			sets: [emptySet(1)],
+		});
+		expect(emptySet(3)).toEqual({ setNumber: 3, reps: "", weightLbs: "" });
+	});
+
+	it("round-trips exercises through form strings and back to a payload", () => {
+		const exercises = [
+			{
+				exerciseName: "Bench",
+				sets: [{ setNumber: 1, reps: 8, weightLbs: 135 }],
+			},
+		];
+		const form = exercisesToForm(exercises);
+		expect(form[0].sets[0]).toEqual({
+			setNumber: 1,
+			reps: "8",
+			weightLbs: "135",
+		});
+		expect(exercisesToPayload(form)).toEqual(exercises);
+	});
+
+	it("drops exercises with a blank name from the payload", () => {
+		expect(
+			exercisesToPayload([{ exerciseName: "  ", sets: [emptySet(1)] }]),
+		).toEqual([]);
 	});
 });

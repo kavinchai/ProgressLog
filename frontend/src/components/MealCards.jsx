@@ -48,10 +48,10 @@ function MealCard({
 	const [fields, setFields] = useState(() => fieldsFrom(meal, slot));
 	const [status, setStatus] = useState(null); // "saving" | "saved" | null
 	const fieldsRef = useRef(fields);
-	const savedRef = useRef(fieldsFrom(meal, slot));
+	const savedRef = useRef(fields);
 	const idRef = useRef(meal?.id ?? null);
 	const editingRef = useRef(false);
-	const queueRef = useRef(Promise.resolve());
+	const queueRef = useRef(null); // tail of the save queue
 	const nameRef = useRef(null);
 
 	// Pick up refetched data (e.g. after undo) unless the user is mid-edit.
@@ -72,30 +72,32 @@ function MealCard({
 	}
 
 	function commit(next = fieldsRef.current) {
-		queueRef.current = queueRef.current.then(async () => {
-			const body = bodyFrom(next, slot);
-			const saved = bodyFrom(savedRef.current, slot);
-			const blank =
-				!idRef.current &&
-				!body.mealName &&
-				next.calories === "" &&
-				next.protein === "" &&
-				(slot || !body.mealLabel);
-			if (blank || JSON.stringify(body) === JSON.stringify(saved)) return;
-			setStatus("saving");
-			try {
-				const id = await saveMeal(idRef.current, body);
-				if (id && !idRef.current) {
-					idRef.current = id;
-					onCreated?.(id);
+		queueRef.current = (queueRef.current ?? Promise.resolve()).then(
+			async () => {
+				const body = bodyFrom(next, slot);
+				const saved = bodyFrom(savedRef.current, slot);
+				const blank =
+					!idRef.current &&
+					!body.mealName &&
+					next.calories === "" &&
+					next.protein === "" &&
+					(slot || !body.mealLabel);
+				if (blank || JSON.stringify(body) === JSON.stringify(saved)) return;
+				setStatus("saving");
+				try {
+					const id = await saveMeal(idRef.current, body);
+					if (id && !idRef.current) {
+						idRef.current = id;
+						onCreated?.(id);
+					}
+					savedRef.current = next;
+					setStatus("saved");
+				} catch {
+					toast.error("Failed to save meal");
+					setStatus(null);
 				}
-				savedRef.current = next;
-				setStatus("saved");
-			} catch {
-				toast.error("Failed to save meal");
-				setStatus(null);
-			}
-		});
+			},
+		);
 	}
 
 	async function toggleSkipped(checked) {
@@ -244,7 +246,9 @@ export default function MealCards({
 	const [confirmDelete, setConfirmDelete] = useState(null);
 	const nextKeyRef = useRef(0);
 	const logIdRef = useRef(nutritionEntry?.id ?? null);
-	if (nutritionEntry?.id) logIdRef.current = nutritionEntry.id;
+	useEffect(() => {
+		if (nutritionEntry?.id) logIdRef.current = nutritionEntry.id;
+	}, [nutritionEntry?.id]);
 
 	// First meal labelled after each slot fills it; everything else is extra.
 	const used = new Set();

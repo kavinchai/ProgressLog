@@ -335,6 +335,9 @@
 	grid-auto-columns: minmax(8px, 1fr);
 	gap: 3px;
 	min-width: 100%;
+	margin: 0;
+	padding: 0;
+	list-style: none;
 }
 
 .history-grid .history-grid-cell {

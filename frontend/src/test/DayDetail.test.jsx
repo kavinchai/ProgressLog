@@ -6,7 +6,7 @@
  * (existingSession + appendBlankExercise) rather than create a brand-new workout.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DayDetail from "../components/DayDetail";
 
@@ -199,5 +199,18 @@ describe("DayDetail — workout add", () => {
 		const modal = screen.getByTestId("workout-modal");
 		expect(modal.dataset.existingSessionId).toBe("");
 		expect(modal.dataset.appendBlank).toBe("false");
+	});
+});
+
+describe("DayDetail — inline input labels", () => {
+	it("labels the inline steps input", async () => {
+		renderDetail(null);
+		const stepsSection = screen
+			.getByText("Steps", { selector: ".day-detail-label" })
+			.closest(".day-detail-section");
+		await userEvent.click(
+			within(stepsSection).getByRole("button", { name: /^edit$/i }),
+		);
+		expect(screen.getByLabelText("Steps")).toHaveAttribute("type", "number");
 	});
 });

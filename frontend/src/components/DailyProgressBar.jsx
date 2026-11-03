@@ -1,5 +1,45 @@
 import "./DailyProgressBar.css";
 
+function ProgressItem({
+	label,
+	current,
+	goal,
+	percent,
+	category,
+	unit,
+	exceeded,
+}) {
+	return (
+		<div className="daily-progress-item">
+			<div className="daily-progress-header">
+				<span className="daily-progress-label">{label}</span>
+				<span className="daily-progress-value">
+					{Math.round(current).toLocaleString()}/
+					{Math.round(goal).toLocaleString()} {unit}
+				</span>
+			</div>
+			<div
+				className={`daily-progress-bar-container daily-progress-bar-container--${category}`}
+			>
+				<div
+					className={`daily-progress-bar daily-progress-bar--${category}`}
+					style={{ width: `${percent}%` }}
+				/>
+			</div>
+			{exceeded && (
+				<span className="daily-progress-exceeded">
+					+{Math.round(current - goal).toLocaleString()} over
+				</span>
+			)}
+			{current > 0 && current < goal && (
+				<span className="daily-progress-remaining">
+					{Math.round(goal - current).toLocaleString()} {unit} remaining
+				</span>
+			)}
+		</div>
+	);
+}
+
 export default function DailyProgressBar({
 	caloriesCurrent,
 	caloriesGoal,
@@ -24,46 +64,6 @@ export default function DailyProgressBar({
 	const caloriesExceeded = (caloriesCurrent ?? 0) > (caloriesGoal ?? 0);
 	const proteinExceeded = (proteinCurrent ?? 0) > (proteinGoal ?? 0);
 	const stepsExceeded = (stepsCurrent ?? 0) > (stepsGoal ?? 0);
-
-	function ProgressItem({
-		label,
-		current,
-		goal,
-		percent,
-		category,
-		unit,
-		exceeded,
-	}) {
-		return (
-			<div className="daily-progress-item">
-				<div className="daily-progress-header">
-					<span className="daily-progress-label">{label}</span>
-					<span className="daily-progress-value">
-						{Math.round(current).toLocaleString()}/
-						{Math.round(goal).toLocaleString()} {unit}
-					</span>
-				</div>
-				<div
-					className={`daily-progress-bar-container daily-progress-bar-container--${category}`}
-				>
-					<div
-						className={`daily-progress-bar daily-progress-bar--${category}`}
-						style={{ width: `${percent}%` }}
-					/>
-				</div>
-				{exceeded && (
-					<span className="daily-progress-exceeded">
-						+{Math.round(current - goal).toLocaleString()} over
-					</span>
-				)}
-				{current > 0 && current < goal && (
-					<span className="daily-progress-remaining">
-						{Math.round(goal - current).toLocaleString()} {unit} remaining
-					</span>
-				)}
-			</div>
-		);
-	}
 
 	return (
 		<div className="daily-progress-summary">

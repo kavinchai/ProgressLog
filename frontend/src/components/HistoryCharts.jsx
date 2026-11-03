@@ -135,11 +135,10 @@ export function WorkoutGrid({ title, days }) {
 	return (
 		<ChartCard title={title} subtitle={`${total} workout days`}>
 			<div className="history-grid-wrap">
-				<div className="history-grid" role="list" aria-label="Workout days">
+				<ul className="history-grid" aria-label="Workout days">
 					{days.map((d) => (
-						<span
+						<li
 							key={d.date}
-							role="listitem"
 							aria-label={`${d.date}: ${d.count} workout${d.count === 1 ? "" : "s"}`}
 							className={
 								"history-grid-cell" +
@@ -147,7 +146,7 @@ export function WorkoutGrid({ title, days }) {
 							}
 						/>
 					))}
-				</div>
+				</ul>
 			</div>
 			<div className="history-legend">
 				<span>none</span>

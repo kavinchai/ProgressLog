@@ -81,3 +81,16 @@ describe("Modal", () => {
 		expect(onClose).not.toHaveBeenCalled();
 	});
 });
+
+describe("Modal — native dialog", () => {
+	it("renders its box as an open native <dialog> named by the title", () => {
+		render(
+			<Modal title="Log Weight" onClose={() => {}}>
+				<p>content</p>
+			</Modal>,
+		);
+		const dialog = screen.getByRole("dialog", { name: "Log Weight" });
+		expect(dialog.tagName).toBe("DIALOG");
+		expect(dialog).toHaveAttribute("open");
+	});
+});

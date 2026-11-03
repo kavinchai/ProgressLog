@@ -211,6 +211,11 @@
 }
 
 .wbm-similar {
+	/* Reset the browser's default <dialog> positioning and box. */
+	position: static;
+	margin: 0;
+	width: auto;
+	color: inherit;
 	background: var(--bg);
 	border: 1px solid var(--border);
 }

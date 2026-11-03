@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import * as XLSX from "xlsx";
 import Modal from "../components/Modal";
 import useUserProfile from "../hooks/useUserProfile";
 import useAuthStore from "../store/authStore";
@@ -107,7 +106,9 @@ function buildExportData({ weightData, nutritionData, workoutData, stepData }) {
 	return { statsData, normalizedWorkoutRows, nutritionRows };
 }
 
-function exportXlsx(data) {
+// xlsx is large, so it's only downloaded when someone actually exports.
+async function exportXlsx(data) {
+	const XLSX = await import("xlsx");
 	const { statsData, normalizedWorkoutRows, nutritionRows } =
 		buildExportData(data);
 	const ws1 = XLSX.utils.json_to_sheet(statsData);
@@ -303,6 +304,7 @@ function GoalsForm({ goals, saving, error, saveGoals, onSaved, onCancel }) {
 
 	async function handleSubmit(e) {
 		e.preventDefault();
+		if (saving) return;
 		try {
 			await saveGoals({
 				calorieTargetTraining: parseInt(form.calorieTargetTraining, 10),
@@ -363,6 +365,7 @@ function StepsGoalForm({ goals, saving, error, saveGoals, onSaved, onCancel }) {
 
 	async function handleSubmit(e) {
 		e.preventDefault();
+		if (saving) return;
 		try {
 			await saveGoals({ ...goals, stepsTarget: parseInt(value, 10) });
 			onSaved();
@@ -428,6 +431,7 @@ function UsernameForm({ onDone, onCancel }) {
 
 	async function handleSubmit(e) {
 		e.preventDefault();
+		if (busy) return;
 		setError(null);
 		setBusy(true);
 		try {
@@ -483,6 +487,7 @@ function EmailForm({ currentEmail, onDone, onCancel }) {
 
 	async function handleSubmit(e) {
 		e.preventDefault();
+		if (busy) return;
 		setError(null);
 		const newEmail = email.trim();
 		if (newEmail === currentEmail) {
@@ -537,6 +542,7 @@ function PasswordForm({ onDone, onCancel }) {
 
 	async function handleSubmit(e) {
 		e.preventDefault();
+		if (busy) return;
 		setError(null);
 		if (form.next.length < MIN_PASSWORD) {
 			setError(`New password must be at least ${MIN_PASSWORD} characters.`);
@@ -775,7 +781,7 @@ function DataGroup() {
 		const file = e.target.files?.[0];
 		if (!fileInputRef.current) return;
 		fileInputRef.current.value = "";
-		if (!file) return;
+		if (!file || importing) return;
 
 		setImporting(true);
 		setImportResult(null);

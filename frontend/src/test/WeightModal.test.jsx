@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WeightModal from "../components/WeightModal";
 
@@ -165,5 +165,39 @@ describe("WeightModal — editing existing entry", () => {
 		);
 		expect(screen.getByDisplayValue("2026-01-03")).toBeInTheDocument();
 		expect(screen.getByRole("spinbutton").value).toBe("175.2");
+	});
+});
+
+describe("WeightModal — double submit", () => {
+	it("sends one request when the form is submitted again while saving", () => {
+		api.post.mockReturnValue(new Promise(() => {}));
+		const { container } = render(
+			<WeightModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		fireEvent.change(screen.getByRole("spinbutton"), {
+			target: { value: "180" },
+		});
+		const form = container.querySelector("form");
+		fireEvent.submit(form);
+		fireEvent.submit(form);
+		expect(api.post).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("WeightModal — labels", () => {
+	it("ties the Date and Weight labels to their inputs", () => {
+		render(
+			<WeightModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		expect(screen.getByLabelText("Date")).toHaveValue("2026-01-05");
+		expect(screen.getByLabelText(/^weight/i)).toHaveAttribute("type", "number");
 	});
 });
