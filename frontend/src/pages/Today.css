@@ -152,48 +152,6 @@
 	color: var(--muted);
 }
 
-.nutrition-day-info {
-	margin-bottom: 12px;
-}
-
-.nutrition-totals {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	padding: 10px 0;
-	margin-top: 10px;
-	border-top: 1px solid var(--border-dim);
-}
-
-.nutrition-totals-row {
-	display: flex;
-	align-items: baseline;
-	gap: 12px;
-	font-size: var(--fs-sm);
-}
-
-.nutrition-totals-label {
-	color: var(--muted);
-	text-transform: capitalize;
-	letter-spacing: 0.02em;
-	font-weight: var(--fw-semibold);
-	font-size: var(--fs-xs);
-	min-width: 50px;
-	flex-shrink: 0;
-}
-
-.nutrition-goal-remaining {
-	color: var(--warning);
-	font-size: var(--fs-sm);
-	font-weight: var(--fw-medium);
-}
-
-.nutrition-goal-met {
-	color: var(--success);
-	font-size: var(--fs-sm);
-	font-weight: var(--fw-medium);
-}
-
 /* ── PR badge ── */
 .pr-badge {
 	display: inline-flex;
@@ -262,6 +220,9 @@
 
 .today-day-type-toggle {
 	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 	padding: 4px 12px;
 	font-size: var(--fs-xs);
 	font-family: var(--font);
@@ -279,6 +240,18 @@
 .today-day-type-toggle:hover {
 	border-color: var(--accent);
 	color: var(--accent);
+}
+
+.today-day-type-toggle:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.today-load-error {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 }
 
 .workout-session-name {
@@ -316,10 +289,5 @@
 
 	.today-data-row {
 		gap: 6px;
-	}
-
-	.nutrition-totals-row {
-		flex-wrap: wrap;
-		gap: 4px;
 	}
 }

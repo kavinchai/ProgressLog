@@ -77,6 +77,7 @@ function DayCard({
 	toDisplay,
 	calorieGoal,
 	proteinGoal,
+	stepsGoal,
 }) {
 	const future = row.date > today;
 	const dow = DOW[new Date(`${row.date}T12:00:00`).getDay()];
@@ -94,7 +95,7 @@ function DayCard({
 			goal: proteinGoal,
 			suffix: "g",
 		},
-		{ key: "steps", label: "steps", value: row.steps, goal: STEPS_GOAL },
+		{ key: "steps", label: "steps", value: row.steps, goal: stepsGoal },
 	];
 	return (
 		<button
@@ -160,6 +161,7 @@ export default function WeeklyStats() {
 	const { data: workoutData, refetch: refetchWorkouts } = useWorkouts();
 	const { data: stepData, refetch: refetchSteps } = useSteps();
 	const { goals } = useUserProfile();
+	const stepsGoal = goals.stepsTarget ?? STEPS_GOAL;
 	const { unit, toDisplay } = useWeightUnit();
 
 	const [offset, setOffset] = useState(0);
@@ -309,6 +311,7 @@ export default function WeeklyStats() {
 							toDisplay={toDisplay}
 							calorieGoal={calorieGoal}
 							proteinGoal={goals.proteinTarget}
+							stepsGoal={stepsGoal}
 						/>
 					</li>
 				))}
@@ -377,7 +380,7 @@ export default function WeeklyStats() {
 					<DailyBarChart
 						title="Steps per day"
 						data={chartData("steps")}
-						goal={STEPS_GOAL}
+						goal={stepsGoal}
 						color="#8a7ec8"
 						unit="steps"
 					/>

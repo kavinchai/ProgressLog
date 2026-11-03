@@ -3,7 +3,7 @@ import {
 	localDateStr,
 	formatDate,
 	formatDateShort,
-	formatDateFull,
+	formatDayLabel,
 	shortDate,
 	avg,
 	getCurrentWeek,
@@ -49,13 +49,15 @@ describe("formatDateShort", () => {
 	});
 });
 
-describe("formatDateFull", () => {
-	it("converts YYYY-MM-DD to M/D/YYYY", () => {
-		expect(formatDateFull("2026-01-05")).toBe("1/5/2026");
+describe("formatDayLabel", () => {
+	it('converts YYYY-MM-DD to "Dow, Mon D"', () => {
+		// 2026-11-02 is a Monday
+		expect(formatDayLabel("2026-11-02")).toBe("Mon, Nov 2");
 	});
 
-	it("keeps four-digit year", () => {
-		expect(formatDateFull("2000-12-31")).toBe("12/31/2000");
+	it("handles the last day of the year", () => {
+		// 2000-12-31 is a Sunday
+		expect(formatDayLabel("2000-12-31")).toBe("Sun, Dec 31");
 	});
 });
 

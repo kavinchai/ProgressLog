@@ -95,6 +95,12 @@
 	letter-spacing: 0.02em;
 }
 
+.daily-progress-remaining {
+	font-size: var(--fs-xs);
+	color: var(--muted);
+	letter-spacing: 0.02em;
+}
+
 @media (max-width: 640px) {
 	.daily-progress-summary {
 		padding: 12px;

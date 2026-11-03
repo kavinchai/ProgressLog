@@ -146,3 +146,16 @@ describe("App routing — auth store reactivity", () => {
 		expect(screen.queryByText("Community Page")).not.toBeInTheDocument();
 	});
 });
+
+describe("App theme", () => {
+	it("applies the saved dark theme on any logged-in page", () => {
+		localStorage.setItem("theme", "dark");
+		document.documentElement.classList.remove("dark");
+		useAuthStore.setState({ authenticated: true, username: "alice" });
+		window.history.pushState({}, "", "/today");
+		render(<App />);
+		expect(document.documentElement).toHaveClass("dark");
+		localStorage.removeItem("theme");
+		document.documentElement.classList.remove("dark");
+	});
+});

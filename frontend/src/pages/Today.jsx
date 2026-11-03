@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowLeftRight } from "lucide-react";
 import api from "../api";
 import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
@@ -18,7 +19,7 @@ import { groupByExercise } from "../utils/workout";
 import { mergeWorkoutSessions } from "../utils/stats";
 import useWeightUnit from "../hooks/useWeightUnit";
 import useToday from "../hooks/useToday";
-import { formatDateFull as fmtDate } from "../utils/date";
+import { formatDayLabel } from "../utils/date";
 import "../pages/WeeklyStats.css";
 import "./Today.css";
 
@@ -118,10 +119,17 @@ export default function Today() {
 		loadingSteps ||
 		loadingProfile ||
 		loadingPRs;
-	const hasError =
-		errorWeight || errorNutrition || errorWorkouts || errorSteps || errorPRs;
-	const firstError =
-		errorWeight || errorNutrition || errorWorkouts || errorSteps || errorPRs;
+	const failedLoads = [
+		[errorWeight, refetchWeight],
+		[errorNutrition, refetchNutrition],
+		[errorWorkouts, refetchWorkouts],
+		[errorSteps, refetchSteps],
+		[errorPRs, refetchPRs],
+	].filter(([error]) => error);
+
+	function retryFailedLoads() {
+		failedLoads.forEach(([, refetch]) => refetch());
+	}
 
 	const [modal, setModal] = useState(null);
 	const [editingEntry, setEditingEntry] = useState(null);
@@ -204,8 +212,6 @@ export default function Today() {
 		}
 	}
 
-	const meals = todayNutritionEntry?.meals ?? [];
-
 	function closeModal() {
 		setModal(null);
 		setEditingEntry(null);
@@ -251,7 +257,7 @@ export default function Today() {
 			<div className="today-page">
 				<div className="today-page-header">
 					<span className="today-title">Today</span>
-					<span className="today-date muted">{fmtDate(TODAY)}</span>
+					<span className="today-date muted">{formatDayLabel(TODAY)}</span>
 				</div>
 				<div className="loading-state">Loading your daily stats…</div>
 			</div>
@@ -260,21 +266,33 @@ export default function Today() {
 
 	return (
 		<div className="today-page">
-			{hasError && (
-				<div className="notice error">
-					Error loading data: {firstError}. Please refresh the page.
+			{failedLoads.length > 0 && (
+				<div className="notice error today-load-error">
+					<span>Couldn't load some of today's data.</span>
+					<button className="btn btn-sm" onClick={retryFailedLoads}>
+						Retry
+					</button>
 				</div>
 			)}
 			<div className="today-page-header">
 				<span className="today-title">Today</span>
-				<span className="today-date muted">{fmtDate(TODAY)}</span>
-				<button
-					className="today-day-type-toggle"
-					onClick={toggleDayType}
-					disabled={dayTypeSaving}
-				>
-					{todayNutritionEntry?.dayType ?? "training"}
-				</button>
+				<span className="today-date muted">{formatDayLabel(TODAY)}</span>
+				{(() => {
+					const dayType = todayNutritionEntry?.dayType ?? "training";
+					const other = dayType === "training" ? "rest" : "training";
+					return (
+						<button
+							className="today-day-type-toggle"
+							onClick={toggleDayType}
+							disabled={dayTypeSaving || Boolean(errorNutrition)}
+							aria-label={`${dayType} day, switch to ${other} day`}
+							title={`Switch to ${other} day`}
+						>
+							{dayType} day
+							<ArrowLeftRight size={12} aria-hidden="true" />
+						</button>
+					);
+				})()}
 			</div>
 
 			{(() => {
@@ -292,7 +310,7 @@ export default function Today() {
 						proteinCurrent={protEaten}
 						proteinGoal={goals.proteinTarget ?? 150}
 						stepsCurrent={stepsTaken}
-						stepsGoal={10000}
+						stepsGoal={goals.stepsTarget ?? 10000}
 					/>
 				);
 			})()}
@@ -337,7 +355,9 @@ export default function Today() {
 							</div>
 						</div>
 						<div className="section-body">
-							{todayWeightEntry ? (
+							{errorWeight ? (
+								<span className="muted">Not loaded.</span>
+							) : todayWeightEntry ? (
 								<DataRow
 									label="Weight"
 									value={toDisplay(todayWeightEntry.weightLbs) + " " + unit}
@@ -397,7 +417,9 @@ export default function Today() {
 							</div>
 						</div>
 						<div className="section-body">
-							{editingSteps ? (
+							{errorSteps ? (
+								<span className="muted">Not loaded.</span>
+							) : editingSteps ? (
 								<div className="today-steps-edit">
 									<input
 										className="modal-input"
@@ -531,7 +553,7 @@ export default function Today() {
 										Delete
 									</button>
 								)}
-								{!todayWorkoutEntry && (
+								{!todayWorkoutEntry && !errorWorkouts && (
 									<button
 										className="btn btn-sm btn-primary"
 										onClick={() => openWorkoutModal()}
@@ -598,7 +620,9 @@ export default function Today() {
 									</div>
 								)
 							) : (
-								<span className="muted">No entry for today.</span>
+								<span className="muted">
+									{errorWorkouts ? "Not loaded." : "No entry for today."}
+								</span>
 							)}
 						</div>
 					</div>
@@ -641,76 +665,14 @@ export default function Today() {
 							</div>
 						</div>
 						<div className="section-body">
-							{todayNutritionEntry && (
-								<div className="nutrition-day-info">
-									<DataRow
-										label="Day Type"
-										value={todayNutritionEntry.dayType}
-									/>
-								</div>
-							)}
-							<MealCards
-								nutritionEntry={todayNutritionEntry ?? null}
-								getOrCreateNutritionLogId={getOrCreateNutritionLogId}
-								onSaved={refetchNutrition}
-							/>
-							{todayNutritionEntry && meals.length > 0 && (
-								<>
-									<div className="nutrition-totals">
-										{(() => {
-											const calTarget =
-												todayNutritionEntry.dayType === "training"
-													? goals.calorieTargetTraining
-													: goals.calorieTargetRest;
-											const calEaten = todayNutritionEntry.totalCalories ?? 0;
-											const protEaten = todayNutritionEntry.totalProtein ?? 0;
-											const calLeft = calTarget - calEaten;
-											const protLeft = goals.proteinTarget - protEaten;
-											return (
-												<>
-													<div className="nutrition-totals-row">
-														<span className="nutrition-totals-label">
-															Calories
-														</span>
-														<span>
-															{calEaten} / {calTarget} kcal
-														</span>
-														<span
-															className={
-																calLeft <= 0
-																	? "nutrition-goal-met"
-																	: "nutrition-goal-remaining"
-															}
-														>
-															{calLeft <= 0
-																? `+${Math.abs(calLeft)} over`
-																: `${calLeft} remaining`}
-														</span>
-													</div>
-													<div className="nutrition-totals-row">
-														<span className="nutrition-totals-label">
-															Protein
-														</span>
-														<span>
-															{protEaten} / {goals.proteinTarget} g
-														</span>
-														<span
-															className={
-																protLeft <= 0
-																	? "nutrition-goal-met"
-																	: "nutrition-goal-remaining"
-															}
-														>
-															{protLeft <= 0
-																? `+${Math.abs(protLeft)}g over`
-																: `${protLeft}g remaining`}
-														</span>
-													</div>
-												</>
-											);
-										})()}
-									</div>
-								</>
+							{errorNutrition ? (
+								<span className="muted">Not loaded.</span>
+							) : (
+								<MealCards
+									nutritionEntry={todayNutritionEntry ?? null}
+									getOrCreateNutritionLogId={getOrCreateNutritionLogId}
+									onSaved={refetchNutrition}
+								/>
 							)}
 						</div>
 					</div>

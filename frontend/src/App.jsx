@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { useEffect } from "react";
 import useAuthStore from "./store/authStore";
+import useTheme from "./hooks/useTheme";
 import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
 import BottomTabBar from "./components/layout/BottomTabBar";
@@ -29,6 +30,8 @@ function ScrollToTop() {
 }
 
 function AppLayout({ children }) {
+	// Applies the saved theme on every page; the picker itself is in Settings.
+	useTheme();
 	return (
 		<div className="app-layout">
 			<Sidebar />

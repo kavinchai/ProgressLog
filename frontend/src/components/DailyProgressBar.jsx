@@ -39,7 +39,8 @@ export default function DailyProgressBar({
 				<div className="daily-progress-header">
 					<span className="daily-progress-label">{label}</span>
 					<span className="daily-progress-value">
-						{Math.round(current)}/{Math.round(goal)} {unit}
+						{Math.round(current).toLocaleString()}/
+						{Math.round(goal).toLocaleString()} {unit}
 					</span>
 				</div>
 				<div
@@ -52,7 +53,12 @@ export default function DailyProgressBar({
 				</div>
 				{exceeded && (
 					<span className="daily-progress-exceeded">
-						+{Math.round(current - goal)} over
+						+{Math.round(current - goal).toLocaleString()} over
+					</span>
+				)}
+				{current > 0 && current < goal && (
+					<span className="daily-progress-remaining">
+						{Math.round(goal - current).toLocaleString()} {unit} remaining
 					</span>
 				)}
 			</div>

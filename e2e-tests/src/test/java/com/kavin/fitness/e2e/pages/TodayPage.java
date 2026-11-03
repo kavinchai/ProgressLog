@@ -5,6 +5,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class TodayPage {
@@ -87,14 +88,18 @@ public class TodayPage {
     // Meal boxes themselves live in the MealCards page object.
 
     /**
-     * Waits until the totals row for {@code label} ("Calories" / "Protein") shows
-     * exactly {@code eaten} as the amount eaten ("620 / 2600 kcal"), so a target
-     * or "remaining" number can't satisfy the wait by accident.
+     * Waits until the progress bar for {@code label} ("Calories" / "Protein") at the
+     * top of the page shows exactly {@code eaten} as the amount eaten
+     * ("620/2,600 kcal"), so a goal or "remaining" number can't satisfy the wait by
+     * accident.
      */
     public void waitForEaten(String label, int eaten) {
-        page.locator(".nutrition-totals-row", new Page.LocatorOptions().setHasText(label))
-                .filter(new Locator.FilterOptions()
-                        .setHasText(Pattern.compile("(^|\\D)" + eaten + " / ")))
+        page.locator(".daily-progress-item")
+                .filter(new Locator.FilterOptions().setHas(
+                        page.locator(".daily-progress-label:text-is(\"" + label + "\")")))
+                .locator(".daily-progress-value")
+                .filter(new Locator.FilterOptions().setHasText(
+                        Pattern.compile("^" + String.format(Locale.US, "%,d", eaten) + "/")))
                 .waitFor();
     }
 

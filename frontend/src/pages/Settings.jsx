@@ -288,6 +288,8 @@ function FormActions({ submitLabel, busy, disabled, onCancel, children }) {
 
 const apiError = (err, fallback) => err.response?.data?.message ?? fallback;
 
+const DEFAULT_STEPS_GOAL = 10000;
+
 // ── Forms ───────────────────────────────────────────────────────────────────
 
 function GoalsForm({ goals, saving, error, saveGoals, onSaved, onCancel }) {
@@ -344,6 +346,53 @@ function GoalsForm({ goals, saving, error, saveGoals, onSaved, onCancel }) {
 			{error && <p className="settings-error">{error}</p>}
 			<FormActions
 				submitLabel="Save goals"
+				busy={saving}
+				disabled={!dirty}
+				onCancel={onCancel}
+			>
+				{dirty && <span className="settings-dirty">● Unsaved changes</span>}
+			</FormActions>
+		</form>
+	);
+}
+
+function StepsGoalForm({ goals, saving, error, saveGoals, onSaved, onCancel }) {
+	const initial = String(goals.stepsTarget ?? DEFAULT_STEPS_GOAL);
+	const [value, setValue] = useState(initial);
+	const dirty = value !== initial;
+
+	async function handleSubmit(e) {
+		e.preventDefault();
+		try {
+			await saveGoals({ ...goals, stepsTarget: parseInt(value, 10) });
+			onSaved();
+		} catch {
+			/* error shown via hook */
+		}
+	}
+
+	return (
+		<form className="settings-form" onSubmit={handleSubmit}>
+			<div className="settings-fields">
+				<Field id="stepsTarget" label="Steps per day">
+					<span className="settings-suffix">
+						<input
+							id="stepsTarget"
+							name="stepsTarget"
+							type="number"
+							min="1"
+							className="settings-input"
+							value={value}
+							onChange={(e) => setValue(e.target.value)}
+							required
+						/>
+						<span>steps</span>
+					</span>
+				</Field>
+			</div>
+			{error && <p className="settings-error">{error}</p>}
+			<FormActions
+				submitLabel="Save steps goal"
 				busy={saving}
 				disabled={!dirty}
 				onCancel={onCancel}
@@ -580,8 +629,14 @@ function PrivacyGroup() {
 	const [privacyLoading, setPrivacyLoading] = useState(true);
 	const [privacySaving, setPrivacySaving] = useState(null);
 	const [privacyError, setPrivacyError] = useState(null);
+	// When the current setting couldn't be read, the switches would show a
+	// guessed "Off", so they stay hidden until a retry succeeds.
+	const [privacyLoadFailed, setPrivacyLoadFailed] = useState(false);
 
-	useEffect(() => {
+	function loadPrivacy() {
+		setPrivacyLoading(true);
+		setPrivacyError(null);
+		setPrivacyLoadFailed(false);
 		api
 			.get("/profile/privacy")
 			.then((res) =>
@@ -590,9 +645,14 @@ function PrivacyGroup() {
 					shareCalendar: Boolean(res.data.shareCalendar),
 				}),
 			)
-			.catch(() => setPrivacyError("Could not load privacy setting."))
+			.catch(() => {
+				setPrivacyError("Could not load privacy setting.");
+				setPrivacyLoadFailed(true);
+			})
 			.finally(() => setPrivacyLoading(false));
-	}, []);
+	}
+
+	useEffect(loadPrivacy, []);
 
 	async function updatePrivacy(key) {
 		const next = { ...privacy, [key]: !privacy[key] };
@@ -623,6 +683,12 @@ function PrivacyGroup() {
 		<Group title="Privacy">
 			{privacyLoading ? (
 				<Row label="Loading…" />
+			) : privacyLoadFailed ? (
+				<Row label="Sharing settings">
+					<button type="button" className="btn btn-sm" onClick={loadPrivacy}>
+						Retry
+					</button>
+				</Row>
 			) : (
 				<>
 					<Row label="Share data on leaderboard" hint={leaderboardHint}>
@@ -845,6 +911,27 @@ export default function Settings() {
 						saveGoals={saveGoals}
 						onSaved={() => finishRow("goals")}
 						onCancel={() => toggleRow("goals")}
+					/>
+				</EditRow>
+				<EditRow
+					label="Daily steps goal"
+					value={
+						loading
+							? "Loading…"
+							: `${(goals.stepsTarget ?? DEFAULT_STEPS_GOAL).toLocaleString()} steps`
+					}
+					saved={savedRow === "steps"}
+					open={openRow === "steps"}
+					disabled={loading}
+					onToggle={() => toggleRow("steps")}
+				>
+					<StepsGoalForm
+						goals={goals}
+						saving={saving}
+						error={error}
+						saveGoals={saveGoals}
+						onSaved={() => finishRow("steps")}
+						onCancel={() => toggleRow("steps")}
 					/>
 				</EditRow>
 			</Group>

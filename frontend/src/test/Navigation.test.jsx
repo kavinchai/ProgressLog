@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { BrowserRouter } from "react-router-dom";
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 import BottomTabBar from "../components/layout/BottomTabBar";
@@ -102,22 +101,35 @@ describe("main navigation", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("mobile top bar exposes theme toggle and logout (no hamburger menu)", async () => {
-		const user = userEvent.setup();
+	it("mobile top bar is just the brand (theme and log out live in Settings)", () => {
 		render(
 			<BrowserRouter>
 				<Navbar />
 			</BrowserRouter>,
 		);
 
-		// The hamburger menu has been replaced by the bottom tab bar.
+		expect(screen.getByText("ProgressLog")).toBeInTheDocument();
 		expect(
 			screen.queryByRole("button", { name: "Menu" }),
 		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /dark|light/i }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "Log out" }),
+		).not.toBeInTheDocument();
+	});
 
-		// Theme + logout remain reachable from the slim top bar.
-		await user.click(screen.getByRole("button", { name: /dark mode/i }));
-		expect(setDark).toHaveBeenCalledTimes(1);
+	it("desktop sidebar has no theme toggle (Settings owns the theme)", () => {
+		render(
+			<BrowserRouter>
+				<Sidebar />
+			</BrowserRouter>,
+		);
+
+		expect(
+			screen.queryByRole("button", { name: /dark mode|light mode/i }),
+		).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
 	});
 });

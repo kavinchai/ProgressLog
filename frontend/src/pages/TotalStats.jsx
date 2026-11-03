@@ -81,6 +81,7 @@ export default function TotalStats() {
 	const { data: workoutData, refetch: refetchWorkouts } = useWorkouts();
 	const { data: stepData, refetch: refetchSteps } = useSteps();
 	const { goals } = useUserProfile();
+	const stepsGoal = goals.stepsTarget ?? STEPS_GOAL;
 	const { unit, toDisplay } = useWeightUnit();
 
 	const isMobile = useMediaQuery(MOBILE_QUERY);
@@ -185,7 +186,7 @@ export default function TotalStats() {
 			label: "Steps",
 			show: (r) => fmt(r.steps),
 			value: (r) => r.steps,
-			goal: () => STEPS_GOAL,
+			goal: () => stepsGoal,
 			unit: "steps",
 		},
 		weight: {
@@ -374,7 +375,7 @@ export default function TotalStats() {
 					target {goals.proteinTarget}g
 				</Kpi>
 				<Kpi label="Avg steps" value={fmt(month.steps)}>
-					goal {fmt(STEPS_GOAL)}
+					goal {fmt(stepsGoal)}
 				</Kpi>
 				<Kpi label="Workouts" value={month.workouts}>
 					this month

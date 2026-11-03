@@ -26,33 +26,4 @@
 		color: var(--accent);
 		letter-spacing: -0.02em;
 	}
-
-	.navbar-actions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.navbar-action {
-		background: transparent;
-		border: 1px solid var(--border);
-		color: var(--muted);
-		font-family: var(--font);
-		font-size: var(--fs-xs);
-		font-weight: var(--fw-medium);
-		padding: 6px 12px;
-		border-radius: var(--radius-md);
-		cursor: pointer;
-		transition: all var(--transition-fast);
-	}
-
-	.navbar-action:hover {
-		color: var(--fg);
-		border-color: var(--muted);
-		background: var(--hover-bg);
-	}
-
-	.navbar-action:active {
-		background: var(--active-bg);
-	}
 }

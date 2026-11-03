@@ -62,23 +62,6 @@
 	gap: 8px;
 }
 
-.sidebar-darkmode {
-	align-self: flex-start;
-	border: none;
-	background: transparent;
-	color: var(--muted);
-	padding: 4px 0;
-	cursor: pointer;
-	font-family: var(--font);
-	font-size: var(--fs-sm);
-	font-weight: var(--fw-medium);
-	transition: color var(--transition-fast);
-}
-
-.sidebar-darkmode:hover {
-	color: var(--fg);
-}
-
 .sidebar-user {
 	font-size: var(--fs-sm);
 	font-weight: var(--fw-medium);

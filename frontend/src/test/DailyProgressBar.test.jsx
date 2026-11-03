@@ -25,7 +25,7 @@ describe("DailyProgressBar — display", () => {
 			/>,
 		);
 		expect(screen.getByText("Calories")).toBeInTheDocument();
-		expect(screen.getByText(/1800\/2600 kcal/i)).toBeInTheDocument();
+		expect(screen.getByText(/1,800\/2,600 kcal/i)).toBeInTheDocument();
 	});
 
 	it("shows protein label and current/goal values", () => {
@@ -55,7 +55,7 @@ describe("DailyProgressBar — display", () => {
 			/>,
 		);
 		expect(screen.getByText("Steps")).toBeInTheDocument();
-		expect(screen.getByText(/8000\/10000 steps/i)).toBeInTheDocument();
+		expect(screen.getByText(/8,000\/10,000 steps/i)).toBeInTheDocument();
 	});
 
 	it("renders three progress bars", () => {
@@ -178,7 +178,7 @@ describe("DailyProgressBar — exceeded indicator", () => {
 				stepsGoal={10000}
 			/>,
 		);
-		expect(screen.getByText(/\+2000 over/i)).toBeInTheDocument();
+		expect(screen.getByText(/\+2,000 over/i)).toBeInTheDocument();
 	});
 
 	it('does NOT show "over" message when under goal', () => {
@@ -227,7 +227,7 @@ describe("DailyProgressBar — null/zero handling", () => {
 		// Should render without crashing and show 0/0 values
 		expect(screen.getByText(/0\/0 kcal/i)).toBeInTheDocument();
 		expect(screen.getByText(/0\/0 g/i)).toBeInTheDocument();
-		expect(screen.getByText(/0\/1000 steps/i)).toBeInTheDocument(); // steps has a default goal of 1000
+		expect(screen.getByText(/0\/1,000 steps/i)).toBeInTheDocument(); // steps has a default goal of 1000
 	});
 
 	it("rounds fractional values in display", () => {
@@ -241,9 +241,9 @@ describe("DailyProgressBar — null/zero handling", () => {
 				stepsGoal={10000}
 			/>,
 		);
-		expect(screen.getByText(/1235\/2600 kcal/i)).toBeInTheDocument(); // rounded to 1235
+		expect(screen.getByText(/1,235\/2,600 kcal/i)).toBeInTheDocument(); // rounded to 1235
 		expect(screen.getByText(/123\/180 g/i)).toBeInTheDocument(); // rounded to 123
-		expect(screen.getByText(/8765\/10000 steps/i)).toBeInTheDocument(); // rounded to 8765
+		expect(screen.getByText(/8,765\/10,000 steps/i)).toBeInTheDocument(); // rounded to 8765
 	});
 });
 
@@ -291,5 +291,52 @@ describe("DailyProgressBar — styling", () => {
 		);
 		const bar = container.querySelector(".daily-progress-bar--steps");
 		expect(bar).toHaveClass("daily-progress-bar--steps");
+	});
+});
+
+describe("DailyProgressBar — remaining", () => {
+	it("shows how much is left for each metric under its goal", () => {
+		render(
+			<DailyProgressBar
+				caloriesCurrent={1800}
+				caloriesGoal={2600}
+				proteinCurrent={120}
+				proteinGoal={180}
+				stepsCurrent={8000}
+				stepsGoal={10000}
+			/>,
+		);
+		expect(screen.getByText("800 kcal remaining")).toBeInTheDocument();
+		expect(screen.getByText("60 g remaining")).toBeInTheDocument();
+		expect(screen.getByText("2,000 steps remaining")).toBeInTheDocument();
+	});
+
+	it("hides remaining when nothing is logged yet", () => {
+		render(
+			<DailyProgressBar
+				caloriesCurrent={0}
+				caloriesGoal={2600}
+				proteinCurrent={0}
+				proteinGoal={180}
+				stepsCurrent={0}
+				stepsGoal={10000}
+			/>,
+		);
+		expect(screen.queryByText(/remaining/i)).not.toBeInTheDocument();
+	});
+
+	it("shows over instead of remaining once a goal is exceeded", () => {
+		render(
+			<DailyProgressBar
+				caloriesCurrent={3000}
+				caloriesGoal={2600}
+				proteinCurrent={120}
+				proteinGoal={180}
+				stepsCurrent={8000}
+				stepsGoal={10000}
+			/>,
+		);
+		expect(screen.getByText(/\+400 over/i)).toBeInTheDocument();
+		expect(screen.queryByText(/kcal remaining/i)).not.toBeInTheDocument();
 	});
 });

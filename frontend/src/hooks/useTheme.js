@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // Theme mode: "light" | "dark" | "system" (follows the OS setting).
-// Every useTheme caller (sidebar, phone top bar, Settings) stays in sync
+// Every useTheme caller (app layout, Settings) stays in sync
 // through a window event fired whenever the mode changes.
 const THEME_EVENT = "themechange";
 const DARK_QUERY = "(prefers-color-scheme: dark)";

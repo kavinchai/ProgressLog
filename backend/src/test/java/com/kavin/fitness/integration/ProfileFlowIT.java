@@ -49,6 +49,39 @@ class ProfileFlowIT extends IntegrationTestBase {
     }
 
     @Test
+    void stepsTarget_defaultsTo10000_canBeUpdated_andIsKeptWhenOmitted() throws Exception {
+        mockMvc.perform(get("/api/profile/goals").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stepsTarget").value(10000));
+
+        mockMvc.perform(
+                        put("/api/profile/goals")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                            {"calorieTargetTraining": 2600, "calorieTargetRest": 2000, "proteinTarget": 180, "stepsTarget": 8000}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stepsTarget").value(8000));
+
+        // An older client that doesn't know about steps leaves it unchanged.
+        mockMvc.perform(
+                        put("/api/profile/goals")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                            {"calorieTargetTraining": 2700, "calorieTargetRest": 2000, "proteinTarget": 180}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stepsTarget").value(8000));
+
+        mockMvc.perform(get("/api/profile/goals").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.stepsTarget").value(8000));
+    }
+
+    @Test
     void emailFlow_readRegistered_update_readBack() throws Exception {
         // 1. Email matches what was provided at registration
         mockMvc.perform(get("/api/profile/email").header("Authorization", "Bearer " + token))
