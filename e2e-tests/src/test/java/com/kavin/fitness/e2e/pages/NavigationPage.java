@@ -12,7 +12,6 @@ public class NavigationPage {
     private static final String SIDEBAR_ACTIVE_LINK = ".sidebar-nav .sidebar-link.active";
     private static final String SIDEBAR_LOGO = ".sidebar-logo";
     private static final String SIDEBAR_LOGOUT = ".sidebar-logout";
-    private static final String SIDEBAR_DARKMODE = ".sidebar-darkmode";
     private static final String SIDEBAR_USER = ".sidebar-user .muted";
 
     public NavigationPage(Page page) {
@@ -42,14 +41,6 @@ public class NavigationPage {
 
     public String getDisplayedUsername() {
         return page.locator(SIDEBAR_USER).innerText();
-    }
-
-    public String getDarkModeButtonText() {
-        return page.locator(SIDEBAR_DARKMODE).innerText();
-    }
-
-    public void clickDarkModeToggle() {
-        page.locator(SIDEBAR_DARKMODE).click();
     }
 
     public void clickLogout() {

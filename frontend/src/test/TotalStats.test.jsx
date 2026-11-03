@@ -59,14 +59,13 @@ vi.mock("../hooks/useMediaQuery", () => ({
 	default: vi.fn(() => false),
 	MOBILE_QUERY: "(max-width: 640px)",
 }));
+const mockGoals = vi.hoisted(() => ({
+	calorieTargetTraining: 2600,
+	calorieTargetRest: 2000,
+	proteinTarget: 180,
+}));
 vi.mock("../hooks/useUserProfile", () => ({
-	default: () => ({
-		goals: {
-			calorieTargetTraining: 2600,
-			calorieTargetRest: 2000,
-			proteinTarget: 180,
-		},
-	}),
+	default: () => ({ goals: mockGoals }),
 }));
 
 import useWeightLog from "../hooks/useWeightLog";
@@ -356,5 +355,19 @@ describe("TotalStats — month navigation", () => {
 
 		// Now showing May 2026.
 		expect(screen.getByTestId("calendar-day-2026-05-10")).toBeInTheDocument();
+	});
+});
+
+describe("TotalStats — steps goal", () => {
+	it("shows the user's steps goal in the steps KPI", () => {
+		mockGoals.stepsTarget = 7500;
+		try {
+			render(<TotalStats />);
+			expect(
+				screen.getByRole("group", { name: "Avg steps" }),
+			).toHaveTextContent("goal 7,500");
+		} finally {
+			delete mockGoals.stepsTarget;
+		}
 	});
 });

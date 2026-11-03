@@ -16,10 +16,26 @@ export function formatDateShort(iso) {
 	return `${parseInt(m)}/${parseInt(d)}/${y.slice(2)}`;
 }
 
-// 'YYYY-MM-DD' → 'M/D/YYYY'  (Today page header)
-export function formatDateFull(iso) {
-	const [y, m, d] = iso.split("-");
-	return `${parseInt(m)}/${parseInt(d)}/${y}`;
+// 'YYYY-MM-DD' → 'Mon, Nov 2'  (Today page header)
+export function formatDayLabel(iso) {
+	const [, m, d] = iso.split("-");
+	const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+	const months = [
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Oct",
+		"Nov",
+		"Dec",
+	];
+	const day = days[new Date(iso + "T12:00:00").getDay()];
+	return `${day}, ${months[parseInt(m) - 1]} ${parseInt(d)}`;
 }
 
 // 'YYYY-MM-DD' → 'Mon M/D'  (WeeklyStats chart labels and table)

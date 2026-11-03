@@ -25,7 +25,7 @@ vi.mock("../components/Toast", () => ({
 // Fix the date so TODAY constant in Today.jsx is predictable
 vi.mock("../utils/date", () => ({
 	localDateStr: () => "2026-04-10",
-	formatDateFull: () => "4/10/2026",
+	formatDayLabel: () => "Fri, Apr 10",
 }));
 
 // Stub all modals — they have their own test files.
@@ -81,7 +81,13 @@ vi.mock("../components/MealCards", () => ({
 	),
 }));
 vi.mock("../components/DailyProgressBar", () => ({
-	default: () => <div data-testid="daily-progress-bar" />,
+	default: ({ caloriesGoal, stepsGoal }) => (
+		<div
+			data-testid="daily-progress-bar"
+			data-calories-goal={caloriesGoal}
+			data-steps-goal={stepsGoal}
+		/>
+	),
 }));
 
 vi.mock("../api", () => ({
@@ -539,33 +545,6 @@ describe("Today — nutrition display", () => {
 		expect(screen.getByTestId("meal-cards").dataset.logId).toBe("5");
 	});
 
-	it("shows calorie totals vs target", () => {
-		setup({ nutrition: [NUTRITION_ENTRY] });
-		render(<Today />);
-		// 1800 eaten, 2600 target → "1800 / 2600 kcal"
-		expect(screen.getByText(/1800 \/ 2600 kcal/i)).toBeInTheDocument();
-	});
-
-	it('shows "remaining" when under calorie target', () => {
-		setup({ nutrition: [NUTRITION_ENTRY] });
-		render(<Today />);
-		expect(screen.getByText(/800 remaining/i)).toBeInTheDocument(); // 2600 - 1800
-	});
-
-	it('shows "over" when calorie target is exceeded', () => {
-		const over = { ...NUTRITION_ENTRY, totalCalories: 3000, totalProtein: 200 };
-		setup({ nutrition: [over] });
-		render(<Today />);
-		expect(screen.getByText(/\+400 over/i)).toBeInTheDocument(); // 3000 - 2600
-	});
-
-	it("shows protein remaining vs target", () => {
-		setup({ nutrition: [NUTRITION_ENTRY] });
-		render(<Today />);
-		// 120g eaten, 180g target → 60g remaining
-		expect(screen.getByText(/60g remaining/i)).toBeInTheDocument();
-	});
-
 	it("shows day type toggle button", () => {
 		setup({ nutrition: [NUTRITION_ENTRY] });
 		render(<Today />);
@@ -574,17 +553,18 @@ describe("Today — nutrition display", () => {
 		).toBeInTheDocument();
 	});
 
-	it("hides the totals when the day has no meals yet", () => {
-		const noMeals = {
-			...NUTRITION_ENTRY,
-			meals: [],
-			totalCalories: 0,
-			totalProtein: 0,
-		};
-		setup({ nutrition: [noMeals] });
+	it("does not repeat the day type as a row in the nutrition section", () => {
+		setup({ nutrition: [NUTRITION_ENTRY] });
 		render(<Today />);
-		expect(screen.getByTestId("meal-cards")).toBeInTheDocument();
-		expect(screen.queryByText(/remaining/i)).not.toBeInTheDocument();
+		expect(screen.queryByText("Day Type")).not.toBeInTheDocument();
+	});
+
+	it("labels the day-type toggle so it reads as a switch", () => {
+		setup({ nutrition: [NUTRITION_ENTRY] });
+		render(<Today />);
+		expect(
+			screen.getByRole("button", { name: /training day.*switch to rest/i }),
+		).toBeInTheDocument();
 	});
 });
 
@@ -824,5 +804,105 @@ describe("Today — rename workout session", () => {
 		expect(
 			screen.queryByPlaceholderText(/session name/i),
 		).not.toBeInTheDocument();
+	});
+});
+
+// ── DISPLAY: header and progress goals ───────────────────────────────────────
+
+describe("Today — header and goals", () => {
+	it("shows the date as a readable day label", () => {
+		setup();
+		render(<Today />);
+		expect(screen.getByText("Fri, Apr 10")).toBeInTheDocument();
+	});
+
+	it("passes the user's steps goal to the progress bar", () => {
+		setup({ goals: { ...DEFAULT_GOALS, stepsTarget: 7500 } });
+		render(<Today />);
+		expect(screen.getByTestId("daily-progress-bar").dataset.stepsGoal).toBe(
+			"7500",
+		);
+	});
+
+	it("falls back to a 10,000 steps goal when none is set", () => {
+		setup();
+		render(<Today />);
+		expect(screen.getByTestId("daily-progress-bar").dataset.stepsGoal).toBe(
+			"10000",
+		);
+	});
+});
+
+// ── STATES: a section that failed to load ────────────────────────────────────
+
+describe("Today — load errors", () => {
+	it("shows a friendly banner with Retry that refetches what failed", async () => {
+		const { refetchWeight, refetchSteps } = setup();
+		useWeightLog.mockReturnValue({
+			data: [],
+			refetch: refetchWeight,
+			error: "Request failed with status code 500",
+		});
+		render(<Today />);
+
+		expect(
+			screen.getByText(/couldn't load some of today's data/i),
+		).toBeInTheDocument();
+		expect(screen.queryByText(/status code 500/i)).not.toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole("button", { name: /retry/i }));
+		expect(refetchWeight).toHaveBeenCalledTimes(1);
+		expect(refetchSteps).not.toHaveBeenCalled();
+	});
+
+	it("does not offer to add weight when weight failed to load", () => {
+		const { refetchWeight } = setup();
+		useWeightLog.mockReturnValue({
+			data: [],
+			refetch: refetchWeight,
+			error: "boom",
+		});
+		render(<Today />);
+		expect(
+			screen.queryByRole("button", { name: /\+ add weight/i }),
+		).not.toBeInTheDocument();
+		expect(screen.getAllByText(/not loaded/i).length).toBeGreaterThan(0);
+	});
+
+	it("does not offer to add steps when steps failed to load", () => {
+		const { refetchSteps } = setup();
+		useSteps.mockReturnValue({
+			data: [],
+			refetch: refetchSteps,
+			error: "boom",
+		});
+		render(<Today />);
+		expect(
+			screen.queryByRole("button", { name: /\+ add steps/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("does not offer to start a workout when workouts failed to load", () => {
+		const { refetchWorkouts } = setup();
+		useWorkouts.mockReturnValue({
+			data: [],
+			refetch: refetchWorkouts,
+			error: "boom",
+		});
+		render(<Today />);
+		expect(
+			screen.queryByRole("button", { name: /start workout/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("hides the meal boxes when nutrition failed to load", () => {
+		const { refetchNutrition } = setup();
+		useNutrition.mockReturnValue({
+			data: [],
+			refetch: refetchNutrition,
+			error: "boom",
+		});
+		render(<Today />);
+		expect(screen.queryByTestId("meal-cards")).not.toBeInTheDocument();
 	});
 });

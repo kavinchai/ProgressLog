@@ -261,3 +261,21 @@ describe("WeeklyStats — summary and charts", () => {
 		).toBeTruthy();
 	});
 });
+
+describe("WeeklyStats — steps goal", () => {
+	it("fills the steps bar against the user's steps goal", () => {
+		useUserProfile.mockReturnValue({
+			goals: {
+				calorieTargetTraining: 2600,
+				calorieTargetRest: 2000,
+				proteinTarget: 180,
+				stepsTarget: 5000,
+			},
+		});
+		setup({ steps: [{ id: 1, logDate: "2026-05-05", steps: 2500 }] });
+		const { container } = render(<WeeklyStats />);
+		const fills = container.querySelectorAll(".week-day-fill--steps");
+		const widths = [...fills].map((f) => f.style.width);
+		expect(widths).toContain("50%");
+	});
+});

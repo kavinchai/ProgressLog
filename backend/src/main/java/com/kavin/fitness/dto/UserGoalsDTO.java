@@ -17,12 +17,18 @@ public class UserGoalsDTO {
     @Min(1)
     private Integer proteinTarget;
 
+    // Optional on update: older clients that don't send it keep the current goal.
+    @Min(1)
+    private Integer stepsTarget;
+
     public UserGoalsDTO() {}
 
-    public UserGoalsDTO(int calorieTargetTraining, int calorieTargetRest, int proteinTarget) {
+    public UserGoalsDTO(
+            int calorieTargetTraining, int calorieTargetRest, int proteinTarget, int stepsTarget) {
         this.calorieTargetTraining = calorieTargetTraining;
         this.calorieTargetRest = calorieTargetRest;
         this.proteinTarget = proteinTarget;
+        this.stepsTarget = stepsTarget;
     }
 
     public Integer getCalorieTargetTraining() {
@@ -47,5 +53,13 @@ public class UserGoalsDTO {
 
     public void setProteinTarget(Integer v) {
         this.proteinTarget = v;
+    }
+
+    public Integer getStepsTarget() {
+        return stepsTarget;
+    }
+
+    public void setStepsTarget(Integer v) {
+        this.stepsTarget = v;
     }
 }

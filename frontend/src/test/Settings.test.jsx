@@ -1048,3 +1048,73 @@ describe("Settings — switches work from the keyboard", () => {
 		await waitFor(() => expect(toggle).toBeEnabled());
 	});
 });
+
+describe("Settings — steps goal row", () => {
+	it("shows the current steps goal, defaulting to 10,000", () => {
+		setupProfile();
+		renderSettings();
+		expect(
+			screen.getByRole("button", { name: /daily steps goal/i }),
+		).toHaveTextContent("10,000 steps");
+	});
+
+	it("saves a new steps goal along with the other goals", async () => {
+		const saveGoals = vi.fn().mockResolvedValue({});
+		setupProfile({ saveGoals, goals: { ...DEFAULT_GOALS, stepsTarget: 8000 } });
+		renderSettings();
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /daily steps goal/i }),
+		);
+		const input = screen.getByLabelText(/steps per day/i);
+		expect(input).toHaveValue(8000);
+		await userEvent.clear(input);
+		await userEvent.type(input, "12000");
+		await userEvent.click(
+			screen.getByRole("button", { name: /save steps goal/i }),
+		);
+
+		await waitFor(() =>
+			expect(saveGoals).toHaveBeenCalledWith({
+				...DEFAULT_GOALS,
+				stepsTarget: 12000,
+			}),
+		);
+		expect(await screen.findByText(/saved!/i)).toBeInTheDocument();
+	});
+});
+
+describe("Settings — privacy load failure", () => {
+	it("hides the switches and offers Retry when privacy fails to load", async () => {
+		setupProfile();
+		let calls = 0;
+		api.get.mockImplementation((url) => {
+			if (url === "/profile/privacy") {
+				calls += 1;
+				return calls === 1
+					? Promise.reject(new Error("500"))
+					: Promise.resolve({
+							data: { shareData: true, shareCalendar: false },
+						});
+			}
+			return Promise.resolve({ data: { email: "alice@example.com" } });
+		});
+		renderSettings();
+
+		expect(
+			await screen.findByText(/could not load privacy setting/i),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /toggle data sharing/i }),
+		).not.toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole("button", { name: /retry/i }));
+
+		expect(
+			await screen.findByRole("button", { name: /toggle data sharing/i }),
+		).toHaveAttribute("aria-pressed", "true");
+		expect(
+			screen.queryByText(/could not load privacy setting/i),
+		).not.toBeInTheDocument();
+	});
+});

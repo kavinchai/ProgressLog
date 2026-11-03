@@ -38,11 +38,7 @@ public class ProfileController {
     public ResponseEntity<UserGoalsDTO> getGoals(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userResolver.resolve(userDetails);
 
-        return ResponseEntity.ok(
-                new UserGoalsDTO(
-                        user.getCalorieTargetTraining(),
-                        user.getCalorieTargetRest(),
-                        user.getProteinTarget()));
+        return ResponseEntity.ok(goalsOf(user));
     }
 
     @PutMapping("/goals")
@@ -51,19 +47,31 @@ public class ProfileController {
             @Valid @RequestBody UserGoalsDTO dto) {
 
         log.info(
-                "PUT goals user={} calTrain={} calRest={} protein={}",
+                "PUT goals user={} calTrain={} calRest={} protein={} steps={}",
                 userDetails.getUsername(),
                 dto.getCalorieTargetTraining(),
                 dto.getCalorieTargetRest(),
-                dto.getProteinTarget());
+                dto.getProteinTarget(),
+                dto.getStepsTarget());
         User user = userResolver.resolve(userDetails);
 
         user.setCalorieTargetTraining(dto.getCalorieTargetTraining());
         user.setCalorieTargetRest(dto.getCalorieTargetRest());
         user.setProteinTarget(dto.getProteinTarget());
+        if (dto.getStepsTarget() != null) {
+            user.setStepsTarget(dto.getStepsTarget());
+        }
         userRepository.save(user);
 
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(goalsOf(user));
+    }
+
+    private static UserGoalsDTO goalsOf(User user) {
+        return new UserGoalsDTO(
+                user.getCalorieTargetTraining(),
+                user.getCalorieTargetRest(),
+                user.getProteinTarget(),
+                user.getStepsTarget());
     }
 
     @GetMapping("/email")
