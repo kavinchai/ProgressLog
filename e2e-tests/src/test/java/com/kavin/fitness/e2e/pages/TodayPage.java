@@ -204,6 +204,16 @@ public class TodayPage {
         page.locator(".exercise-card .btn.btn-sm").nth(index).click();
     }
 
+    /** Clicks Edit on the card for {@code name}; cards are sorted by name, so don't rely on position. */
+    public void clickEditExercise(String name) {
+        page.locator(".exercise-card")
+                .filter(new Locator.FilterOptions().setHas(page.locator(
+                        "span.exercise-card-name", new Page.LocatorOptions().setHasText(name))))
+                .locator(".btn.btn-sm")
+                .first()
+                .click();
+    }
+
     public boolean isTextVisible(String text) {
         return page.locator(":text(\"" + text + "\")").count() > 0;
     }

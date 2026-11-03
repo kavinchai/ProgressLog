@@ -64,7 +64,7 @@ public class WorkoutMultiExerciseTest extends BaseTest {
     @Test(priority = 2, dependsOnMethods = "addMultipleExercisesInOneSession")
     public void deleteMiddleExerciseLeavesOthers() {
         step("click Edit on Bicep Curls");
-        today.clickEditExercise(1);
+        today.clickEditExercise("Bicep Curls");
         editModal.waitUntilTitleContains("Bicep Curls");
 
         step("delete Bicep Curls");

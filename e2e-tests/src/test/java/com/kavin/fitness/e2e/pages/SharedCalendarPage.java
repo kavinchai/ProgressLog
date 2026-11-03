@@ -82,9 +82,13 @@ public class SharedCalendarPage {
         }
     }
 
-    /** True once the day panel has rendered and does not list the username. */
+    /**
+     * True once the day panel (or the "no one has opted in" empty state, which a
+     * fresh database shows) has rendered and does not list the username.
+     */
     public boolean isUsernameAbsentFromCalendar(String username) {
-        page.locator(".sc-side").waitFor(new Locator.WaitForOptions().setTimeout(5000));
+        page.locator(".sc-side, " + EMPTY).first()
+                .waitFor(new Locator.WaitForOptions().setTimeout(5000));
         return userRow(username).count() == 0;
     }
 
