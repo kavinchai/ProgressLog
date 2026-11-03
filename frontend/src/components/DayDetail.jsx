@@ -207,6 +207,7 @@ export default function DayDetail({
 							type="number"
 							min="0"
 							placeholder="Steps"
+							aria-label="Steps"
 							value={stepsValue}
 							onChange={(e) => setStepsValue(e.target.value)}
 							onKeyDown={(e) => {
@@ -278,6 +279,7 @@ export default function DayDetail({
 									style={{ width: 120, padding: "2px 6px" }}
 									type="text"
 									placeholder="Session name"
+									aria-label="Session name"
 									value={renameValue}
 									onChange={(e) => setRenameValue(e.target.value)}
 									onKeyDown={(e) => {

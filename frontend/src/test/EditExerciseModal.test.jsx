@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EditExerciseModal from "../components/EditExerciseModal";
 
@@ -224,5 +224,24 @@ describe("EditExerciseModal", () => {
 		await waitFor(() =>
 			expect(screen.getByText(/cannot delete/i)).toBeInTheDocument(),
 		);
+	});
+});
+
+describe("EditExerciseModal — double submit", () => {
+	it("sends one request when the form is submitted again while saving", () => {
+		api.post.mockReturnValue(new Promise(() => {}));
+		const { container } = render(
+			<EditExerciseModal
+				sessionId={SESSION_ID}
+				exerciseName={EXERCISE_NAME}
+				exerciseSets={EXERCISE_SETS}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		const form = container.querySelector("form");
+		fireEvent.submit(form);
+		fireEvent.submit(form);
+		expect(api.post).toHaveBeenCalledTimes(1);
 	});
 });

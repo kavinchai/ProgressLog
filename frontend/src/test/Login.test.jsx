@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import Login from "../pages/Login";
@@ -252,5 +252,22 @@ describe("Login — signup mode", () => {
 		expect(
 			screen.getByRole("button", { name: /create account/i }),
 		).toBeInTheDocument();
+	});
+});
+
+describe("Login — double submit", () => {
+	it("sends one request when the form is submitted again while signing in", () => {
+		api.post.mockReturnValue(new Promise(() => {}));
+		const { container } = renderLogin();
+		fireEvent.change(screen.getByLabelText(/username/i), {
+			target: { value: "alice" },
+		});
+		fireEvent.change(screen.getByLabelText(/password/i), {
+			target: { value: "test-pass" },
+		});
+		const form = container.querySelector("form");
+		fireEvent.submit(form);
+		fireEvent.submit(form);
+		expect(api.post).toHaveBeenCalledTimes(1);
 	});
 });

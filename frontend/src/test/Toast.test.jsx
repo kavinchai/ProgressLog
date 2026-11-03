@@ -78,4 +78,21 @@ describe("Toast", () => {
 		expect(() => render(<ErrorTrigger />)).toThrow();
 		spy.mockRestore();
 	});
+
+	it("keeps the status role off the dismiss button, which still dismisses", () => {
+		render(
+			<ToastProvider>
+				<ErrorTrigger message="Failed to save meal" />
+			</ToastProvider>,
+		);
+		act(() => {
+			screen.getByText("fire").click();
+		});
+		const status = screen.getByRole("status");
+		expect(status.tagName).not.toBe("BUTTON");
+		act(() => {
+			screen.getByRole("button", { name: /failed to save meal/i }).click();
+		});
+		expect(screen.queryByRole("status")).toBeNull();
+	});
 });

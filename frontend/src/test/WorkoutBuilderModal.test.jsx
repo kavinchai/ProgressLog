@@ -725,3 +725,39 @@ describe("WorkoutBuilderModal — name matching", () => {
 		expect(screen.queryByText(/did you mean/i)).not.toBeInTheDocument();
 	});
 });
+
+describe("WorkoutBuilderModal — labels", () => {
+	it("labels the date, session name, exercise name and set inputs", async () => {
+		render(<WorkoutBuilderModal onClose={onClose} onSaved={onSaved} />);
+		expect(screen.getByLabelText("Date")).toHaveAttribute("type", "date");
+		expect(screen.getByLabelText("Session Name")).toHaveAttribute(
+			"type",
+			"text",
+		);
+
+		await userEvent.click(screen.getByRole("button", { name: /\+ exercise/i }));
+		expect(screen.getByLabelText("Exercise name")).toBeInTheDocument();
+		expect(screen.getByLabelText(/set 1 weight/i)).toBeInTheDocument();
+		expect(screen.getByLabelText(/set 1 reps/i)).toBeInTheDocument();
+	});
+});
+
+describe("WorkoutBuilderModal — similar names prompt", () => {
+	beforeEach(mockMatches);
+
+	it("is a native <dialog> element", async () => {
+		render(
+			<WorkoutBuilderModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		await typeExercise("Romanian Deadlift", { weight: "185", reps: "8" });
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		const check = await screen.findByRole("alertdialog", {
+			name: /similar names/i,
+		});
+		expect(check.tagName).toBe("DIALOG");
+	});
+});

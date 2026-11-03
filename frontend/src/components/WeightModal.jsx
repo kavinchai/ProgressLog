@@ -19,6 +19,7 @@ export default function WeightModal({
 
 	async function submit(e) {
 		e.preventDefault();
+		if (saving) return;
 		setErr("");
 		setSaving(true);
 		try {
@@ -40,8 +41,11 @@ export default function WeightModal({
 			<form className="modal-form" onSubmit={submit}>
 				{err && <div className="modal-error">{err}</div>}
 				<div className="modal-field">
-					<label className="modal-label">Date</label>
+					<label className="modal-label" htmlFor="weight-date">
+						Date
+					</label>
 					<input
+						id="weight-date"
 						className="modal-input"
 						type="date"
 						value={date}
@@ -50,8 +54,11 @@ export default function WeightModal({
 					/>
 				</div>
 				<div className="modal-field">
-					<label className="modal-label">Weight ({unit})</label>
+					<label className="modal-label" htmlFor="weight-value">
+						Weight ({unit})
+					</label>
 					<input
+						id="weight-value"
 						className="modal-input"
 						type="number"
 						step="0.1"

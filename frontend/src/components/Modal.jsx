@@ -76,11 +76,11 @@ export default function Modal({ title, onClose, children }) {
 
 	return (
 		<div className="modal-overlay" onClick={onClose}>
-			<div
+			<dialog
+				open
 				className="modal-box"
 				onClick={(e) => e.stopPropagation()}
 				ref={modalRef}
-				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
 			>
@@ -99,7 +99,7 @@ export default function Modal({ title, onClose, children }) {
 					</button>
 				</div>
 				<div className="modal-body">{children}</div>
-			</div>
+			</dialog>
 		</div>
 	);
 }

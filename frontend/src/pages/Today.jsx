@@ -426,6 +426,7 @@ export default function Today() {
 										type="number"
 										min="0"
 										placeholder="Steps"
+										aria-label="Steps"
 										value={stepsValue}
 										disabled={stepsSaving}
 										onChange={(e) => setStepsValue(e.target.value)}
@@ -501,6 +502,7 @@ export default function Today() {
 											className="modal-input rename-session-input"
 											type="text"
 											placeholder="Session name"
+											aria-label="Session name"
 											value={renameValue}
 											disabled={renameSaving}
 											onChange={(e) => setRenameValue(e.target.value)}

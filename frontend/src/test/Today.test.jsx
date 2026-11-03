@@ -906,3 +906,26 @@ describe("Today — load errors", () => {
 		expect(screen.queryByTestId("meal-cards")).not.toBeInTheDocument();
 	});
 });
+
+// ── A11y: inline inputs have labels ──────────────────────────────────────────
+
+describe("Today — inline input labels", () => {
+	it("labels the inline steps input", async () => {
+		setup();
+		render(<Today />);
+		await userEvent.click(
+			screen.getByRole("button", { name: /\+ add steps/i }),
+		);
+		expect(screen.getByLabelText("Steps")).toHaveAttribute("type", "number");
+	});
+
+	it("labels the inline session name input", async () => {
+		setup({ workouts: [WORKOUT_ENTRY] });
+		render(<Today />);
+		await userEvent.click(screen.getByRole("button", { name: /rename/i }));
+		expect(screen.getByLabelText("Session name")).toHaveAttribute(
+			"type",
+			"text",
+		);
+	});
+});

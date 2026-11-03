@@ -1,12 +1,13 @@
 import { useState } from "react";
 import api from "../api";
 import Modal from "./Modal";
-import ExerciseListEditor, {
+import ExerciseListEditor from "./ExerciseListEditor";
+import useWeightUnit from "../hooks/useWeightUnit";
+import {
 	emptyExercise,
 	exercisesToForm,
 	exercisesToPayload,
-} from "./ExerciseListEditor";
-import useWeightUnit from "../hooks/useWeightUnit";
+} from "../utils/workout";
 import {
 	clearMatchCache,
 	fetchMatches,
@@ -79,12 +80,17 @@ export default function WorkoutBuilderModal({
 
 	async function submit(e) {
 		e.preventDefault();
+		if (saving) return;
 		setErr("");
 		setSaving(true);
-		const found = await closeNames(exercises);
+		let found;
+		try {
+			found = await closeNames(exercises);
+		} finally {
+			setSaving(false);
+		}
 		if (found.length > 0) {
 			setSimilar(found);
-			setSaving(false);
 			return;
 		}
 		await save(exercises);
@@ -135,8 +141,11 @@ export default function WorkoutBuilderModal({
 				{err && <div className="modal-error">{err}</div>}
 
 				<div className="modal-field">
-					<label className="modal-label">Date</label>
+					<label className="modal-label" htmlFor="workout-date">
+						Date
+					</label>
 					<input
+						id="workout-date"
 						className="modal-input"
 						type="date"
 						value={date}
@@ -146,8 +155,11 @@ export default function WorkoutBuilderModal({
 				</div>
 
 				<div className="modal-field">
-					<label className="modal-label">Session Name</label>
+					<label className="modal-label" htmlFor="workout-session-name">
+						Session Name
+					</label>
 					<input
+						id="workout-session-name"
 						className="modal-input"
 						type="text"
 						placeholder="e.g. Push, Pull, Legs"
@@ -159,7 +171,8 @@ export default function WorkoutBuilderModal({
 				<ExerciseListEditor exercises={exercises} onChange={setExercises} />
 
 				{similar && (
-					<div
+					<dialog
+						open
 						className="wbm-similar"
 						role="alertdialog"
 						aria-label="Similar names"
@@ -193,7 +206,7 @@ export default function WorkoutBuilderModal({
 								Save as typed
 							</button>
 						</div>
-					</div>
+					</dialog>
 				)}
 
 				<div className="modal-actions">

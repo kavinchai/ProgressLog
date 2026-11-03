@@ -585,7 +585,7 @@ describe("Settings — data export & import", () => {
 		await userEvent.click(
 			screen.getByRole("button", { name: /export.*xlsx/i }),
 		);
-		expect(XLSX.writeFile).toHaveBeenCalled();
+		await waitFor(() => expect(XLSX.writeFile).toHaveBeenCalled());
 	});
 
 	it("triggers JSON download when JSON button clicked", async () => {
@@ -679,8 +679,12 @@ describe("Settings — export handles nutrition meals", () => {
 		await userEvent.click(
 			screen.getByRole("button", { name: /export.*xlsx/i }),
 		);
-		const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map((c) => c[2]);
-		expect(sheetNames).toEqual(["Total Stats", "Workouts", "Nutrition"]);
+		await waitFor(() => {
+			const sheetNames = XLSX.utils.book_append_sheet.mock.calls.map(
+				(c) => c[2],
+			);
+			expect(sheetNames).toEqual(["Total Stats", "Workouts", "Nutrition"]);
+		});
 	});
 
 	it("JSON export includes a nutrition key with per-meal rows", async () => {

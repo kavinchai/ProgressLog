@@ -14,6 +14,7 @@ export default function DayInfoModal({
 
 	async function submit(e) {
 		e.preventDefault();
+		if (saving) return;
 		setErr("");
 		setSaving(true);
 		try {
@@ -35,8 +36,11 @@ export default function DayInfoModal({
 			<form className="modal-form" onSubmit={submit}>
 				{err && <div className="modal-error">{err}</div>}
 				<div className="modal-field">
-					<label className="modal-label">Day Type</label>
+					<label className="modal-label" htmlFor="day-info-type">
+						Day Type
+					</label>
 					<select
+						id="day-info-type"
 						className="modal-input"
 						value={type}
 						onChange={(e) => setType(e.target.value)}

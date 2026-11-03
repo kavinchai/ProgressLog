@@ -115,7 +115,15 @@ public class SettingsPage {
     /** True while the goals form is open — on phones that's inside a dialog. */
     public boolean isGoalsFormInDialog() {
         ensureGoalsOpen();
-        return awaitVisible("[role='dialog'] " + TRAINING_INPUT);
+        // Match by ARIA role: the modal is a native <dialog>, which has the
+        // dialog role without a role attribute.
+        try {
+            page.getByRole(AriaRole.DIALOG).locator(TRAINING_INPUT).first().waitFor(
+                    new Locator.WaitForOptions().setTimeout(5000));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     // ── Weight unit (lbs | kg) ───────────────────────────────────────────────

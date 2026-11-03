@@ -1,13 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import {
-	ResponsiveContainer,
-	BarChart,
-	Bar,
-	XAxis,
-	YAxis,
-	Tooltip,
-} from "recharts";
 import useAuthStore from "../store/authStore";
 import useWeightUnit from "../hooks/useWeightUnit";
 import api from "../api";
@@ -16,6 +8,10 @@ import SharedCalendar from "./SharedCalendar";
 import ChooseLiftsModal from "../components/ChooseLiftsModal";
 import { loadChosen, saveChosen } from "../utils/chosenLifts";
 import "./Community.css";
+
+const SessionsBarChart = lazy(
+	() => import("../components/charts/SessionsBarChart"),
+);
 
 const FEATURED_NAMES = featuredConfig.strength ?? [];
 const FEATURED = FEATURED_NAMES.map((n) => n.toLowerCase());
@@ -389,25 +385,9 @@ function SessionsChart({ activity }) {
 				<h2 className="lb-card-title">Community sessions</h2>
 				<span className="lb-muted">Last 30 days</span>
 			</div>
-			<ResponsiveContainer width="100%" height={140}>
-				<BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-					<XAxis
-						dataKey="date"
-						interval={Math.max(0, Math.floor(data.length / 3))}
-						tick={{ fontSize: 11, fill: "var(--muted)" }}
-						axisLine={false}
-						tickLine={false}
-					/>
-					<YAxis hide allowDecimals={false} />
-					<Tooltip cursor={{ fill: "var(--hover-bg)" }} />
-					<Bar
-						dataKey="sessions"
-						name="Sessions"
-						fill="var(--accent)"
-						radius={[3, 3, 0, 0]}
-					/>
-				</BarChart>
-			</ResponsiveContainer>
+			<Suspense fallback={<div style={{ height: 140 }} />}>
+				<SessionsBarChart data={data} />
+			</Suspense>
 		</section>
 	);
 }
