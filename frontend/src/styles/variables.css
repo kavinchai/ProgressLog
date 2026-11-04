@@ -1,25 +1,25 @@
 :root {
 	/* ── Core palette ── */
-	--bg: #f5f1ea;
+	--bg: #f7f7f8;
 	--bg-card: #ffffff;
 	--bg-elevated: #ffffff;
-	--fg: #1a1d29;
-	--text: #1a1d29;
-	--text-muted: #5b6171;
-	--text-subtle: #9ca3af;
-	--muted: #5b6171;
-	--muted-strong: #4a4d57;
-	--border: #e7e2d8;
-	--border-strong: #d4ccbe;
-	--border-dim: #efe9dd;
-	--hover-bg: #ede7dc;
-	--active-bg: #e2dccd;
+	--fg: #111318;
+	--text: #111318;
+	--text-muted: #5d6270;
+	--text-subtle: #9a9eaa;
+	--muted: #5d6270;
+	--muted-strong: #454a56;
+	--border: #e6e7eb;
+	--border-strong: #d3d5db;
+	--border-dim: #eeeff2;
+	--hover-bg: #eeeff2;
+	--active-bg: #e4e5ea;
 
-	/* ── Accent (persimmon) ── */
-	--accent: #ff6b35;
-	--accent-soft: #ffe8df;
-	--accent-light: #ffe8df;
-	--accent-deep: #d94e1f;
+	/* ── Accent (indigo) ── */
+	--accent: #4f46e5;
+	--accent-soft: #eef0ff;
+	--accent-light: #eef0ff;
+	--accent-deep: #4338ca;
 	--accent-fg: #ffffff;
 
 	/* ── Semantic ── */
@@ -35,11 +35,11 @@
 	--navbar-height: 56px;
 	--bottom-tab-height: 60px;
 
-	/* ── Typography — JetBrains Mono throughout ── */
-	--font: "JetBrains Mono", "Menlo", "Consolas", monospace;
-	--font-sans: "JetBrains Mono", "Menlo", "Consolas", monospace;
-	--font-display: "JetBrains Mono", "Menlo", "Consolas", monospace;
-	--font-mono: "JetBrains Mono", "Menlo", "Consolas", monospace;
+	/* ── Typography — Inter, monospace only for --font-mono ── */
+	--font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+	--font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+	--font-display: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+	--font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
 	--fs: clamp(0.8125rem, 0.75rem + 0.25vw, 0.875rem);
 	--fs-xs: clamp(0.75rem, 0.7rem + 0.2vw, 0.8125rem);
 	--fs-sm: clamp(0.6875rem, 0.65rem + 0.2vw, 0.75rem);
@@ -69,16 +69,16 @@
 	--radius-xl: 20px;
 	--radius-full: 9999px;
 
-	/* ── Shadows (warm-tinted) ── */
-	--shadow-xs: 0 1px 2px rgba(60, 40, 20, 0.05);
-	--shadow-sm: 0 1px 3px rgba(60, 40, 20, 0.07),
-		0 1px 2px rgba(60, 40, 20, 0.04);
-	--shadow-md: 0 4px 6px -1px rgba(60, 40, 20, 0.08),
-		0 2px 4px -2px rgba(60, 40, 20, 0.05);
-	--shadow-lg: 0 10px 15px -3px rgba(60, 40, 20, 0.1),
-		0 4px 6px -4px rgba(60, 40, 20, 0.05);
-	--shadow-xl: 0 20px 25px -5px rgba(60, 40, 20, 0.12),
-		0 8px 10px -6px rgba(60, 40, 20, 0.07);
+	/* ── Shadows (neutral) ── */
+	--shadow-xs: 0 1px 2px rgba(16, 18, 24, 0.05);
+	--shadow-sm: 0 1px 3px rgba(16, 18, 24, 0.07),
+		0 1px 2px rgba(16, 18, 24, 0.04);
+	--shadow-md: 0 4px 6px -1px rgba(16, 18, 24, 0.08),
+		0 2px 4px -2px rgba(16, 18, 24, 0.05);
+	--shadow-lg: 0 10px 15px -3px rgba(16, 18, 24, 0.1),
+		0 4px 6px -4px rgba(16, 18, 24, 0.05);
+	--shadow-xl: 0 20px 25px -5px rgba(16, 18, 24, 0.12),
+		0 8px 10px -6px rgba(16, 18, 24, 0.07);
 
 	/* ── Transitions ── */
 	--transition-fast: 120ms ease;
@@ -98,26 +98,26 @@
 
 /* ── Dark mode ── */
 .dark {
-	--bg: #1a1814;
-	--bg-card: #25221c;
-	--bg-elevated: #2e2a22;
-	--fg: #ece6da;
-	--text: #ece6da;
-	--text-muted: #a39b8a;
-	--text-subtle: #6f6857;
-	--muted: #a39b8a;
-	--muted-strong: #c5bda8;
-	--border: #322d24;
-	--border-strong: #423b2f;
-	--border-dim: #2c2820;
-	--hover-bg: #2e2a22;
-	--active-bg: #36312a;
+	--bg: #0f1014;
+	--bg-card: #17181d;
+	--bg-elevated: #1e2026;
+	--fg: #ecedf0;
+	--text: #ecedf0;
+	--text-muted: #9b9fab;
+	--text-subtle: #6b6f7b;
+	--muted: #9b9fab;
+	--muted-strong: #c3c6ce;
+	--border: #262830;
+	--border-strong: #33363f;
+	--border-dim: #1f2127;
+	--hover-bg: #1e2026;
+	--active-bg: #262830;
 
-	--accent: #ff8255;
-	--accent-soft: #3a201a;
-	--accent-light: #3a201a;
-	--accent-deep: #ff6b35;
-	--accent-fg: #ffffff;
+	--accent: #818cf8;
+	--accent-soft: #25244d;
+	--accent-light: #25244d;
+	--accent-deep: #a5b4fc;
+	--accent-fg: #0f1014;
 
 	--success: #5cc28a;
 	--success-light: #133023;
