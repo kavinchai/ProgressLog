@@ -418,7 +418,7 @@ export default function TotalStats() {
 					<span className="heatmap-legend">
 						<span>less</span>
 						{[0.12, 0.35, 0.6, 0.9].map((a) => (
-							<i key={a} style={{ background: `rgba(255,107,53,${a})` }} />
+							<i key={a} style={{ background: `rgba(79,70,229,${a})` }} />
 						))}
 						<span>more</span>
 						<span className="heatmap-dot" style={{ marginLeft: 8 }} />
@@ -460,7 +460,7 @@ export default function TotalStats() {
 										alpha == null
 											? undefined
 											: {
-													background: `rgba(255,107,53,${alpha.toFixed(2)})`,
+													background: `rgba(79,70,229,${alpha.toFixed(2)})`,
 												}
 									}
 									disabled={future}
