@@ -22,7 +22,10 @@ export default function Sidebar() {
 
 	return (
 		<aside className="sidebar">
-			<div className="sidebar-logo">ProgressLog</div>
+			<div className="sidebar-logo">
+				<img className="brand-mark" src="/favicon.svg" alt="" />
+				ProgressLog
+			</div>
 
 			<nav className="sidebar-nav">
 				{navItems.map(({ to, label }) => (
