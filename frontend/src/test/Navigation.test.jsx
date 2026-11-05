@@ -120,6 +120,22 @@ describe("main navigation", () => {
 		).not.toBeInTheDocument();
 	});
 
+	it("shows the anvil logo mark next to the brand in the sidebar and top bar", () => {
+		const { container } = render(
+			<BrowserRouter>
+				<Sidebar />
+				<Navbar />
+			</BrowserRouter>,
+		);
+
+		for (const selector of [".sidebar-logo", ".navbar-brand"]) {
+			const mark = container.querySelector(`${selector} img.brand-mark`);
+			expect(mark).toHaveAttribute("src", "/favicon.svg");
+			// Decorative: the brand name next to it is the accessible label.
+			expect(mark).toHaveAttribute("alt", "");
+		}
+	});
+
 	it("desktop sidebar has no theme toggle (Settings owns the theme)", () => {
 		render(
 			<BrowserRouter>

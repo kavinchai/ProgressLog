@@ -5,7 +5,10 @@ import "./Navbar.css";
 export default function Navbar() {
 	return (
 		<header className="navbar">
-			<span className="navbar-brand">ProgressLog</span>
+			<span className="navbar-brand">
+				<img className="brand-mark" src="/favicon.svg" alt="" />
+				ProgressLog
+			</span>
 		</header>
 	);
 }
