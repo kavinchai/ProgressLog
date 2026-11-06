@@ -258,6 +258,30 @@ public class HistoryPageTest extends BaseTest {
         history.waitForCalendarDayLabel(todayDate, "Steps 8,500");
     }
 
+    @Test(priority = 14, dependsOnMethods = "totalCalendarHasCellsForCurrentMonth")
+    public void workoutMetricShowsTheSessionAndAWorkoutOnlyPanel() {
+        step("open /history/total and color days by Workout");
+        history.openTotal(baseUrl);
+        history.selectHeatmapMetric("Workout");
+
+        step("today's cell is labelled with the seeded session name");
+        history.waitForCalendarDayLabel(todayDate, "Workout History E2E Today");
+
+        step("click today and verify the panel shows the workout with its summary");
+        history.clickCalendarDay(todayDate);
+        history.waitForDayPanelTitle(shortDate(LocalDate.now()));
+        if (!history.dayPanelContains("History E2E Bench")) {
+            throw new AssertionError("Expected the workout panel to list the seeded 'History E2E Bench'");
+        }
+        // One seeded set: 135 lbs x 8 reps.
+        if (!history.dayPanelContains("1 exercise · 1 set · 1,080 lbs volume")) {
+            throw new AssertionError("Expected the workout panel to show the session summary");
+        }
+
+        step("close the day panel");
+        history.closeDayPanel();
+    }
+
     @Test(priority = 11, dependsOnMethods = "totalPageLoadsAndShowsCalendar")
     public void trendChartsRender() {
         step("verify weight trend, avg calories per week and workout consistency render");

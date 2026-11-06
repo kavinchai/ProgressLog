@@ -202,6 +202,53 @@ describe("DayDetail — workout add", () => {
 	});
 });
 
+describe("DayDetail — workout only", () => {
+	function renderWorkoutOnly(workoutEntry) {
+		return render(
+			<DayDetail
+				date={DATE}
+				weightEntry={{ id: 99, logDate: DATE, weightLbs: 185 }}
+				nutritionEntry={null}
+				workoutEntry={workoutEntry}
+				stepEntry={{ id: 98, logDate: DATE, steps: 8000 }}
+				onRefetchW={vi.fn()}
+				onRefetchN={vi.fn()}
+				onRefetchWo={vi.fn()}
+				onRefetchS={vi.fn()}
+				workoutOnly
+			/>,
+		);
+	}
+
+	it("shows only the workout, not weight, nutrition or steps", () => {
+		renderWorkoutOnly(MULTI_SESSION);
+		expect(screen.getByText("Workout")).toBeInTheDocument();
+		expect(screen.queryByText("Weight")).not.toBeInTheDocument();
+		expect(screen.queryByText("Nutrition")).not.toBeInTheDocument();
+		expect(screen.queryByText("Steps")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("meal-cards")).not.toBeInTheDocument();
+	});
+
+	it("summarises the session: exercises, sets and volume", () => {
+		renderWorkoutOnly(MULTI_SESSION);
+		// 135×8 + 225×5 = 2,205
+		expect(
+			screen.getByText("2 exercises · 2 sets · 2,205 lbs volume"),
+		).toBeInTheDocument();
+	});
+
+	it("only shows the summary in the workout-only view", () => {
+		renderDetail(MULTI_SESSION);
+		expect(screen.queryByText(/lbs volume/)).not.toBeInTheDocument();
+	});
+
+	it("still lets you edit an exercise from the workout view", async () => {
+		renderWorkoutOnly(SINGLE_SESSION);
+		await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+		expect(screen.getByTestId("edit-exercise-modal")).toBeInTheDocument();
+	});
+});
+
 describe("DayDetail — inline input labels", () => {
 	it("labels the inline steps input", async () => {
 		renderDetail(null);

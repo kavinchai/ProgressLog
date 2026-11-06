@@ -164,6 +164,9 @@ export default function TotalStats() {
 	// the month's lightest → heaviest day.
 	const minW = Math.min(...monthWeights.map((r) => r.weight));
 	const maxW = Math.max(...monthWeights.map((r) => r.weight));
+	// Workout days are shaded by set count, relative to the month's biggest session.
+	const setCount = (r) => r.workoutEntry?.exerciseSets?.length ?? 0;
+	const maxSets = Math.max(1, ...monthRows.map(setCount));
 	const METRICS = {
 		calories: {
 			label: "Calories",
@@ -195,6 +198,13 @@ export default function TotalStats() {
 			value: (r) => (r.weight == null ? null : r.weight - minW),
 			goal: () => Math.max(maxW - minW, 1),
 			unit,
+		},
+		workout: {
+			label: "Workout",
+			show: (r) => r.workout,
+			value: (r) => (r.workout == null ? null : setCount(r)),
+			goal: () => maxSets,
+			unit: "",
 		},
 	};
 	const active = METRICS[metric];
@@ -470,7 +480,10 @@ export default function TotalStats() {
 										(shown == null
 											? "nothing logged"
 											: `${active.label} ${shown}`) +
-										(row.workout ? `, workout: ${row.workout}` : "")
+										// The Workout metric already names the session.
+										(row.workout && metric !== "workout"
+											? `, workout: ${row.workout}`
+											: "")
 									}
 									onClick={() => setSelectedDay(row.date)}
 								>
@@ -480,6 +493,11 @@ export default function TotalStats() {
 									</span>
 									{shown != null && (
 										<span className="heatmap-value">{shown}</span>
+									)}
+									{metric === "workout" && setCount(row) > 0 && (
+										<span className="heatmap-sub">
+											{setCount(row)} {setCount(row) === 1 ? "set" : "sets"}
+										</span>
 									)}
 								</button>
 							);
@@ -530,6 +548,7 @@ export default function TotalStats() {
 						onRefetchWo={refetchWorkouts}
 						onRefetchS={refetchSteps}
 						showDelete={true}
+						workoutOnly={metric === "workout"}
 					/>
 				</Modal>
 			)}
@@ -567,6 +586,7 @@ export default function TotalStats() {
 							onRefetchWo={refetchWorkouts}
 							onRefetchS={refetchSteps}
 							showDelete={true}
+							workoutOnly={metric === "workout"}
 						/>
 					</div>
 				</section>

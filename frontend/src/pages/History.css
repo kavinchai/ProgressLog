@@ -477,6 +477,12 @@
 	font-weight: var(--fw-semibold);
 }
 
+/* Second line under the value (Workout metric: set count). */
+.heatmap-sub {
+	font-size: 10px;
+	opacity: 0.75;
+}
+
 .heatmap-legend {
 	display: flex;
 	align-items: center;
@@ -721,7 +727,8 @@
 		gap: 2px;
 	}
 
-	.heatmap-value {
+	.heatmap-value,
+	.heatmap-sub {
 		display: none;
 	}
 
