@@ -112,13 +112,13 @@ export default function Today() {
 	} = usePRs();
 	const { unit, toDisplay } = useWeightUnit();
 
+	// PRs only drive the PR badges, so the page doesn't wait for them.
 	const isLoading =
 		loadingWeight ||
 		loadingNutrition ||
 		loadingWorkouts ||
 		loadingSteps ||
-		loadingProfile ||
-		loadingPRs;
+		loadingProfile;
 	const failedLoads = [
 		[errorWeight, refetchWeight],
 		[errorNutrition, refetchNutrition],
@@ -578,7 +578,8 @@ export default function Today() {
 											const beatsAllTime =
 												allTimePR == null ||
 												comparePRTuple(todayBest, allTimePR) >= 0;
-											const isPR = isBestOfDay && beatsAllTime;
+											// No badges until PRs arrive, or every lift would look like one.
+											const isPR = !loadingPRs && isBestOfDay && beatsAllTime;
 											return (
 												<ExerciseCard
 													key={`${g.name}-${g.weight}`}

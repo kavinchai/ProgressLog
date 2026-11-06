@@ -116,14 +116,16 @@ public class ProgressService {
     }
 
     public List<PREntryDTO> getPRs(Long userId) {
-        List<String> exerciseNames =
-                exerciseSetRepository.findDistinctExerciseNamesByUserId(userId);
+        // One query for every set (sessions fetched with it), instead of one per lift name plus
+        // one per session — that was ~200 round trips for a few months of logging.
+        Map<String, List<ExerciseSet>> setsByName =
+                exerciseSetRepository.findByUserIdIn(List.of(userId)).stream()
+                        .collect(Collectors.groupingBy(ExerciseSet::getExerciseName));
         List<PREntryDTO> result = new ArrayList<>();
 
-        for (String name : exerciseNames) {
-            List<ExerciseSet> sets =
-                    exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, name);
-            if (sets.isEmpty()) continue;
+        for (var nameEntry : setsByName.entrySet()) {
+            String name = nameEntry.getKey();
+            List<ExerciseSet> sets = nameEntry.getValue();
             // Skip older cardio/timed rows — PRs only apply to lifts
             if (sets.stream().anyMatch(ExerciseSet::isCardio)) continue;
 

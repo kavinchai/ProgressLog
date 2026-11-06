@@ -217,7 +217,7 @@ class ProgressServiceTest {
 
     @Test
     void getPRs_returnsEmptyWhenNoExercises() {
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L)).thenReturn(List.of());
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L))).thenReturn(List.of());
 
         assertTrue(progressService.getPRs(1L).isEmpty());
     }
@@ -228,12 +228,11 @@ class ProgressServiceTest {
         WorkoutSession squat = session(LocalDate.of(2026, 3, 5));
         ReflectionTestUtils.setField(squat, "id", 2L);
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Squat", "Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(exerciseSet(bench, "Bench Press", 1, 5, "135")));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Squat"))
-                .thenReturn(List.of(exerciseSet(squat, "Squat", 1, 5, "225")));
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(
+                        List.of(
+                                exerciseSet(squat, "Squat", 1, 5, "225"),
+                                exerciseSet(bench, "Bench Press", 1, 5, "135")));
 
         List<PREntryDTO> result = progressService.getPRs(1L);
 
@@ -250,9 +249,7 @@ class ProgressServiceTest {
         WorkoutSession later = session(LocalDate.of(2026, 3, 8));
         ReflectionTestUtils.setField(later, "id", 2L);
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(
                         List.of(
                                 exerciseSet(
@@ -278,9 +275,7 @@ class ProgressServiceTest {
         WorkoutSession fiveSets = session(LocalDate.of(2026, 3, 8));
         ReflectionTestUtils.setField(fiveSets, "id", 2L);
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(
                         List.of(
                                 // Date 1: 3×6 @ 135
@@ -307,9 +302,7 @@ class ProgressServiceTest {
         WorkoutSession bigSet = session(LocalDate.of(2026, 3, 8));
         ReflectionTestUtils.setField(bigSet, "id", 2L);
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(
                         List.of(
                                 // Date 1: 3 sets of 5/5/5 — max rep in any set is 5
@@ -334,9 +327,7 @@ class ProgressServiceTest {
         WorkoutSession second = session(LocalDate.of(2026, 3, 15));
         ReflectionTestUtils.setField(second, "id", 2L);
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(
                         List.of(
                                 // Same (weight, setCount, maxReps) tuple on both dates
@@ -352,19 +343,38 @@ class ProgressServiceTest {
     void getPRs_excludesCardioAndTimedExercises() {
         WorkoutSession session = session(LocalDate.of(2026, 4, 1));
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press", "Running", "Yoga"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(exerciseSet(session, "Bench Press", 1, 5, "135")));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Running"))
-                .thenReturn(List.of(cardioSet(session, "Running", 1, "3.0", 1800)));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Yoga"))
-                .thenReturn(List.of(timedSet(session, "Yoga", 1, 3600)));
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(
+                        List.of(
+                                exerciseSet(session, "Bench Press", 1, 5, "135"),
+                                cardioSet(session, "Running", 1, "3.0", 1800),
+                                timedSet(session, "Yoga", 1, 3600)));
 
         List<PREntryDTO> result = progressService.getPRs(1L);
 
         assertEquals(1, result.size());
         assertEquals("Bench Press", result.get(0).getExerciseName());
+    }
+
+    @Test
+    void getPRs_loadsAllSetsInOneQuery() {
+        WorkoutSession session = session(LocalDate.of(2026, 4, 1));
+
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(
+                        List.of(
+                                exerciseSet(session, "Squat", 1, 5, "225"),
+                                exerciseSet(session, "Bench Press", 1, 5, "135"),
+                                cardioSet(session, "Running", 1, "3.0", 1800)));
+
+        List<PREntryDTO> result = progressService.getPRs(1L);
+
+        assertEquals(
+                List.of("Bench Press", "Squat"),
+                result.stream().map(PREntryDTO::getExerciseName).toList());
+        verify(exerciseSetRepository, times(1)).findByUserIdIn(List.of(1L));
+        verify(exerciseSetRepository, never())
+                .findByUserIdAndExerciseNameOrderByDate(anyLong(), anyString());
     }
 
     // ── getMilestones ────────────────────────────────────────────────────────
