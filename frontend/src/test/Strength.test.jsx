@@ -11,7 +11,13 @@
  *      filter chips, and lifts trained in the range listed first.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+	cleanup,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Strength from "../pages/Strength";
 
@@ -118,6 +124,16 @@ describe("Strength page — states", () => {
 		await waitFor(() => {
 			expect(screen.getByText(/no strength data/i)).toBeInTheDocument();
 		});
+	});
+
+	it("shows the last loaded data instantly when reopened", async () => {
+		await renderLoaded();
+		cleanup();
+		// The refresh request never finishes, so anything shown comes from cache.
+		mockApiGet.mockReturnValue(new Promise(() => {}));
+		render(<Strength />);
+		expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+		expect(screen.getByTestId("lift-grid")).toBeInTheDocument();
 	});
 
 	it("has no Cardio content", async () => {

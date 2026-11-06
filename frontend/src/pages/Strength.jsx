@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import api from "../api";
+import { useState, useMemo, lazy, Suspense } from "react";
+import useFetch from "../hooks/useFetch";
 import useWeightUnit from "../hooks/useWeightUnit";
 import { formatDate } from "../utils/date";
 import { rangeDaysFor, filterByRange } from "../utils/dateRange";
@@ -380,23 +380,14 @@ function LiftDetail({ exercise, rangeDays, unit, toDisplay }) {
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export default function Strength() {
-	const [progressData, setProgressData] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
+	// Cached, so reopening the page shows the last data while it refreshes.
+	const { data: progressData, loading, error } = useFetch("/progress/strength");
 	const [selectedName, setSelectedName] = useState(null);
 	const [rangeKey, setRangeKey] = useState("3M");
 	const [sortKey, setSortKey] = useState("recent");
 	const [savedChosen, setSavedChosen] = useState(() => loadChosen(STORAGE_KEY));
 	const [choosing, setChoosing] = useState(false);
 	const { unit, toDisplay } = useWeightUnit();
-
-	useEffect(() => {
-		api
-			.get("/progress/strength")
-			.then((res) => setProgressData(res.data))
-			.catch((err) => setError(err.message))
-			.finally(() => setLoading(false));
-	}, []);
 
 	const rangeDays = rangeDaysFor(rangeKey);
 

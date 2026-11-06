@@ -40,7 +40,7 @@ class ProgressServiceTest {
 
     @Test
     void getStrengthProgress_returnsEmptyWhenNoExercises() {
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L)).thenReturn(List.of());
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L))).thenReturn(List.of());
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
 
@@ -53,10 +53,7 @@ class ProgressServiceTest {
         ExerciseSet set1 = exerciseSet(session, "Bench Press", 1, 6, "135");
         ExerciseSet set2 = exerciseSet(session, "Bench Press", 2, 6, "135");
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(set1, set2));
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L))).thenReturn(List.of(set1, set2));
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
 
@@ -74,20 +71,13 @@ class ProgressServiceTest {
     @Test
     void getStrengthProgress_keyLiftsAppearFirst() {
         // "Squats" is a key lift; "Curls" is not
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Curls", "Squats"));
-
         WorkoutSession session = session(LocalDate.of(2026, 3, 1));
 
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Squats"))
-                .thenReturn(List.of(exerciseSet(session, "Squats", 1, 5, "225")));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Curls"))
-                .thenReturn(List.of(exerciseSet(session, "Curls", 1, 12, "30")));
-
-        // Key lifts with no data are skipped, so mock the rest as empty
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(
-                        eq(1L), argThat(name -> !name.equals("Squats") && !name.equals("Curls"))))
-                .thenReturn(List.of());
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(
+                        List.of(
+                                exerciseSet(session, "Curls", 1, 12, "30"),
+                                exerciseSet(session, "Squats", 1, 5, "225")));
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
 
@@ -102,10 +92,7 @@ class ProgressServiceTest {
         ExerciseSet light = exerciseSet(session, "Bench Press", 1, 10, "95");
         ExerciseSet heavy = exerciseSet(session, "Bench Press", 2, 5, "135");
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(light, heavy));
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L))).thenReturn(List.of(light, heavy));
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
 
@@ -129,9 +116,7 @@ class ProgressServiceTest {
         ExerciseSet s4 = exerciseSet(session2, "Bench Press", 1, 6, "135");
         ExerciseSet s5 = exerciseSet(session2, "Bench Press", 2, 6, "135");
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(List.of(s1, s2, s3, s4, s5));
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
@@ -152,9 +137,7 @@ class ProgressServiceTest {
         ExerciseSet lowReps = exerciseSet(session1, "Bench Press", 1, 5, "135"); // 5 reps
         ExerciseSet highReps = exerciseSet(session2, "Bench Press", 1, 8, "135"); // 8 reps
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
                 .thenReturn(List.of(lowReps, highReps));
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
@@ -173,18 +156,8 @@ class ProgressServiceTest {
         ExerciseSet yogaSet = timedSet(session, "Yoga", 1, 3600); // timed: has durationSeconds only
         ExerciseSet benchSet = exerciseSet(session, "Bench Press", 1, 5, "135");
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press", "Running", "Yoga"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(benchSet));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Running"))
-                .thenReturn(List.of(runSet));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Yoga"))
-                .thenReturn(List.of(yogaSet));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(
-                        eq(1L),
-                        argThat(name -> !List.of("Bench Press", "Running", "Yoga").contains(name))))
-                .thenReturn(List.of());
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(List.of(benchSet, runSet, yogaSet));
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
 
@@ -201,16 +174,69 @@ class ProgressServiceTest {
         ExerciseSet e1 = exerciseSet(earlier, "Bench Press", 1, 6, "135");
         ExerciseSet e2 = exerciseSet(later, "Bench Press", 1, 6, "135");
 
-        when(exerciseSetRepository.findDistinctExerciseNamesByUserId(1L))
-                .thenReturn(List.of("Bench Press"));
-        when(exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(1L, "Bench Press"))
-                .thenReturn(List.of(e1, e2));
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L))).thenReturn(List.of(e1, e2));
 
         List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
         List<StrengthProgressDTO.SessionData> data = result.get(0).getData();
 
         assertEquals(LocalDate.of(2026, 3, 1), data.get(0).getSessionDate());
         assertEquals(LocalDate.of(2026, 3, 5), data.get(1).getSessionDate());
+    }
+
+    @Test
+    void getStrengthProgress_loadsAllSetsInOneQuery() {
+        WorkoutSession session = session(LocalDate.of(2026, 4, 1));
+
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(
+                        List.of(
+                                exerciseSet(session, "Curls", 1, 10, "30"),
+                                exerciseSet(session, "Squats", 1, 5, "225"),
+                                cardioSet(session, "Running", 1, "3.0", 1800)));
+
+        List<StrengthProgressDTO> result = progressService.getStrengthProgress(1L);
+
+        // Key lifts (Squats) still come first; cardio is still left out.
+        assertEquals(
+                List.of("Squats", "Curls"),
+                result.stream().map(StrengthProgressDTO::getExerciseName).toList());
+        verify(exerciseSetRepository, times(1)).findByUserIdIn(List.of(1L));
+        verify(exerciseSetRepository, never())
+                .findByUserIdAndExerciseNameOrderByDate(anyLong(), anyString());
+    }
+
+    @Test
+    void getStrengthProgress_sortsOtherLiftsAlphabeticallyIgnoringCase() {
+        WorkoutSession session = session(LocalDate.of(2026, 4, 1));
+
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(
+                        List.of(
+                                exerciseSet(session, "Zottman Curl", 1, 10, "20"),
+                                exerciseSet(session, "bicep curl", 1, 10, "30")));
+
+        assertEquals(
+                List.of("bicep curl", "Zottman Curl"),
+                progressService.getStrengthProgress(1L).stream()
+                        .map(StrengthProgressDTO::getExerciseName)
+                        .toList());
+    }
+
+    @Test
+    void getStrengthProgress_keepsRepSchemeInSetOrder() {
+        WorkoutSession session = session(LocalDate.of(2026, 4, 1));
+
+        // The single query doesn't order by set number, so sets can arrive shuffled.
+        when(exerciseSetRepository.findByUserIdIn(List.of(1L)))
+                .thenReturn(
+                        List.of(
+                                exerciseSet(session, "Squats", 3, 4, "225"),
+                                exerciseSet(session, "Squats", 1, 6, "225"),
+                                exerciseSet(session, "Squats", 2, 5, "225")));
+
+        assertEquals(
+                "6/5/4",
+                progressService.getStrengthProgress(1L).get(0).getData().get(0).getRepScheme());
     }
 
     // ── getPRs ───────────────────────────────────────────────────────────────
