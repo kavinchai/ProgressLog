@@ -1,0 +1,13 @@
+{
+	"appId": "com.kavin.progresslog",
+	"appName": "ProgressLog",
+	"webDir": "dist",
+	"ios": {
+		"contentInset": "always"
+	},
+	"plugins": {
+		"CapacitorHttp": {
+			"enabled": true
+		}
+	}
+}
