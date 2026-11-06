@@ -21,6 +21,20 @@ body {
 	overflow-x: clip;
 	width: 100%;
 	min-width: 0;
+	/* Clear the status bar / Dynamic Island in the iOS app (0 in browsers). */
+	padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Opaque strip behind the status bar so scrolled content can't show through. */
+body::before {
+	content: "";
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: env(safe-area-inset-top, 0px);
+	background: var(--bg-card);
+	z-index: 100;
 }
 
 a {

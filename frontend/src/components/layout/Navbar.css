@@ -7,7 +7,7 @@
 	.navbar {
 		display: flex;
 		position: fixed;
-		top: 0;
+		top: env(safe-area-inset-top, 0px);
 		left: 0;
 		right: 0;
 		height: var(--navbar-height);
