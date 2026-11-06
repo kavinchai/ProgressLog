@@ -929,3 +929,25 @@ describe("Today — inline input labels", () => {
 		);
 	});
 });
+
+// ── DISPLAY: loading ──────────────────────────────────────────────────────────
+
+describe("Today — loading", () => {
+	it("shows the day while PRs are still loading, without PR badges", () => {
+		setup({ workouts: [WORKOUT_ENTRY] });
+		usePRs.mockReturnValue({ data: [], loading: true, refetch: vi.fn() });
+		render(<Today />);
+		expect(
+			screen.queryByText(/loading your daily stats/i),
+		).not.toBeInTheDocument();
+		expect(screen.getByText("Bench Press")).toBeInTheDocument();
+		expect(screen.queryByText("PR")).not.toBeInTheDocument();
+	});
+
+	it("still waits for the day's own data before showing the page", () => {
+		setup();
+		useWorkouts.mockReturnValue({ data: [], loading: true, refetch: vi.fn() });
+		render(<Today />);
+		expect(screen.getByText(/loading your daily stats/i)).toBeInTheDocument();
+	});
+});
