@@ -30,18 +30,30 @@ public class ProgressService {
     private final ExerciseSetRepository exerciseSetRepository;
 
     public List<StrengthProgressDTO> getStrengthProgress(Long userId) {
-        List<String> allExercises = exerciseSetRepository.findDistinctExerciseNamesByUserId(userId);
+        // One query for every set (sessions fetched with it) rather than one per lift name plus
+        // one per session. Set-number order keeps rep schemes like "8/8/6" in the order lifted.
+        Map<String, List<ExerciseSet>> setsByName =
+                exerciseSetRepository.findByUserIdIn(List.of(userId)).stream()
+                        .sorted(Comparator.comparingInt(ExerciseSet::getSetNumber))
+                        .collect(
+                                Collectors.groupingBy(
+                                        ExerciseSet::getExerciseName,
+                                        // A–Z ignoring case, as the old database sort did
+                                        () ->
+                                                new TreeMap<>(
+                                                        String.CASE_INSENSITIVE_ORDER.thenComparing(
+                                                                Comparator.naturalOrder())),
+                                        Collectors.toList()));
 
         // Show key lifts first, then any others
         List<String> ordered = new ArrayList<>(KEY_LIFTS);
-        allExercises.stream()
+        setsByName.keySet().stream()
                 .filter(exerciseName -> !ordered.contains(exerciseName))
                 .forEach(ordered::add);
 
         List<StrengthProgressDTO> result = new ArrayList<>();
         for (String name : ordered) {
-            List<ExerciseSet> sets =
-                    exerciseSetRepository.findByUserIdAndExerciseNameOrderByDate(userId, name);
+            List<ExerciseSet> sets = setsByName.getOrDefault(name, List.of());
             if (sets.isEmpty()) continue;
             if (sets.stream().anyMatch(ExerciseSet::isCardio)) continue;
 
