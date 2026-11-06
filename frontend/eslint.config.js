@@ -6,7 +6,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import prettier from "eslint-config-prettier";
 
 export default [
-	{ ignores: ["dist", "build", "coverage", "node_modules"] },
+	{ ignores: ["dist", "build", "coverage", "node_modules", "ios"] },
 	js.configs.recommended,
 	{
 		files: ["**/*.{js,jsx}"],

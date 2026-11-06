@@ -116,6 +116,27 @@ public class ProfileController {
         return ResponseEntity.ok().build();
     }
 
+    // Wrong password is a 400, not a 401: the frontend logs the user out on any 401.
+    // Child rows (logs, workouts, journal) go with the user via ON DELETE CASCADE.
+    @PostMapping("/delete-account")
+    public ResponseEntity<Void> deleteAccount(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody PasswordVerifyRequest request,
+            HttpServletResponse response) {
+
+        User user = userResolver.resolve(userDetails);
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            log.warn("Account deletion failed — wrong password for user={}", user.getUsername());
+            throw new IllegalArgumentException("Incorrect password.");
+        }
+
+        userRepository.delete(user);
+        cookieUtil.clearJwtCookie(response);
+        log.info("Account deleted for user={}", user.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/credentials")
     public ResponseEntity<CredentialsUpdateResponse> updateCredentials(
             @AuthenticationPrincipal UserDetails userDetails,
