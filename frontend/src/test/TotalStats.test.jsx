@@ -43,8 +43,12 @@ vi.mock("../components/HistoryCharts", () => ({
 
 // Stub DayDetail — has its own behavior; we only verify it renders with the right date
 vi.mock("../components/DayDetail", () => ({
-	default: ({ date }) => (
-		<div data-testid="day-detail" data-date={date}>
+	default: ({ date, workoutOnly }) => (
+		<div
+			data-testid="day-detail"
+			data-date={date}
+			data-workout-only={String(Boolean(workoutOnly))}
+		>
 			DayDetail for {date}
 		</div>
 	),
@@ -168,6 +172,112 @@ describe("TotalStats — heatmap calendar", () => {
 		render(<TotalStats />);
 		expect(cell("2026-04-20")).toBeDisabled();
 		expect(cell("2026-04-15")).toBeEnabled();
+	});
+});
+
+describe("TotalStats — workout metric", () => {
+	beforeEach(() => {
+		useWorkouts.mockReturnValue({
+			data: [
+				{
+					id: 21,
+					sessionDate: "2026-04-10",
+					sessionName: "Push Day",
+					exerciseSets: [
+						{
+							id: 1,
+							exerciseName: "Bench",
+							setNumber: 1,
+							reps: 8,
+							weightLbs: 135,
+						},
+						{
+							id: 2,
+							exerciseName: "Bench",
+							setNumber: 2,
+							reps: 8,
+							weightLbs: 135,
+						},
+						{
+							id: 3,
+							exerciseName: "Dips",
+							setNumber: 1,
+							reps: 10,
+							weightLbs: 0,
+						},
+					],
+				},
+			],
+			refetch: vi.fn(),
+		});
+	});
+
+	it("labels training days with the session name and set count", async () => {
+		render(<TotalStats />);
+		await userEvent.click(screen.getByRole("button", { name: "Workout" }));
+		const c = cell("2026-04-10");
+		expect(within(c).getByText("Push Day")).toBeInTheDocument();
+		expect(within(c).getByText("3 sets")).toBeInTheDocument();
+		expect(c).toHaveAccessibleName(/workout push day/i);
+		// Rest days stay blank.
+		expect(cell("2026-04-09")).toHaveAccessibleName(/nothing logged/i);
+	});
+
+	it("opens a workout-only day panel while Workout is selected", async () => {
+		render(<TotalStats />);
+		await userEvent.click(cell("2026-04-10"));
+		expect(screen.getByTestId("day-detail").dataset.workoutOnly).toBe("false");
+
+		await userEvent.click(screen.getByRole("button", { name: "Workout" }));
+		expect(screen.getByTestId("day-detail").dataset.workoutOnly).toBe("true");
+	});
+
+	it("says '1 set' for a one-set day and names the workout only once", async () => {
+		useWorkouts.mockReturnValue({
+			data: [
+				{
+					id: 22,
+					sessionDate: "2026-04-10",
+					sessionName: "Push Day",
+					exerciseSets: [
+						{
+							id: 1,
+							exerciseName: "Bench",
+							setNumber: 1,
+							reps: 8,
+							weightLbs: 135,
+						},
+					],
+				},
+			],
+			refetch: vi.fn(),
+		});
+		render(<TotalStats />);
+		await userEvent.click(screen.getByRole("button", { name: "Workout" }));
+		const c = cell("2026-04-10");
+		expect(within(c).getByText("1 set")).toBeInTheDocument();
+		expect(c).toHaveAccessibleName("Fri 4/10: Workout Push Day");
+	});
+
+	it("is offered in the phone dropdown too", async () => {
+		useMediaQuery.mockReturnValue(true);
+		try {
+			render(<TotalStats />);
+			await userEvent.selectOptions(
+				screen.getByRole("combobox", { name: /color days by/i }),
+				"workout",
+			);
+			expect(
+				within(cell("2026-04-10")).getByText("Push Day"),
+			).toBeInTheDocument();
+			await userEvent.click(cell("2026-04-10"));
+			const sheet = screen.getByRole("dialog", { name: "Fri 4/10" });
+			expect(within(sheet).getByTestId("day-detail").dataset.workoutOnly).toBe(
+				"true",
+			);
+		} finally {
+			useMediaQuery.mockReturnValue(false);
+		}
 	});
 });
 
