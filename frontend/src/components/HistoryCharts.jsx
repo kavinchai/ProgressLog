@@ -130,25 +130,74 @@ export function WeightTrendChart({ title, data, unit }) {
 
 // One square per day (columns = weeks), shaded by number of workouts.
 // days: [{ date, count }] ascending, starting on a Sunday.
+const GRID_MONTHS = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+];
+// Rows run Sun → Sat; label every other row like a contribution graph.
+const GRID_WEEKDAYS = ["", "Mon", "", "Wed", "", "Fri", ""];
+
 export function WorkoutGrid({ title, days }) {
 	const total = days.filter((d) => d.count > 0).length;
+	// `days` starts on a Sunday, so every 7 days is one column (week). Name the
+	// month above the first column of each new month.
+	const weekStarts = days.filter((_, i) => i % 7 === 0).map((d) => d.date);
+	const monthLabels = weekStarts.map((date, i) => {
+		const month = date.slice(0, 7);
+		return i === 0 || month !== weekStarts[i - 1].slice(0, 7)
+			? GRID_MONTHS[Number(date.slice(5, 7)) - 1]
+			: "";
+	});
 	return (
 		<ChartCard title={title} subtitle={`${total} workout days`}>
 			<div className="history-grid-wrap">
-				<ul className="history-grid" aria-label="Workout days">
-					{days.map((d) => (
-						<li
-							key={d.date}
-							aria-label={`${d.date}: ${d.count} workout${d.count === 1 ? "" : "s"}`}
-							className={
-								"history-grid-cell" +
-								(d.count >= 2 ? " lvl-2" : d.count === 1 ? " lvl-1" : "")
-							}
-						/>
-					))}
-				</ul>
+				<div className="history-grid-frame">
+					<div
+						className="history-grid-months"
+						data-testid="grid-months"
+						aria-hidden="true"
+					>
+						{monthLabels.map((label, i) => (
+							<span key={weekStarts[i]}>{label}</span>
+						))}
+					</div>
+					<div
+						className="history-grid-weekdays"
+						data-testid="grid-weekdays"
+						aria-hidden="true"
+					>
+						{GRID_WEEKDAYS.map((label, i) => (
+							<span key={i}>{label}</span>
+						))}
+					</div>
+					<ul className="history-grid" aria-label="Workout days">
+						{days.map((d) => (
+							<li
+								key={d.date}
+								aria-label={`${d.date}: ${d.count} workout${d.count === 1 ? "" : "s"}`}
+								className={
+									"history-grid-cell" +
+									(d.count >= 2 ? " lvl-2" : d.count === 1 ? " lvl-1" : "")
+								}
+							/>
+						))}
+					</ul>
+				</div>
 			</div>
 			<div className="history-legend">
+				<span className="history-legend-note">
+					Each column is one week (Sun–Sat)
+				</span>
 				<span>none</span>
 				<i className="history-grid-cell" />
 				<i className="history-grid-cell lvl-1" />
