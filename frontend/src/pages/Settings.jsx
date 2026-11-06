@@ -622,6 +622,50 @@ function PasswordForm({ onDone, onCancel }) {
 	);
 }
 
+function DeleteAccountForm({ onDeleted, onCancel }) {
+	const [currentPassword, setCurrentPassword] = useState("");
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState(null);
+
+	async function handleSubmit(e) {
+		e.preventDefault();
+		if (busy) return;
+		setError(null);
+		setBusy(true);
+		try {
+			await api.post("/profile/delete-account", { password: currentPassword });
+			onDeleted();
+		} catch (err) {
+			setError(apiError(err, "Failed to delete account."));
+			setBusy(false);
+		}
+	}
+
+	return (
+		<form className="settings-form" onSubmit={handleSubmit}>
+			<p className="settings-row-hint">
+				This permanently deletes your account and all your workouts, meals,
+				weight and steps. It can't be undone.
+			</p>
+			<div className="settings-fields">
+				<CurrentPassword
+					value={currentPassword}
+					onChange={setCurrentPassword}
+				/>
+			</div>
+			{error && <p className="settings-error">{error}</p>}
+			<div className="settings-actions">
+				<button className="btn btn-danger" type="submit" disabled={busy}>
+					{busy ? "Deleting..." : "Permanently delete"}
+				</button>
+				<button className="btn" type="button" onClick={onCancel}>
+					Cancel
+				</button>
+			</div>
+		</form>
+	);
+}
+
 // ── Privacy group ───────────────────────────────────────────────────────────
 
 function PrivacyGroup() {
@@ -1034,6 +1078,16 @@ export default function Settings() {
 				>
 					<span className="settings-row-label">Log out</span>
 				</button>
+				<EditRow
+					label="Delete account"
+					open={openRow === "delete"}
+					onToggle={() => toggleRow("delete")}
+				>
+					<DeleteAccountForm
+						onDeleted={clearAuth}
+						onCancel={() => toggleRow("delete")}
+					/>
+				</EditRow>
 			</Group>
 		</div>
 	);

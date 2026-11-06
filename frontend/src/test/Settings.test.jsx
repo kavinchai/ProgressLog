@@ -506,6 +506,48 @@ describe("Settings — account rows", () => {
 		expect(api.post).toHaveBeenCalledWith("/auth/logout");
 		expect(useAuthStore.getState().authenticated).toBe(false);
 	});
+
+	it("deletes the account with the current password and ends the session", async () => {
+		api.post.mockResolvedValue({});
+		setupProfile();
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /^delete account/i }),
+		);
+		expect(screen.getByText(/can't be undone/i)).toBeInTheDocument();
+		await userEvent.type(
+			screen.getByLabelText(/current password/i),
+			"pw123456",
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /^permanently delete$/i }),
+		);
+
+		await waitFor(() =>
+			expect(useAuthStore.getState().authenticated).toBe(false),
+		);
+		expect(api.post).toHaveBeenCalledWith("/profile/delete-account", {
+			password: "pw123456",
+		});
+	});
+
+	it("keeps the account and shows the error when the password is wrong", async () => {
+		api.post.mockRejectedValue({
+			response: { data: { message: "Incorrect password." } },
+		});
+		setupProfile();
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /^delete account/i }),
+		);
+		await userEvent.type(screen.getByLabelText(/current password/i), "wrong");
+		await userEvent.click(
+			screen.getByRole("button", { name: /^permanently delete$/i }),
+		);
+
+		expect(await screen.findByText(/incorrect password/i)).toBeInTheDocument();
+		expect(useAuthStore.getState().authenticated).toBe(true);
+	});
 });
 
 describe("Settings — phone layout", () => {

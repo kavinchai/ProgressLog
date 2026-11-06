@@ -206,6 +206,15 @@ public class SettingsPage {
                 new Page.GetByRoleOptions().setName("Cancel").setExact(true)).click();
     }
 
+    /** Opens the Delete account row, enters the password and confirms. */
+    public void deleteAccount(String password) {
+        openAccountRow("Delete account");
+        page.getByLabel("Current password", new Page.GetByLabelOptions().setExact(true))
+                .fill(password);
+        page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Permanently delete").setExact(true)).click();
+    }
+
     // ── Privacy / share-data switch ─────────────────────────────────────────
 
     private static final String SHARE_DATA_TOGGLE = "button.settings-switch[aria-label='Toggle data sharing']";
