@@ -10,16 +10,23 @@ on:
         type: string
         default: "30"
 
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
 jobs:
   backup:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
+      # The PGDG setup script installs the repo key into /etc/apt/keyrings and
+      # adds a signed-by source; apt-key no longer exists on current runners.
       - name: Install Postgres 17 client
         run: |
-          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt-get update
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-17
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
 
@@ -27,24 +34,42 @@ jobs:
         env:
           RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
         run: |
-          which pg_dump
           pg_dump --version
-          TIMESTAMP=$(date -u +%Y%m%d-%H%M%S)
-          OUTFILE="fitness-${TIMESTAMP}.dump"
-          echo "Writing backup to ${OUTFILE}"
+          OUTFILE="fitness-$(date -u +%Y%m%d-%H%M%S).dump"
           pg_dump "${RAILWAY_DATABASE_URL}" \
             --format=custom \
             --no-owner \
             --no-acl \
             --file="${OUTFILE}"
           ls -lh "${OUTFILE}"
-          echo "OUTFILE=${OUTFILE}" >> $GITHUB_ENV
+          echo "OUTFILE=${OUTFILE}" >> "$GITHUB_ENV"
 
       - name: Verify dump is restorable
         run: |
-          pg_restore --version
-          pg_restore --list "${OUTFILE}" | head -20
-          echo "Dump is valid"
+          # Lists the archive's table of contents; fails if the dump is corrupt.
+          TABLES=$(pg_restore --list "${OUTFILE}" | grep -c ' TABLE DATA ' || true)
+          echo "Dump is valid (${TABLES} tables with data)"
+          if [ "${TABLES}" -eq 0 ]; then
+            echo "::error::Dump contains no table data"
+            exit 1
+          fi
+
+      # This repository is public, so any signed-in GitHub user can download its
+      # artifacts. Encrypt the dump when BACKUP_PASSPHRASE is set.
+      - name: Encrypt dump
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "${BACKUP_PASSPHRASE}" ]; then
+            echo "::warning::BACKUP_PASSPHRASE is not set, so this dump is uploaded unencrypted to a public repository's artifacts. Add the secret to encrypt it."
+            exit 0
+          fi
+          printf '%s' "${BACKUP_PASSPHRASE}" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output "${OUTFILE}.gpg" "${OUTFILE}"
+          rm "${OUTFILE}"
+          echo "OUTFILE=${OUTFILE}.gpg" >> "$GITHUB_ENV"
+          echo "Encrypted to ${OUTFILE}.gpg"
 
       - name: Upload backup artifact
         uses: actions/upload-artifact@v4
