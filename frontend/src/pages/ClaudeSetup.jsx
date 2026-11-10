@@ -186,7 +186,7 @@ export default function ClaudeSetup() {
 						Click <strong>Add custom connector</strong>
 					</li>
 					<li>
-						Give it a name like <strong>ProgressLog</strong>
+						Give it a name like <strong>Progress Logger</strong>
 					</li>
 					<li>Paste your MCP URL from Step 1 as the connector URL</li>
 					<li>Save — the tools will be available in new conversations</li>

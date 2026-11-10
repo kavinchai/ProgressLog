@@ -64,8 +64,8 @@ public class LoginPageTest {
 
         step("verify title text");
         String title = page.locator(".login-title").innerText();
-        if (!"ProgressLog".equals(title)) {
-            throw new AssertionError("Expected title 'ProgressLog' but got: " + title);
+        if (!"Progress Logger".equals(title)) {
+            throw new AssertionError("Expected title 'Progress Logger' but got: " + title);
         }
     }
 

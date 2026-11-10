@@ -108,7 +108,7 @@ describe("main navigation", () => {
 			</BrowserRouter>,
 		);
 
-		expect(screen.getByText("ProgressLog")).toBeInTheDocument();
+		expect(screen.getByText("Progress Logger")).toBeInTheDocument();
 		expect(
 			screen.queryByRole("button", { name: "Menu" }),
 		).not.toBeInTheDocument();

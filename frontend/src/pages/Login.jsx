@@ -58,7 +58,7 @@ export default function Login() {
 		<div className="login-page">
 			<div className="login-card">
 				<div className="login-inner">
-					<div className="login-title">ProgressLog</div>
+					<div className="login-title">Progress Logger</div>
 					<div className="login-divider">
 						{isSignup ? "Create your account" : "Welcome back"}
 					</div>

@@ -51,7 +51,7 @@ function makeApi(apiKey) {
 		const text = await res.text();
 		if (!res.ok) {
 			throw new Error(
-				`ProgressLog API ${method} ${path} → ${res.status}: ${text}`,
+				`Progress Logger API ${method} ${path} → ${res.status}: ${text}`,
 			);
 		}
 		return text ? JSON.parse(text) : null;
@@ -176,7 +176,7 @@ function createMcpServer(apiKey) {
 	mcp.tool(
 		"log_workout",
 		`Log a strength/lifting workout session. Use ONLY for exercises with reps and weight (e.g. Bench Press, Squat, Deadlift).
-ProgressLog only tracks lifts: runs, walks, cardio, sports and timed holds (e.g. planks) can't be logged — tell the user that instead of logging them.
+Progress Logger only tracks lifts: runs, walks, cardio, sports and timed holds (e.g. planks) can't be logged — tell the user that instead of logging them.
 Names are matched to the lifts the user already logs: a clear spelling variant is saved under the existing name (e.g. "lat pull down" → "Lat Pulldowns"). If a name is ambiguous, nothing is logged and the result lists the options — ask the user which they meant, then call again with that exact name (or put the name in keepNames if it's a new lift).
 Examples:
   "5x5 bench press at 135 lbs" → exercises: [{ exerciseName: "Bench Press", sets: [{setNumber:1,reps:5,weightLbs:135}, ...] }]
@@ -1461,6 +1461,6 @@ app.get("/health", (req, res) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-	console.log(`ProgressLog MCP server listening on port ${PORT}`);
+	console.log(`Progress Logger MCP server listening on port ${PORT}`);
 	console.log(`API target: ${API_BASE}`);
 });

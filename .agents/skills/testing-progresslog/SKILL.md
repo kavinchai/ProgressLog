@@ -1,9 +1,9 @@
 ---
 name: testing-progresslog
-description: How to run and test the ProgressLog frontend locally against the production backend, log in, and reach the History day-detail modal.
+description: How to run and test the Progress Logger frontend locally against the production backend, log in, and reach the History day-detail modal.
 ---
 
-# Testing ProgressLog (frontend)
+# Testing Progress Logger (frontend)
 
 ## Run the frontend against the production backend
 No local backend/DB is normally set up. Easiest path is the vite dev server proxying `/api` to prod.

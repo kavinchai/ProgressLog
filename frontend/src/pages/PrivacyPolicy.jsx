@@ -7,15 +7,15 @@ export default function PrivacyPolicy() {
 	return (
 		<div className="privacy-page">
 			<Link to="/" className="privacy-home">
-				ProgressLog
+				Progress Logger
 			</Link>
 
 			<h1 className="privacy-title">Privacy Policy</h1>
 			<p className="privacy-date">Effective November 10, 2026</p>
 
 			<p>
-				This policy explains what ProgressLog collects, why, and the choices you
-				have. It covers the ProgressLog website and iOS app.
+				This policy explains what Progress Logger collects, why, and the choices
+				you have. It covers the Progress Logger website and iOS app.
 			</p>
 
 			<h2>What we collect</h2>
@@ -46,10 +46,10 @@ export default function PrivacyPolicy() {
 
 			<h2>How we use it</h2>
 			<p>
-				Only to run ProgressLog: storing and showing your logs, working out your
-				stats and personal records, and powering the leaderboard and calendar if
-				you opt in. We don&apos;t sell your data, show ads or track you across
-				other apps and websites.
+				Only to run Progress Logger: storing and showing your logs, working out
+				your stats and personal records, and powering the leaderboard and
+				calendar if you opt in. We don&apos;t sell your data, show ads or track
+				you across other apps and websites.
 			</p>
 
 			<h2>What other people can see</h2>
@@ -65,17 +65,17 @@ export default function PrivacyPolicy() {
 			<h2>Claude integration</h2>
 			<p>
 				If you create an API key and connect it to Claude, Claude can read and
-				update your ProgressLog data on your behalf. Anthropic&apos;s privacy
-				policy covers how it handles your conversations. Generating a new key in
-				Settings › Integrations replaces the old one.
+				update your Progress Logger data on your behalf. Anthropic&apos;s
+				privacy policy covers how it handles your conversations. Generating a
+				new key in Settings › Integrations replaces the old one.
 			</p>
 
 			<h2>Where your data is stored</h2>
 			<p>
-				ProgressLog&apos;s server and database are hosted by Railway, and the
-				website by Vercel. The website and app load the Inter font from Google
-				Fonts, which receives your IP address. All traffic is encrypted with
-				HTTPS.
+				Progress Logger&apos;s server and database are hosted by Railway, and
+				the website by Vercel. The website and app load the Inter font from
+				Google Fonts, which receives your IP address. All traffic is encrypted
+				with HTTPS.
 			</p>
 
 			<h2>Keeping and deleting your data</h2>
@@ -92,7 +92,7 @@ export default function PrivacyPolicy() {
 			</p>
 
 			<h2>Children</h2>
-			<p>ProgressLog isn&apos;t intended for children under 13.</p>
+			<p>Progress Logger isn&apos;t intended for children under 13.</p>
 
 			<h2>Changes</h2>
 			<p>

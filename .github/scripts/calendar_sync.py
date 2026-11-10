@@ -1,4 +1,4 @@
-"""Mirror ProgressLog workouts or weigh-ins onto a Google Calendar.
+"""Mirror Progress Logger workouts or weigh-ins onto a Google Calendar.
 
     python calendar_sync.py workout|weight
 
