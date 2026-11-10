@@ -17,6 +17,9 @@ public class MealRequest {
 
     private String mealName; // optional: what was eaten
 
+    @Size(max = 100)
+    private String restaurant; // optional: where it came from
+
     @NotNull
     @Min(0)
     private Integer calories;

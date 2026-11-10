@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import api from "../api";
 import { useToast } from "./Toast";
@@ -21,15 +21,19 @@ function fieldsFrom(meal, slot) {
 	return {
 		label: meal?.mealLabel ?? slot ?? "",
 		name: meal?.mealName ?? "",
+		restaurant: meal?.restaurant ?? "",
 		calories: meal?.calories ?? "",
 		protein: meal?.proteinGrams ?? "",
 	};
 }
 
+// A blank restaurant is left out, which the backend stores as none.
 function bodyFrom(fields, slot) {
+	const restaurant = fields.restaurant.trim();
 	return {
 		mealLabel: slot ?? (fields.label.trim() || null),
 		mealName: fields.name.trim() || null,
+		...(restaurant && { restaurant }),
 		calories: toInt(fields.calories),
 		proteinGrams: toInt(fields.protein),
 	};
@@ -39,6 +43,7 @@ function MealCard({
 	slot,
 	meal,
 	autoFocusLabel,
+	restaurantListId,
 	saveMeal,
 	removeMeal,
 	onCreated,
@@ -102,7 +107,14 @@ function MealCard({
 
 	async function toggleSkipped(checked) {
 		if (checked) {
-			commit(update({ name: `Skipped ${slot}`, calories: 0, protein: 0 }));
+			commit(
+				update({
+					name: `Skipped ${slot}`,
+					restaurant: "",
+					calories: 0,
+					protein: 0,
+				}),
+			);
 			return;
 		}
 		const blank = update({ name: "", calories: "", protein: "" });
@@ -135,27 +147,43 @@ function MealCard({
 			}}
 		>
 			<div className="meal-card-head">
-				{slot ? (
-					<span className="meal-card-label">{slot}</span>
-				) : (
-					<input
-						className="meal-card-label meal-card-label-input"
-						type="text"
-						placeholder="Name this meal"
-						aria-label="Meal label"
-						maxLength={50}
-						value={fields.label}
-						autoFocus={autoFocusLabel}
-						onChange={(e) => update({ label: e.target.value })}
-						onBlur={() => commit()}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") {
-								e.preventDefault();
-								nameRef.current?.focus();
-							}
-						}}
-					/>
-				)}
+				<div className="meal-card-title">
+					{slot ? (
+						<span className="meal-card-label">{slot}</span>
+					) : (
+						<input
+							className="meal-card-label meal-card-label-input"
+							type="text"
+							placeholder="Name this meal"
+							aria-label="Meal label"
+							maxLength={50}
+							value={fields.label}
+							autoFocus={autoFocusLabel}
+							onChange={(e) => update({ label: e.target.value })}
+							onBlur={() => commit()}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									e.preventDefault();
+									nameRef.current?.focus();
+								}
+							}}
+						/>
+					)}
+					{!skipped && (
+						<input
+							className="meal-card-restaurant"
+							type="text"
+							placeholder="Where from?"
+							aria-label="Restaurant"
+							maxLength={100}
+							list={restaurantListId}
+							value={fields.restaurant}
+							onChange={(e) => update({ restaurant: e.target.value })}
+							onBlur={() => commit()}
+							onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+						/>
+					)}
+				</div>
 				<div className="meal-card-actions">
 					{status && (
 						<span className="meal-card-status">
@@ -236,12 +264,30 @@ function MealCard({
 	);
 }
 
+// Restaurants from every logged meal, once each (ignoring case), A–Z.
+function pastRestaurants(nutritionData) {
+	const byKey = new Map();
+	for (const log of nutritionData ?? []) {
+		for (const m of log.meals ?? []) {
+			const name = m.restaurant?.trim();
+			if (name && !byKey.has(name.toLowerCase())) {
+				byKey.set(name.toLowerCase(), name);
+			}
+		}
+	}
+	return [...byKey.values()].sort((a, b) =>
+		a.localeCompare(b, undefined, { sensitivity: "base" }),
+	);
+}
+
 export default function MealCards({
 	nutritionEntry,
+	nutritionData,
 	getOrCreateNutritionLogId,
 	onSaved,
 }) {
 	const meals = nutritionEntry?.meals ?? [];
+	const restaurantListId = useId();
 	const [drafts, setDrafts] = useState([]); // [{ key, mealId }]
 	const [confirmDelete, setConfirmDelete] = useState(null);
 	const nextKeyRef = useRef(0);
@@ -321,11 +367,17 @@ export default function MealCards({
 
 	return (
 		<div className="meal-cards">
+			<datalist id={restaurantListId}>
+				{pastRestaurants(nutritionData).map((name) => (
+					<option key={name} value={name} />
+				))}
+			</datalist>
 			{SLOTS.map((slot) => (
 				<MealCard
 					key={slot}
 					slot={slot}
 					meal={slotMeals[slot] ?? null}
+					restaurantListId={restaurantListId}
 					saveMeal={saveMeal}
 					removeMeal={removeMeal}
 				/>
@@ -335,6 +387,7 @@ export default function MealCards({
 					key={row.key}
 					meal={row.meal}
 					autoFocusLabel={row.autoFocus}
+					restaurantListId={restaurantListId}
 					saveMeal={saveMeal}
 					removeMeal={removeMeal}
 					onCreated={(id) =>

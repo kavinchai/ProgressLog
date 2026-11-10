@@ -332,6 +332,7 @@ export default function WeeklyStats() {
 						date={selectedDate}
 						weightEntry={selectedRow?.weightEntry}
 						nutritionEntry={selectedRow?.nutritionEntry}
+						nutritionData={nutritionData}
 						workoutEntry={selectedRow?.workoutEntry}
 						stepEntry={selectedRow?.stepEntry}
 						onRefetchW={refetchWeight}

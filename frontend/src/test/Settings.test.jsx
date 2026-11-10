@@ -804,6 +804,56 @@ describe("Settings — export handles nutrition meals", () => {
 		global.Blob = OrigBlob;
 	});
 
+	it("JSON export carries each meal's restaurant in a Restaurant column", async () => {
+		useNutrition.mockReturnValue({
+			data: [
+				{
+					...NUTRITION_DATA[0],
+					meals: [
+						{
+							id: 1,
+							mealLabel: "Lunch",
+							mealName: "Burrito bowl",
+							restaurant: "Chipotle",
+							calories: 900,
+							proteinGrams: 50,
+						},
+						{
+							id: 2,
+							mealLabel: "Dinner",
+							mealName: "Pasta",
+							calories: 700,
+							proteinGrams: 30,
+						},
+					],
+				},
+			],
+			refetch: vi.fn(),
+		});
+		let capturedJson = null;
+		const OrigBlob = global.Blob;
+		global.Blob = class {
+			constructor(data) {
+				capturedJson = data[0];
+			}
+		};
+		global.URL.createObjectURL = vi.fn(() => "blob:x");
+		global.URL.revokeObjectURL = vi.fn();
+
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /export.*json/i }),
+		);
+
+		const rows = JSON.parse(capturedJson).nutrition;
+		expect(rows[0]).toMatchObject({
+			Meal: "Burrito bowl",
+			Restaurant: "Chipotle",
+		});
+		expect(rows[1]).toMatchObject({ Meal: "Pasta", Restaurant: "" });
+		global.Blob = OrigBlob;
+	});
+
 	it("nutrition totals in totalStats are still exported", async () => {
 		let capturedJson = null;
 		const OrigBlob = global.Blob;

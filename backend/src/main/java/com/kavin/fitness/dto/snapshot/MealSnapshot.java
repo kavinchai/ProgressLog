@@ -14,6 +14,7 @@ public class MealSnapshot {
     private Long logId;
     private String mealLabel;
     private String mealName;
+    private String restaurant;
     private Integer calories;
     private Integer proteinGrams;
 }

@@ -5,6 +5,7 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.BoundingBox;
 import com.microsoft.playwright.options.WaitForSelectorState;
 
 /**
@@ -89,5 +90,56 @@ public class MealCards {
         page.getByText("Deleted successfully.").waitFor();
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Done")).click();
         card(label).waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
+    }
+
+    /** Type where the meal came from into the box's Restaurant field and leave it. */
+    public void fillRestaurant(String label, String restaurant) {
+        field(label, "Restaurant").fill(restaurant);
+        field(label, "Restaurant").press("Tab");
+    }
+
+    /** Change a saved meal's restaurant and wait for the PUT that saves it to finish. */
+    public void editRestaurant(String label, String restaurant) {
+        page.waitForResponse(
+                r -> r.url().contains("/meals/") && "PUT".equals(r.request().method()),
+                () -> fillRestaurant(label, restaurant));
+    }
+
+    /** Retries until the box's Restaurant field shows {@code expected}. */
+    public void assertRestaurant(String label, String expected) {
+        assertThat(field(label, "Restaurant")).hasValue(expected);
+    }
+
+    /** True when the Restaurant field sits on the label's row, to its right (desktop layout). */
+    public boolean restaurantIsRightOfLabel(String label) {
+        BoundingBox name = card(label).locator(".meal-card-label").boundingBox();
+        BoundingBox restaurant = field(label, "Restaurant").boundingBox();
+        boolean sameRow = restaurant.y < name.y + name.height && name.y < restaurant.y + restaurant.height;
+        return sameRow && restaurant.x >= name.x + name.width;
+    }
+
+    /** True when the Restaurant field sits on its own line right under the label, left-aligned (mobile layout). */
+    public boolean restaurantIsBelowLabel(String label) {
+        BoundingBox name = card(label).locator(".meal-card-label").boundingBox();
+        BoundingBox restaurant = field(label, "Restaurant").boundingBox();
+        BoundingBox whatYouAte = field(label, "What you ate").boundingBox();
+        boolean underLabel = restaurant.y >= name.y + name.height - 1;
+        boolean leftAligned = Math.abs(restaurant.x - name.x) <= 8;
+        boolean aboveFields = restaurant.y + restaurant.height <= whatYouAte.y + 1;
+        return underLabel && leftAligned && aboveFields;
+    }
+
+    /** Delete an extra meal, then press Undo in the dialog and wait for its box to come back. */
+    public void deleteMealAndUndo(String label) {
+        card(label).getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Delete meal")).click();
+        page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Confirm Delete")).click();
+        page.getByText("Deleted successfully.").waitFor();
+        card(label).waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
+        page.waitForResponse(
+                r -> r.url().endsWith("/undo") && "POST".equals(r.request().method()),
+                () -> page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Undo")).click());
+        waitForCard(label);
     }
 }

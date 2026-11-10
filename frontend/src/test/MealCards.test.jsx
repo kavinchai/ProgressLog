@@ -337,3 +337,186 @@ describe("MealCards — extra meals", () => {
 		expect(screen.queryByTestId("confirm-delete")).not.toBeInTheDocument();
 	});
 });
+
+describe("MealCards — restaurant", () => {
+	const lunch = (restaurant) => ({
+		id: 9,
+		mealLabel: "Lunch",
+		mealName: "Burrito bowl",
+		restaurant,
+		calories: 900,
+		proteinGrams: 50,
+	});
+	const restaurantField = (label) =>
+		within(card(label)).getByRole("combobox", { name: /restaurant/i });
+
+	it("shows the saved restaurant in the card header, next to the label", () => {
+		setup(logWith([lunch("Chipotle")]));
+		const field = restaurantField("Lunch");
+		expect(field).toHaveValue("Chipotle");
+		expect(field.closest(".meal-card-head")).toBeInTheDocument();
+	});
+
+	it("every box, including extras, has a restaurant field", () => {
+		setup(
+			logWith([
+				{
+					id: 4,
+					mealLabel: "Snack",
+					mealName: "Bar",
+					calories: 200,
+					proteinGrams: 20,
+				},
+			]),
+		);
+		for (const label of ["Breakfast", "Lunch", "Dinner", "Snack"]) {
+			expect(restaurantField(label)).toHaveValue("");
+		}
+	});
+
+	it("saves a new meal with its restaurant", async () => {
+		setup(null);
+		const b = within(card("Breakfast"));
+		await userEvent.type(restaurantField("Breakfast"), "Starbucks");
+		await userEvent.type(
+			b.getByRole("textbox", { name: /what you ate/i }),
+			"Egg bites",
+		);
+		await userEvent.tab();
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenLastCalledWith(`/nutrition/${LOG_ID}/meals`, {
+				mealLabel: "Breakfast",
+				mealName: "Egg bites",
+				restaurant: "Starbucks",
+				calories: 0,
+				proteinGrams: 0,
+			}),
+		);
+	});
+
+	it("PUTs the meal when only the restaurant is edited", async () => {
+		setup(logWith([lunch(null)]));
+		await userEvent.type(restaurantField("Lunch"), "  Chipotle ");
+		await userEvent.tab();
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`, {
+				mealLabel: "Lunch",
+				mealName: "Burrito bowl",
+				restaurant: "Chipotle",
+				calories: 900,
+				proteinGrams: 50,
+			}),
+		);
+	});
+
+	it("clearing the restaurant saves the meal without one", async () => {
+		setup(logWith([lunch("Chipotle")]));
+		await userEvent.clear(restaurantField("Lunch"));
+		await userEvent.tab();
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`, {
+				mealLabel: "Lunch",
+				mealName: "Burrito bowl",
+				calories: 900,
+				proteinGrams: 50,
+			}),
+		);
+	});
+
+	it("a blank restaurant is not filled in with a default", async () => {
+		setup(null);
+		await userEvent.type(
+			within(card("Dinner")).getByRole("textbox", { name: /what you ate/i }),
+			"Pasta",
+		);
+		await userEvent.tab();
+		await waitFor(() => expect(api.post).toHaveBeenCalled());
+		expect(api.post.mock.calls.at(-1)[1]).not.toHaveProperty("restaurant");
+	});
+
+	it("suggests restaurants used before, once each, in A–Z order", () => {
+		render(
+			<MealCards
+				nutritionEntry={null}
+				nutritionData={[
+					logWith([lunch("Chipotle"), { ...lunch("cava"), id: 10 }]),
+					{
+						...logWith([
+							{ ...lunch("Chipotle"), id: 11 },
+							{ ...lunch(""), id: 12 },
+						]),
+						id: 43,
+					},
+					{ ...logWith([{ ...lunch(null), id: 13 }]), id: 44 },
+				]}
+				getOrCreateNutritionLogId={getOrCreateNutritionLogId}
+				onSaved={onSaved}
+			/>,
+		);
+		const field = restaurantField("Breakfast");
+		const list = document.getElementById(field.getAttribute("list"));
+		expect([...list.querySelectorAll("option")].map((o) => o.value)).toEqual([
+			"cava",
+			"Chipotle",
+		]);
+	});
+
+	it("a skipped meal hides the restaurant field", () => {
+		setup(
+			logWith([
+				{
+					id: 3,
+					mealLabel: "Lunch",
+					mealName: "Skipped Lunch",
+					calories: 0,
+					proteinGrams: 0,
+				},
+			]),
+		);
+		expect(
+			within(card("Lunch")).queryByRole("combobox", { name: /restaurant/i }),
+		).not.toBeInTheDocument();
+	});
+});
+
+describe("MealCards — restaurant edge cases", () => {
+	it("a restaurant alone on an empty box does not save a meal", async () => {
+		setup(null);
+		await userEvent.type(
+			within(card("Breakfast")).getByRole("combobox", { name: /restaurant/i }),
+			"Starbucks",
+		);
+		await userEvent.tab();
+		expect(api.post).not.toHaveBeenCalled();
+		expect(api.put).not.toHaveBeenCalled();
+	});
+
+	it("ticking Skipped drops the meal's restaurant", async () => {
+		setup(
+			logWith([
+				{
+					id: 9,
+					mealLabel: "Lunch",
+					mealName: "Burrito bowl",
+					restaurant: "Chipotle",
+					calories: 900,
+					proteinGrams: 50,
+				},
+			]),
+		);
+		await userEvent.click(
+			within(card("Lunch")).getByRole("checkbox", { name: /skipped/i }),
+		);
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`, {
+				mealLabel: "Lunch",
+				mealName: "Skipped Lunch",
+				calories: 0,
+				proteinGrams: 0,
+			}),
+		);
+	});
+});

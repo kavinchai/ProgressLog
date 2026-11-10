@@ -28,6 +28,7 @@ public class NutritionLogDTO {
         private Long id;
         private String mealLabel;
         private String mealName;
+        private String restaurant;
         private Integer calories;
         private Integer proteinGrams;
     }

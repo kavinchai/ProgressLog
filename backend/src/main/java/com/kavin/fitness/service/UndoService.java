@@ -110,6 +110,7 @@ public class UndoService {
         MealRequest req = new MealRequest();
         req.setMealLabel(snap.getMealLabel());
         req.setMealName(snap.getMealName());
+        req.setRestaurant(snap.getRestaurant());
         req.setCalories(snap.getCalories());
         req.setProteinGrams(snap.getProteinGrams());
         nutritionService.addMeal(log.getId(), user.getId(), req);

@@ -75,6 +75,42 @@
 	border-color: var(--accent);
 }
 
+/* Label with the restaurant beside it (under it on phones) */
+.meal-card-title {
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.meal-card-restaurant {
+	width: 200px;
+	min-width: 0;
+	padding: 4px 6px;
+	font-family: var(--font);
+	font-size: var(--fs-sm);
+	color: var(--muted);
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+}
+
+.meal-card-restaurant::placeholder {
+	color: var(--muted);
+	opacity: 0.6;
+}
+
+.meal-card-restaurant:hover {
+	border-color: var(--border);
+}
+
+.meal-card-restaurant:focus {
+	outline: none;
+	color: var(--text);
+	border-color: var(--accent);
+}
+
 .meal-card-actions {
 	display: flex;
 	align-items: center;
@@ -177,6 +213,17 @@
 }
 
 @media (max-width: 640px) {
+	.meal-card-title {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 2px;
+	}
+
+	.meal-card-restaurant {
+		width: 100%;
+		margin-left: -6px;
+	}
+
 	.meal-card-fields {
 		flex-wrap: wrap;
 	}

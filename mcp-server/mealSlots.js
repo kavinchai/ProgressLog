@@ -53,3 +53,16 @@ export function planMealWrite(
 		? { method: "PUT", mealId: existing.id, body, replaced: existing }
 		: { method: "POST", mealId: null, body, replaced: null };
 }
+
+// What log_meal stores when the user doesn't say where the food came from.
+export const DEFAULT_RESTAURANT = "Home cooked";
+
+export function restaurantOrDefault(restaurant) {
+	return restaurant?.trim() || DEFAULT_RESTAURANT;
+}
+
+// One meal as the read tools show it: "Lunch: Burrito bowl · Chipotle".
+export function describeMeal(m) {
+	const base = [m.mealLabel, m.mealName].filter(Boolean).join(": ") || "Meal";
+	return m.restaurant ? `${base} · ${m.restaurant}` : base;
+}

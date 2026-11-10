@@ -1,6 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeLabel, planMealWrite } from "./mealSlots.js";
+import {
+	DEFAULT_RESTAURANT,
+	describeMeal,
+	normalizeLabel,
+	planMealWrite,
+	restaurantOrDefault,
+} from "./mealSlots.js";
 
 describe("normalizeLabel", () => {
 	it("maps any casing of breakfast / lunch / dinner to the slot name", () => {
@@ -207,5 +213,43 @@ describe("planMealWrite — meal type only in the name", () => {
 		});
 		assert.equal(plan.body.mealLabel, "Dinner");
 		assert.equal(plan.body.mealName, "steak");
+	});
+});
+
+describe("restaurantOrDefault", () => {
+	it("keeps the restaurant the user named, trimmed", () => {
+		assert.equal(restaurantOrDefault("  Chipotle "), "Chipotle");
+	});
+
+	it('falls back to "Home cooked" when no restaurant was named', () => {
+		assert.equal(DEFAULT_RESTAURANT, "Home cooked");
+		assert.equal(restaurantOrDefault(undefined), "Home cooked");
+		assert.equal(restaurantOrDefault(null), "Home cooked");
+		assert.equal(restaurantOrDefault("   "), "Home cooked");
+	});
+});
+
+describe("describeMeal", () => {
+	it("joins label and name, and adds the restaurant when there is one", () => {
+		assert.equal(
+			describeMeal({
+				mealLabel: "Lunch",
+				mealName: "Burrito bowl",
+				restaurant: "Chipotle",
+			}),
+			"Lunch: Burrito bowl · Chipotle",
+		);
+	});
+
+	it("leaves the restaurant out when it is blank", () => {
+		assert.equal(
+			describeMeal({ mealLabel: "Dinner", mealName: "Pasta", restaurant: null }),
+			"Dinner: Pasta",
+		);
+	});
+
+	it('says "Meal" when there is no label or name', () => {
+		assert.equal(describeMeal({}), "Meal");
+		assert.equal(describeMeal({ restaurant: "Cava" }), "Meal · Cava");
 	});
 });

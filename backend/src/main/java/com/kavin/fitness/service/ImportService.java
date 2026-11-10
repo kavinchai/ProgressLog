@@ -180,6 +180,7 @@ public class ImportService {
                     meal.setNutritionLog(log);
                     meal.setMealLabel(mealLabel);
                     meal.setMealName(mealName != null ? mealName : "");
+                    meal.setRestaurant(getString(row, "Restaurant"));
                     meal.setCalories(
                             caloriesStr != null
                                     ? (int) Math.round(Double.parseDouble(caloriesStr))

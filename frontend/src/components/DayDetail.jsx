@@ -14,6 +14,7 @@ export default function DayDetail({
 	date,
 	weightEntry,
 	nutritionEntry,
+	nutritionData,
 	workoutEntry,
 	stepEntry,
 	onRefetchW,
@@ -175,6 +176,7 @@ export default function DayDetail({
 						)}
 						<MealCards
 							nutritionEntry={nutritionEntry ?? null}
+							nutritionData={nutritionData}
 							getOrCreateNutritionLogId={getOrCreateNutritionLogId}
 							onSaved={onRefetchN}
 						/>

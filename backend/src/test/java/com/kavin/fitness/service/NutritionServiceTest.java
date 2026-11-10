@@ -350,6 +350,94 @@ class NutritionServiceTest {
                 EntityNotFoundException.class, () -> nutritionService.deleteMeal(10L, 30L, 1L));
     }
 
+    // ── restaurant ───────────────────────────────────────────────────────────
+
+    @Test
+    void addMeal_storesRestaurant() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+        when(nutritionLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        MealRequest request = new MealRequest();
+        request.setMealLabel("Lunch");
+        request.setMealName("Burrito bowl");
+        request.setRestaurant("Chipotle");
+        request.setCalories(900);
+        request.setProteinGrams(50);
+
+        NutritionLogDTO.MealDTO meal = nutritionService.addMeal(10L, 1L, request).getMeals().get(0);
+
+        assertEquals("Chipotle", meal.getRestaurant());
+    }
+
+    @Test
+    void addMeal_restaurantIsOptional() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+        when(nutritionLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        MealRequest request = new MealRequest();
+        request.setMealName("Toast");
+        request.setCalories(200);
+        request.setProteinGrams(6);
+
+        assertNull(nutritionService.addMeal(10L, 1L, request).getMeals().get(0).getRestaurant());
+    }
+
+    @Test
+    void updateMeal_updatesRestaurant() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        Meal m = meal(20L, log, "Dinner", "Pasta", 800, 30);
+        log.getMeals().add(m);
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+        when(mealRepository.findById(20L)).thenReturn(Optional.of(m));
+        when(nutritionLogRepository.findByUserIdWithMealsOrderByLogDateAsc(1L))
+                .thenReturn(List.of(log));
+
+        MealRequest request = new MealRequest();
+        request.setMealLabel("Dinner");
+        request.setMealName("Pasta");
+        request.setRestaurant("Olive Garden");
+        request.setCalories(800);
+        request.setProteinGrams(30);
+
+        NutritionLogDTO.MealDTO meal =
+                nutritionService.updateMeal(10L, 20L, 1L, request).getMeals().get(0);
+
+        assertEquals("Olive Garden", meal.getRestaurant());
+    }
+
+    @Test
+    void deleteMeal_snapshotKeepsRestaurant() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        Meal m = meal(20L, log, "Dinner", "Salmon", 700, 45);
+        m.setRestaurant("Sweetgreen");
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+        when(mealRepository.findById(20L)).thenReturn(Optional.of(m));
+
+        nutritionService.deleteMeal(10L, 20L, 1L);
+
+        ArgumentCaptor<Object> snap = ArgumentCaptor.forClass(Object.class);
+        verify(deletionJournal).record(eq(user), any(), any(), snap.capture());
+        assertEquals("Sweetgreen", ((MealSnapshot) snap.getValue()).getRestaurant());
+    }
+
+    @Test
+    void deleteLog_snapshotKeepsRestaurant() {
+        NutritionLog log = nutritionLog(10L, LocalDate.of(2026, 3, 1), "training");
+        Meal m = meal(20L, log, "Lunch", "Bowl", 600, 40);
+        m.setRestaurant("Cava");
+        log.getMeals().add(m);
+        when(nutritionLogRepository.findById(10L)).thenReturn(Optional.of(log));
+
+        nutritionService.deleteLog(10L, 1L);
+
+        ArgumentCaptor<Object> snap = ArgumentCaptor.forClass(Object.class);
+        verify(deletionJournal).record(eq(user), any(), any(), snap.capture());
+        NutritionLogSnapshot saved = (NutritionLogSnapshot) snap.getValue();
+        assertEquals("Cava", saved.getMeals().get(0).getRestaurant());
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private NutritionLog nutritionLog(Long id, LocalDate date, String dayType) {

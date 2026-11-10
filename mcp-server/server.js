@@ -3,7 +3,12 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import express from "express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { planMealWrite } from "./mealSlots.js";
+import {
+	DEFAULT_RESTAURANT,
+	describeMeal,
+	planMealWrite,
+	restaurantOrDefault,
+} from "./mealSlots.js";
 import { planExerciseNames } from "./nameMatches.js";
 
 // ── Config ──────────────────────────────────────────────────────────────────
@@ -448,7 +453,7 @@ Examples:
 
 	mcp.tool(
 		"log_meal",
-		"Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros. Always set mealLabel to the meal the user named (\"for dinner I had…\" → \"Dinner\"). Breakfast, lunch and dinner are one slot per day: logging one fills (replaces) that day's existing slot instead of adding a second. Any other meal type adds a new meal.",
+		"Log a meal with calories and protein. Call this when the user mentions food, eating, meals, calories, or macros. Always set mealLabel to the meal the user named (\"for dinner I had…\" → \"Dinner\"). Breakfast, lunch and dinner are one slot per day: logging one fills (replaces) that day's existing slot instead of adding a second. Any other meal type adds a new meal. Set restaurant to where the food came from (\"from Chipotle\" → \"Chipotle\"); if the user doesn't say, leave it out and it is saved as \"Home cooked\".",
 		{
 			// Required in the schema Claude sees so it always fills it in, but a
 			// missing value (older cached tool lists) is still accepted as "".
@@ -461,6 +466,13 @@ Examples:
 				.string()
 				.optional()
 				.describe('What was eaten, e.g. "Oatmeal & eggs", "Protein shake"'),
+			restaurant: z
+				.string()
+				.max(100)
+				.optional()
+				.describe(
+					`Where the food came from, e.g. "Chipotle", "Starbucks". Omit when the user doesn't say; it defaults to "${DEFAULT_RESTAURANT}".`,
+				),
 			calories: z.number().int().min(0).describe("Total calories"),
 			proteinGrams: z.number().int().min(0).describe("Protein in grams"),
 			date: z
@@ -480,6 +492,7 @@ Examples:
 			async ({
 				mealLabel,
 				mealName,
+				restaurant,
 				calories,
 				proteinGrams,
 				date,
@@ -506,6 +519,7 @@ Examples:
 					calories,
 					proteinGrams,
 				});
+				plan.body.restaurant = restaurantOrDefault(restaurant);
 				const result =
 					plan.method === "PUT"
 						? await api(
@@ -520,6 +534,7 @@ Examples:
 				const what = [
 					plan.body.mealLabel,
 					plan.body.mealName && `"${plan.body.mealName}"`,
+					`from ${plan.body.restaurant}`,
 				]
 					.filter(Boolean)
 					.join(" ");
@@ -577,7 +592,7 @@ Examples:
 
 	mcp.tool(
 		"edit_meal",
-		"Update a previously logged meal's label, name, calories, or protein. Use this to correct a meal that was logged with the wrong values. Only the fields you provide are changed; omitted fields keep their current values. Call get_today_summary first to find the log ID and meal ID.",
+		"Update a previously logged meal's label, name, restaurant, calories, or protein. Use this to correct a meal that was logged with the wrong values. Only the fields you provide are changed; omitted fields keep their current values. Call get_today_summary first to find the log ID and meal ID.",
 		{
 			logId: z
 				.number()
@@ -604,6 +619,13 @@ Examples:
 				.string()
 				.optional()
 				.describe("New description of what was eaten. Omit to keep it."),
+			restaurant: z
+				.string()
+				.max(100)
+				.optional()
+				.describe(
+					`Where the food came from, e.g. "Chipotle" or "${DEFAULT_RESTAURANT}". Omit to keep the current restaurant.`,
+				),
 			calories: z
 				.number()
 				.int()
@@ -625,12 +647,14 @@ Examples:
 				mealId,
 				mealLabel,
 				mealName,
+				restaurant,
 				calories,
 				proteinGrams,
 			}) => {
 				if (
 					mealLabel === undefined &&
 					mealName === undefined &&
+					restaurant === undefined &&
 					calories === undefined &&
 					proteinGrams === undefined
 				) {
@@ -638,7 +662,7 @@ Examples:
 						content: [
 							{
 								type: "text",
-								text: "Nothing to edit — provide at least one of mealLabel, mealName, calories, or proteinGrams.",
+								text: "Nothing to edit — provide at least one of mealLabel, mealName, restaurant, calories, or proteinGrams.",
 							},
 						],
 					};
@@ -663,6 +687,10 @@ Examples:
 				const payload = {
 					mealLabel: mealLabel !== undefined ? mealLabel : current.mealLabel,
 					mealName: mealName !== undefined ? mealName : current.mealName,
+					restaurant:
+						restaurant !== undefined
+							? restaurant.trim() || null
+							: current.restaurant,
 					calories: calories !== undefined ? calories : current.calories,
 					proteinGrams:
 						proteinGrams !== undefined ? proteinGrams : current.proteinGrams,
@@ -681,7 +709,7 @@ Examples:
 					content: [
 						{
 							type: "text",
-							text: `Updated meal ${mealId}${payload.mealName ? ` "${payload.mealName}"` : ""}: ${payload.calories} kcal, ${payload.proteinGrams}g protein\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
+							text: `Updated meal ${mealId}${payload.mealName ? ` "${payload.mealName}"` : ""}${payload.restaurant ? ` from ${payload.restaurant}` : ""}: ${payload.calories} kcal, ${payload.proteinGrams}g protein\nDay totals: ${totalCal} kcal, ${totalProt}g protein`,
 						},
 					],
 				};
@@ -843,7 +871,7 @@ Examples:
 					parts.push("  Meals:");
 					for (const m of nutrition.meals) {
 						parts.push(
-							`    • ${[m.mealLabel, m.mealName].filter(Boolean).join(": ") || "Meal"} [meal ID: ${m.id}]: ${m.calories} kcal, ${m.proteinGrams}g protein`,
+							`    • ${describeMeal(m)} [meal ID: ${m.id}]: ${m.calories} kcal, ${m.proteinGrams}g protein`,
 						);
 					}
 				}

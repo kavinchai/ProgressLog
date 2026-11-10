@@ -54,6 +54,7 @@ public class NutritionService {
         meal.setNutritionLog(log);
         meal.setMealLabel(request.getMealLabel());
         meal.setMealName(request.getMealName());
+        meal.setRestaurant(request.getRestaurant());
         meal.setCalories(request.getCalories());
         meal.setProteinGrams(request.getProteinGrams());
         log.getMeals().add(meal);
@@ -73,6 +74,7 @@ public class NutritionService {
                         .orElseThrow(() -> new EntityNotFoundException("Meal not found"));
         meal.setMealLabel(request.getMealLabel());
         meal.setMealName(request.getMealName());
+        meal.setRestaurant(request.getRestaurant());
         meal.setCalories(request.getCalories());
         meal.setProteinGrams(request.getProteinGrams());
         mealRepository.save(meal);
@@ -129,6 +131,7 @@ public class NutritionService {
                         log.getId(),
                         meal.getMealLabel(),
                         meal.getMealName(),
+                        meal.getRestaurant(),
                         meal.getCalories(),
                         meal.getProteinGrams()));
         mealRepository.delete(meal);
@@ -160,6 +163,7 @@ public class NutritionService {
         MealRequest req = new MealRequest();
         req.setMealLabel(meal.getMealLabel());
         req.setMealName(meal.getMealName());
+        req.setRestaurant(meal.getRestaurant());
         req.setCalories(meal.getCalories());
         req.setProteinGrams(meal.getProteinGrams());
         return req;
@@ -175,6 +179,7 @@ public class NutritionService {
                                                 meal.getId(),
                                                 meal.getMealLabel(),
                                                 meal.getMealName(),
+                                                meal.getRestaurant(),
                                                 meal.getCalories(),
                                                 meal.getProteinGrams()))
                         .collect(Collectors.toList());

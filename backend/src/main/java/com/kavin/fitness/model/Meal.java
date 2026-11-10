@@ -28,6 +28,9 @@ public class Meal {
     @Column(name = "meal_name", length = 100)
     private String mealName; // what was eaten
 
+    @Column(length = 100)
+    private String restaurant; // where it came from, e.g. "Chipotle" / "Home cooked"
+
     @Column(nullable = false)
     private Integer calories;
 

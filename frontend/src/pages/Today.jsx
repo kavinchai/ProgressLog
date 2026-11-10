@@ -673,6 +673,7 @@ export default function Today() {
 							) : (
 								<MealCards
 									nutritionEntry={todayNutritionEntry ?? null}
+									nutritionData={nutritionData}
 									getOrCreateNutritionLogId={getOrCreateNutritionLogId}
 									onSaved={refetchNutrition}
 								/>

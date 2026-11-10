@@ -455,4 +455,52 @@ class UndoFlowIT extends IntegrationTestBase {
                 .andExpect(jsonPath("$[0].entityType").value("step_log"))
                 .andExpect(jsonPath("$[1].entityType").value("weight_log"));
     }
+
+    @Test
+    void undo_restoresDeletedMeal_withRestaurant() throws Exception {
+        MvcResult logRes =
+                mockMvc.perform(
+                                post("/api/nutrition")
+                                        .header("Authorization", "Bearer " + token)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(
+                                                """
+                            {"logDate": "2026-05-12", "dayType": "training"}
+                        """))
+                        .andExpect(status().isCreated())
+                        .andReturn();
+        long logId =
+                objectMapper.readTree(logRes.getResponse().getContentAsString()).get("id").asLong();
+
+        MvcResult mealRes =
+                mockMvc.perform(
+                                post("/api/nutrition/" + logId + "/meals")
+                                        .header("Authorization", "Bearer " + token)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(
+                                                """
+                            {"mealLabel": "Lunch", "mealName": "Burrito bowl", "restaurant": "Chipotle", "calories": 900, "proteinGrams": 50}
+                        """))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.meals[0].restaurant").value("Chipotle"))
+                        .andReturn();
+        long mealId =
+                objectMapper
+                        .readTree(mealRes.getResponse().getContentAsString())
+                        .get("meals")
+                        .get(0)
+                        .get("id")
+                        .asLong();
+
+        mockMvc.perform(
+                        delete("/api/nutrition/" + logId + "/meals/" + mealId)
+                                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/undo").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/nutrition").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[0].meals[0].restaurant").value("Chipotle"));
+    }
 }

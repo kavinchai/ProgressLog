@@ -322,4 +322,39 @@ class ImportServiceTest {
         assertEquals("Imported", captor.getValue().getMeals().get(0).getMealName());
         assertEquals(1, result.getNutritionImported());
     }
+
+    @Test
+    void importData_readsRestaurantColumn() {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("Date", "4/1/26");
+        row.put("Day Type", "training");
+        row.put("Label", "Lunch");
+        row.put("Meal", "Burrito bowl");
+        row.put("Restaurant", "Chipotle");
+        row.put("Calories", "900");
+        row.put("Protein", "50");
+
+        Map<String, Object> noRestaurant = new LinkedHashMap<>();
+        noRestaurant.put("Date", "4/1/26");
+        noRestaurant.put("Day Type", "training");
+        noRestaurant.put("Label", "Dinner");
+        noRestaurant.put("Meal", "Pasta");
+        noRestaurant.put("Calories", "700");
+        noRestaurant.put("Protein", "30");
+
+        ImportRequest req = new ImportRequest();
+        req.setNutrition(List.of(row, noRestaurant));
+
+        when(nutritionLogRepository.findByUserIdAndLogDate(any(), any()))
+                .thenReturn(Optional.empty());
+        when(nutritionLogRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        importService.importData(user, req);
+
+        ArgumentCaptor<NutritionLog> captor = ArgumentCaptor.forClass(NutritionLog.class);
+        verify(nutritionLogRepository).save(captor.capture());
+        NutritionLog saved = captor.getValue();
+        assertEquals("Chipotle", saved.getMeals().get(0).getRestaurant());
+        assertNull(saved.getMeals().get(1).getRestaurant());
+    }
 }

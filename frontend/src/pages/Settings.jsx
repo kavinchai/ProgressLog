@@ -97,6 +97,7 @@ function buildExportData({ weightData, nutritionData, workoutData, stepData }) {
 				"Day Type": dayType,
 				Label: meal.mealLabel ?? "",
 				Meal: meal.mealName ?? "",
+				Restaurant: meal.restaurant ?? "",
 				Calories: meal.calories ?? "",
 				Protein: meal.proteinGrams ?? "",
 			});
@@ -126,6 +127,7 @@ async function exportXlsx(data) {
 						"Day Type": "",
 						Label: "",
 						Meal: "",
+						Restaurant: "",
 						Calories: "",
 						Protein: "",
 					},
