@@ -1,0 +1,82 @@
+name: Sync to Google Calendar
+
+# Mirrors workouts and weigh-ins onto their Google Calendars. Each night it
+# reconciles the last 14 days, so late entries are added, corrections are
+# updated and deletions are removed. See .github/scripts/calendar_sync.py.
+
+on:
+  schedule:
+    - cron: "0 5 * * *" # 5am UTC = midnight ET (1am during EDT)
+  workflow_dispatch:
+    inputs:
+      calendars:
+        description: "Which calendars to sync"
+        type: choice
+        options: [both, workout, weight]
+        default: both
+      lookback_days:
+        description: "Days to reconcile, ending yesterday"
+        type: string
+        default: "14"
+      target_date:
+        description: "Only this day (YYYY-MM-DD). Overrides lookback."
+        type: string
+        default: ""
+      backfill:
+        description: "Reconcile all history"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Show what would change without changing anything"
+        type: boolean
+        default: false
+
+concurrency:
+  group: calendar-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync ${{ matrix.kind }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind: workout
+            calendar_secret: KAVIN_WORKOUT_GOOGLE_CALENDAR_ID
+          - kind: weight
+            calendar_secret: KAVIN_WEIGHT_GOOGLE_CALENDAR_ID
+
+    steps:
+      - name: Check out scripts
+        if: inputs.calendars == '' || inputs.calendars == 'both' || inputs.calendars == matrix.kind
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Set up Python
+        if: inputs.calendars == '' || inputs.calendars == 'both' || inputs.calendars == matrix.kind
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/scripts/requirements.txt
+
+      - name: Install dependencies
+        if: inputs.calendars == '' || inputs.calendars == 'both' || inputs.calendars == matrix.kind
+        run: pip install -r .github/scripts/requirements.txt
+
+      - name: Sync ${{ matrix.kind }} calendar
+        if: inputs.calendars == '' || inputs.calendars == 'both' || inputs.calendars == matrix.kind
+        env:
+          RAILWAY_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_CALENDAR_ID: ${{ secrets[matrix.calendar_secret] }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          LOOKBACK_DAYS: ${{ inputs.lookback_days || '14' }}
+          TARGET_DATE: ${{ inputs.target_date || '' }}
+          BACKFILL: ${{ inputs.backfill || 'false' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: python .github/scripts/calendar_sync.py ${{ matrix.kind }}
