@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import useUserProfile from "../hooks/useUserProfile";
 import useAuthStore from "../store/authStore";
@@ -458,6 +458,9 @@ function UsernameForm({ onDone, onCancel }) {
 						id="newUsername"
 						type="text"
 						autoComplete="username"
+						autoCapitalize="none"
+						autoCorrect="off"
+						spellCheck={false}
 						className="settings-input"
 						value={newUsername}
 						onChange={(e) => setNewUsername(e.target.value)}
@@ -764,6 +767,12 @@ function PrivacyGroup() {
 			{privacyError && (
 				<p className="settings-error settings-row-note">{privacyError}</p>
 			)}
+			<Link to="/privacy" className="settings-row settings-row-button">
+				<span className="settings-row-label">Privacy policy</span>
+				<span className="settings-chevron" aria-hidden="true">
+					›
+				</span>
+			</Link>
 		</Group>
 	);
 }

@@ -65,6 +65,7 @@
 
 .settings-row-button:hover:not(:disabled) {
 	background: var(--hover-bg);
+	text-decoration: none;
 }
 
 .settings-row-button:focus-visible {

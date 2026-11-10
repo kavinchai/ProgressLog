@@ -15,6 +15,12 @@ public class LoginPage {
         return this;
     }
 
+    /** Follows the "Privacy policy" link under the form and waits for the policy page. */
+    public void openPrivacyPolicy() {
+        page.locator("a.login-privacy-link").click();
+        page.locator("h1.privacy-title").waitFor();
+    }
+
     public void login(String username, String password) {
         page.locator("#username").fill(username);
         page.locator("#password").fill(password);

@@ -24,6 +24,9 @@ vi.mock("../pages/Strength", () => ({
 vi.mock("../pages/Settings", () => ({
 	default: () => <div>Settings Page</div>,
 }));
+vi.mock("../pages/PrivacyPolicy", () => ({
+	default: () => <div>Privacy Policy Page</div>,
+}));
 vi.mock("../components/layout/Sidebar", () => ({
 	default: () => <nav>Sidebar</nav>,
 }));
@@ -55,6 +58,12 @@ describe("App routing — unauthenticated", () => {
 		window.history.pushState({}, "", "/login");
 		render(<App />);
 		expect(screen.getByText("Login Page")).toBeInTheDocument();
+	});
+
+	it("shows the privacy policy at /privacy when not authenticated", () => {
+		window.history.pushState({}, "", "/privacy");
+		render(<App />);
+		expect(screen.getByText("Privacy Policy Page")).toBeInTheDocument();
 	});
 
 	it("does NOT show the app layout without authentication", () => {
@@ -129,6 +138,12 @@ describe("App routing — authenticated", () => {
 		window.history.pushState({}, "", "/strength");
 		render(<App />);
 		expect(await screen.findByText("Strength Page")).toBeInTheDocument();
+	});
+
+	it("shows the privacy policy at /privacy when authenticated", () => {
+		window.history.pushState({}, "", "/privacy");
+		render(<App />);
+		expect(screen.getByText("Privacy Policy Page")).toBeInTheDocument();
 	});
 });
 
