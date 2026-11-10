@@ -171,9 +171,6 @@ export default function DayDetail({
 								)}
 							</div>
 						</div>
-						{nutritionEntry && (
-							<div className="day-detail-value">{nutritionEntry.dayType}</div>
-						)}
 						<MealCards
 							nutritionEntry={nutritionEntry ?? null}
 							nutritionData={nutritionData}
