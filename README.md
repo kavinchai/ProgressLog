@@ -1,4 +1,4 @@
-# ProgressLog — Full-Stack Fitness Tracker
+# Progress Logger — Full-Stack Fitness Tracker
 
 Personal fitness tracking application: daily logging for weight, nutrition, workouts, and steps, with strength progression analytics, personal records, a community leaderboard and shared calendar, Google Calendar integration, and Claude AI integration via MCP.
 
@@ -407,7 +407,7 @@ WorkoutApp/
 
 ## Claude AI Integration (MCP)
 
-ProgressLog ships an MCP server that exposes your fitness data to Claude. Once connected, you can talk to Claude naturally to log workouts, meals, weight, and steps — or ask it to summarize your history and PRs.
+Progress Logger ships an MCP server that exposes your fitness data to Claude. Once connected, you can talk to Claude naturally to log workouts, meals, weight, and steps — or ask it to summarize your history and PRs.
 
 ### MCP Tools
 

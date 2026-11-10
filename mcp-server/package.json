@@ -1,7 +1,7 @@
 {
   "name": "progresslog-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server that lets Claude log workouts, meals, and weight to ProgressLog",
+  "description": "MCP server that lets Claude log workouts, meals, and weight to Progress Logger",
   "type": "module",
   "scripts": {
     "start": "node server.js",

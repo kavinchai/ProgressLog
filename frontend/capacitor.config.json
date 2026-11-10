@@ -1,6 +1,6 @@
 {
 	"appId": "com.kavin.progresslog",
-	"appName": "ProgressLog",
+	"appName": "Progress Logger",
 	"webDir": "dist",
 	"plugins": {
 		"CapacitorHttp": {

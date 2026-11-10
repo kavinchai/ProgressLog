@@ -7,7 +7,7 @@ export default function Navbar() {
 		<header className="navbar">
 			<span className="navbar-brand">
 				<img className="brand-mark" src="/favicon.svg" alt="" />
-				ProgressLog
+				Progress Logger
 			</span>
 		</header>
 	);

@@ -1,0 +1,1022 @@
+{
+ "totalStats": [
+  {
+   "Date": "10/20/26",
+   "Weight": 183.3,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 11085
+  },
+  {
+   "Date": "10/21/26",
+   "Weight": 182.9,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 10693
+  },
+  {
+   "Date": "10/22/26",
+   "Weight": 182.7,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 7242
+  },
+  {
+   "Date": "10/23/26",
+   "Weight": 182.7,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 11542
+  },
+  {
+   "Date": "10/24/26",
+   "Weight": 182.3,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 6792
+  },
+  {
+   "Date": "10/25/26",
+   "Weight": 182.1,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 11341
+  },
+  {
+   "Date": "10/26/26",
+   "Weight": 182.0,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 11926
+  },
+  {
+   "Date": "10/27/26",
+   "Weight": 182.2,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 7181
+  },
+  {
+   "Date": "10/28/26",
+   "Weight": 181.8,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 11113
+  },
+  {
+   "Date": "10/29/26",
+   "Weight": 181.6,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 6638
+  },
+  {
+   "Date": "10/30/26",
+   "Weight": 181.5,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 12307
+  },
+  {
+   "Date": "10/31/26",
+   "Weight": 181.6,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 8710
+  },
+  {
+   "Date": "11/1/26",
+   "Weight": 181.7,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 7466
+  },
+  {
+   "Date": "11/2/26",
+   "Weight": 181.6,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 10488
+  },
+  {
+   "Date": "11/3/26",
+   "Weight": 181.2,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 12495
+  },
+  {
+   "Date": "11/4/26",
+   "Weight": 181.1,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 8243
+  },
+  {
+   "Date": "11/5/26",
+   "Weight": 180.8,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 9729
+  },
+  {
+   "Date": "11/6/26",
+   "Weight": 181.0,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 8246
+  },
+  {
+   "Date": "11/7/26",
+   "Weight": 180.8,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 7108
+  },
+  {
+   "Date": "11/8/26",
+   "Weight": 180.8,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 9544
+  },
+  {
+   "Date": "11/9/26",
+   "Weight": 180.4,
+   "Calories": "",
+   "Protein": "",
+   "Steps": 9662
+  }
+ ],
+ "workouts": [
+  {
+   "Date": "10/21/26",
+   "Exercise": "Deadlift",
+   "Weight": 335,
+   "Set 1": 5,
+   "Set 2": 5,
+   "Set 3": 5
+  },
+  {
+   "Date": "10/21/26",
+   "Exercise": "Barbell Row",
+   "Weight": 165,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 8,
+   "Set 4": 7
+  },
+  {
+   "Date": "10/21/26",
+   "Exercise": "Pull-ups",
+   "Weight": 0,
+   "Set 1": 10,
+   "Set 2": 9,
+   "Set 3": 8
+  },
+  {
+   "Date": "10/23/26",
+   "Exercise": "Squat",
+   "Weight": 265,
+   "Set 1": 5,
+   "Set 2": 5,
+   "Set 3": 5,
+   "Set 4": 5
+  },
+  {
+   "Date": "10/23/26",
+   "Exercise": "Romanian Deadlift",
+   "Weight": 195,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 8
+  },
+  {
+   "Date": "10/23/26",
+   "Exercise": "Leg Press",
+   "Weight": 380,
+   "Set 1": 12,
+   "Set 2": 12,
+   "Set 3": 10
+  },
+  {
+   "Date": "10/24/26",
+   "Exercise": "Bench Press",
+   "Weight": 195,
+   "Set 1": 6,
+   "Set 2": 6,
+   "Set 3": 6,
+   "Set 4": 5
+  },
+  {
+   "Date": "10/24/26",
+   "Exercise": "Overhead Press",
+   "Weight": 120,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 7
+  },
+  {
+   "Date": "10/24/26",
+   "Exercise": "Incline Dumbbell Press",
+   "Weight": 65,
+   "Set 1": 10,
+   "Set 2": 10,
+   "Set 3": 9
+  },
+  {
+   "Date": "10/26/26",
+   "Exercise": "Bench Press",
+   "Weight": 195,
+   "Set 1": 6,
+   "Set 2": 6,
+   "Set 3": 6,
+   "Set 4": 5
+  },
+  {
+   "Date": "10/26/26",
+   "Exercise": "Overhead Press",
+   "Weight": 120,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 7
+  },
+  {
+   "Date": "10/26/26",
+   "Exercise": "Incline Dumbbell Press",
+   "Weight": 65,
+   "Set 1": 10,
+   "Set 2": 10,
+   "Set 3": 9
+  },
+  {
+   "Date": "10/28/26",
+   "Exercise": "Deadlift",
+   "Weight": 345,
+   "Set 1": 5,
+   "Set 2": 5,
+   "Set 3": 5
+  },
+  {
+   "Date": "10/28/26",
+   "Exercise": "Barbell Row",
+   "Weight": 170,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 8,
+   "Set 4": 7
+  },
+  {
+   "Date": "10/28/26",
+   "Exercise": "Pull-ups",
+   "Weight": 0,
+   "Set 1": 10,
+   "Set 2": 9,
+   "Set 3": 8
+  },
+  {
+   "Date": "10/30/26",
+   "Exercise": "Squat",
+   "Weight": 270,
+   "Set 1": 5,
+   "Set 2": 5,
+   "Set 3": 5,
+   "Set 4": 5
+  },
+  {
+   "Date": "10/30/26",
+   "Exercise": "Romanian Deadlift",
+   "Weight": 200,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 8
+  },
+  {
+   "Date": "10/30/26",
+   "Exercise": "Leg Press",
+   "Weight": 390,
+   "Set 1": 12,
+   "Set 2": 12,
+   "Set 3": 10
+  },
+  {
+   "Date": "10/31/26",
+   "Exercise": "Bench Press",
+   "Weight": 200,
+   "Set 1": 6,
+   "Set 2": 6,
+   "Set 3": 6,
+   "Set 4": 5
+  },
+  {
+   "Date": "10/31/26",
+   "Exercise": "Overhead Press",
+   "Weight": 120,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 7
+  },
+  {
+   "Date": "10/31/26",
+   "Exercise": "Incline Dumbbell Press",
+   "Weight": 70,
+   "Set 1": 10,
+   "Set 2": 10,
+   "Set 3": 9
+  },
+  {
+   "Date": "11/2/26",
+   "Exercise": "Bench Press",
+   "Weight": 200,
+   "Set 1": 6,
+   "Set 2": 6,
+   "Set 3": 6,
+   "Set 4": 5
+  },
+  {
+   "Date": "11/2/26",
+   "Exercise": "Overhead Press",
+   "Weight": 120,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 7
+  },
+  {
+   "Date": "11/2/26",
+   "Exercise": "Incline Dumbbell Press",
+   "Weight": 70,
+   "Set 1": 10,
+   "Set 2": 10,
+   "Set 3": 9
+  },
+  {
+   "Date": "11/4/26",
+   "Exercise": "Deadlift",
+   "Weight": 355,
+   "Set 1": 5,
+   "Set 2": 5,
+   "Set 3": 5
+  },
+  {
+   "Date": "11/4/26",
+   "Exercise": "Barbell Row",
+   "Weight": 175,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 8,
+   "Set 4": 7
+  },
+  {
+   "Date": "11/4/26",
+   "Exercise": "Pull-ups",
+   "Weight": 0,
+   "Set 1": 10,
+   "Set 2": 9,
+   "Set 3": 8
+  },
+  {
+   "Date": "11/6/26",
+   "Exercise": "Squat",
+   "Weight": 275,
+   "Set 1": 5,
+   "Set 2": 5,
+   "Set 3": 5,
+   "Set 4": 5
+  },
+  {
+   "Date": "11/6/26",
+   "Exercise": "Romanian Deadlift",
+   "Weight": 205,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 8
+  },
+  {
+   "Date": "11/6/26",
+   "Exercise": "Leg Press",
+   "Weight": 400,
+   "Set 1": 12,
+   "Set 2": 12,
+   "Set 3": 10
+  },
+  {
+   "Date": "11/7/26",
+   "Exercise": "Bench Press",
+   "Weight": 205,
+   "Set 1": 6,
+   "Set 2": 6,
+   "Set 3": 6,
+   "Set 4": 5
+  },
+  {
+   "Date": "11/7/26",
+   "Exercise": "Overhead Press",
+   "Weight": 125,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 7
+  },
+  {
+   "Date": "11/7/26",
+   "Exercise": "Incline Dumbbell Press",
+   "Weight": 70,
+   "Set 1": 10,
+   "Set 2": 10,
+   "Set 3": 9
+  },
+  {
+   "Date": "11/9/26",
+   "Exercise": "Bench Press",
+   "Weight": 205,
+   "Set 1": 6,
+   "Set 2": 6,
+   "Set 3": 6,
+   "Set 4": 5
+  },
+  {
+   "Date": "11/9/26",
+   "Exercise": "Overhead Press",
+   "Weight": 125,
+   "Set 1": 8,
+   "Set 2": 8,
+   "Set 3": 7
+  },
+  {
+   "Date": "11/9/26",
+   "Exercise": "Incline Dumbbell Press",
+   "Weight": 70,
+   "Set 1": 10,
+   "Set 2": 10,
+   "Set 3": 9
+  }
+ ],
+ "nutrition": [
+  {
+   "Date": "10/20/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 569,
+   "Protein": 40
+  },
+  {
+   "Date": "10/20/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 777,
+   "Protein": 58
+  },
+  {
+   "Date": "10/20/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 869,
+   "Protein": 56
+  },
+  {
+   "Date": "10/21/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 520,
+   "Protein": 43
+  },
+  {
+   "Date": "10/21/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 798,
+   "Protein": 52
+  },
+  {
+   "Date": "10/21/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 772,
+   "Protein": 54
+  },
+  {
+   "Date": "10/22/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 528,
+   "Protein": 43
+  },
+  {
+   "Date": "10/22/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 725,
+   "Protein": 59
+  },
+  {
+   "Date": "10/22/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 810,
+   "Protein": 54
+  },
+  {
+   "Date": "10/23/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 543,
+   "Protein": 35
+  },
+  {
+   "Date": "10/23/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 799,
+   "Protein": 50
+  },
+  {
+   "Date": "10/23/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 866,
+   "Protein": 55
+  },
+  {
+   "Date": "10/24/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 484,
+   "Protein": 36
+  },
+  {
+   "Date": "10/24/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 796,
+   "Protein": 50
+  },
+  {
+   "Date": "10/24/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 859,
+   "Protein": 54
+  },
+  {
+   "Date": "10/25/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 567,
+   "Protein": 36
+  },
+  {
+   "Date": "10/25/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 786,
+   "Protein": 53
+  },
+  {
+   "Date": "10/25/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 841,
+   "Protein": 51
+  },
+  {
+   "Date": "10/26/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 470,
+   "Protein": 40
+  },
+  {
+   "Date": "10/26/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 803,
+   "Protein": 54
+  },
+  {
+   "Date": "10/26/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 812,
+   "Protein": 55
+  },
+  {
+   "Date": "10/27/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 550,
+   "Protein": 37
+  },
+  {
+   "Date": "10/27/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 760,
+   "Protein": 53
+  },
+  {
+   "Date": "10/27/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 825,
+   "Protein": 51
+  },
+  {
+   "Date": "10/28/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 558,
+   "Protein": 34
+  },
+  {
+   "Date": "10/28/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 771,
+   "Protein": 51
+  },
+  {
+   "Date": "10/28/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 868,
+   "Protein": 51
+  },
+  {
+   "Date": "10/29/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 568,
+   "Protein": 43
+  },
+  {
+   "Date": "10/29/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 720,
+   "Protein": 53
+  },
+  {
+   "Date": "10/29/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 786,
+   "Protein": 47
+  },
+  {
+   "Date": "10/30/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 510,
+   "Protein": 39
+  },
+  {
+   "Date": "10/30/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 729,
+   "Protein": 59
+  },
+  {
+   "Date": "10/30/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 840,
+   "Protein": 50
+  },
+  {
+   "Date": "10/31/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 503,
+   "Protein": 34
+  },
+  {
+   "Date": "10/31/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 759,
+   "Protein": 55
+  },
+  {
+   "Date": "10/31/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 761,
+   "Protein": 53
+  },
+  {
+   "Date": "11/1/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 477,
+   "Protein": 36
+  },
+  {
+   "Date": "11/1/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 810,
+   "Protein": 51
+  },
+  {
+   "Date": "11/1/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 761,
+   "Protein": 47
+  },
+  {
+   "Date": "11/2/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 482,
+   "Protein": 43
+  },
+  {
+   "Date": "11/2/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 791,
+   "Protein": 53
+  },
+  {
+   "Date": "11/2/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 817,
+   "Protein": 55
+  },
+  {
+   "Date": "11/3/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 558,
+   "Protein": 35
+  },
+  {
+   "Date": "11/3/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 773,
+   "Protein": 60
+  },
+  {
+   "Date": "11/3/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 809,
+   "Protein": 48
+  },
+  {
+   "Date": "11/4/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 460,
+   "Protein": 37
+  },
+  {
+   "Date": "11/4/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 830,
+   "Protein": 59
+  },
+  {
+   "Date": "11/4/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 798,
+   "Protein": 47
+  },
+  {
+   "Date": "11/5/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 569,
+   "Protein": 42
+  },
+  {
+   "Date": "11/5/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 802,
+   "Protein": 59
+  },
+  {
+   "Date": "11/5/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 772,
+   "Protein": 47
+  },
+  {
+   "Date": "11/6/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 516,
+   "Protein": 37
+  },
+  {
+   "Date": "11/6/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 721,
+   "Protein": 59
+  },
+  {
+   "Date": "11/6/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 802,
+   "Protein": 51
+  },
+  {
+   "Date": "11/7/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 471,
+   "Protein": 36
+  },
+  {
+   "Date": "11/7/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 794,
+   "Protein": 60
+  },
+  {
+   "Date": "11/7/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 791,
+   "Protein": 47
+  },
+  {
+   "Date": "11/8/26",
+   "Day Type": "rest",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 539,
+   "Protein": 40
+  },
+  {
+   "Date": "11/8/26",
+   "Day Type": "rest",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 736,
+   "Protein": 59
+  },
+  {
+   "Date": "11/8/26",
+   "Day Type": "rest",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 821,
+   "Protein": 56
+  },
+  {
+   "Date": "11/9/26",
+   "Day Type": "training",
+   "Label": "Breakfast",
+   "Meal": "Greek yogurt, oats & berries",
+   "Restaurant": "Home cooked",
+   "Calories": 483,
+   "Protein": 43
+  },
+  {
+   "Date": "11/9/26",
+   "Day Type": "training",
+   "Label": "Lunch",
+   "Meal": "Chicken rice bowl",
+   "Restaurant": "Chipotle",
+   "Calories": 739,
+   "Protein": 54
+  },
+  {
+   "Date": "11/9/26",
+   "Day Type": "training",
+   "Label": "Dinner",
+   "Meal": "Salmon, potatoes & greens",
+   "Restaurant": "Home cooked",
+   "Calories": 876,
+   "Protein": 50
+  }
+ ]
+}

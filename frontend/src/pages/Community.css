@@ -434,6 +434,7 @@
 .lb-brand {
 	font-weight: var(--fw-bold);
 	color: var(--accent);
+	white-space: nowrap;
 }
 
 .lb-spacer {
@@ -671,7 +672,7 @@
 
 	.lb-chip {
 		min-height: 30px;
-		padding: 0 12px;
+		padding: 0 var(--space-sm);
 	}
 
 	.lb-col-date {
@@ -723,5 +724,21 @@
 	.lb-steps {
 		grid-template-columns: minmax(0, 1fr);
 		gap: var(--space-md);
+	}
+}
+
+/* Smallest phones: keep brand, view tabs and Sign in on one row. */
+@media (max-width: 400px) {
+	.lb-topbar {
+		padding: 0 12px;
+		gap: var(--space-xs);
+	}
+
+	.lb-topbar .lb-seg button {
+		padding: 0 8px;
+	}
+
+	.lb-topbar .btn-ghost {
+		padding: 10px 12px;
 	}
 }

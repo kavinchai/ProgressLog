@@ -20,7 +20,7 @@ function renderSplash() {
 describe("SplashPage", () => {
 	it("renders the app name", () => {
 		renderSplash();
-		expect(screen.getAllByText(/progresslog/i).length).toBeGreaterThan(0);
+		expect(screen.getAllByText(/progress logger/i).length).toBeGreaterThan(0);
 	});
 
 	it("renders a Sign In link pointing to /login", () => {

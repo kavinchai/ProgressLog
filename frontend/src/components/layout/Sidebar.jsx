@@ -24,7 +24,7 @@ export default function Sidebar() {
 		<aside className="sidebar">
 			<div className="sidebar-logo">
 				<img className="brand-mark" src="/favicon.svg" alt="" />
-				ProgressLog
+				Progress Logger
 			</div>
 
 			<nav className="sidebar-nav">

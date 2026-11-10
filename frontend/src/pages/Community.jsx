@@ -402,8 +402,8 @@ function Hero({ board, setLabel }) {
 					Log your lifts. <em>See where you rank.</em>
 				</h1>
 				<p>
-					ProgressLog tracks your workouts, meals, weight and steps. Lifters who
-					opt in are ranked on every lift, so you always know what to chase
+					Progress Logger tracks your workouts, meals, weight and steps. Lifters
+					who opt in are ranked on every lift, so you always know what to chase
 					next.
 				</p>
 				<div className="lb-cta">
@@ -562,7 +562,7 @@ function PublicCommunity({
 	return (
 		<div className="lb-page lb-public">
 			<header className="lb-topbar">
-				<span className="lb-brand">ProgressLog</span>
+				<span className="lb-brand">Progress Logger</span>
 				{viewSwitch}
 				<span className="lb-spacer" />
 				<Link to="/login" className="btn btn-ghost">
