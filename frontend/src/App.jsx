@@ -19,6 +19,7 @@ import History from "./pages/History";
 import Progress from "./pages/Progress";
 import Settings from "./pages/Settings";
 import ClaudeSetup from "./pages/ClaudeSetup";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 function ScrollToTop() {
 	const { pathname } = useLocation();
@@ -52,6 +53,7 @@ export default function App() {
 					<Route path="/" element={<Community />} />
 					<Route path="/splash" element={<SplashPage />} />
 					<Route path="/login" element={<Login />} />
+					<Route path="/privacy" element={<PrivacyPolicy />} />
 					<Route path="/leaderboard" element={<Navigate to="/" replace />} />
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>
@@ -87,6 +89,7 @@ export default function App() {
 					/>
 					<Route path="/settings" element={<Settings />} />
 					<Route path="/claude-setup" element={<ClaudeSetup />} />
+					<Route path="/privacy" element={<PrivacyPolicy />} />
 					<Route path="*" element={<Navigate to="/today" replace />} />
 				</Routes>
 			</AppLayout>

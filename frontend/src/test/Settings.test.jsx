@@ -288,6 +288,16 @@ describe("Settings — account rows", () => {
 		).not.toBeInTheDocument();
 	});
 
+	it("stops phones from capitalizing or autocorrecting the new username", async () => {
+		setupProfile();
+		renderSettings();
+		await userEvent.click(screen.getByRole("button", { name: /^username/i }));
+		const input = screen.getByLabelText(/new username/i);
+		expect(input).toHaveAttribute("autocapitalize", "none");
+		expect(input).toHaveAttribute("autocorrect", "off");
+		expect(input).toHaveAttribute("spellcheck", "false");
+	});
+
 	it("changes the username with the current password", async () => {
 		api.put.mockResolvedValue({ data: { username: "bob" } });
 		setupProfile();
@@ -927,6 +937,14 @@ describe("Settings — export is lifts only", () => {
 });
 
 describe("Settings — privacy / data sharing", () => {
+	it("links to the privacy policy", async () => {
+		setupProfile();
+		renderSettings();
+		expect(
+			await screen.findByRole("link", { name: /privacy policy/i }),
+		).toHaveAttribute("href", "/privacy");
+	});
+
 	it("renders the Privacy section heading", async () => {
 		setupProfile();
 		renderSettings();

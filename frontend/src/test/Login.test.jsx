@@ -34,6 +34,21 @@ describe("Login — login mode", () => {
 		expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
 	});
 
+	it("stops phones from capitalizing or autocorrecting the username", () => {
+		renderLogin();
+		const input = screen.getByLabelText(/username/i);
+		expect(input).toHaveAttribute("autocapitalize", "none");
+		expect(input).toHaveAttribute("autocorrect", "off");
+		expect(input).toHaveAttribute("spellcheck", "false");
+	});
+
+	it("links to the privacy policy", () => {
+		renderLogin();
+		expect(
+			screen.getByRole("link", { name: /privacy policy/i }),
+		).toHaveAttribute("href", "/privacy");
+	});
+
 	it("does NOT render an email field in login mode", () => {
 		renderLogin();
 		expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import api from "../api";
 import useAuthStore from "../store/authStore";
 import "./Login.css";
@@ -76,6 +76,9 @@ export default function Login() {
 								onChange={(e) => setUsername(e.target.value)}
 								required
 								autoComplete="username"
+								autoCapitalize="none"
+								autoCorrect="off"
+								spellCheck={false}
 							/>
 						</div>
 
@@ -125,6 +128,10 @@ export default function Login() {
 							? "Already have an account? Sign in"
 							: "Don't have an account? Sign up"}
 					</button>
+
+					<Link to="/privacy" className="login-privacy-link">
+						Privacy policy
+					</Link>
 				</div>
 			</div>
 		</div>
