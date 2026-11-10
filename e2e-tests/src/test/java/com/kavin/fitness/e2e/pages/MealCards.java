@@ -118,10 +118,17 @@ public class MealCards {
         return sameRow && restaurant.x >= name.x + name.width;
     }
 
+    /** Pixels from where the meal label starts to where the restaurant pill starts. */
+    public double restaurantOffsetFromLabelStart(String label) {
+        BoundingBox name = card(label).locator(".meal-card-label").boundingBox();
+        BoundingBox pill = card(label).locator(".meal-card-restaurant-pill").boundingBox();
+        return pill.x - name.x;
+    }
+
     /** True when the Restaurant field sits on its own line right under the label, left-aligned (mobile layout). */
     public boolean restaurantIsBelowLabel(String label) {
         BoundingBox name = card(label).locator(".meal-card-label").boundingBox();
-        BoundingBox restaurant = field(label, "Restaurant").boundingBox();
+        BoundingBox restaurant = card(label).locator(".meal-card-restaurant-pill").boundingBox();
         BoundingBox whatYouAte = field(label, "What you ate").boundingBox();
         boolean underLabel = restaurant.y >= name.y + name.height - 1;
         boolean leftAligned = Math.abs(restaurant.x - name.x) <= 8;

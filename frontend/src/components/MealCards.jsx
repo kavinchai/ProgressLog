@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { MapPin, Trash2 } from "lucide-react";
 import api from "../api";
 import { useToast } from "./Toast";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
@@ -37,6 +37,19 @@ function bodyFrom(fields, slot) {
 		calories: toInt(fields.calories),
 		proteinGrams: toInt(fields.protein),
 	};
+}
+
+// Sizes an input to its text: a hidden copy of the text (CSS ::after) sits in
+// the same grid cell and sets the width.
+function AutoWidth({ className = "", value, placeholder, children }) {
+	return (
+		<span
+			className={`auto-width ${className}`}
+			data-value={value || placeholder}
+		>
+			{children}
+		</span>
+	);
 }
 
 function MealCard({
@@ -151,37 +164,55 @@ function MealCard({
 					{slot ? (
 						<span className="meal-card-label">{slot}</span>
 					) : (
-						<input
-							className="meal-card-label meal-card-label-input"
-							type="text"
-							placeholder="Name this meal"
-							aria-label="Meal label"
-							maxLength={50}
+						<AutoWidth
+							className="meal-card-label-wrap"
 							value={fields.label}
-							autoFocus={autoFocusLabel}
-							onChange={(e) => update({ label: e.target.value })}
-							onBlur={() => commit()}
-							onKeyDown={(e) => {
-								if (e.key === "Enter") {
-									e.preventDefault();
-									nameRef.current?.focus();
-								}
-							}}
-						/>
+							placeholder="Name this meal"
+						>
+							<input
+								className="meal-card-label meal-card-label-input"
+								size={1}
+								type="text"
+								placeholder="Name this meal"
+								aria-label="Meal label"
+								maxLength={50}
+								value={fields.label}
+								autoFocus={autoFocusLabel}
+								onChange={(e) => update({ label: e.target.value })}
+								onBlur={() => commit()}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										nameRef.current?.focus();
+									}
+								}}
+							/>
+						</AutoWidth>
 					)}
 					{!skipped && (
-						<input
-							className="meal-card-restaurant"
-							type="text"
-							placeholder="Where from?"
-							aria-label="Restaurant"
-							maxLength={100}
-							list={restaurantListId}
-							value={fields.restaurant}
-							onChange={(e) => update({ restaurant: e.target.value })}
-							onBlur={() => commit()}
-							onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-						/>
+						<label
+							className={
+								"meal-card-restaurant-pill" +
+								(fields.restaurant ? "" : " meal-card-restaurant-pill--empty")
+							}
+						>
+							<MapPin size={12} aria-hidden="true" />
+							<AutoWidth value={fields.restaurant} placeholder="Where from?">
+								<input
+									className="meal-card-restaurant"
+									size={1}
+									type="text"
+									placeholder="Where from?"
+									aria-label="Restaurant"
+									maxLength={100}
+									list={restaurantListId}
+									value={fields.restaurant}
+									onChange={(e) => update({ restaurant: e.target.value })}
+									onBlur={() => commit()}
+									onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+								/>
+							</AutoWidth>
+						</label>
 					)}
 				</div>
 				<div className="meal-card-actions">

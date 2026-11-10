@@ -66,6 +66,11 @@ public class MealRestaurantTest extends BaseTest {
         today.waitForEaten("Calories", 1200);
         meals.editRestaurant("Snack", "Starbucks");
 
+        step("the short Snack label doesn't push its restaurant far to the right");
+        // "SNACK" is ~45px wide; the old fixed-width label field put the pill ~190px in.
+        assertTrue(meals.restaurantOffsetFromLabelStart("Snack") < 100,
+                "restaurant should sit right after a short custom label");
+
         step("delete the Snack and press Undo");
         meals.deleteMealAndUndo("Snack");
         today.waitForEaten("Calories", 1200);

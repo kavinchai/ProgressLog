@@ -50,13 +50,44 @@
 	color: var(--muted);
 }
 
-.meal-card-label-input {
-	width: 180px;
+/* Input + hidden copy of its text share one grid cell; the copy sets the width */
+.auto-width {
+	display: inline-grid;
+	min-width: 0;
 	max-width: 100%;
-	padding: 4px 6px;
+}
+
+.auto-width::after {
+	content: attr(data-value) " ";
+	grid-area: 1 / 1;
+	visibility: hidden;
+	white-space: pre;
+	overflow: hidden;
+}
+
+.auto-width > input {
+	grid-area: 1 / 1;
+	width: 100%;
+	min-width: 0;
+}
+
+.meal-card-label-wrap {
 	margin-left: -6px;
-	background: transparent;
+	font-family: var(--font);
+	font-size: 11px;
+	font-weight: var(--fw-bold);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.meal-card-label-wrap::after,
+.meal-card-label-input {
+	padding: 4px 6px;
 	border: 1px solid transparent;
+}
+
+.meal-card-label-input {
+	background: transparent;
 	border-radius: var(--radius-sm);
 }
 
@@ -84,31 +115,67 @@
 	min-width: 0;
 }
 
-.meal-card-restaurant {
-	width: 200px;
+/* Restaurant: a small pill with a pin; dashed outline while empty */
+.meal-card-restaurant-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
 	min-width: 0;
-	padding: 4px 6px;
+	max-width: 260px;
+	padding: 2px 10px 2px 8px;
 	font-family: var(--font);
-	font-size: var(--fs-sm);
-	color: var(--muted);
+	font-size: 12px;
+	font-weight: var(--fw-medium);
+	color: var(--text-muted);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	cursor: text;
+	transition:
+		border-color var(--transition-fast),
+		background var(--transition-fast),
+		color var(--transition-fast);
+}
+
+.meal-card-restaurant-pill svg {
+	flex-shrink: 0;
+}
+
+.meal-card-restaurant-pill--empty {
+	color: var(--text-subtle);
 	background: transparent;
-	border: 1px solid transparent;
-	border-radius: var(--radius-sm);
+	border-style: dashed;
+}
+
+.meal-card-restaurant-pill:hover {
+	border-color: var(--accent);
+}
+
+.meal-card-restaurant-pill:focus-within {
+	color: var(--accent);
+	background: var(--accent-light);
+	border-color: var(--accent);
+	border-style: solid;
+}
+
+.meal-card-restaurant {
+	padding: 0;
+	font: inherit;
+	color: inherit;
+	background: transparent;
+	border: none;
+	outline: none;
+	text-overflow: ellipsis;
+}
+
+/* Chrome reserves room for a datalist arrow, which would clip the text */
+.meal-card-restaurant::-webkit-calendar-picker-indicator {
+	display: none !important;
 }
 
 .meal-card-restaurant::placeholder {
-	color: var(--muted);
-	opacity: 0.6;
-}
-
-.meal-card-restaurant:hover {
-	border-color: var(--border);
-}
-
-.meal-card-restaurant:focus {
-	outline: none;
-	color: var(--text);
-	border-color: var(--accent);
+	color: inherit;
+	opacity: 1;
 }
 
 .meal-card-actions {
@@ -219,9 +286,13 @@
 		gap: 2px;
 	}
 
-	.meal-card-restaurant {
-		width: 100%;
-		margin-left: -6px;
+	.meal-card-restaurant-pill {
+		max-width: 100%;
+	}
+
+	/* global.css makes inputs 16px on phones (no iOS zoom); size the copy to match */
+	.auto-width::after {
+		font-size: 16px;
 	}
 
 	.meal-card-fields {
