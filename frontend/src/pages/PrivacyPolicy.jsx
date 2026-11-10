@@ -26,8 +26,8 @@ export default function PrivacyPolicy() {
 				</li>
 				<li>
 					<strong>What you log:</strong> workouts (exercises, sets, reps and
-					weights), meals with calories and protein, body weight and daily
-					steps.
+					weights), meals (what you ate, where it came from, calories and
+					protein), body weight and daily steps.
 				</li>
 				<li>
 					<strong>Settings:</strong> your goals and sharing choices. Your weight
