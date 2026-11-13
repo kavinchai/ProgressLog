@@ -59,6 +59,24 @@ public class HistoryPage {
         return page.locator(".weekly-page .history-nav-label").isVisible();
     }
 
+    /**
+     * True when the Total trend charts sit in one column, each below the last,
+     * with no sideways scrolling.
+     */
+    public boolean areTotalTrendChartsStacked() {
+        Locator charts = page.locator(".total-page .history-charts");
+        charts.locator(".history-chart-card").first().waitFor();
+        return (Boolean) charts.evaluate(
+                "el => {"
+                        + " const r = [...el.querySelectorAll('.history-chart-card')]"
+                        + "   .map(c => c.getBoundingClientRect());"
+                        + " return r.length === 3"
+                        + "   && el.scrollWidth <= el.clientWidth"
+                        + "   && r.every(b => Math.abs(b.left - r[0].left) < 1)"
+                        + "   && r.every((b, i) => i === 0 || b.top >= r[i - 1].bottom);"
+                        + " }");
+    }
+
     public void openTotal(String baseUrl) {
         page.navigate(baseUrl + "/history/total");
         page.locator(TOTAL_TITLE).waitFor();
