@@ -14,6 +14,31 @@
 	letter-spacing: -0.02em;
 }
 
+/* Total tab: the month title opens the year/month picker */
+.history-title-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	padding: 0;
+	font-family: var(--font);
+	color: var(--fg);
+	background: none;
+	border: none;
+	cursor: pointer;
+}
+
+.history-title-btn svg {
+	flex: none;
+	color: var(--muted);
+}
+
+.history-title-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .history-pill {
 	font-size: 11px;
 	font-weight: var(--fw-bold);
@@ -620,15 +645,15 @@
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-	/* Header stays on one line for every week: the "Week of …" title
-	   already names the week, so the nav drops its range label and keeps
-	   just the arrows. */
-	.weekly-page .history-head {
+	/* Weekly and Total headers stay on one line for every period: the
+	   title already names the week or month, so the nav drops its label
+	   and keeps just the arrows. */
+	.history-head {
 		flex-wrap: nowrap;
 		gap: 8px;
 	}
 
-	.weekly-page .history-title {
+	.history-title {
 		font-size: var(--fs-lg);
 		white-space: nowrap;
 		overflow: hidden;
@@ -636,17 +661,13 @@
 		min-width: 0;
 	}
 
-	.weekly-page .history-pill,
-	.weekly-page .history-nav {
+	.history-pill,
+	.history-nav {
 		flex: none;
 	}
 
-	.weekly-page .history-nav-label {
-		display: none;
-	}
-
 	.history-nav-label {
-		padding: 0 6px;
+		display: none;
 	}
 
 	/* Summary: four stats 2×2, Workouts (with its day dots) full width */

@@ -2,30 +2,28 @@
 	width: 100%;
 }
 
-.month-nav {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
-	border-top: 1px solid var(--border-dim);
-	border-bottom: 1px solid var(--border-dim);
-	padding: 10px 16px;
-	background: var(--bg);
-}
-
-.month-nav-label {
-	display: flex;
-	gap: 6px;
-}
-
+/* Year + month picker, opened from the month title */
 .month-picker {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: var(--space-md);
+	padding: 10px;
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+}
+
+.month-picker-years {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
-	justify-content: center;
-	padding: 10px 16px;
-	border-bottom: 1px solid var(--border-dim);
-	background: var(--bg);
+}
+
+.month-picker-months {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	gap: 6px;
 }
 
 .range-active {
@@ -36,14 +34,7 @@
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-	.month-nav {
-		flex-wrap: wrap;
-		gap: 8px;
-		padding: 10px 20px;
-	}
-
-	.month-picker {
-		gap: 4px;
-		padding: 8px 12px;
+	.month-picker-months {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
 	}
 }

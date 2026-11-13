@@ -468,6 +468,103 @@ describe("TotalStats — month navigation", () => {
 	});
 });
 
+describe("TotalStats — period header", () => {
+	// An earlier test moves the fake clock to June; pin April 15 again.
+	beforeEach(() => {
+		vi.setSystemTime(new Date(2026, 3, 15, 12, 0, 0));
+	});
+
+	function withMarchData() {
+		useWeightLog.mockReturnValue({
+			data: [
+				{ id: 1, logDate: "2026-04-10", weightLbs: 180 },
+				{ id: 2, logDate: "2026-03-05", weightLbs: 182 },
+			],
+			refetch: vi.fn(),
+		});
+	}
+
+	it("titles the current month and marks it 'This month'", () => {
+		render(<TotalStats />);
+		expect(
+			screen.getByRole("button", { name: /april 2026/i }),
+		).toBeInTheDocument();
+		expect(screen.getByText("This month")).toBeInTheDocument();
+	});
+
+	it("shows the month between the arrows as plain text, not a button", () => {
+		render(<TotalStats />);
+		const label = screen.getByText("Apr 2026");
+		expect(label.closest("button")).toBeNull();
+	});
+
+	it("opens a year and month picker from the title and jumps to the chosen month", async () => {
+		withMarchData();
+		render(<TotalStats />);
+		const title = screen.getByRole("button", { name: /april 2026/i });
+		expect(title).toHaveAttribute("aria-expanded", "false");
+
+		await userEvent.click(title);
+		expect(title).toHaveAttribute("aria-expanded", "true");
+		expect(screen.getByRole("button", { name: "2026" })).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: "Mar" }));
+
+		expect(screen.getByTestId("calendar-day-2026-03-05")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /march 2026/i })).toHaveAttribute(
+			"aria-expanded",
+			"false",
+		);
+		expect(screen.queryByRole("button", { name: "Mar" })).toBeNull();
+	});
+
+	it("drops the 'This month' pill on a past month", async () => {
+		withMarchData();
+		render(<TotalStats />);
+		await userEvent.click(screen.getByRole("button", { name: /prev/i }));
+		expect(screen.getByText("Mar 2026")).toBeInTheDocument();
+		expect(screen.queryByText("This month")).toBeNull();
+	});
+
+	it("labels the arrows Previous month and Next month", () => {
+		render(<TotalStats />);
+		expect(
+			screen.getByRole("button", { name: "Previous month" }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Next month" }),
+		).toBeInTheDocument();
+	});
+
+	it("disables months without data and closes the picker on a second tap", async () => {
+		render(<TotalStats />);
+		const title = screen.getByRole("button", { name: /april 2026/i });
+		await userEvent.click(title);
+		expect(screen.getByRole("button", { name: "Jan" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Apr" })).toBeEnabled();
+
+		await userEvent.click(title);
+		expect(screen.queryByRole("button", { name: "Jan" })).toBeNull();
+	});
+
+	it("switching year lands on that year's latest month with data", async () => {
+		useWeightLog.mockReturnValue({
+			data: [
+				{ id: 1, logDate: "2026-04-10", weightLbs: 180 },
+				{ id: 2, logDate: "2025-11-20", weightLbs: 185 },
+			],
+			refetch: vi.fn(),
+		});
+		render(<TotalStats />);
+		await userEvent.click(screen.getByRole("button", { name: /april 2026/i }));
+		await userEvent.click(screen.getByRole("button", { name: "2025" }));
+
+		expect(
+			screen.getByRole("button", { name: /november 2025/i }),
+		).toBeInTheDocument();
+		expect(screen.getByTestId("calendar-day-2025-11-20")).toBeInTheDocument();
+	});
+});
+
 describe("TotalStats — steps goal", () => {
 	it("shows the user's steps goal in the steps KPI", () => {
 		mockGoals.stepsTarget = 7500;

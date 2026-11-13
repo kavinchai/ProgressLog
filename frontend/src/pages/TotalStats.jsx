@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
 import useWorkouts from "../hooks/useWorkouts";
@@ -99,7 +100,7 @@ export default function TotalStats() {
 		}
 	}, [selectedDay, isMobile]);
 	const [logMonth, setLogMonth] = useState(null);
-	const [picker, setPicker] = useState(null);
+	const [pickerOpen, setPickerOpen] = useState(false);
 	const [metric, setMetric] = useState("calories");
 	const [range, setRange] = useState("3M");
 
@@ -133,6 +134,7 @@ export default function TotalStats() {
 	const activeMonth = logMonth ?? currentMonth;
 	const monthIdx = navMonths.indexOf(activeMonth);
 	const [activeYear, activeMonthNum] = activeMonth.split("-");
+	const monthName = MONTH_NAMES[parseInt(activeMonthNum) - 1];
 
 	const monthDates = (() => {
 		if (activeMonth > currentMonth) return [];
@@ -222,7 +224,7 @@ export default function TotalStats() {
 	function goMonth(ym) {
 		setLogMonth(ym);
 		setSelectedDay(null);
-		setPicker(null);
+		setPickerOpen(false);
 	}
 
 	const allYears = [...new Set(allMonths.map((m) => m.slice(0, 4)))].sort();
@@ -242,10 +244,6 @@ export default function TotalStats() {
 			const yearMonths = allMonths.filter((m) => m.startsWith(y));
 			goMonth(yearMonths[yearMonths.length - 1]);
 		}
-	}
-
-	function togglePicker(type) {
-		setPicker((p) => (p === type ? null : type));
 	}
 
 	const selectedRow = selectedDay ? rowFor(selectedDay) : null;
@@ -286,35 +284,37 @@ export default function TotalStats() {
 	return (
 		<div className="total-page">
 			<div className="history-head">
-				<span className="history-title">
-					{MONTH_NAMES[parseInt(activeMonthNum) - 1]} {activeYear}
-				</span>
+				<button
+					type="button"
+					className="history-title history-title-btn"
+					aria-expanded={pickerOpen}
+					onClick={() => setPickerOpen((open) => !open)}
+				>
+					<span className="history-title-text">
+						{monthName} {activeYear}
+					</span>
+					{pickerOpen ? (
+						<ChevronUp size={18} aria-hidden="true" />
+					) : (
+						<ChevronDown size={18} aria-hidden="true" />
+					)}
+				</button>
+				{activeMonth === currentMonth && (
+					<span className="history-pill">This month</span>
+				)}
 				<span className="history-spacer" />
 				{allMonths.length > 0 && (
 					<div className="history-nav month-nav">
 						<button
 							type="button"
-							aria-label="Prev month"
+							aria-label="Previous month"
 							onClick={() => goMonth(navMonths[monthIdx - 1])}
 							disabled={monthIdx <= 0}
 						>
 							‹
 						</button>
-						<span className="month-nav-label">
-							<button
-								type="button"
-								className={picker === "month" ? "range-active" : ""}
-								onClick={() => togglePicker("month")}
-							>
-								{MONTH_NAMES[parseInt(activeMonthNum) - 1].slice(0, 3)}
-							</button>
-							<button
-								type="button"
-								className={picker === "year" ? "range-active" : ""}
-								onClick={() => togglePicker("year")}
-							>
-								{activeYear}
-							</button>
+						<span className="history-nav-label">
+							{monthName.slice(0, 3)} {activeYear}
 						</span>
 						<button
 							type="button"
@@ -327,38 +327,39 @@ export default function TotalStats() {
 					</div>
 				)}
 			</div>
-			{picker === "month" && (
+			{pickerOpen && (
 				<div className="month-picker">
-					{Array.from({ length: 12 }, (_, i) => {
-						const mm = String(i + 1).padStart(2, "0");
-						return (
+					<div className="month-picker-years">
+						{allYears.map((y) => (
 							<button
-								key={mm}
+								key={y}
 								className={
-									"btn btn-sm" + (mm === activeMonthNum ? " range-active" : "")
+									"btn btn-sm" + (y === activeYear ? " range-active" : "")
 								}
-								onClick={() => selectMonth(mm)}
-								disabled={!monthsWithData.has(mm)}
+								onClick={() => selectYear(y)}
 							>
-								{MONTH_NAMES[i].slice(0, 3)}
+								{y}
 							</button>
-						);
-					})}
-				</div>
-			)}
-			{picker === "year" && (
-				<div className="month-picker">
-					{allYears.map((y) => (
-						<button
-							key={y}
-							className={
-								"btn btn-sm" + (y === activeYear ? " range-active" : "")
-							}
-							onClick={() => selectYear(y)}
-						>
-							{y}
-						</button>
-					))}
+						))}
+					</div>
+					<div className="month-picker-months">
+						{MONTH_NAMES.map((name, i) => {
+							const mm = String(i + 1).padStart(2, "0");
+							return (
+								<button
+									key={mm}
+									className={
+										"btn btn-sm" +
+										(mm === activeMonthNum ? " range-active" : "")
+									}
+									onClick={() => selectMonth(mm)}
+									disabled={!monthsWithData.has(mm)}
+								>
+									{name.slice(0, 3)}
+								</button>
+							);
+						})}
+					</div>
 				</div>
 			)}
 
