@@ -244,7 +244,7 @@ public class HistoryPage {
     }
 
     public void clickMonthPickerToggle() {
-        page.locator(".month-nav-label button").first().click();
+        page.locator("button.history-title-btn").click();
     }
 
     public boolean isMonthPickerVisible() {
