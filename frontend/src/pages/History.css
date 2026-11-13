@@ -800,22 +800,6 @@
 		border-radius: var(--radius-md);
 	}
 
-	/* Total trends: swipe between charts instead of stacking all three */
-	.history-charts--stacked {
-		display: flex;
-		gap: 10px;
-		overflow-x: auto;
-		scroll-snap-type: x mandatory;
-		margin-left: calc(-1 * var(--space-md));
-		margin-right: calc(-1 * var(--space-md));
-		padding: 0 var(--space-md) 4px;
-	}
-
-	.history-charts--stacked > * {
-		flex: 0 0 86%;
-		scroll-snap-align: center;
-	}
-
 	/* Day sheet: prev / next day controls */
 	.history-sheet-nav {
 		display: flex;

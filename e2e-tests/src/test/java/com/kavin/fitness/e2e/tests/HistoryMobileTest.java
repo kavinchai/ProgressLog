@@ -14,7 +14,8 @@ import java.util.Locale;
 /**
  * The History pages at phone width (390×844): Weekly shows compact day
  * buttons and one chart at a time; Total picks its heatmap metric from a
- * dropdown and opens the selected day in a bottom sheet.
+ * dropdown, opens the selected day in a bottom sheet, and stacks its trend
+ * charts in one column.
  */
 public class HistoryMobileTest extends BaseTest {
     private HistoryPage history;
@@ -126,5 +127,18 @@ public class HistoryMobileTest extends BaseTest {
 
         step("close the sheet");
         history.closeDaySheet();
+    }
+
+    @Test(priority = 4)
+    public void totalTrendChartsStackVertically() {
+        step("open /history/total at phone width");
+        history.openTotal(baseUrl);
+
+        step("verify the three trend charts stack in one column with no sideways scroll");
+        if (!history.areTotalTrendChartsStacked()) {
+            throw new AssertionError(
+                    "Expected Weight trend, Avg calories per week and Workout consistency"
+                            + " to stack vertically at phone width");
+        }
     }
 }
