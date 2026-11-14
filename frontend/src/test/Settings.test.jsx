@@ -57,6 +57,8 @@ vi.mock("../native/health", () => ({
 	isHealthSupported: vi.fn(() => false),
 	isHealthConnected: vi.fn(() => false),
 	lastHealthSync: vi.fn(() => null),
+	isAutoStepsOn: vi.fn(() => false),
+	setAutoSteps: vi.fn(),
 	connectHealth: vi.fn(),
 	syncHealth: vi.fn(),
 }));
@@ -263,6 +265,7 @@ describe("Settings — Apple Health", () => {
 		health.isHealthSupported.mockReturnValue(false);
 		health.isHealthConnected.mockReturnValue(false);
 		health.lastHealthSync.mockReturnValue(null);
+		health.isAutoStepsOn.mockReturnValue(false);
 	});
 
 	it("is hidden outside the iOS app", () => {
@@ -290,6 +293,9 @@ describe("Settings — Apple Health", () => {
 		expect(
 			screen.getByRole("button", { name: "Sync now" }),
 		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Update steps automatically" }),
+		).toHaveAttribute("aria-pressed", "false");
 	});
 
 	it("shows why connecting failed", async () => {
@@ -317,6 +323,51 @@ describe("Settings — Apple Health", () => {
 		setupProfile();
 		renderSettings();
 		expect(screen.getByText("Last synced 11/12/26")).toBeInTheDocument();
+	});
+
+	it("offers automatic step updates only after connecting", () => {
+		health.isHealthSupported.mockReturnValue(true);
+		setupProfile();
+		renderSettings();
+		expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "Update steps automatically" }),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows a switch that was left on, and turns it off", async () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(true);
+		setupProfile();
+		renderSettings();
+
+		const toggle = screen.getByRole("button", {
+			name: "Update steps automatically",
+		});
+		expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+		await userEvent.click(toggle);
+
+		expect(health.setAutoSteps).toHaveBeenCalledWith(false);
+		expect(toggle).toHaveAttribute("aria-pressed", "false");
+	});
+
+	it("automatic step updates start off and turn on from the switch", async () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(true);
+		setupProfile();
+		renderSettings();
+
+		const toggle = screen.getByRole("button", {
+			name: "Update steps automatically",
+		});
+		expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+		await userEvent.click(toggle);
+
+		expect(health.setAutoSteps).toHaveBeenCalledWith(true);
+		expect(toggle).toHaveAttribute("aria-pressed", "true");
 	});
 
 	it("syncs on demand once connected", async () => {

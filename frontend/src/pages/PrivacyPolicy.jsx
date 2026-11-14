@@ -79,11 +79,13 @@ export default function PrivacyPolicy() {
 				The iOS app can import your daily step count and body weight from Apple
 				Health, only if you connect it in Settings › Integrations. It reads
 				these two kinds of data and nothing else, and never writes to Apple
-				Health. Imported steps and weights are saved to your account like the
-				ones you log yourself, so they appear on the website too. Health data is
-				never used for advertising and never shared with or sold to anyone. To
-				stop the import, turn off Progress Logger in the iPhone Settings app
-				under Privacy &amp; Security › Health.
+				Health. Data is imported when you tap Connect or Sync now; steps also
+				update each time you open the app only if you turn on Update steps
+				automatically. Imported steps and weights are saved to your account like
+				the ones you log yourself, so they appear on the website too. Health
+				data is never used for advertising and never shared with or sold to
+				anyone. To stop the import, turn off Progress Logger in the iPhone
+				Settings app under Privacy &amp; Security › Health.
 			</p>
 
 			<h2>Where your data is stored</h2>

@@ -11,6 +11,7 @@ const HealthImport = registerPlugin("HealthImport");
 
 const CONNECTED_KEY = "progresslog-health-connected";
 const SYNCED_KEY = "progresslog-health-synced";
+const AUTO_STEPS_KEY = "progresslog-health-auto-steps";
 const FIRST_IMPORT_DAYS = 30;
 
 function read(key) {
@@ -38,6 +39,7 @@ useAuthStore.subscribe((state, prev) => {
 		try {
 			localStorage.removeItem(CONNECTED_KEY);
 			localStorage.removeItem(SYNCED_KEY);
+			localStorage.removeItem(AUTO_STEPS_KEY);
 		} catch {
 			// Nothing stored to clear.
 		}
@@ -56,18 +58,32 @@ export function lastHealthSync() {
 	return read(SYNCED_KEY);
 }
 
-/** Imports the last `days` days of steps and weight. Returns what was written. */
-export async function syncHealth(days) {
-	const [steps, weights, existingSteps, existingWeights] = await Promise.all([
-		HealthImport.dailySteps({ days }),
-		HealthImport.dailyWeights({ days }),
-		api.get("/steps"),
-		api.get("/weight"),
-	]);
+/** Whether steps update from Apple Health each time the app opens. Off until turned on. */
+export function isAutoStepsOn() {
+	return read(AUTO_STEPS_KEY) === "true";
+}
+
+export function setAutoSteps(on) {
+	write(AUTO_STEPS_KEY, on ? "true" : "false");
+}
+
+/**
+ * Imports the last `days` days of steps and, unless `weights` is false, body
+ * weight. Returns how many days of each were written.
+ */
+export async function syncHealth(days, { weights = true } = {}) {
+	const [steps, weightDays, existingSteps, existingWeights] = await Promise.all(
+		[
+			HealthImport.dailySteps({ days }),
+			weights ? HealthImport.dailyWeights({ days }) : { days: [] },
+			api.get("/steps"),
+			weights ? api.get("/weight") : { data: [] },
+		],
+	);
 
 	const plan = planHealthWrites({
 		healthSteps: steps.days,
-		healthWeights: weights.days,
+		healthWeights: weightDays.days,
 		existingSteps: existingSteps.data,
 		existingWeights: existingWeights.data,
 	});
@@ -76,7 +92,7 @@ export async function syncHealth(days) {
 	for (const w of plan.weights) await api.post("/weight", w);
 
 	refreshEndpoint("/steps");
-	refreshEndpoint("/weight");
+	if (weights) refreshEndpoint("/weight");
 	write(SYNCED_KEY, new Date().toISOString());
 	return { steps: plan.steps.length, weights: plan.weights.length };
 }

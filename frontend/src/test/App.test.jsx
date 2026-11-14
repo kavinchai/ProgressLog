@@ -39,6 +39,7 @@ vi.mock("../components/layout/BottomTabBar", () => ({
 vi.mock("../native/health", () => ({
 	isHealthSupported: vi.fn(() => false),
 	isHealthConnected: vi.fn(() => false),
+	isAutoStepsOn: vi.fn(() => false),
 	syncHealth: vi.fn(() => Promise.resolve({ steps: 0, weights: 0 })),
 }));
 
@@ -192,33 +193,46 @@ describe("App — Apple Health auto-sync", () => {
 	afterEach(() => {
 		health.isHealthSupported.mockReturnValue(false);
 		health.isHealthConnected.mockReturnValue(false);
+		health.isAutoStepsOn.mockReturnValue(false);
 		health.syncHealth.mockImplementation(() =>
 			Promise.resolve({ steps: 0, weights: 0 }),
 		);
 	});
 
-	it("syncs the last 7 days on launch when Apple Health is connected", () => {
+	function connected({ auto }) {
 		health.isHealthSupported.mockReturnValue(true);
 		health.isHealthConnected.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(auto);
+	}
+
+	it("updates the last 7 days of steps on launch when automatic updates are on", () => {
+		connected({ auto: true });
 		render(<App />);
-		expect(health.syncHealth).toHaveBeenCalledWith(7);
+		expect(health.syncHealth).toHaveBeenCalledWith(7, { weights: false });
+	});
+
+	it("does nothing when automatic updates are off", () => {
+		connected({ auto: false });
+		render(<App />);
+		expect(health.syncHealth).not.toHaveBeenCalled();
 	});
 
 	it("does nothing when Apple Health isn't connected", () => {
 		health.isHealthSupported.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(true);
 		render(<App />);
 		expect(health.syncHealth).not.toHaveBeenCalled();
 	});
 
-	it("does nothing outside the iOS app even if a connection was saved", () => {
+	it("does nothing outside the iOS app even if settings were saved", () => {
 		health.isHealthConnected.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(true);
 		render(<App />);
 		expect(health.syncHealth).not.toHaveBeenCalled();
 	});
 
-	it("keeps the app working when the background sync fails", async () => {
-		health.isHealthSupported.mockReturnValue(true);
-		health.isHealthConnected.mockReturnValue(true);
+	it("keeps the app working when the background update fails", async () => {
+		connected({ auto: true });
 		health.syncHealth.mockRejectedValue(new Error("Health unavailable"));
 		render(<App />);
 		expect(await screen.findByText("Today Page")).toBeInTheDocument();

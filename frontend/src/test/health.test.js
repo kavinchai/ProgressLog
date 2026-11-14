@@ -27,8 +27,10 @@ import { refreshEndpoint } from "../hooks/useFetch";
 import {
 	connectHealth,
 	isHealthConnected,
+	isAutoStepsOn,
 	isHealthSupported,
 	lastHealthSync,
+	setAutoSteps,
 	syncHealth,
 } from "../native/health";
 
@@ -145,5 +147,40 @@ describe("logging out", () => {
 
 		expect(isHealthConnected()).toBe(false);
 		expect(lastHealthSync()).toBeNull();
+	});
+});
+
+describe("automatic step updates", () => {
+	it("are off until the user turns them on", () => {
+		expect(isAutoStepsOn()).toBe(false);
+		setAutoSteps(true);
+		expect(isAutoStepsOn()).toBe(true);
+		setAutoSteps(false);
+		expect(isAutoStepsOn()).toBe(false);
+	});
+
+	it("a steps-only sync never reads or writes weight", async () => {
+		plugin.dailySteps.mockResolvedValue({
+			days: [{ date: "2026-11-12", steps: 12000 }],
+		});
+		const result = await syncHealth(7, { weights: false });
+
+		expect(plugin.dailyWeights).not.toHaveBeenCalled();
+		expect(api.get).not.toHaveBeenCalledWith("/weight");
+		expect(api.post).toHaveBeenCalledTimes(1);
+		expect(api.post).toHaveBeenCalledWith("/steps", {
+			logDate: "2026-11-12",
+			steps: 12000,
+		});
+		expect(refreshEndpoint).toHaveBeenCalledWith("/steps");
+		expect(refreshEndpoint).not.toHaveBeenCalledWith("/weight");
+		expect(result).toEqual({ steps: 1, weights: 0 });
+	});
+
+	it("are switched off on logout", () => {
+		useAuthStore.setState({ authenticated: true, username: "alice" });
+		setAutoSteps(true);
+		useAuthStore.setState({ authenticated: false, username: null });
+		expect(isAutoStepsOn()).toBe(false);
 	});
 });

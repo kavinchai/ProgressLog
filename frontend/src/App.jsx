@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import useAuthStore from "./store/authStore";
 import useTheme from "./hooks/useTheme";
 import {
+	isAutoStepsOn,
 	isHealthConnected,
 	isHealthSupported,
 	syncHealth,
@@ -41,10 +42,11 @@ function AppLayout({ children }) {
 	// Applies the saved theme on every page; the picker itself is in Settings.
 	useTheme();
 
-	// iOS app: pull the last week from Apple Health each time the app opens.
+	// iOS app: if the user turned on automatic step updates, pull the last
+	// week of steps from Apple Health each time the app opens.
 	useEffect(() => {
-		if (isHealthSupported() && isHealthConnected()) {
-			syncHealth(AUTO_SYNC_DAYS).catch(() => {});
+		if (isHealthSupported() && isHealthConnected() && isAutoStepsOn()) {
+			syncHealth(AUTO_SYNC_DAYS, { weights: false }).catch(() => {});
 		}
 	}, []);
 	return (

@@ -17,9 +17,11 @@ import { formatDateShort as formatDate, localDateStr } from "../utils/date";
 import api from "../api";
 import {
 	connectHealth,
+	isAutoStepsOn,
 	isHealthConnected,
 	isHealthSupported,
 	lastHealthSync,
+	setAutoSteps,
 	syncHealth,
 } from "../native/health";
 import "./Settings.css";
@@ -688,6 +690,7 @@ function plural(n, one, many) {
 
 function AppleHealthRow() {
 	const [connected, setConnected] = useState(isHealthConnected);
+	const [autoSteps, setAutoStepsState] = useState(isAutoStepsOn);
 	const [busy, setBusy] = useState(false);
 	const [message, setMessage] = useState(null);
 	const [error, setError] = useState(null);
@@ -711,6 +714,12 @@ function AppleHealthRow() {
 		}
 	}
 
+	function toggleAutoSteps() {
+		const next = !autoSteps;
+		setAutoSteps(next);
+		setAutoStepsState(next);
+	}
+
 	const synced = lastHealthSync();
 	const hint = connected
 		? synced
@@ -732,6 +741,18 @@ function AppleHealthRow() {
 					{busy ? "Importing…" : connected ? "Sync now" : "Connect"}
 				</button>
 			</Row>
+			{connected && (
+				<Row
+					label="Update steps automatically"
+					hint="From Apple Health, each time you open the app"
+				>
+					<Switch
+						ariaLabel="Update steps automatically"
+						on={autoSteps}
+						onToggle={toggleAutoSteps}
+					/>
+				</Row>
+			)}
 			{message && <p className="settings-row-note">{message}</p>}
 			{error && <p className="settings-error settings-row-note">{error}</p>}
 		</>
