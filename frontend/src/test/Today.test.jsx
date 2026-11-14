@@ -100,6 +100,8 @@ vi.mock("../hooks/useWorkouts", () => ({ default: vi.fn() }));
 vi.mock("../hooks/useSteps", () => ({ default: vi.fn() }));
 vi.mock("../hooks/useUserProfile", () => ({ default: vi.fn() }));
 vi.mock("../hooks/usePRs", () => ({ default: vi.fn() }));
+// Home-screen widget bridge (iOS app only)
+vi.mock("../native/widget", () => ({ updateWidget: vi.fn() }));
 
 import api from "../api";
 import useWeightLog from "../hooks/useWeightLog";
@@ -108,6 +110,7 @@ import useWorkouts from "../hooks/useWorkouts";
 import useSteps from "../hooks/useSteps";
 import useUserProfile from "../hooks/useUserProfile";
 import usePRs from "../hooks/usePRs";
+import { updateWidget } from "../native/widget";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -188,6 +191,117 @@ function setup({
 
 beforeEach(() => {
 	vi.clearAllMocks();
+});
+
+// ── Home-screen widget ────────────────────────────────────────────────────────
+
+describe("Today — home-screen widget", () => {
+	it("sends today's calories, protein and steps to the widget", () => {
+		setup({
+			nutrition: [NUTRITION_ENTRY],
+			steps: [{ id: 3, logDate: TODAY, steps: 6500 }],
+		});
+		render(<Today />);
+		expect(updateWidget).toHaveBeenCalledWith({
+			date: TODAY,
+			calories: 1800,
+			calorieGoal: 2600,
+			protein: 120,
+			proteinGoal: 180,
+			steps: 6500,
+			stepsGoal: 10000,
+		});
+	});
+
+	it("uses the rest-day calorie goal for the widget and progress bar", () => {
+		setup({ nutrition: [{ ...NUTRITION_ENTRY, dayType: "rest" }] });
+		render(<Today />);
+		expect(updateWidget).toHaveBeenCalledWith(
+			expect.objectContaining({ calorieGoal: 2000 }),
+		);
+		expect(
+			screen.getByTestId("daily-progress-bar").dataset.caloriesGoal,
+		).toBe("2000");
+	});
+
+	it("does not update the widget while today's data is still loading", () => {
+		setup();
+		useNutrition.mockReturnValue({ data: [], loading: true, refetch: vi.fn() });
+		render(<Today />);
+		expect(updateWidget).not.toHaveBeenCalled();
+	});
+
+	it("does not overwrite the widget with zeros when nutrition failed to load", () => {
+		const { refetchNutrition } = setup();
+		useNutrition.mockReturnValue({
+			data: [],
+			refetch: refetchNutrition,
+			error: "boom",
+		});
+		render(<Today />);
+		expect(updateWidget).not.toHaveBeenCalled();
+	});
+
+	it("does not overwrite the widget with zeros when steps failed to load", () => {
+		const { refetchSteps } = setup();
+		useSteps.mockReturnValue({ data: [], refetch: refetchSteps, error: "boom" });
+		render(<Today />);
+		expect(updateWidget).not.toHaveBeenCalled();
+	});
+
+	it("still updates the widget when only weight failed to load", () => {
+		const { refetchWeight } = setup({ nutrition: [NUTRITION_ENTRY] });
+		useWeightLog.mockReturnValue({
+			data: [],
+			refetch: refetchWeight,
+			error: "boom",
+		});
+		render(<Today />);
+		expect(updateWidget).toHaveBeenCalledWith(
+			expect.objectContaining({ calories: 1800 }),
+		);
+	});
+
+	it("sends the widget once loading finishes", () => {
+		setup();
+		useSteps.mockReturnValue({ data: [], loading: true, refetch: vi.fn() });
+		const { rerender } = render(<Today />);
+		expect(updateWidget).not.toHaveBeenCalled();
+		useSteps.mockReturnValue({
+			data: [{ id: 3, logDate: TODAY, steps: 4200 }],
+			refetch: vi.fn(),
+		});
+		rerender(<Today />);
+		expect(updateWidget).toHaveBeenCalledTimes(1);
+		expect(updateWidget).toHaveBeenLastCalledWith(
+			expect.objectContaining({ steps: 4200 }),
+		);
+	});
+
+	it("sends new totals after a meal changes today's calories", () => {
+		setup({ nutrition: [NUTRITION_ENTRY] });
+		const { rerender } = render(<Today />);
+		useNutrition.mockReturnValue({
+			data: [{ ...NUTRITION_ENTRY, totalCalories: 2300, totalProtein: 150 }],
+			refetch: vi.fn(),
+		});
+		rerender(<Today />);
+		expect(updateWidget).toHaveBeenCalledTimes(2);
+		expect(updateWidget).toHaveBeenLastCalledWith(
+			expect.objectContaining({ calories: 2300, protein: 150 }),
+		);
+	});
+
+	it("does not resend on a re-render with the same numbers", () => {
+		setup({ nutrition: [NUTRITION_ENTRY] });
+		const { rerender } = render(<Today />);
+		useNutrition.mockReturnValue({
+			data: [{ ...NUTRITION_ENTRY }],
+			refetch: vi.fn(),
+		});
+		rerender(<Today />);
+		expect(updateWidget).toHaveBeenCalledTimes(1);
+	});
 });
 
 // ── DISPLAY: empty states ─────────────────────────────────────────────────────
