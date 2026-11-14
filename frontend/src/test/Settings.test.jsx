@@ -52,7 +52,19 @@ vi.mock("xlsx", () => ({
 	writeFile: vi.fn(),
 }));
 
+// Apple Health import (iOS app only) — off unless a test turns it on
+vi.mock("../native/health", () => ({
+	isHealthSupported: vi.fn(() => false),
+	isHealthConnected: vi.fn(() => false),
+	lastHealthSync: vi.fn(() => null),
+	isAutoStepsOn: vi.fn(() => false),
+	setAutoSteps: vi.fn(),
+	connectHealth: vi.fn(),
+	syncHealth: vi.fn(),
+}));
+
 import api from "../api";
+import * as health from "../native/health";
 import useUserProfile from "../hooks/useUserProfile";
 import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
@@ -245,6 +257,132 @@ describe("Settings — integrations", () => {
 			screen.getByRole("button", { name: /claude integration/i }),
 		);
 		expect(mockNavigate).toHaveBeenCalledWith("/claude-setup");
+	});
+});
+
+describe("Settings — Apple Health", () => {
+	afterEach(() => {
+		health.isHealthSupported.mockReturnValue(false);
+		health.isHealthConnected.mockReturnValue(false);
+		health.lastHealthSync.mockReturnValue(null);
+		health.isAutoStepsOn.mockReturnValue(false);
+	});
+
+	it("is hidden outside the iOS app", () => {
+		setupProfile();
+		renderSettings();
+		expect(screen.queryByText("Apple Health")).not.toBeInTheDocument();
+	});
+
+	it("connects and imports from Apple Health", async () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.connectHealth.mockImplementation(async () => {
+			health.isHealthConnected.mockReturnValue(true);
+			health.lastHealthSync.mockReturnValue(new Date().toISOString());
+			return { steps: 12, weights: 5 };
+		});
+		setupProfile();
+		renderSettings();
+
+		await userEvent.click(screen.getByRole("button", { name: "Connect" }));
+
+		expect(health.connectHealth).toHaveBeenCalled();
+		expect(
+			await screen.findByText(/imported 12 days of steps and 5 weigh-ins/i),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Sync now" }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Update steps automatically" }),
+		).toHaveAttribute("aria-pressed", "false");
+	});
+
+	it("shows why connecting failed", async () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(false);
+		health.connectHealth.mockRejectedValue(
+			new Error("Apple Health is not available on this device."),
+		);
+		setupProfile();
+		renderSettings();
+
+		await userEvent.click(screen.getByRole("button", { name: "Connect" }));
+
+		expect(
+			await screen.findByText(/not available on this device/i),
+		).toBeInTheDocument();
+	});
+
+	it("shows when Apple Health last synced", () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(true);
+		health.lastHealthSync.mockReturnValue(
+			new Date(2026, 10, 12, 15, 0).toISOString(),
+		);
+		setupProfile();
+		renderSettings();
+		expect(screen.getByText("Last synced 11/12/26")).toBeInTheDocument();
+	});
+
+	it("offers automatic step updates only after connecting", () => {
+		health.isHealthSupported.mockReturnValue(true);
+		setupProfile();
+		renderSettings();
+		expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "Update steps automatically" }),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows a switch that was left on, and turns it off", async () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(true);
+		setupProfile();
+		renderSettings();
+
+		const toggle = screen.getByRole("button", {
+			name: "Update steps automatically",
+		});
+		expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+		await userEvent.click(toggle);
+
+		expect(health.setAutoSteps).toHaveBeenCalledWith(false);
+		expect(toggle).toHaveAttribute("aria-pressed", "false");
+	});
+
+	it("automatic step updates start off and turn on from the switch", async () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(true);
+		setupProfile();
+		renderSettings();
+
+		const toggle = screen.getByRole("button", {
+			name: "Update steps automatically",
+		});
+		expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+		await userEvent.click(toggle);
+
+		expect(health.setAutoSteps).toHaveBeenCalledWith(true);
+		expect(toggle).toHaveAttribute("aria-pressed", "true");
+	});
+
+	it("syncs on demand once connected", async () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(true);
+		health.syncHealth.mockResolvedValue({ steps: 1, weights: 0 });
+		setupProfile();
+		renderSettings();
+
+		await userEvent.click(screen.getByRole("button", { name: "Sync now" }));
+
+		expect(health.syncHealth).toHaveBeenCalledWith(30);
+		expect(
+			await screen.findByText(/imported 1 day of steps and 0 weigh-ins/i),
+		).toBeInTheDocument();
 	});
 });
 

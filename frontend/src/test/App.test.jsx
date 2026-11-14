@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import App from "../App";
 import useAuthStore from "../store/authStore";
@@ -36,6 +36,14 @@ vi.mock("../components/layout/Navbar", () => ({
 vi.mock("../components/layout/BottomTabBar", () => ({
 	default: () => <nav>BottomTabBar</nav>,
 }));
+vi.mock("../native/health", () => ({
+	isHealthSupported: vi.fn(() => false),
+	isHealthConnected: vi.fn(() => false),
+	isAutoStepsOn: vi.fn(() => false),
+	syncHealth: vi.fn(() => Promise.resolve({ steps: 0, weights: 0 })),
+}));
+
+import * as health from "../native/health";
 
 beforeEach(() => {
 	useAuthStore.setState({ authenticated: false, username: null });
@@ -172,5 +180,61 @@ describe("App theme", () => {
 		expect(document.documentElement).toHaveClass("dark");
 		localStorage.removeItem("theme");
 		document.documentElement.classList.remove("dark");
+	});
+});
+
+describe("App — Apple Health auto-sync", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		useAuthStore.setState({ authenticated: true, username: "alice" });
+		window.history.pushState({}, "", "/today");
+	});
+
+	afterEach(() => {
+		health.isHealthSupported.mockReturnValue(false);
+		health.isHealthConnected.mockReturnValue(false);
+		health.isAutoStepsOn.mockReturnValue(false);
+		health.syncHealth.mockImplementation(() =>
+			Promise.resolve({ steps: 0, weights: 0 }),
+		);
+	});
+
+	function connected({ auto }) {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(auto);
+	}
+
+	it("updates the last 7 days of steps on launch when automatic updates are on", () => {
+		connected({ auto: true });
+		render(<App />);
+		expect(health.syncHealth).toHaveBeenCalledWith(7, { weights: false });
+	});
+
+	it("does nothing when automatic updates are off", () => {
+		connected({ auto: false });
+		render(<App />);
+		expect(health.syncHealth).not.toHaveBeenCalled();
+	});
+
+	it("does nothing when Apple Health isn't connected", () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(true);
+		render(<App />);
+		expect(health.syncHealth).not.toHaveBeenCalled();
+	});
+
+	it("does nothing outside the iOS app even if settings were saved", () => {
+		health.isHealthConnected.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(true);
+		render(<App />);
+		expect(health.syncHealth).not.toHaveBeenCalled();
+	});
+
+	it("keeps the app working when the background update fails", async () => {
+		connected({ auto: true });
+		health.syncHealth.mockRejectedValue(new Error("Health unavailable"));
+		render(<App />);
+		expect(await screen.findByText("Today Page")).toBeInTheDocument();
 	});
 });
