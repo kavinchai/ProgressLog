@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import api from "../api";
 import useWeightLog from "../hooks/useWeightLog";
@@ -19,6 +19,8 @@ import { groupByExercise } from "../utils/workout";
 import { mergeWorkoutSessions } from "../utils/stats";
 import useWeightUnit from "../hooks/useWeightUnit";
 import useToday from "../hooks/useToday";
+import { todayTotals } from "../utils/widget";
+import { updateWidget } from "../native/widget";
 import { formatDayLabel } from "../utils/date";
 import "../pages/WeeklyStats.css";
 import "./Today.css";
@@ -146,6 +148,20 @@ export default function Today() {
 	const hasSingleWorkoutSession = todayWorkoutSessions.length === 1;
 	const todayNutritionEntry = nutritionData.find((n) => n.logDate === TODAY);
 	const todayStepEntry = stepData.find((s) => s.logDate === TODAY);
+	const totals = todayTotals({
+		today: TODAY,
+		nutritionEntry: todayNutritionEntry,
+		stepEntry: todayStepEntry,
+		goals,
+	});
+
+	// iOS home-screen widget: mirror today's numbers once everything has loaded.
+	const totalsKey = JSON.stringify(totals);
+	useEffect(() => {
+		if (!isLoading && !errorNutrition && !errorSteps) {
+			updateWidget(JSON.parse(totalsKey));
+		}
+	}, [isLoading, errorNutrition, errorSteps, totalsKey]);
 
 	const [editingSteps, setEditingSteps] = useState(false);
 	const [stepsValue, setStepsValue] = useState("");
@@ -295,25 +311,14 @@ export default function Today() {
 				})()}
 			</div>
 
-			{(() => {
-				const calTarget =
-					todayNutritionEntry?.dayType === "rest"
-						? goals.calorieTargetRest
-						: goals.calorieTargetTraining;
-				const calEaten = todayNutritionEntry?.totalCalories ?? 0;
-				const protEaten = todayNutritionEntry?.totalProtein ?? 0;
-				const stepsTaken = todayStepEntry?.steps ?? 0;
-				return (
-					<DailyProgressBar
-						caloriesCurrent={calEaten}
-						caloriesGoal={calTarget ?? 2000}
-						proteinCurrent={protEaten}
-						proteinGoal={goals.proteinTarget ?? 150}
-						stepsCurrent={stepsTaken}
-						stepsGoal={goals.stepsTarget ?? 10000}
-					/>
-				);
-			})()}
+			<DailyProgressBar
+				caloriesCurrent={totals.calories}
+				caloriesGoal={totals.calorieGoal}
+				proteinCurrent={totals.protein}
+				proteinGoal={totals.proteinGoal}
+				stepsCurrent={totals.steps}
+				stepsGoal={totals.stepsGoal}
+			/>
 
 			<div className="weekly-content-layout">
 				<div className="weekly-main-col">
