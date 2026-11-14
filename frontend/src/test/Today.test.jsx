@@ -219,9 +219,9 @@ describe("Today — home-screen widget", () => {
 		expect(updateWidget).toHaveBeenCalledWith(
 			expect.objectContaining({ calorieGoal: 2000 }),
 		);
-		expect(
-			screen.getByTestId("daily-progress-bar").dataset.caloriesGoal,
-		).toBe("2000");
+		expect(screen.getByTestId("daily-progress-bar").dataset.caloriesGoal).toBe(
+			"2000",
+		);
 	});
 
 	it("does not update the widget while today's data is still loading", () => {
@@ -244,7 +244,11 @@ describe("Today — home-screen widget", () => {
 
 	it("does not overwrite the widget with zeros when steps failed to load", () => {
 		const { refetchSteps } = setup();
-		useSteps.mockReturnValue({ data: [], refetch: refetchSteps, error: "boom" });
+		useSteps.mockReturnValue({
+			data: [],
+			refetch: refetchSteps,
+			error: "boom",
+		});
 		render(<Today />);
 		expect(updateWidget).not.toHaveBeenCalled();
 	});
