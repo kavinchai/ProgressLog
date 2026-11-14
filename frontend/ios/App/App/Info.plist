@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Progress Logger reads your daily steps and body weight from Apple Health so you don't have to type them in.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Progress Logger only reads your steps and body weight from Apple Health. It never writes or changes anything in Apple Health.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
