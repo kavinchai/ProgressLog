@@ -206,6 +206,120 @@ struct MediumView: View {
     }
 }
 
+// MARK: Lock Screen (iOS 16+). iOS draws these in white and grey only.
+
+/// Shorter numbers for tight spaces: 6842 -> "6.8k".
+private func compact(_ value: Double) -> String {
+    value >= 1000 ? String(format: "%.1fk", value / 1000) : formatted(value)
+}
+
+@available(iOSApplicationExtension 16.0, *)
+struct InlineView: View {
+    let totals: Totals?
+
+    var body: some View {
+        if let totals {
+            ViewThatFits {
+                Text("\(formatted(totals.calories)) kcal · \(formatted(totals.protein)) g · \(formatted(totals.steps)) steps")
+                Text("\(formatted(totals.calories)) kcal · \(formatted(totals.protein)) g · \(compact(totals.steps))")
+            }
+        } else {
+            Text("Open Progress Logger")
+        }
+    }
+}
+
+@available(iOSApplicationExtension 16.0, *)
+struct RectangularView: View {
+    let totals: Totals?
+
+    var body: some View {
+        if let totals {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Today").font(.caption2).foregroundColor(.secondary)
+                RectangularRow(label: "Calories", value: formatted(totals.calories),
+                               fraction: fraction(totals.calories, of: totals.calorieGoal))
+                RectangularRow(label: "Protein", value: "\(formatted(totals.protein)) g",
+                               fraction: fraction(totals.protein, of: totals.proteinGoal))
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Today").font(.headline)
+                Text("Open Progress Logger to update").font(.caption)
+            }
+        }
+    }
+}
+
+@available(iOSApplicationExtension 16.0, *)
+private struct RectangularRow: View {
+    let label: String
+    let value: String
+    let fraction: Double
+
+    var body: some View {
+        VStack(spacing: 1) {
+            HStack {
+                Text(label).font(.caption2).foregroundColor(.secondary)
+                Spacer()
+                Text(value).font(.caption2.weight(.semibold))
+            }
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(0.25))
+                    Capsule().fill(Color.primary).frame(width: proxy.size.width * fraction)
+                }
+            }
+            .frame(height: 4)
+        }
+    }
+}
+
+enum Metric {
+    case calories, protein, steps
+
+    func value(_ totals: Totals) -> Double {
+        switch self {
+        case .calories: return totals.calories
+        case .protein: return totals.protein
+        case .steps: return totals.steps
+        }
+    }
+
+    func goal(_ totals: Totals) -> Double {
+        switch self {
+        case .calories: return totals.calorieGoal
+        case .protein: return totals.proteinGoal
+        case .steps: return totals.stepsGoal
+        }
+    }
+
+    var unit: String {
+        switch self {
+        case .calories: return "kcal"
+        case .protein: return "g"
+        case .steps: return "steps"
+        }
+    }
+}
+
+@available(iOSApplicationExtension 16.0, *)
+struct GaugeView: View {
+    let metric: Metric
+    let totals: Totals?
+
+    var body: some View {
+        let value = totals.map(metric.value) ?? 0
+        let goal = totals.map(metric.goal) ?? 1
+        Gauge(value: fraction(value, of: goal)) {
+            Text(metric.unit)
+        } currentValueLabel: {
+            Text(totals == nil ? "–" : compact(value)).minimumScaleFactor(0.6)
+        }
+        .gaugeStyle(.accessoryCircular)
+    }
+}
+
 struct ProgressWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: TodayEntry
@@ -213,14 +327,23 @@ struct ProgressWidgetView: View {
     var body: some View {
         let totals = entry.totals ?? .zero
         let stale = entry.totals == nil
-        Group {
-            if family == .systemMedium {
-                MediumView(totals: totals, stale: stale)
-            } else {
-                SmallView(totals: totals, stale: stale)
+        switch family {
+        case .systemSmall:
+            SmallView(totals: totals, stale: stale).widgetBackground()
+        case .systemMedium:
+            MediumView(totals: totals, stale: stale).widgetBackground()
+        default:
+            if #available(iOSApplicationExtension 16.0, *) {
+                Group {
+                    if family == .accessoryInline {
+                        InlineView(totals: entry.totals)
+                    } else {
+                        RectangularView(totals: entry.totals)
+                    }
+                }
+                .lockScreenBackground()
             }
         }
-        .widgetBackground()
     }
 }
 
@@ -235,11 +358,27 @@ private extension View {
             padding().background(Color(.systemBackground))
         }
     }
+
+    /// Lock Screen widgets sit straight on the wallpaper.
+    @ViewBuilder
+    func lockScreenBackground() -> some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            containerBackground(Color.clear, for: .widget)
+        } else {
+            self
+        }
+    }
 }
 
-@main
 struct ProgressWidget: Widget {
     let kind = "ProgressWidget"
+
+    private var families: [WidgetFamily] {
+        if #available(iOSApplicationExtension 16.0, *) {
+            return [.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline]
+        }
+        return [.systemSmall, .systemMedium]
+    }
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
@@ -247,6 +386,50 @@ struct ProgressWidget: Widget {
         }
         .configurationDisplayName("Today")
         .description("Today's calories, protein and steps.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies(families)
+    }
+}
+
+/// One round Lock Screen gauge per number, so people can pick which ones to show.
+@available(iOSApplicationExtension 16.0, *)
+private func gaugeConfiguration(kind: String, metric: Metric, name: String) -> some WidgetConfiguration {
+    StaticConfiguration(kind: kind, provider: Provider()) { entry in
+        GaugeView(metric: metric, totals: entry.totals).lockScreenBackground()
+    }
+    .configurationDisplayName(name)
+    .description("Today's \(name.lowercased()) against your goal.")
+    .supportedFamilies([.accessoryCircular])
+}
+
+@available(iOSApplicationExtension 16.0, *)
+struct CaloriesGaugeWidget: Widget {
+    var body: some WidgetConfiguration {
+        gaugeConfiguration(kind: "CaloriesGauge", metric: .calories, name: "Calories")
+    }
+}
+
+@available(iOSApplicationExtension 16.0, *)
+struct ProteinGaugeWidget: Widget {
+    var body: some WidgetConfiguration {
+        gaugeConfiguration(kind: "ProteinGauge", metric: .protein, name: "Protein")
+    }
+}
+
+@available(iOSApplicationExtension 16.0, *)
+struct StepsGaugeWidget: Widget {
+    var body: some WidgetConfiguration {
+        gaugeConfiguration(kind: "StepsGauge", metric: .steps, name: "Steps")
+    }
+}
+
+@main
+struct ProgressWidgets: WidgetBundle {
+    var body: some Widget {
+        ProgressWidget()
+        if #available(iOSApplicationExtension 16.0, *) {
+            CaloriesGaugeWidget()
+            ProteinGaugeWidget()
+            StepsGaugeWidget()
+        }
     }
 }
