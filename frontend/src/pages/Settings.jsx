@@ -13,8 +13,15 @@ import useTheme from "../hooks/useTheme";
 import useMediaQuery, { MOBILE_QUERY } from "../hooks/useMediaQuery";
 import { buildDayRows } from "../utils/stats";
 import { groupByExercise } from "../utils/workout";
-import { formatDateShort as formatDate } from "../utils/date";
+import { formatDateShort as formatDate, localDateStr } from "../utils/date";
 import api from "../api";
+import {
+	connectHealth,
+	isHealthConnected,
+	isHealthSupported,
+	lastHealthSync,
+	syncHealth,
+} from "../native/health";
 import "./Settings.css";
 
 const MIN_PASSWORD = 6;
@@ -671,6 +678,66 @@ function DeleteAccountForm({ onDeleted, onCancel }) {
 	);
 }
 
+// ── Apple Health (iOS app only) ─────────────────────────────────────────────
+
+const MANUAL_SYNC_DAYS = 30;
+
+function plural(n, one, many) {
+	return `${n} ${n === 1 ? one : many}`;
+}
+
+function AppleHealthRow() {
+	const [connected, setConnected] = useState(isHealthConnected);
+	const [busy, setBusy] = useState(false);
+	const [message, setMessage] = useState(null);
+	const [error, setError] = useState(null);
+
+	if (!isHealthSupported()) return null;
+
+	async function run(action) {
+		setBusy(true);
+		setMessage(null);
+		setError(null);
+		try {
+			const r = await action();
+			setConnected(isHealthConnected());
+			setMessage(
+				`Imported ${plural(r.steps, "day", "days")} of steps and ${plural(r.weights, "weigh-in", "weigh-ins")}.`,
+			);
+		} catch (err) {
+			setError(err.message ?? "Couldn't import from Apple Health.");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	const synced = lastHealthSync();
+	const hint = connected
+		? synced
+			? `Last synced ${formatDate(localDateStr(new Date(synced)))}`
+			: "Connected"
+		: "Import steps and body weight";
+
+	return (
+		<>
+			<Row label="Apple Health" hint={hint}>
+				<button
+					type="button"
+					className="btn btn-sm"
+					disabled={busy}
+					onClick={() =>
+						run(connected ? () => syncHealth(MANUAL_SYNC_DAYS) : connectHealth)
+					}
+				>
+					{busy ? "Importing…" : connected ? "Sync now" : "Connect"}
+				</button>
+			</Row>
+			{message && <p className="settings-row-note">{message}</p>}
+			{error && <p className="settings-error settings-row-note">{error}</p>}
+		</>
+	);
+}
+
 // ── Privacy group ───────────────────────────────────────────────────────────
 
 function PrivacyGroup() {
@@ -1037,6 +1104,7 @@ export default function Settings() {
 						›
 					</span>
 				</button>
+				<AppleHealthRow />
 			</Group>
 
 			<DataGroup />

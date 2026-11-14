@@ -38,6 +38,16 @@ describe("PrivacyPolicy", () => {
 		).toBeInTheDocument();
 	});
 
+	it("explains the optional Apple Health import", () => {
+		renderPolicy();
+		expect(
+			screen.getByRole("heading", { level: 2, name: /apple health/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/never writes to apple health/i),
+		).toBeInTheDocument();
+	});
+
 	it("gives a contact email link", () => {
 		renderPolicy();
 		expect(

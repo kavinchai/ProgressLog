@@ -53,6 +53,11 @@ function revalidate(endpoint, { force = false } = {}) {
 	return promise;
 }
 
+/** Reloads an endpoint now and updates every screen showing it. */
+export function refreshEndpoint(endpoint) {
+	return revalidate(endpoint, { force: true });
+}
+
 function initialState(endpoint) {
 	return cache.has(endpoint)
 		? { data: cache.get(endpoint), loading: false, error: null }
