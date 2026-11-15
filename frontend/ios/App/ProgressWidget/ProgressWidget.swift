@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -62,15 +63,17 @@ struct Provider: TimelineProvider {
     /// so yesterday's totals never linger. The app reloads the widget whenever
     /// it saves new numbers.
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodayEntry>) -> Void) {
-        let now = Date()
-        let calendar = Calendar.current
-        let midnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now)) ?? now
-        let entries = [
-            TodayEntry(date: now, totals: loadTotals(on: now)),
-            TodayEntry(date: midnight, totals: nil),
-        ]
-        completion(Timeline(entries: entries, policy: .after(midnight)))
+        completion(todayTimeline { TodayEntry(date: $0, totals: $1) })
     }
+}
+
+/// Today's numbers now, then the empty state from midnight.
+private func todayTimeline<Entry: TimelineEntry>(_ makeEntry: (Date, Totals?) -> Entry) -> Timeline<Entry> {
+    let now = Date()
+    let calendar = Calendar.current
+    let midnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now)) ?? now
+    let entries = [makeEntry(now, loadTotals(on: now)), makeEntry(midnight, nil)]
+    return Timeline(entries: entries, policy: .after(midnight))
 }
 
 private let caloriesColor = Color(red: 0xD4 / 255, green: 0x93 / 255, blue: 0x4E / 255)
@@ -232,15 +235,15 @@ struct InlineView: View {
 @available(iOSApplicationExtension 16.0, *)
 struct RectangularView: View {
     let totals: Totals?
+    var first: Metric = .calories
+    var second: Metric = .protein
 
     var body: some View {
         if let totals {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Today").font(.caption2).foregroundColor(.secondary)
-                RectangularRow(label: "Calories", value: formatted(totals.calories),
-                               fraction: fraction(totals.calories, of: totals.calorieGoal))
-                RectangularRow(label: "Protein", value: "\(formatted(totals.protein)) g",
-                               fraction: fraction(totals.protein, of: totals.proteinGoal))
+                RectangularRow(metric: first, totals: totals)
+                RectangularRow(metric: second, totals: totals)
             }
         } else {
             VStack(alignment: .leading, spacing: 2) {
@@ -253,21 +256,23 @@ struct RectangularView: View {
 
 @available(iOSApplicationExtension 16.0, *)
 private struct RectangularRow: View {
-    let label: String
-    let value: String
-    let fraction: Double
+    let metric: Metric
+    let totals: Totals
 
     var body: some View {
+        let value = metric.value(totals)
+        let progress = fraction(value, of: metric.goal(totals))
         VStack(spacing: 1) {
             HStack {
-                Text(label).font(.caption2).foregroundColor(.secondary)
+                Text(metric.name).font(.caption2).foregroundColor(.secondary)
                 Spacer()
-                Text(value).font(.caption2.weight(.semibold))
+                Text(metric == .protein ? "\(formatted(value)) g" : formatted(value))
+                    .font(.caption2.weight(.semibold))
             }
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(0.25))
-                    Capsule().fill(Color.primary).frame(width: proxy.size.width * fraction)
+                    Capsule().fill(Color.primary).frame(width: proxy.size.width * progress)
                 }
             }
             .frame(height: 4)
@@ -277,6 +282,14 @@ private struct RectangularRow: View {
 
 enum Metric {
     case calories, protein, steps
+
+    var name: String {
+        switch self {
+        case .calories: return "Calories"
+        case .protein: return "Protein"
+        case .steps: return "Steps"
+        }
+    }
 
     func value(_ totals: Totals) -> Double {
         switch self {
@@ -374,6 +387,11 @@ struct ProgressWidget: Widget {
     let kind = "ProgressWidget"
 
     private var families: [WidgetFamily] {
+        // On iOS 17+ the rectangular Lock Screen widget is TodayRowsWidget,
+        // which lets people choose its rows.
+        if #available(iOSApplicationExtension 17.0, *) {
+            return [.systemSmall, .systemMedium, .accessoryInline]
+        }
         if #available(iOSApplicationExtension 16.0, *) {
             return [.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline]
         }
@@ -425,6 +443,79 @@ struct StepsGaugeWidget: Widget {
     }
 }
 
+// MARK: Rectangular Lock Screen widget with a choice of rows (iOS 17+)
+
+@available(iOS 17.0, *)
+enum RowChoice: String, AppEnum {
+    case calories, protein, steps
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Number"
+    static let caseDisplayRepresentations: [RowChoice: DisplayRepresentation] = [
+        .calories: "Calories",
+        .protein: "Protein",
+        .steps: "Steps",
+    ]
+
+    var metric: Metric {
+        switch self {
+        case .calories: return .calories
+        case .protein: return .protein
+        case .steps: return .steps
+        }
+    }
+}
+
+@available(iOS 17.0, *)
+struct TodayRowsIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Today"
+    static let description = IntentDescription("Choose which two of today's numbers to show.")
+
+    @Parameter(title: "First row", default: .calories)
+    var first: RowChoice
+
+    @Parameter(title: "Second row", default: .protein)
+    var second: RowChoice
+}
+
+struct RowsEntry: TimelineEntry {
+    let date: Date
+    let totals: Totals?
+    let first: Metric
+    let second: Metric
+}
+
+@available(iOS 17.0, *)
+struct RowsProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> RowsEntry {
+        RowsEntry(date: Date(), totals: .sample, first: .calories, second: .protein)
+    }
+
+    func snapshot(for configuration: TodayRowsIntent, in context: Context) async -> RowsEntry {
+        let now = Date()
+        return RowsEntry(date: now, totals: context.isPreview ? .sample : loadTotals(on: now),
+                         first: configuration.first.metric, second: configuration.second.metric)
+    }
+
+    func timeline(for configuration: TodayRowsIntent, in context: Context) async -> Timeline<RowsEntry> {
+        todayTimeline {
+            RowsEntry(date: $0, totals: $1, first: configuration.first.metric, second: configuration.second.metric)
+        }
+    }
+}
+
+@available(iOS 17.0, *)
+struct TodayRowsWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: "TodayRows", intent: TodayRowsIntent.self, provider: RowsProvider()) { entry in
+            RectangularView(totals: entry.totals, first: entry.first, second: entry.second)
+                .lockScreenBackground()
+        }
+        .configurationDisplayName("Today")
+        .description("Choose which two of today's numbers to show.")
+        .supportedFamilies([.accessoryRectangular])
+    }
+}
+
 @main
 struct ProgressWidgets: WidgetBundle {
     var body: some Widget {
@@ -435,6 +526,9 @@ struct ProgressWidgets: WidgetBundle {
             CaloriesGaugeWidget()
             ProteinGaugeWidget()
             StepsGaugeWidget()
+        }
+        if #available(iOS 17.0, *) {
+            TodayRowsWidget()
         }
     }
 }
