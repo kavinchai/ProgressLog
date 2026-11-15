@@ -24,4 +24,6 @@ public class RegisterRequest {
     @Email
     @Size(max = 100)
     private String email;
+
+    private boolean rememberMe;
 }

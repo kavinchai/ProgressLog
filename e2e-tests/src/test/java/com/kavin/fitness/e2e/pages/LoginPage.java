@@ -21,6 +21,12 @@ public class LoginPage {
         page.locator("h1.privacy-title").waitFor();
     }
 
+    /** Ticks or unticks "Keep me signed in" under the password field. */
+    public LoginPage setKeepSignedIn(boolean keep) {
+        page.locator("#remember-me").setChecked(keep);
+        return this;
+    }
+
     public void login(String username, String password) {
         page.locator("#username").fill(username);
         page.locator("#password").fill(password);

@@ -10,9 +10,12 @@ import com.kavin.fitness.dto.UserGoalsDTO;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
 import com.kavin.fitness.security.CookieUtil;
+import com.kavin.fitness.security.JwtFilter;
 import com.kavin.fitness.security.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -141,6 +144,7 @@ public class ProfileController {
     public ResponseEntity<CredentialsUpdateResponse> updateCredentials(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody UpdateCredentialsRequest dto,
+            HttpServletRequest request,
             HttpServletResponse response) {
 
         log.info("PUT credentials user={}", userDetails.getUsername());
@@ -169,8 +173,11 @@ public class ProfileController {
 
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getUsername());
-        cookieUtil.addJwtCookie(response, token);
+        // Keep the current sign-in's expiry so "Keep me signed in" survives the change.
+        Duration lifetime =
+                jwtUtil.timeLeft(JwtFilter.extractToken(request)).orElse(jwtUtil.lifetime(false));
+        String token = jwtUtil.generateToken(user.getUsername(), lifetime);
+        cookieUtil.addJwtCookie(response, token, lifetime);
         return ResponseEntity.ok(new CredentialsUpdateResponse(user.getUsername()));
     }
 

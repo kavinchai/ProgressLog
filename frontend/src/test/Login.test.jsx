@@ -87,6 +87,7 @@ describe("Login — login mode", () => {
 			expect(api.post).toHaveBeenCalledWith("/auth/login", {
 				username: "alice",
 				password: "secret",
+				rememberMe: true,
 			}),
 		);
 	});
@@ -173,6 +174,7 @@ describe("Login — signup mode", () => {
 				username: "bob",
 				password: "pass123",
 				email: "bob@example.com",
+				rememberMe: true,
 			});
 			expect(useAuthStore.getState().authenticated).toBe(true);
 			expect(useAuthStore.getState().username).toBe("bob");
@@ -284,5 +286,41 @@ describe("Login — double submit", () => {
 		fireEvent.submit(form);
 		fireEvent.submit(form);
 		expect(api.post).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("Login — keep me signed in", () => {
+	it("shows a Keep me signed in checkbox, ticked by default", () => {
+		renderLogin();
+		expect(
+			screen.getByRole("checkbox", { name: /keep me signed in/i }),
+		).toBeChecked();
+	});
+
+	it("sends rememberMe: false when the box is unticked", async () => {
+		api.post.mockResolvedValue({ data: { username: "alice" } });
+
+		renderLogin();
+		await userEvent.type(screen.getByLabelText(/username/i), "alice");
+		await userEvent.type(screen.getByLabelText(/password/i), "secret");
+		await userEvent.click(
+			screen.getByRole("checkbox", { name: /keep me signed in/i }),
+		);
+		await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith("/auth/login", {
+				username: "alice",
+				password: "secret",
+				rememberMe: false,
+			}),
+		);
+	});
+
+	it("shows the checkbox when creating an account too", async () => {
+		renderLogin("/login?mode=signup");
+		expect(
+			screen.getByRole("checkbox", { name: /keep me signed in/i }),
+		).toBeChecked();
 	});
 });
