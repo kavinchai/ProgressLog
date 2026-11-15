@@ -7,11 +7,20 @@ const DEFAULT_GOALS = {
 	proteinTarget: 180,
 };
 
+// Every screen using goals, so a save on one (Settings) updates the others
+// (the widget sync in the app layout) without a reload.
+const goalListeners = new Set();
+
 export default function useUserProfile() {
 	const [goals, setGoals] = useState(DEFAULT_GOALS);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [saving, setSaving] = useState(false);
+
+	useEffect(() => {
+		goalListeners.add(setGoals);
+		return () => goalListeners.delete(setGoals);
+	}, []);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -39,7 +48,7 @@ export default function useUserProfile() {
 		setError(null);
 		try {
 			const res = await api.put("/profile/goals", updated);
-			setGoals(res.data);
+			goalListeners.forEach((set) => set(res.data));
 		} catch (err) {
 			setError(err.response?.data?.message ?? "Failed to save goals");
 			throw err;

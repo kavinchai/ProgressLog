@@ -135,4 +135,24 @@ describe("useUserProfile", () => {
 		});
 		expect(result.current.saving).toBe(false);
 	});
+
+	it("saving goals updates every screen using them, not just the one that saved", async () => {
+		api.get.mockResolvedValue({ data: CUSTOM_GOALS });
+		api.put.mockResolvedValue({
+			data: { ...CUSTOM_GOALS, proteinTarget: 220 },
+		});
+
+		const settings = renderHook(() => useUserProfile());
+		const layout = renderHook(() => useUserProfile());
+		await waitFor(() => expect(layout.result.current.loading).toBe(false));
+
+		await act(async () => {
+			await settings.result.current.saveGoals({
+				...CUSTOM_GOALS,
+				proteinTarget: 220,
+			});
+		});
+
+		expect(layout.result.current.goals.proteinTarget).toBe(220);
+	});
 });
