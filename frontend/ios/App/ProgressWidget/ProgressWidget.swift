@@ -393,11 +393,14 @@ struct ProgressWidget: Widget {
 /// One round Lock Screen gauge per number, so people can pick which ones to show.
 @available(iOSApplicationExtension 16.0, *)
 private func gaugeConfiguration(kind: String, metric: Metric, name: String) -> some WidgetConfiguration {
-    StaticConfiguration(kind: kind, provider: Provider()) { entry in
+    // A plain String, not an interpolated literal: WidgetKit crashes on
+    // formatted (interpolated) description text.
+    let description = "Today's \(name.lowercased()) against your goal."
+    return StaticConfiguration(kind: kind, provider: Provider()) { entry in
         GaugeView(metric: metric, totals: entry.totals).lockScreenBackground()
     }
     .configurationDisplayName(name)
-    .description("Today's \(name.lowercased()) against your goal.")
+    .description(description)
     .supportedFamilies([.accessoryCircular])
 }
 
@@ -426,7 +429,9 @@ struct StepsGaugeWidget: Widget {
 struct ProgressWidgets: WidgetBundle {
     var body: some Widget {
         ProgressWidget()
-        if #available(iOSApplicationExtension 16.0, *) {
+        // Must be 16.1 or later: with an older version SwiftUI picks an
+        // overload that calls fatalError and the whole extension crashes.
+        if #available(iOS 16.1, *) {
             CaloriesGaugeWidget()
             ProteinGaugeWidget()
             StepsGaugeWidget()
