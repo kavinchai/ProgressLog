@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import api from "../api";
 import useWeightLog from "../hooks/useWeightLog";
@@ -20,7 +20,6 @@ import { mergeWorkoutSessions } from "../utils/stats";
 import useWeightUnit from "../hooks/useWeightUnit";
 import useToday from "../hooks/useToday";
 import { todayTotals } from "../utils/widget";
-import { updateWidget } from "../native/widget";
 import { formatDayLabel } from "../utils/date";
 import "../pages/WeeklyStats.css";
 import "./Today.css";
@@ -154,14 +153,6 @@ export default function Today() {
 		stepEntry: todayStepEntry,
 		goals,
 	});
-
-	// iOS home-screen widget: mirror today's numbers once everything has loaded.
-	const totalsKey = JSON.stringify(totals);
-	useEffect(() => {
-		if (!isLoading && !errorNutrition && !errorSteps) {
-			updateWidget(JSON.parse(totalsKey));
-		}
-	}, [isLoading, errorNutrition, errorSteps, totalsKey]);
 
 	const [editingSteps, setEditingSteps] = useState(false);
 	const [stepsValue, setStepsValue] = useState("");

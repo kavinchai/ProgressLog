@@ -8,6 +8,7 @@ import {
 import { useEffect } from "react";
 import useAuthStore from "./store/authStore";
 import useTheme from "./hooks/useTheme";
+import useWidgetSync from "./hooks/useWidgetSync";
 import {
 	isAutoStepsOn,
 	isHealthConnected,
@@ -42,12 +43,24 @@ function AppLayout({ children }) {
 	// Applies the saved theme on every page; the picker itself is in Settings.
 	useTheme();
 
+	// iOS widget: kept in sync from every page, not just Today.
+	useWidgetSync();
+
 	// iOS app: if the user turned on automatic step updates, pull the last
-	// week of steps from Apple Health each time the app opens.
+	// week of steps from Apple Health when the app opens and each time it
+	// comes back to the foreground.
 	useEffect(() => {
-		if (isHealthSupported() && isHealthConnected() && isAutoStepsOn()) {
-			syncHealth(AUTO_SYNC_DAYS, { weights: false }).catch(() => {});
+		function syncSteps() {
+			if (isHealthSupported() && isHealthConnected() && isAutoStepsOn()) {
+				syncHealth(AUTO_SYNC_DAYS, { weights: false }).catch(() => {});
+			}
 		}
+		function onVisible() {
+			if (document.visibilityState === "visible") syncSteps();
+		}
+		syncSteps();
+		document.addEventListener("visibilitychange", onVisible);
+		return () => document.removeEventListener("visibilitychange", onVisible);
 	}, []);
 	return (
 		<div className="app-layout">

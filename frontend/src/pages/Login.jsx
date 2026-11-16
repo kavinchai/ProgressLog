@@ -13,6 +13,7 @@ export default function Login() {
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [email, setEmail] = useState("");
+	const [rememberMe, setRememberMe] = useState(true);
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 
@@ -26,8 +27,8 @@ export default function Login() {
 		try {
 			const endpoint = isSignup ? "/auth/register" : "/auth/login";
 			const body = isSignup
-				? { username, password, email }
-				: { username, password };
+				? { username, password, email, rememberMe }
+				: { username, password, rememberMe };
 			const res = await api.post(endpoint, body);
 			login(res.data.username);
 		} catch (err) {
@@ -111,6 +112,16 @@ export default function Login() {
 								autoComplete={isSignup ? "new-password" : "current-password"}
 							/>
 						</div>
+
+						<label className="login-remember" htmlFor="remember-me">
+							<input
+								id="remember-me"
+								type="checkbox"
+								checked={rememberMe}
+								onChange={(e) => setRememberMe(e.target.checked)}
+							/>
+							Keep me signed in
+						</label>
 
 						<button className="login-btn" type="submit" disabled={loading}>
 							{loading

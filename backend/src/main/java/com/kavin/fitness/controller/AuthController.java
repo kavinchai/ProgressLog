@@ -11,6 +11,7 @@ import com.kavin.fitness.security.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,9 +47,10 @@ public class AuthController {
                                 request.getUsername(), request.getPassword()));
 
         UserDetails userDetails = (UserDetails) auth.getPrincipal();
-        String token = jwtUtil.generateToken(userDetails.getUsername());
+        Duration lifetime = jwtUtil.lifetime(request.isRememberMe());
+        String token = jwtUtil.generateToken(userDetails.getUsername(), lifetime);
 
-        cookieUtil.addJwtCookie(response, token);
+        cookieUtil.addJwtCookie(response, token, lifetime);
 
         log.info("Login successful for user={}", userDetails.getUsername());
         return ResponseEntity.ok(new LoginResponse(userDetails.getUsername()));
@@ -69,8 +71,9 @@ public class AuthController {
         user.setEmail(request.getEmail());
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getUsername());
-        cookieUtil.addJwtCookie(response, token);
+        Duration lifetime = jwtUtil.lifetime(request.isRememberMe());
+        String token = jwtUtil.generateToken(user.getUsername(), lifetime);
+        cookieUtil.addJwtCookie(response, token, lifetime);
 
         log.info("Registration successful for user={}", user.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED)

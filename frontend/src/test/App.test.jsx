@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import App from "../App";
 import useAuthStore from "../store/authStore";
 
@@ -43,7 +43,10 @@ vi.mock("../native/health", () => ({
 	syncHealth: vi.fn(() => Promise.resolve({ steps: 0, weights: 0 })),
 }));
 
+vi.mock("../hooks/useWidgetSync", () => ({ default: vi.fn() }));
+
 import * as health from "../native/health";
+import useWidgetSync from "../hooks/useWidgetSync";
 
 beforeEach(() => {
 	useAuthStore.setState({ authenticated: false, username: null });
@@ -191,6 +194,7 @@ describe("App — Apple Health auto-sync", () => {
 	});
 
 	afterEach(() => {
+		delete document.visibilityState;
 		health.isHealthSupported.mockReturnValue(false);
 		health.isHealthConnected.mockReturnValue(false);
 		health.isAutoStepsOn.mockReturnValue(false);
@@ -231,10 +235,82 @@ describe("App — Apple Health auto-sync", () => {
 		expect(health.syncHealth).not.toHaveBeenCalled();
 	});
 
+	function returnToApp() {
+		Object.defineProperty(document, "visibilityState", {
+			configurable: true,
+			get: () => "visible",
+		});
+		document.dispatchEvent(new Event("visibilitychange"));
+	}
+
+	it("updates steps again each time the app comes back to the foreground", () => {
+		connected({ auto: true });
+		render(<App />);
+		returnToApp();
+		returnToApp();
+		expect(health.syncHealth).toHaveBeenCalledTimes(3);
+		expect(health.syncHealth).toHaveBeenLastCalledWith(7, { weights: false });
+	});
+
+	it("does not update steps when the app goes to the background", () => {
+		connected({ auto: true });
+		render(<App />);
+		Object.defineProperty(document, "visibilityState", {
+			configurable: true,
+			get: () => "hidden",
+		});
+		document.dispatchEvent(new Event("visibilitychange"));
+		expect(health.syncHealth).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not update steps on return when automatic updates are off", () => {
+		connected({ auto: false });
+		render(<App />);
+		returnToApp();
+		expect(health.syncHealth).not.toHaveBeenCalled();
+	});
+
+	it("checks the setting again on return, so turning it on takes effect", () => {
+		connected({ auto: false });
+		render(<App />);
+		health.isAutoStepsOn.mockReturnValue(true);
+		returnToApp();
+		expect(health.syncHealth).toHaveBeenCalledTimes(1);
+	});
+
+	it("stops listening once signed out", () => {
+		connected({ auto: true });
+		render(<App />);
+		act(() => useAuthStore.setState({ authenticated: false, username: null }));
+		returnToApp();
+		expect(health.syncHealth).toHaveBeenCalledTimes(1);
+	});
+
 	it("keeps the app working when the background update fails", async () => {
 		connected({ auto: true });
 		health.syncHealth.mockRejectedValue(new Error("Health unavailable"));
 		render(<App />);
 		expect(await screen.findByText("Today Page")).toBeInTheDocument();
+	});
+});
+
+describe("App — home-screen widget", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		useAuthStore.setState({ authenticated: true, username: "alice" });
+	});
+
+	it("keeps the widget in sync on pages other than Today", () => {
+		window.history.pushState({}, "", "/settings");
+		render(<App />);
+		expect(screen.getByText("Settings Page")).toBeInTheDocument();
+		expect(useWidgetSync).toHaveBeenCalled();
+	});
+
+	it("does not feed the widget when signed out", () => {
+		useAuthStore.setState({ authenticated: false, username: null });
+		window.history.pushState({}, "", "/");
+		render(<App />);
+		expect(useWidgetSync).not.toHaveBeenCalled();
 	});
 });

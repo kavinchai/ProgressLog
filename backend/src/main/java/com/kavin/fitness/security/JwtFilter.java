@@ -76,7 +76,7 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String extractToken(HttpServletRequest request) {
+    public static String extractToken(HttpServletRequest request) {
         // 1. Try httpOnly cookie
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
