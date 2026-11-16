@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api";
+import { tapDelete } from "../native/haptics";
 import Modal from "./Modal";
 
 /**
@@ -26,6 +27,7 @@ export default function ConfirmDeleteModal({
 		setPhase("deleting");
 		try {
 			await onDelete();
+			tapDelete();
 			setPhase("deleted");
 		} catch (ex) {
 			setErrMsg(ex?.response?.data?.message ?? "Delete failed.");

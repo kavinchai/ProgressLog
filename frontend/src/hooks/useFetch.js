@@ -58,6 +58,12 @@ export function refreshEndpoint(endpoint) {
 	return revalidate(endpoint, { force: true });
 }
 
+/** Reloads every endpoint a screen is currently showing (pull to refresh). */
+export function refreshAll() {
+	const shown = [...listeners].filter(([, fns]) => fns.size > 0);
+	return Promise.all(shown.map(([endpoint]) => refreshEndpoint(endpoint)));
+}
+
 function initialState(endpoint) {
 	return cache.has(endpoint)
 		? { data: cache.get(endpoint), loading: false, error: null }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api";
+import { tapSuccess } from "../native/haptics";
 import { useToast } from "../components/Toast";
 
 export function useDayActions({
@@ -36,6 +37,7 @@ export function useDayActions({
 		try {
 			if (steps != null) {
 				await api.post("/steps", { logDate: date, steps: parseInt(steps) });
+				tapSuccess();
 			} else if (stepEntry) {
 				await api.delete(`/steps/${stepEntry.id}`);
 			}

@@ -8,9 +8,14 @@ vi.mock("../api", () => ({
 }));
 vi.mock("../components/WorkoutBuilderModal.css", () => ({}));
 vi.mock("../components/Modal.css", () => ({}));
+vi.mock("../native/haptics", () => ({
+	tapSuccess: vi.fn(),
+	tapDelete: vi.fn(),
+}));
 
 import api from "../api";
 import { clearMatchCache } from "../utils/exerciseMatches";
+import { tapSuccess } from "../native/haptics";
 
 const onClose = vi.fn();
 const onSaved = vi.fn();
@@ -759,5 +764,34 @@ describe("WorkoutBuilderModal — similar names prompt", () => {
 			name: /similar names/i,
 		});
 		expect(check.tagName).toBe("DIALOG");
+	});
+});
+
+describe("WorkoutBuilderModal — haptics", () => {
+	it("gives a success tap when the workout saves", async () => {
+		api.post.mockResolvedValue({});
+		render(
+			<WorkoutBuilderModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		await waitFor(() => expect(tapSuccess).toHaveBeenCalledTimes(1));
+	});
+
+	it("gives no tap when the save fails", async () => {
+		api.post.mockRejectedValue({ response: { data: { message: "Nope" } } });
+		render(
+			<WorkoutBuilderModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		await screen.findByText("Nope");
+		expect(tapSuccess).not.toHaveBeenCalled();
 	});
 });

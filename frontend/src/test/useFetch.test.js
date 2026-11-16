@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
-import useFetch from "../hooks/useFetch";
+import useFetch, { refreshAll } from "../hooks/useFetch";
 import useAuthStore from "../store/authStore";
 
 vi.mock("../api", () => ({
@@ -187,5 +187,35 @@ describe("useFetch — shared cache", () => {
 		const second = renderHook(() => useFetch("/mine"));
 		expect(second.result.current.data).toEqual([]);
 		act(() => useAuthStore.getState().logout());
+	});
+});
+
+describe("useFetch — refreshAll", () => {
+	it("reloads every endpoint on screen and updates it", async () => {
+		api.get.mockImplementation((url) => Promise.resolve({ data: [url, 1] }));
+		const a = renderHook(() => useFetch("/all-a"));
+		const b = renderHook(() => useFetch("/all-b"));
+		await waitFor(() => expect(b.result.current.loading).toBe(false));
+
+		api.get.mockClear();
+		api.get.mockImplementation((url) => Promise.resolve({ data: [url, 2] }));
+		await act(() => refreshAll());
+
+		expect(api.get).toHaveBeenCalledWith("/all-a");
+		expect(api.get).toHaveBeenCalledWith("/all-b");
+		expect(a.result.current.data).toEqual(["/all-a", 2]);
+		expect(b.result.current.data).toEqual(["/all-b", 2]);
+	});
+
+	it("skips endpoints no screen is showing any more", async () => {
+		api.get.mockResolvedValue({ data: [] });
+		const gone = renderHook(() => useFetch("/all-gone"));
+		await waitFor(() => expect(gone.result.current.loading).toBe(false));
+		gone.unmount();
+
+		api.get.mockClear();
+		await act(() => refreshAll());
+
+		expect(api.get).not.toHaveBeenCalledWith("/all-gone");
 	});
 });

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api";
+import { tapDelete, tapSuccess } from "../native/haptics";
 import Modal from "./Modal";
 import useWeightUnit from "../hooks/useWeightUnit";
 import "./WorkoutBuilderModal.css";
@@ -62,6 +63,7 @@ export default function EditExerciseModal({
 				exerciseName,
 				sets: mappedSets,
 			});
+			tapSuccess();
 			onSaved();
 			onClose();
 		} catch (ex) {
@@ -78,6 +80,7 @@ export default function EditExerciseModal({
 			await api.delete("/workouts/" + sessionId + "/exercises", {
 				params: { name: exerciseName },
 			});
+			tapDelete();
 			onSaved();
 			setDeletePhase("deleted");
 		} catch (ex) {

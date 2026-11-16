@@ -261,6 +261,32 @@ public class HistoryPage {
                 new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
     }
 
+    /**
+     * Drags the open sheet's header down by {@code px}, like a finger. The
+     * test browser has no touchscreen, so the touch events are dispatched.
+     */
+    public void dragDaySheetDown(int px) {
+        page.locator(".modal-box .modal-header").evaluate(
+                "(el, px) => {"
+                        + "  const y0 = el.getBoundingClientRect().top + 10;"
+                        + "  const fire = (type, y) => {"
+                        + "    const t = new Touch({ identifier: 1, target: el, clientX: 100, clientY: y });"
+                        + "    el.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true,"
+                        + "      touches: type === 'touchend' ? [] : [t], changedTouches: [t] }));"
+                        + "  };"
+                        + "  fire('touchstart', y0);"
+                        + "  fire('touchmove', y0 + px / 2);"
+                        + "  fire('touchmove', y0 + px);"
+                        + "  fire('touchend', y0 + px);"
+                        + "}",
+                px);
+    }
+
+    public void waitForDaySheetClosed() {
+        page.locator(".modal-box").waitFor(
+                new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
+    }
+
     public void clickMonthPickerToggle() {
         page.locator("button.history-title-btn").click();
     }

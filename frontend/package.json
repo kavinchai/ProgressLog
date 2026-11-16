@@ -15,6 +15,7 @@
 	},
 	"dependencies": {
 		"@capacitor/core": "^7.6.10",
+		"@capacitor/haptics": "^7.0.5",
 		"@capacitor/ios": "^7.6.10",
 		"@vercel/analytics": "^2.0.1",
 		"axios": "^1.6.7",

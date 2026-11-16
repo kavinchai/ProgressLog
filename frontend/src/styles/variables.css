@@ -86,6 +86,14 @@
 	--transition-slow: 300ms ease;
 }
 
+/* iPhone app: Apple's system font (San Francisco) so it looks native.
+   The class is set in main.jsx; the website keeps Inter. */
+:root.ios-app {
+	--font: -apple-system, system-ui, sans-serif;
+	--font-sans: -apple-system, system-ui, sans-serif;
+	--font-display: -apple-system, system-ui, sans-serif;
+}
+
 /* ── Mobile adjustments ── */
 @media (max-width: 640px) {
 	:root {

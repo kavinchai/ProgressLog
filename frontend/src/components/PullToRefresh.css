@@ -1,0 +1,30 @@
+/* Space that opens at the top of the page while you pull down to refresh. */
+.ptr {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	color: var(--muted);
+	transition: height var(--transition-fast);
+}
+
+/* Follow the finger exactly while pulling; animate only on release. */
+.ptr--pulling {
+	transition: none;
+}
+
+.ptr-icon--spin {
+	animation: ptrSpin 0.8s linear infinite;
+}
+
+@keyframes ptrSpin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ptr-icon--spin {
+		animation: none;
+	}
+}

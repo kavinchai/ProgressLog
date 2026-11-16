@@ -1,10 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./Modal.css";
+
+const DRAG_CLOSE_PX = 80; // drag the sheet down this far to close it
 
 export default function Modal({ title, onClose, children }) {
 	const modalRef = useRef(null);
 	const closeButtonRef = useRef(null);
 	const previousActiveElement = useRef(null);
+	const drag = useRef(null); // { startY, y } while a finger is down
+	const [dragY, setDragY] = useState(0);
 
 	// Save the element that triggered the modal (for focus restoration)
 	useEffect(() => {
@@ -72,6 +76,26 @@ export default function Modal({ title, onClose, children }) {
 		};
 	}, []);
 
+	// Drag the handle or header down to close, like an iOS sheet. A short
+	// drag springs back.
+	const dragHandlers = {
+		onTouchStart: (e) => {
+			drag.current = { startY: e.touches[0].clientY, y: 0 };
+		},
+		onTouchMove: (e) => {
+			if (!drag.current) return;
+			drag.current.y = Math.max(e.touches[0].clientY - drag.current.startY, 0);
+			setDragY(drag.current.y);
+		},
+		onTouchEnd: () => {
+			const dragged = drag.current?.y ?? 0;
+			drag.current = null;
+			if (dragged >= DRAG_CLOSE_PX) onClose();
+			else setDragY(0);
+		},
+	};
+	dragHandlers.onTouchCancel = dragHandlers.onTouchEnd;
+
 	const titleId = `modal-title-${Math.random().toString(36).slice(2, 9)}`;
 
 	return (
@@ -83,9 +107,18 @@ export default function Modal({ title, onClose, children }) {
 				ref={modalRef}
 				aria-modal="true"
 				aria-labelledby={titleId}
+				style={
+					dragY > 0
+						? { transform: `translateY(${dragY}px)`, transition: "none" }
+						: undefined
+				}
 			>
-				<div className="modal-drag-handle" aria-hidden="true" />
-				<div className="modal-header">
+				<div
+					className="modal-drag-handle"
+					aria-hidden="true"
+					{...dragHandlers}
+				/>
+				<div className="modal-header" {...dragHandlers}>
 					<span className="modal-title" id={titleId}>
 						{title}
 					</span>

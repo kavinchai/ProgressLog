@@ -94,3 +94,62 @@ describe("Modal — native dialog", () => {
 		expect(dialog).toHaveAttribute("open");
 	});
 });
+
+describe("Modal — drag down to close", () => {
+	function drag(el, ...ys) {
+		fireEvent.touchStart(el, { touches: [{ clientY: 100 }] });
+		for (const y of ys) fireEvent.touchMove(el, { touches: [{ clientY: y }] });
+		fireEvent.touchEnd(el, { touches: [] });
+	}
+
+	function renderModal(onClose) {
+		render(
+			<Modal title="Log Weight" onClose={onClose}>
+				<p>content</p>
+			</Modal>,
+		);
+		return {
+			dialog: screen.getByRole("dialog", { name: "Log Weight" }),
+			header: screen.getByText("Log Weight"),
+		};
+	}
+
+	it("closes when the header is dragged down far enough", () => {
+		const onClose = vi.fn();
+		const { header } = renderModal(onClose);
+		drag(header, 150, 250);
+		expect(onClose).toHaveBeenCalledTimes(1);
+	});
+
+	it("follows your finger while dragging", () => {
+		const { dialog, header } = renderModal(vi.fn());
+		fireEvent.touchStart(header, { touches: [{ clientY: 100 }] });
+		fireEvent.touchMove(header, { touches: [{ clientY: 160 }] });
+		expect(dialog.style.transform).toBe("translateY(60px)");
+	});
+
+	it("springs back after a short drag", () => {
+		const onClose = vi.fn();
+		const { dialog, header } = renderModal(onClose);
+		drag(header, 130);
+		expect(onClose).not.toHaveBeenCalled();
+		expect(dialog.style.transform).toBe("");
+	});
+
+	it("doesn't move when dragged up", () => {
+		const onClose = vi.fn();
+		const { dialog, header } = renderModal(onClose);
+		fireEvent.touchStart(header, { touches: [{ clientY: 100 }] });
+		fireEvent.touchMove(header, { touches: [{ clientY: 20 }] });
+		expect(dialog.style.transform).toBe("");
+		fireEvent.touchEnd(header, { touches: [] });
+		expect(onClose).not.toHaveBeenCalled();
+	});
+
+	it("doesn't close when you scroll the content", () => {
+		const onClose = vi.fn();
+		renderModal(onClose);
+		drag(screen.getByText("content"), 250, 400);
+		expect(onClose).not.toHaveBeenCalled();
+	});
+});

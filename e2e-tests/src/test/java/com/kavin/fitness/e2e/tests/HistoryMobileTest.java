@@ -14,8 +14,8 @@ import java.util.Locale;
 /**
  * The History pages at phone width (390×844): Weekly shows compact day
  * buttons and one chart at a time; Total picks its heatmap metric from a
- * dropdown, opens the selected day in a bottom sheet, and stacks its trend
- * charts in one column.
+ * dropdown, opens the selected day in a bottom sheet (dragged down to close),
+ * and stacks its trend charts in one column.
  */
 public class HistoryMobileTest extends BaseTest {
     private HistoryPage history;
@@ -130,6 +130,23 @@ public class HistoryMobileTest extends BaseTest {
     }
 
     @Test(priority = 4)
+    public void dragDaySheetDownToClose() {
+        step("open today's day sheet from /history/total at phone width");
+        history.openTotal(baseUrl);
+        history.clickCalendarDay(todayDate);
+        String today = shortDate(LocalDate.now());
+        history.waitForDaySheet(today);
+
+        step("a short drag springs back and the sheet stays open");
+        history.dragDaySheetDown(40);
+        history.waitForDaySheet(today);
+
+        step("dragging far enough closes the sheet");
+        history.dragDaySheetDown(200);
+        history.waitForDaySheetClosed();
+    }
+
+    @Test(priority = 5)
     public void totalTrendChartsStackVertically() {
         step("open /history/total at phone width");
         history.openTotal(baseUrl);
