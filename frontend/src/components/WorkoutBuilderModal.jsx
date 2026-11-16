@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api";
+import { tapSuccess } from "../native/haptics";
 import Modal from "./Modal";
 import ExerciseListEditor from "./ExerciseListEditor";
 import useWeightUnit from "../hooks/useWeightUnit";
@@ -126,6 +127,7 @@ export default function WorkoutBuilderModal({
 				await api.post("/workouts", payload);
 			}
 			clearMatchCache();
+			tapSuccess();
 			onSaved();
 			onClose();
 		} catch (ex) {

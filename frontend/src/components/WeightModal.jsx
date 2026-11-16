@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api";
+import { tapSuccess } from "../native/haptics";
 import Modal from "./Modal";
 import useWeightUnit from "../hooks/useWeightUnit";
 
@@ -27,6 +28,7 @@ export default function WeightModal({
 				logDate: date,
 				weightLbs: fromDisplay(weight),
 			});
+			tapSuccess();
 			onSaved();
 			onClose();
 		} catch (ex) {

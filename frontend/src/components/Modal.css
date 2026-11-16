@@ -169,6 +169,15 @@
 	border-top: 1px solid var(--border-dim);
 }
 
+@keyframes modalSheetUp {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+
 /* Drag handle — hidden on desktop, shown on mobile */
 .modal-drag-handle {
 	display: none;
@@ -186,6 +195,15 @@
 		border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 		border-bottom: none;
 		padding-bottom: env(safe-area-inset-bottom, 0px);
+		animation: modalSheetUp 280ms cubic-bezier(0.32, 0.72, 0, 1);
+		/* Springs back after a short drag (see Modal.jsx). */
+		transition: transform 200ms ease;
+	}
+
+	/* Header and handle are the drag area; stop the page scrolling under it. */
+	.modal-header,
+	.modal-drag-handle {
+		touch-action: none;
 	}
 
 	.modal-drag-handle {
@@ -212,5 +230,12 @@
 	.modal-actions > .btn-ghost {
 		flex: 1 1 auto;
 		justify-content: center;
+	}
+}
+
+/* After the phone rules so it wins over the sheet slide-up. */
+@media (prefers-reduced-motion: reduce) {
+	.modal-box {
+		animation: none;
 	}
 }

@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import useAuthStore from "./store/authStore";
 import useTheme from "./hooks/useTheme";
 import useWidgetSync from "./hooks/useWidgetSync";
+import { refreshAll } from "./hooks/useFetch";
 import {
 	isAutoStepsOn,
 	isHealthConnected,
@@ -18,6 +19,7 @@ import {
 import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
 import BottomTabBar from "./components/layout/BottomTabBar";
+import PullToRefresh from "./components/PullToRefresh";
 import SplashPage from "./pages/SplashPage";
 import Community from "./pages/Community";
 import Login from "./pages/Login";
@@ -39,6 +41,20 @@ function ScrollToTop() {
 
 const AUTO_SYNC_DAYS = 7;
 
+// iOS app: if the user turned on automatic step updates, pull the last week
+// of steps from Apple Health.
+function syncSteps() {
+	if (!(isHealthSupported() && isHealthConnected() && isAutoStepsOn())) {
+		return Promise.resolve();
+	}
+	return syncHealth(AUTO_SYNC_DAYS, { weights: false }).catch(() => {});
+}
+
+// Pull to refresh: reload what's on screen and pick up new steps.
+function refreshScreen() {
+	return Promise.all([refreshAll(), syncSteps()]);
+}
+
 function AppLayout({ children }) {
 	// Applies the saved theme on every page; the picker itself is in Settings.
 	useTheme();
@@ -46,15 +62,9 @@ function AppLayout({ children }) {
 	// iOS widget: kept in sync from every page, not just Today.
 	useWidgetSync();
 
-	// iOS app: if the user turned on automatic step updates, pull the last
-	// week of steps from Apple Health when the app opens and each time it
-	// comes back to the foreground.
+	// Update steps when the app opens and each time it comes back to the
+	// foreground.
 	useEffect(() => {
-		function syncSteps() {
-			if (isHealthSupported() && isHealthConnected() && isAutoStepsOn()) {
-				syncHealth(AUTO_SYNC_DAYS, { weights: false }).catch(() => {});
-			}
-		}
 		function onVisible() {
 			if (document.visibilityState === "visible") syncSteps();
 		}
@@ -66,7 +76,9 @@ function AppLayout({ children }) {
 		<div className="app-layout">
 			<Sidebar />
 			<Navbar />
-			<div className="main-content">{children}</div>
+			<div className="main-content">
+				<PullToRefresh onRefresh={refreshScreen}>{children}</PullToRefresh>
+			</div>
 			<BottomTabBar />
 		</div>
 	);

@@ -5,8 +5,13 @@ import WeightModal from "../components/WeightModal";
 
 vi.mock("../api", () => ({ default: { post: vi.fn() } }));
 vi.mock("../components/Modal.css", () => ({}));
+vi.mock("../native/haptics", () => ({
+	tapSuccess: vi.fn(),
+	tapDelete: vi.fn(),
+}));
 
 import api from "../api";
+import { tapSuccess } from "../native/haptics";
 
 const onClose = vi.fn();
 const onSaved = vi.fn();
@@ -199,5 +204,36 @@ describe("WeightModal — labels", () => {
 		);
 		expect(screen.getByLabelText("Date")).toHaveValue("2026-01-05");
 		expect(screen.getByLabelText(/^weight/i)).toHaveAttribute("type", "number");
+	});
+});
+
+describe("WeightModal — haptics", () => {
+	it("gives a success tap when the weight saves", async () => {
+		api.post.mockResolvedValue({});
+		render(
+			<WeightModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		await userEvent.type(screen.getByRole("spinbutton"), "185.5");
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		await waitFor(() => expect(tapSuccess).toHaveBeenCalledTimes(1));
+	});
+
+	it("gives no tap when the save fails", async () => {
+		api.post.mockRejectedValue({ response: { data: { message: "Bad" } } });
+		render(
+			<WeightModal
+				prefillDate="2026-01-05"
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+		await userEvent.type(screen.getByRole("spinbutton"), "185.5");
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		await screen.findByText("Bad");
+		expect(tapSuccess).not.toHaveBeenCalled();
 	});
 });

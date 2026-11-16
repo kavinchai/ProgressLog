@@ -45,8 +45,21 @@ vi.mock("../native/health", () => ({
 
 vi.mock("../hooks/useWidgetSync", () => ({ default: vi.fn() }));
 
+const pullToRefresh = vi.hoisted(() => ({ onRefresh: null }));
+vi.mock("../components/PullToRefresh", () => ({
+	default: ({ onRefresh, children }) => {
+		pullToRefresh.onRefresh = onRefresh;
+		return children;
+	},
+}));
+vi.mock("../hooks/useFetch", async (importOriginal) => ({
+	...(await importOriginal()),
+	refreshAll: vi.fn(() => Promise.resolve()),
+}));
+
 import * as health from "../native/health";
 import useWidgetSync from "../hooks/useWidgetSync";
+import { refreshAll } from "../hooks/useFetch";
 
 beforeEach(() => {
 	useAuthStore.setState({ authenticated: false, username: null });
@@ -312,5 +325,44 @@ describe("App — home-screen widget", () => {
 		window.history.pushState({}, "", "/");
 		render(<App />);
 		expect(useWidgetSync).not.toHaveBeenCalled();
+	});
+});
+
+describe("App — pull to refresh", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		pullToRefresh.onRefresh = null;
+		useAuthStore.setState({ authenticated: true, username: "alice" });
+		window.history.pushState({}, "", "/today");
+	});
+
+	afterEach(() => {
+		health.isHealthSupported.mockReturnValue(false);
+		health.isHealthConnected.mockReturnValue(false);
+		health.isAutoStepsOn.mockReturnValue(false);
+	});
+
+	it("reloads the data on screen", async () => {
+		render(<App />);
+		await act(() => pullToRefresh.onRefresh());
+		expect(refreshAll).toHaveBeenCalledTimes(1);
+	});
+
+	it("also pulls new steps from Apple Health when automatic updates are on", async () => {
+		health.isHealthSupported.mockReturnValue(true);
+		health.isHealthConnected.mockReturnValue(true);
+		health.isAutoStepsOn.mockReturnValue(true);
+		render(<App />);
+		health.syncHealth.mockClear();
+
+		await act(() => pullToRefresh.onRefresh());
+
+		expect(health.syncHealth).toHaveBeenCalledWith(7, { weights: false });
+	});
+
+	it("leaves Apple Health alone when automatic updates are off", async () => {
+		render(<App />);
+		await act(() => pullToRefresh.onRefresh());
+		expect(health.syncHealth).not.toHaveBeenCalled();
 	});
 });

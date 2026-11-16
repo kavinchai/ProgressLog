@@ -6,8 +6,13 @@ import EditExerciseModal from "../components/EditExerciseModal";
 vi.mock("../api", () => ({ default: { post: vi.fn(), delete: vi.fn() } }));
 vi.mock("../components/WorkoutBuilderModal.css", () => ({}));
 vi.mock("../components/Modal.css", () => ({}));
+vi.mock("../native/haptics", () => ({
+	tapSuccess: vi.fn(),
+	tapDelete: vi.fn(),
+}));
 
 import api from "../api";
+import { tapDelete, tapSuccess } from "../native/haptics";
 
 const onClose = vi.fn();
 const onSaved = vi.fn();
@@ -243,5 +248,39 @@ describe("EditExerciseModal — double submit", () => {
 		fireEvent.submit(form);
 		fireEvent.submit(form);
 		expect(api.post).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("EditExerciseModal — haptics", () => {
+	function renderModal() {
+		render(
+			<EditExerciseModal
+				sessionId={SESSION_ID}
+				exerciseName={EXERCISE_NAME}
+				exerciseSets={EXERCISE_SETS}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+	}
+
+	it("gives a success tap when the exercise saves", async () => {
+		api.post.mockResolvedValue({});
+		renderModal();
+		await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+		await waitFor(() => expect(tapSuccess).toHaveBeenCalledTimes(1));
+	});
+
+	it("gives a firm tap when the exercise is deleted", async () => {
+		api.delete.mockResolvedValue({});
+		renderModal();
+		await userEvent.click(
+			screen.getByRole("button", { name: /delete exercise/i }),
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /confirm delete/i }),
+		);
+		await waitFor(() => expect(tapDelete).toHaveBeenCalledTimes(1));
+		expect(tapSuccess).not.toHaveBeenCalled();
 	});
 });

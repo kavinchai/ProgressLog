@@ -7,8 +7,10 @@ import { useDayActions } from "../hooks/useDayActions";
 vi.mock("../api", () => ({
 	default: { delete: vi.fn(), patch: vi.fn(), post: vi.fn() },
 }));
+vi.mock("../native/haptics", () => ({ tapSuccess: vi.fn() }));
 
 import api from "../api";
+import { tapSuccess } from "../native/haptics";
 
 const wrapper = ({ children }) =>
 	React.createElement(ToastProvider, null, children);
@@ -72,5 +74,31 @@ describe("useDayActions error surfacing", () => {
 		});
 
 		expect(document.querySelector('[role="status"]')).toBeNull();
+	});
+});
+
+describe("useDayActions haptics", () => {
+	it("gives a success tap when steps save", async () => {
+		api.post.mockResolvedValueOnce({});
+		const { result } = renderHook(
+			() => useDayActions({ ...baseArgs, stepEntry: null }),
+			{ wrapper },
+		);
+		await act(async () => {
+			await result.current.saveSteps("5000");
+		});
+		expect(tapSuccess).toHaveBeenCalledTimes(1);
+	});
+
+	it("gives no tap when saving steps fails", async () => {
+		api.post.mockRejectedValueOnce(new Error("500"));
+		const { result } = renderHook(
+			() => useDayActions({ ...baseArgs, stepEntry: null }),
+			{ wrapper },
+		);
+		await act(async () => {
+			await result.current.saveSteps("5000");
+		});
+		expect(tapSuccess).not.toHaveBeenCalled();
 	});
 });
