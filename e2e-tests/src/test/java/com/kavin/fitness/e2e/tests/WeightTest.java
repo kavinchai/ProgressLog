@@ -19,7 +19,7 @@ public class WeightTest extends BaseTest {
         modal = new WeightModal(page);
 
         // Ensure today has no weight entry before we start — addNewWeightEntry
-        // expects the "+ Add" button, which the UI only renders when no entry
+        // expects the "+ Add weight" row, which the UI only renders when no entry
         // exists. Without this, any earlier test class that seeded today's
         // weight (e.g. HistoryPageTest) blocks this one.
         String apiUrl = System.getProperty("env.apiurl", "http://localhost:8080/api");

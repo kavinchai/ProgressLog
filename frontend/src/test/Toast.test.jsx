@@ -96,3 +96,42 @@ describe("Toast", () => {
 		expect(screen.queryByRole("status")).toBeNull();
 	});
 });
+
+describe("Toast — with an action", () => {
+	function ActionTrigger({ onAction }) {
+		const toast = useToast();
+		return (
+			<button
+				onClick={() =>
+					toast.show({
+						variant: "undo",
+						message: "Weight deleted",
+						action: { label: "Undo", onClick: onAction },
+					})
+				}
+			>
+				fire
+			</button>
+		);
+	}
+
+	it("shows the action button and runs it, then goes away", () => {
+		const onAction = vi.fn();
+		render(
+			<ToastProvider>
+				<ActionTrigger onAction={onAction} />
+			</ToastProvider>,
+		);
+		act(() => {
+			screen.getByText("fire").click();
+		});
+		expect(screen.getByRole("status")).toHaveTextContent("Weight deleted");
+
+		act(() => {
+			screen.getByRole("button", { name: "Undo" }).click();
+		});
+
+		expect(onAction).toHaveBeenCalledTimes(1);
+		expect(screen.queryByRole("status")).toBeNull();
+	});
+});

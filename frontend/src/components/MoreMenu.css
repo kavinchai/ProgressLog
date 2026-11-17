@@ -1,0 +1,89 @@
+.more-menu {
+	position: relative;
+	display: flex;
+	flex-shrink: 0;
+}
+
+.more-menu-trigger {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+}
+
+.more-menu-trigger[aria-expanded="true"] {
+	background: var(--hover-bg);
+	color: var(--fg);
+}
+
+/* Mouse only: on iPhone a tap would leave the tint stuck on. */
+@media (hover: hover) {
+	.more-menu-trigger:hover {
+		background: var(--hover-bg);
+		color: var(--fg);
+	}
+
+	/* Background only, so Delete stays red. */
+	.more-menu-item:hover {
+		background: var(--hover-bg);
+	}
+}
+
+/* Fixed so a card's rounded, clipped edges can't cut it off. */
+.more-menu-list {
+	position: fixed;
+	z-index: 600;
+	min-width: 180px;
+	display: flex;
+	flex-direction: column;
+	background: var(--bg-elevated);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-lg);
+	overflow: hidden;
+	animation: more-menu-in 120ms ease;
+}
+
+.more-menu-item {
+	padding: 11px 14px;
+	border: none;
+	border-top: 1px solid var(--border-dim);
+	background: transparent;
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: var(--fs);
+	text-align: left;
+	cursor: pointer;
+}
+
+.more-menu-item:first-child {
+	border-top: none;
+}
+
+.more-menu-item--danger {
+	color: var(--danger);
+}
+
+@keyframes more-menu-in {
+	from {
+		opacity: 0;
+		transform: scale(0.96);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.more-menu-list {
+		animation: none;
+	}
+}

@@ -13,7 +13,7 @@ Use this to navigate straight to the relevant file instead of searching the whol
 
 **Frontend** (`frontend/src/`)
 - `pages/` — one component per route (Today, History, Progress, Settings, Community, Login, Cardio, Strength, WeeklyStats, TotalStats, SharedCalendar, SplashPage, ClaudeSetup). Routing in `App.jsx`.
-- `components/` — shared UI. Modals build on `Modal.jsx` (focus-trap + Esc + scroll-lock). Notables: `WorkoutBuilderModal`, `EditExerciseModal`, `WeightModal`, `DayInfoModal`, `ConfirmDeleteModal` (delete-with-undo), `MealCards` (inline Breakfast/Lunch/Dinner + extra meal boxes, used by Today and `DayDetail`).
+- `components/` — shared UI. Modals build on `Modal.jsx` (focus-trap + Esc + scroll-lock). Notables: `WorkoutBuilderModal`, `EditExerciseModal`, `WeightModal`, `DayInfoModal`, `SwipeRow` (tap to edit, swipe or long-press to delete) + `MoreMenu` (••• actions) with `hooks/useDeleteWithUndo` (delete now, Undo bar), `MealCards` (inline Breakfast/Lunch/Dinner + extra meal boxes, used by Today and `DayDetail`).
 - `hooks/` — data hooks (`useWorkouts`, `useNutrition`, `useWeightLog`, `useSteps`, `usePRs`, `useUserProfile`), all fetching through `useFetch.js` (returns `{ data, loading, error, refetch }`; one shared in-memory cache per endpoint, shown instantly then revalidated, cleared on logout). Also `useDayActions` (Today's mutations), `useTheme`, `useToday`, `useWeightUnit`.
 - `store/` — Zustand stores: `authStore`, `unitStore`.
 - `api/index.js` — axios instance (`baseURL` `/api`, cookies, auto-logout on 401).

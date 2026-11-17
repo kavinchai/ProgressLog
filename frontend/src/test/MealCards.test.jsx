@@ -7,17 +7,13 @@ vi.mock("../api", () => ({
 	default: { post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 vi.mock("../components/MealCards.css", () => ({}));
-vi.mock("../components/Toast", () => ({
-	useToast: () => ({ error: vi.fn(), show: vi.fn(), dismiss: vi.fn() }),
+// One shared toast stub so tests can check the Undo bar.
+const toast = vi.hoisted(() => ({
+	error: () => {},
+	show: () => 1,
+	dismiss: () => {},
 }));
-vi.mock("../components/ConfirmDeleteModal", () => ({
-	default: ({ title, onDelete, onClose }) => (
-		<div data-testid="confirm-delete" data-title={title}>
-			<button onClick={onDelete}>confirm</button>
-			<button onClick={onClose}>cancel</button>
-		</div>
-	),
-}));
+vi.mock("../components/Toast", () => ({ useToast: () => toast }));
 
 import api from "../api";
 
@@ -302,7 +298,7 @@ describe("MealCards — extra meals", () => {
 		expect(api.post).toHaveBeenCalledTimes(1);
 	});
 
-	it("deleting a saved extra meal goes through the delete-with-undo dialog", async () => {
+	it("deleting a saved extra meal deletes it straight away, with Undo", async () => {
 		setup(
 			logWith([
 				{
@@ -314,15 +310,20 @@ describe("MealCards — extra meals", () => {
 				},
 			]),
 		);
+		api.delete.mockResolvedValue({});
+		const show = vi.spyOn(toast, "show");
 		await userEvent.click(
 			within(card("Snack")).getByRole("button", { name: /delete meal/i }),
 		);
-		expect(screen.getByTestId("confirm-delete").dataset.title).toBe(
-			"Delete Meal",
-		);
-		await userEvent.click(screen.getByRole("button", { name: "confirm" }));
 		await waitFor(() =>
 			expect(api.delete).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`),
+		);
+		await waitFor(() => expect(onSaved).toHaveBeenCalled());
+		expect(show).toHaveBeenCalledWith(
+			expect.objectContaining({
+				message: "Meal deleted",
+				action: expect.objectContaining({ label: "Undo" }),
+			}),
 		);
 	});
 
@@ -334,7 +335,7 @@ describe("MealCards — extra meals", () => {
 			screen.queryByRole("textbox", { name: /meal label/i }),
 		).not.toBeInTheDocument();
 		expect(api.delete).not.toHaveBeenCalled();
-		expect(screen.queryByTestId("confirm-delete")).not.toBeInTheDocument();
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 	});
 });
 

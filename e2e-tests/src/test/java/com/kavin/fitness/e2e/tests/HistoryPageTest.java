@@ -73,7 +73,7 @@ public class HistoryPageTest extends BaseTest {
     public void cleanup() {
         // Best-effort: clean up everything we seeded so the next test class
         // sees an empty Today page. Leftover weight/steps bleed into the Today
-        // UI (e.g. WeightTest can't find "+ Add").
+        // UI (e.g. WeightTest can't find "+ Add weight").
         try {
             if (api != null) {
                 api.deleteWorkoutsOnDate(todayDate);
