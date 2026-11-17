@@ -9,12 +9,14 @@ import useUserProfile from "../hooks/useUserProfile";
 import usePRs from "../hooks/usePRs";
 import { useDayActions } from "../hooks/useDayActions";
 import WeightModal from "../components/WeightModal";
+import StepsModal from "../components/StepsModal";
 import DayInfoModal from "../components/DayInfoModal";
 import MealCards from "../components/MealCards";
 import WorkoutBuilderModal from "../components/WorkoutBuilderModal";
 import EditExerciseModal from "../components/EditExerciseModal";
 import DailyProgressBar from "../components/DailyProgressBar";
 import SwipeRow from "../components/SwipeRow";
+import StatusRow, { AddRow } from "../components/StatusRow";
 import MoreMenu from "../components/MoreMenu";
 import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
 import useLongPress from "../hooks/useLongPress";
@@ -62,17 +64,6 @@ function ExerciseCard({ name, weight, sets, isPR }) {
 					))}
 				</>
 			</div>
-		</div>
-	);
-}
-
-// ── Data row ──────────────────────────────────────────────────────────────────
-
-function DataRow({ label, value }) {
-	return (
-		<div className="today-data-row">
-			<span className="today-data-label">{label}</span>
-			<span className="today-data-value">{value ?? "--"}</span>
 		</div>
 	);
 }
@@ -159,9 +150,6 @@ export default function Today() {
 		goals,
 	});
 
-	const [editingSteps, setEditingSteps] = useState(false);
-	const [stepsValue, setStepsValue] = useState("");
-	const [stepsSaving, setStepsSaving] = useState(false);
 	const [dayTypeSaving, setDayTypeSaving] = useState(false);
 
 	const {
@@ -171,16 +159,13 @@ export default function Today() {
 		setRenameValue,
 		renameSaving,
 		submitRename,
-		saveSteps,
 		getOrCreateNutritionLogId,
 	} = useDayActions({
 		date: TODAY,
 		nutritionEntry: todayNutritionEntry,
 		workoutEntry: todayWorkoutEntry,
-		stepEntry: todayStepEntry,
 		onRefetchN: refetchNutrition,
 		onRefetchWo: refetchWorkouts,
-		onRefetchS: refetchSteps,
 	});
 
 	const exerciseGroups = todayWorkoutEntry?.exerciseSets?.length
@@ -258,17 +243,6 @@ export default function Today() {
 		}
 	}
 
-	async function commitSteps() {
-		if (stepsSaving) return;
-		setStepsSaving(true);
-		try {
-			await saveSteps(stepsValue || null);
-			setEditingSteps(false);
-		} finally {
-			setStepsSaving(false);
-		}
-	}
-
 	if (isLoading) {
 		return (
 			<div className="today-page">
@@ -327,7 +301,7 @@ export default function Today() {
 					<div className="section-box today-daily-rows">
 						{errorWeight ? (
 							<div className="today-row">
-								<DataRow label="Weight" value="Not loaded." />
+								<StatusRow status="empty" title="Weight" detail="Not loaded." />
 							</div>
 						) : todayWeightEntry ? (
 							<SwipeRow
@@ -346,60 +320,27 @@ export default function Today() {
 									})
 								}
 							>
-								<DataRow
-									label="Weight"
-									value={toDisplay(todayWeightEntry.weightLbs) + " " + unit}
+								<StatusRow
+									status="done"
+									title="Weight"
+									detail={toDisplay(todayWeightEntry.weightLbs) + " " + unit}
 								/>
 							</SwipeRow>
 						) : (
-							<button
-								className="today-row today-row-add"
-								aria-label="+ Add weight"
+							<AddRow
+								title="Weight"
+								label="+ Add weight"
+								className="today-row"
 								onClick={() => {
 									setEditingEntry(null);
 									setModal("weight");
 								}}
-							>
-								<span className="today-data-label">Weight</span>
-								<span className="today-row-add-label">+ Add</span>
-							</button>
+							/>
 						)}
 
 						{errorSteps ? (
 							<div className="today-row">
-								<DataRow label="Steps" value="Not loaded." />
-							</div>
-						) : editingSteps ? (
-							<div className="today-row today-steps-edit">
-								<input
-									className="modal-input"
-									type="number"
-									min="0"
-									placeholder="Steps"
-									aria-label="Steps"
-									value={stepsValue}
-									disabled={stepsSaving}
-									onChange={(e) => setStepsValue(e.target.value)}
-									onKeyDown={(e) => {
-										if (e.key === "Enter") commitSteps();
-										if (e.key === "Escape") setEditingSteps(false);
-									}}
-									autoFocus
-								/>
-								<button
-									className="btn btn-sm btn-primary"
-									onClick={commitSteps}
-									disabled={stepsSaving}
-								>
-									{stepsSaving ? "Saving…" : "Save"}
-								</button>
-								<button
-									className="btn btn-sm"
-									onClick={() => setEditingSteps(false)}
-									disabled={stepsSaving}
-								>
-									&times;
-								</button>
+								<StatusRow status="empty" title="Steps" detail="Not loaded." />
 							</div>
 						) : todayStepEntry ? (
 							<SwipeRow
@@ -407,8 +348,8 @@ export default function Today() {
 								openLabel="Edit steps"
 								className="today-row"
 								onOpen={() => {
-									setStepsValue(String(todayStepEntry.steps));
-									setEditingSteps(true);
+									setEditingEntry(todayStepEntry);
+									setModal("steps");
 								}}
 								onDelete={() =>
 									deleteWithUndo({
@@ -418,23 +359,22 @@ export default function Today() {
 									})
 								}
 							>
-								<DataRow
-									label="Steps"
-									value={todayStepEntry.steps.toLocaleString()}
+								<StatusRow
+									status="done"
+									title="Steps"
+									detail={`${todayStepEntry.steps.toLocaleString()} steps`}
 								/>
 							</SwipeRow>
 						) : (
-							<button
-								className="today-row today-row-add"
-								aria-label="+ Add steps"
+							<AddRow
+								title="Steps"
+								label="+ Add steps"
+								className="today-row"
 								onClick={() => {
-									setStepsValue("");
-									setEditingSteps(true);
+									setEditingEntry(null);
+									setModal("steps");
 								}}
-							>
-								<span className="today-data-label">Steps</span>
-								<span className="today-row-add-label">+ Add</span>
-							</button>
+							/>
 						)}
 					</div>
 
@@ -617,6 +557,11 @@ export default function Today() {
 						>
 							<span className="section-title">Nutrition</span>
 							<div className="btn-actions">
+								{todayNutritionEntry?.meals?.length > 0 && (
+									<span className="section-header-meta">
+										{totals.calories.toLocaleString()} kcal · {totals.protein} g
+									</span>
+								)}
 								{todayNutritionEntry && (
 									<MoreMenu
 										label="More actions for nutrition"
@@ -648,18 +593,18 @@ export default function Today() {
 								)}
 							</div>
 						</div>
-						<div className="section-body">
-							{errorNutrition ? (
+						{errorNutrition ? (
+							<div className="section-body">
 								<span className="muted">Not loaded.</span>
-							) : (
-								<MealCards
-									nutritionEntry={todayNutritionEntry ?? null}
-									nutritionData={nutritionData}
-									getOrCreateNutritionLogId={getOrCreateNutritionLogId}
-									onSaved={refetchNutrition}
-								/>
-							)}
-						</div>
+							</div>
+						) : (
+							<MealCards
+								nutritionEntry={todayNutritionEntry ?? null}
+								nutritionData={nutritionData}
+								getOrCreateNutritionLogId={getOrCreateNutritionLogId}
+								onSaved={refetchNutrition}
+							/>
+						)}
 					</div>
 				</div>
 			</div>
@@ -671,6 +616,14 @@ export default function Today() {
 					existing={editingEntry}
 					onClose={closeModal}
 					onSaved={refetchWeight}
+				/>
+			)}
+			{modal === "steps" && (
+				<StepsModal
+					prefillDate={TODAY}
+					existing={editingEntry}
+					onClose={closeModal}
+					onSaved={refetchSteps}
 				/>
 			)}
 			{modal === "workout" && (

@@ -1,16 +1,13 @@
 import { useState } from "react";
 import api from "../api";
-import { tapSuccess } from "../native/haptics";
 import { useToast } from "../components/Toast";
 
 export function useDayActions({
 	date,
 	nutritionEntry,
 	workoutEntry,
-	stepEntry,
 	onRefetchN,
 	onRefetchWo,
-	onRefetchS,
 }) {
 	const toast = useToast();
 	const [renamingSession, setRenamingSession] = useState(false);
@@ -30,20 +27,6 @@ export function useDayActions({
 			toast.error("Failed to rename workout");
 		} finally {
 			setRenameSaving(false);
-		}
-	}
-
-	async function saveSteps(steps) {
-		try {
-			if (steps != null) {
-				await api.post("/steps", { logDate: date, steps: parseInt(steps) });
-				tapSuccess();
-			} else if (stepEntry) {
-				await api.delete(`/steps/${stepEntry.id}`);
-			}
-			onRefetchS();
-		} catch {
-			toast.error("Failed to save steps");
 		}
 	}
 
@@ -70,7 +53,6 @@ export function useDayActions({
 		setRenameValue,
 		renameSaving,
 		submitRename,
-		saveSteps,
 		getOrCreateNutritionLogId,
 	};
 }

@@ -3,7 +3,11 @@ import "./Modal.css";
 
 const DRAG_CLOSE_PX = 80; // drag the sheet down this far to close it
 
-export default function Modal({ title, onClose, children }) {
+/**
+ * Pass `form` ({ id, saving }) for an iOS-style form sheet: Cancel, the title
+ * and Save across the top, where Save submits the form with that id.
+ */
+export default function Modal({ title, onClose, children, form }) {
 	const modalRef = useRef(null);
 	const closeButtonRef = useRef(null);
 	const previousActiveElement = useRef(null);
@@ -118,18 +122,42 @@ export default function Modal({ title, onClose, children }) {
 					aria-hidden="true"
 					{...dragHandlers}
 				/>
-				<div className="modal-header" {...dragHandlers}>
+				<div
+					className={"modal-header" + (form ? " modal-header--form" : "")}
+					{...dragHandlers}
+				>
+					{form && (
+						<button
+							type="button"
+							className="modal-header-btn"
+							ref={closeButtonRef}
+							onClick={onClose}
+						>
+							Cancel
+						</button>
+					)}
 					<span className="modal-title" id={titleId}>
 						{title}
 					</span>
-					<button
-						className="modal-close"
-						ref={closeButtonRef}
-						onClick={onClose}
-						aria-label="Close"
-					>
-						&times;
-					</button>
+					{form ? (
+						<button
+							type="submit"
+							form={form.id}
+							className="modal-header-btn modal-header-save"
+							disabled={form.saving}
+						>
+							{form.saving ? "Saving…" : "Save"}
+						</button>
+					) : (
+						<button
+							className="modal-close"
+							ref={closeButtonRef}
+							onClick={onClose}
+							aria-label="Close"
+						>
+							&times;
+						</button>
+					)}
 				</div>
 				<div className="modal-body">{children}</div>
 			</dialog>

@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useDayActions } from "../hooks/useDayActions";
 import useWeightUnit from "../hooks/useWeightUnit";
 import WeightModal from "./WeightModal";
+import StepsModal from "./StepsModal";
 import DayInfoModal from "./DayInfoModal";
 import MealCards from "./MealCards";
 import WorkoutBuilderModal from "./WorkoutBuilderModal";
 import EditExerciseModal from "./EditExerciseModal";
 import SwipeRow from "./SwipeRow";
+import StatusRow, { AddRow } from "./StatusRow";
 import MoreMenu from "./MoreMenu";
 import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
 import useLongPress from "../hooks/useLongPress";
@@ -30,8 +32,6 @@ export default function DayDetail({
 	const { unit, toDisplay } = useWeightUnit();
 	const [modal, setModal] = useState(null);
 	const [editExercise, setEditExercise] = useState(null);
-	const [editingSteps, setEditingSteps] = useState(false);
-	const [stepsValue, setStepsValue] = useState("");
 	const [workoutMenuOpen, setWorkoutMenuOpen] = useState(false);
 	const [nutritionMenuOpen, setNutritionMenuOpen] = useState(false);
 	const deleteWithUndo = useDeleteWithUndo();
@@ -47,16 +47,13 @@ export default function DayDetail({
 		renameValue,
 		setRenameValue,
 		submitRename,
-		saveSteps,
 		getOrCreateNutritionLogId,
 	} = useDayActions({
 		date,
 		nutritionEntry,
 		workoutEntry,
-		stepEntry,
 		onRefetchN,
 		onRefetchWo,
-		onRefetchS,
 	});
 
 	const exerciseGroups = workoutEntry?.exerciseSets?.length
@@ -84,11 +81,6 @@ export default function DayDetail({
 
 	function close() {
 		setModal(null);
-	}
-
-	function saveStepsAndClose() {
-		saveSteps(stepsValue || null);
-		setEditingSteps(false);
 	}
 
 	// Deleting is offered (swipe, menu) only where showDelete allows it.
@@ -120,20 +112,19 @@ export default function DayDetail({
 									onRefetchW,
 								)}
 							>
-								<span className="day-detail-label">Weight</span>
-								<span className="day-detail-value">
-									{toDisplay(weightEntry.weightLbs) + " " + unit}
-								</span>
+								<StatusRow
+									status="done"
+									title="Weight"
+									detail={toDisplay(weightEntry.weightLbs) + " " + unit}
+								/>
 							</SwipeRow>
 						) : (
-							<button
-								className="day-detail-row day-detail-add"
-								aria-label="+ Add weight"
+							<AddRow
+								title="Weight"
+								label="+ Add weight"
+								className="day-detail-row"
 								onClick={() => setModal("weight-add")}
-							>
-								<span className="day-detail-label">Weight</span>
-								<span className="day-detail-add-label">+ Add</span>
-							</button>
+							/>
 						)}
 					</div>
 					{/* Nutrition */}
@@ -143,6 +134,12 @@ export default function DayDetail({
 							{...(nutritionEntry && nutritionLongPress)}
 						>
 							<span className="day-detail-label">Nutrition</span>
+							{meals.length > 0 && (
+								<span className="day-detail-meta">
+									{(nutritionEntry.totalCalories ?? 0).toLocaleString()} kcal ·{" "}
+									{nutritionEntry.totalProtein ?? 0} g
+								</span>
+							)}
 							{nutritionEntry && (
 								<MoreMenu
 									label="More actions for nutrition"
@@ -170,76 +167,34 @@ export default function DayDetail({
 							getOrCreateNutritionLogId={getOrCreateNutritionLogId}
 							onSaved={onRefetchN}
 						/>
-						{meals.length > 0 && (
-							<div className="day-nutrition-total">
-								Total: {nutritionEntry.totalCalories ?? 0} kcal /{" "}
-								{nutritionEntry.totalProtein ?? 0}g protein
-							</div>
-						)}
 					</div>
 					{/* Steps */}
 					<div className="day-detail-section">
-						{editingSteps ? (
-							<div className="today-steps-edit">
-								<input
-									className="modal-input"
-									type="number"
-									min="0"
-									placeholder="Steps"
-									aria-label="Steps"
-									value={stepsValue}
-									onChange={(e) => setStepsValue(e.target.value)}
-									onKeyDown={(e) => {
-										if (e.key === "Enter") saveStepsAndClose();
-										if (e.key === "Escape") setEditingSteps(false);
-									}}
-									autoFocus
-								/>
-								<button
-									className="btn btn-sm btn-primary"
-									onClick={saveStepsAndClose}
-								>
-									Save
-								</button>
-								<button
-									className="btn btn-sm"
-									onClick={() => setEditingSteps(false)}
-								>
-									&times;
-								</button>
-							</div>
-						) : stepEntry ? (
+						{stepEntry ? (
 							<SwipeRow
 								label="Steps"
 								openLabel="Edit steps"
 								className="day-detail-row"
-								onOpen={() => {
-									setStepsValue(String(stepEntry.steps));
-									setEditingSteps(true);
-								}}
+								onOpen={() => setModal("steps-edit")}
 								onDelete={deleter(
 									() => api.delete(`/steps/${stepEntry.id}`),
 									"Steps deleted",
 									onRefetchS,
 								)}
 							>
-								<span className="day-detail-label">Steps</span>
-								<span className="day-detail-value">
-									{stepEntry.steps.toLocaleString() + " steps"}
-								</span>
+								<StatusRow
+									status="done"
+									title="Steps"
+									detail={stepEntry.steps.toLocaleString() + " steps"}
+								/>
 							</SwipeRow>
 						) : (
-							<button
-								className="day-detail-row day-detail-add"
-								aria-label="+ Add steps"
-								onClick={() => {
-									setStepsValue("");
-									setEditingSteps(true);
-								}}
-							>
-								<span className="day-detail-label">Steps</span>
-								<span className="day-detail-add-label">+ Add</span>
-							</button>
+							<AddRow
+								title="Steps"
+								label="+ Add steps"
+								className="day-detail-row"
+								onClick={() => setModal("steps-add")}
+							/>
 						)}
 					</div>
 				</>
@@ -391,6 +346,14 @@ export default function DayDetail({
 					existing={modal === "weight-edit" ? weightEntry : null}
 					onClose={close}
 					onSaved={onRefetchW}
+				/>
+			)}
+			{(modal === "steps-add" || modal === "steps-edit") && (
+				<StepsModal
+					prefillDate={date}
+					existing={modal === "steps-edit" ? stepEntry : null}
+					onClose={close}
+					onSaved={onRefetchS}
 				/>
 			)}
 			{modal === "dayinfo" && (

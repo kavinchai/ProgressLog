@@ -9,9 +9,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * Meals are edited in place: Breakfast / Lunch / Dinner boxes are always on
- * the Today page, a box can be marked skipped, and extra meals get a
- * user-chosen label. No modal is involved.
+ * Meals are rows: Breakfast / Lunch / Dinner are always on the Today page,
+ * tapping one opens the meal sheet, a meal can be marked skipped, and extra
+ * meals get a user-chosen name.
  */
 public class MealsTest extends BaseTest {
     private TodayPage today;
@@ -32,56 +32,54 @@ public class MealsTest extends BaseTest {
     }
 
     @Test(priority = 1)
-    public void breakfastLunchDinnerBoxesAreAlwaysShown() {
-        step("with no nutrition log, all three slot boxes are on the page");
-        meals.waitForCard("Breakfast");
-        meals.waitForCard("Lunch");
-        meals.waitForCard("Dinner");
+    public void breakfastLunchDinnerRowsAreAlwaysShown() {
+        step("with no nutrition log, all three meal rows are on the page");
+        meals.waitForRow("Breakfast");
+        meals.waitForRow("Lunch");
+        meals.waitForRow("Dinner");
     }
 
-    @Test(priority = 2, dependsOnMethods = "breakfastLunchDinnerBoxesAreAlwaysShown")
-    public void fillingBreakfastSavesWithoutAModal() {
-        step("type Oatmeal, 620 kcal, 42 g into Breakfast and tab out");
-        meals.fillMeal("Breakfast", "Oatmeal", "620", "42");
+    @Test(priority = 2, dependsOnMethods = "breakfastLunchDinnerRowsAreAlwaysShown")
+    public void loggingBreakfastInTheSheetSavesIt() {
+        step("+ Add Breakfast, enter Oatmeal, 620 kcal, 42 g and press Save");
+        meals.logMeal("Breakfast", "Oatmeal", "620", "42");
 
-        step("wait until every field is saved (totals show 620 kcal / 42 g eaten)");
+        step("totals show 620 kcal / 42 g eaten and the row sums up the meal");
         today.waitForEaten("Calories", 620);
         today.waitForEaten("Protein", 42);
+        meals.assertRowDetail("Breakfast", "Oatmeal · 620 kcal · 42 g");
 
         step("reload: Breakfast still shows what was eaten");
         navigateToToday();
-        meals.assertWhatYouAte("Breakfast", "Oatmeal");
+        meals.assertRowDetail("Breakfast", "Oatmeal · 620 kcal · 42 g");
         today.waitForEaten("Calories", 620);
     }
 
-    @Test(priority = 3, dependsOnMethods = "fillingBreakfastSavesWithoutAModal")
-    public void tickingSkippedRecordsASkippedMeal() {
-        step("tick Skipped on Lunch and wait for it to save");
-        meals.toggleSkipped("Lunch");
-        meals.waitForSkippedSummary("Lunch");
-        meals.waitForFirstSave("Lunch");
+    @Test(priority = 3, dependsOnMethods = "loggingBreakfastInTheSheetSavesIt")
+    public void markingLunchSkippedRecordsASkippedMeal() {
+        step("+ Add Lunch, then Mark as skipped");
+        meals.skipMeal("Lunch");
+        meals.assertRowDetail("Lunch", "Skipped");
 
         step("reload: Lunch is still skipped and adds 0 kcal");
         navigateToToday();
-        meals.waitForSkippedSummary("Lunch");
-        meals.assertSkipped("Lunch");
+        meals.assertRowDetail("Lunch", "Skipped");
         today.waitForEaten("Calories", 620);
     }
 
-    @Test(priority = 4, dependsOnMethods = "fillingBreakfastSavesWithoutAModal")
-    public void extraMealGetsItsOwnLabel() {
-        step("+ Add meal, label it Snack, enter Protein bar 300 kcal 23 g");
-        meals.addMeal("Snack");
-        meals.fillMeal("Snack", "Protein bar", "300", "23");
+    @Test(priority = 4, dependsOnMethods = "loggingBreakfastInTheSheetSavesIt")
+    public void extraMealGetsItsOwnName() {
+        step("+ Add meal, name it Snack, enter Protein bar 300 kcal 23 g, Save");
+        meals.addExtraMeal("Snack", "Protein bar", "300", "23");
 
         step("totals include the snack: 920 kcal / 65 g eaten");
         today.waitForEaten("Calories", 920);
         today.waitForEaten("Protein", 65);
     }
 
-    @Test(priority = 5, dependsOnMethods = "extraMealGetsItsOwnLabel")
-    public void deletingAnExtraMealRemovesItsBox() {
-        step("delete Snack (straight away, with an Undo bar)");
+    @Test(priority = 5, dependsOnMethods = "extraMealGetsItsOwnName")
+    public void deletingAnExtraMealRemovesItsRow() {
+        step("delete Snack from its menu (straight away, with an Undo bar)");
         meals.deleteMeal("Snack");
 
         step("totals drop back to 620 kcal eaten");

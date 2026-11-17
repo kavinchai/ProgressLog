@@ -169,6 +169,100 @@
 	border-top: 1px solid var(--border-dim);
 }
 
+/* Form sheets: Cancel · title · Save across the top (Modal's `form` prop) */
+.modal-header--form {
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	gap: 8px;
+}
+
+.modal-header-btn {
+	justify-self: start;
+	padding: 6px 0;
+	border: none;
+	background: transparent;
+	color: var(--accent);
+	font-family: var(--font);
+	font-size: var(--fs);
+	cursor: pointer;
+}
+
+.modal-header-save {
+	justify-self: end;
+	font-weight: var(--fw-semibold);
+}
+
+.modal-header-btn:disabled {
+	color: var(--text-subtle);
+	cursor: default;
+}
+
+/* Grouped fields, like iOS Settings: label left, value right */
+.sheet-group {
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+	background: var(--bg-card);
+	overflow: hidden;
+}
+
+.sheet-field {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 48px;
+	padding: 0 14px;
+	cursor: text;
+}
+
+.sheet-field + .sheet-field {
+	border-top: 1px solid var(--border-dim);
+}
+
+.sheet-field-label {
+	flex-shrink: 0;
+	color: var(--muted);
+	font-size: var(--fs);
+}
+
+.sheet-field-input {
+	flex: 1;
+	min-width: 0;
+	padding: 12px 0;
+	border: none;
+	outline: none;
+	background: transparent;
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: var(--fs);
+	text-align: right;
+}
+
+.sheet-field-input::placeholder {
+	color: var(--text-subtle);
+}
+
+.sheet-field-unit {
+	flex-shrink: 0;
+	color: var(--muted);
+	font-size: var(--fs);
+}
+
+.sheet-field:focus-within .sheet-field-label {
+	color: var(--accent);
+}
+
+/* A quiet text button under the fields (e.g. "Mark as skipped") */
+.sheet-link-btn {
+	align-self: center;
+	padding: 6px 12px;
+	border: none;
+	background: transparent;
+	color: var(--muted);
+	font-family: var(--font);
+	font-size: var(--fs-sm);
+	cursor: pointer;
+}
+
 @keyframes modalSheetUp {
 	from {
 		transform: translateY(100%);

@@ -27,6 +27,17 @@ vi.mock("../components/WorkoutBuilderModal", () => ({
 vi.mock("../components/WeightModal", () => ({
 	default: () => <div data-testid="weight-modal" />,
 }));
+vi.mock("../components/StepsModal", () => ({
+	default: ({ prefillDate, existing, onSaved }) => (
+		<div
+			data-testid="steps-modal"
+			data-existing-id={existing?.id ?? ""}
+			data-date={prefillDate}
+		>
+			<button onClick={onSaved}>steps-save</button>
+		</div>
+	),
+}));
 vi.mock("../components/DayInfoModal", () => ({
 	default: () => <div data-testid="dayinfo-modal" />,
 }));
@@ -69,7 +80,6 @@ vi.mock("../hooks/useDayActions", () => ({
 		renameValue: "",
 		setRenameValue,
 		submitRename: vi.fn(),
-		saveSteps: vi.fn(),
 		getOrCreateNutritionLogId: vi.fn(),
 	}),
 }));
@@ -151,7 +161,7 @@ describe("DayDetail — meals", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("passes the day's nutrition log to the meal boxes and shows the total", () => {
+	it("passes the day's nutrition log to the meal rows and shows the totals in the header", () => {
 		render(
 			<DayDetail
 				date={DATE}
@@ -181,7 +191,18 @@ describe("DayDetail — meals", () => {
 			/>,
 		);
 		expect(screen.getByTestId("meal-cards").dataset.logId).toBe("5");
-		expect(screen.getByText(/1390 kcal/)).toBeInTheDocument();
+		expect(
+			screen.getByText("Nutrition").closest(".day-detail-section-head"),
+		).toHaveTextContent("1,390 kcal · 101 g");
+	});
+});
+
+describe("DayDetail — nutrition header", () => {
+	it("leaves the totals off when the day has no meals", () => {
+		renderDetail(null);
+		expect(
+			screen.getByText("Nutrition").closest(".day-detail-section-head"),
+		).not.toHaveTextContent("kcal");
 	});
 });
 
@@ -264,11 +285,34 @@ describe("DayDetail — workout only", () => {
 	});
 });
 
-describe("DayDetail — inline input labels", () => {
-	it("labels the inline steps input", async () => {
+describe("DayDetail — steps sheet", () => {
+	it("tapping the steps row opens the steps sheet for that entry", async () => {
 		renderDetail(null);
 		await userEvent.click(screen.getByRole("button", { name: "Edit steps" }));
-		expect(screen.getByLabelText("Steps")).toHaveAttribute("type", "number");
+		expect(screen.getByTestId("steps-modal").dataset.existingId).toBe("98");
+	});
+
+	it("+ Add steps opens an empty sheet for the day, which refreshes steps on save", async () => {
+		const onRefetchS = vi.fn();
+		render(
+			<DayDetail
+				date={DATE}
+				weightEntry={null}
+				nutritionEntry={null}
+				workoutEntry={null}
+				stepEntry={null}
+				onRefetchW={vi.fn()}
+				onRefetchN={vi.fn()}
+				onRefetchWo={vi.fn()}
+				onRefetchS={onRefetchS}
+			/>,
+		);
+		await userEvent.click(screen.getByRole("button", { name: "+ Add steps" }));
+		const sheet = screen.getByTestId("steps-modal");
+		expect(sheet.dataset.existingId).toBe("");
+		expect(sheet.dataset.date).toBe(DATE);
+		await userEvent.click(screen.getByRole("button", { name: "steps-save" }));
+		expect(onRefetchS).toHaveBeenCalledTimes(1);
 	});
 });
 

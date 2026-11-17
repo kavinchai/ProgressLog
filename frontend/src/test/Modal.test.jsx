@@ -153,3 +153,57 @@ describe("Modal — drag down to close", () => {
 		expect(onClose).not.toHaveBeenCalled();
 	});
 });
+
+describe("Modal — form sheet header", () => {
+	function renderSheet({ onClose = vi.fn(), onSubmit = vi.fn(), saving } = {}) {
+		render(
+			<Modal title="Weight" onClose={onClose} form={{ id: "f1", saving }}>
+				<form
+					id="f1"
+					onSubmit={(e) => {
+						e.preventDefault();
+						onSubmit();
+					}}
+				>
+					<input aria-label="Weight" />
+				</form>
+			</Modal>,
+		);
+		return { onClose, onSubmit };
+	}
+
+	it("shows Cancel, the title and Save across the top instead of ×", () => {
+		renderSheet();
+		expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "Close" }),
+		).not.toBeInTheDocument();
+		expect(screen.getByRole("dialog", { name: "Weight" })).toBeInTheDocument();
+	});
+
+	it("puts focus on Cancel when it opens, and Esc still closes it", () => {
+		const { onClose } = renderSheet();
+		expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus();
+		fireEvent.keyDown(document, { key: "Escape" });
+		expect(onClose).toHaveBeenCalledTimes(1);
+	});
+
+	it("Cancel closes the sheet", async () => {
+		const { onClose } = renderSheet();
+		await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+		expect(onClose).toHaveBeenCalledTimes(1);
+	});
+
+	it("Save submits the form", async () => {
+		const { onSubmit, onClose } = renderSheet();
+		await userEvent.click(screen.getByRole("button", { name: "Save" }));
+		expect(onSubmit).toHaveBeenCalledTimes(1);
+		expect(onClose).not.toHaveBeenCalled();
+	});
+
+	it("shows Saving… and can't be pressed again while saving", () => {
+		renderSheet({ saving: true });
+		expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
+	});
+});

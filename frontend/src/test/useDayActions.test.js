@@ -7,10 +7,8 @@ import { useDayActions } from "../hooks/useDayActions";
 vi.mock("../api", () => ({
 	default: { delete: vi.fn(), patch: vi.fn(), post: vi.fn() },
 }));
-vi.mock("../native/haptics", () => ({ tapSuccess: vi.fn() }));
 
 import api from "../api";
-import { tapSuccess } from "../native/haptics";
 
 const wrapper = ({ children }) =>
 	React.createElement(ToastProvider, null, children);
@@ -19,7 +17,6 @@ const baseArgs = {
 	date: "2026-06-02",
 	onRefetchN: vi.fn(),
 	onRefetchWo: vi.fn(),
-	onRefetchS: vi.fn(),
 };
 
 beforeEach(() => {
@@ -27,23 +24,6 @@ beforeEach(() => {
 });
 
 describe("useDayActions error surfacing", () => {
-	it("shows an error toast when saveSteps fails", async () => {
-		api.post.mockRejectedValueOnce(new Error("500"));
-
-		const { result } = renderHook(
-			() => useDayActions({ ...baseArgs, stepEntry: null }),
-			{ wrapper },
-		);
-
-		await act(async () => {
-			await result.current.saveSteps("5000");
-		});
-
-		expect(document.querySelector('[role="status"]')?.textContent).toMatch(
-			/steps/i,
-		);
-	});
-
 	it("shows an error toast when submitRename fails", async () => {
 		api.patch.mockRejectedValueOnce(new Error("500"));
 
@@ -62,43 +42,20 @@ describe("useDayActions error surfacing", () => {
 	});
 
 	it("does not show a toast on success", async () => {
-		api.post.mockResolvedValueOnce({});
+		api.patch.mockResolvedValueOnce({});
 
 		const { result } = renderHook(
-			() => useDayActions({ ...baseArgs, stepEntry: null }),
+			() => useDayActions({ ...baseArgs, workoutEntry: { id: 7 } }),
 			{ wrapper },
 		);
 
 		await act(async () => {
-			await result.current.saveSteps("5000");
+			await result.current.submitRename();
 		});
 
+		expect(api.patch).toHaveBeenCalledWith("/workouts/7/name", {
+			sessionName: null,
+		});
 		expect(document.querySelector('[role="status"]')).toBeNull();
-	});
-});
-
-describe("useDayActions haptics", () => {
-	it("gives a success tap when steps save", async () => {
-		api.post.mockResolvedValueOnce({});
-		const { result } = renderHook(
-			() => useDayActions({ ...baseArgs, stepEntry: null }),
-			{ wrapper },
-		);
-		await act(async () => {
-			await result.current.saveSteps("5000");
-		});
-		expect(tapSuccess).toHaveBeenCalledTimes(1);
-	});
-
-	it("gives no tap when saving steps fails", async () => {
-		api.post.mockRejectedValueOnce(new Error("500"));
-		const { result } = renderHook(
-			() => useDayActions({ ...baseArgs, stepEntry: null }),
-			{ wrapper },
-		);
-		await act(async () => {
-			await result.current.saveSteps("5000");
-		});
-		expect(tapSuccess).not.toHaveBeenCalled();
 	});
 });

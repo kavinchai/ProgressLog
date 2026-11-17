@@ -5,13 +5,13 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import com.microsoft.playwright.options.BoundingBox;
 import com.microsoft.playwright.options.WaitForSelectorState;
 
 /**
- * The stacked meal boxes in the Nutrition section (Today and the History day
- * detail). Each box is a role="group" named after its label; boxes save
- * themselves when a field loses focus.
+ * The meal rows in the Nutrition section (Today and the History day detail).
+ * Breakfast / Lunch / Dinner always have a row ("+ Add" until logged); extra
+ * meals get a row under their own name. Tapping a row opens the meal sheet,
+ * which saves when you press Save at the top.
  */
 public class MealCards {
     private final Page page;
@@ -20,127 +20,100 @@ public class MealCards {
         this.page = page;
     }
 
-    private Locator card(String label) {
-        return page.getByRole(AriaRole.GROUP,
-                new Page.GetByRoleOptions().setName(label).setExact(true));
+    private Locator button(String name) {
+        return page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName(name).setExact(true));
     }
 
-    private Locator field(String label, String fieldName) {
-        return card(label).getByLabel(fieldName, new Locator.GetByLabelOptions().setExact(true));
+    private Locator row(String label) {
+        return page.locator(".meal-row:has(.status-row-title:text-is(\"" + label + "\"))");
     }
 
-    public void waitForCard(String label) {
-        card(label).waitFor();
+    private Locator sheet() {
+        return page.locator(".modal-box");
     }
 
-    /** Fill what was eaten, kcal and protein, then leave the box so it saves. */
-    public void fillMeal(String label, String name, String calories, String protein) {
-        field(label, "What you ate").fill(name);
-        field(label, "Calories").fill(calories);
-        field(label, "Protein (g)").fill(protein);
-        field(label, "Protein (g)").press("Tab");
+    private Locator field(String name) {
+        return sheet().getByLabel(name, new Locator.GetByLabelOptions().setExact(true));
     }
 
-    /**
-     * Waits for the box's "Saved" status. Only reliable for a box's first save:
-     * after that an earlier "Saved" may still be showing, so wait on the totals
-     * instead.
-     */
-    public void waitForFirstSave(String label) {
-        card(label).locator(".meal-card-status", new Locator.LocatorOptions().setHasText("Saved"))
-                .waitFor();
+    private void saveSheet() {
+        sheet().locator(".modal-header-save").click();
+        sheet().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
     }
 
-    /** Retries until the box shows {@code expected} — boxes render before data loads. */
-    public void assertWhatYouAte(String label, String expected) {
-        assertThat(field(label, "What you ate")).hasValue(expected);
+    private void fillFields(String name, String calories, String protein) {
+        field("What you ate").fill(name);
+        field("Calories").fill(calories);
+        field("Protein (g)").fill(protein);
     }
 
-    public void toggleSkipped(String label) {
-        card(label).getByRole(AriaRole.CHECKBOX,
-                new Locator.GetByRoleOptions().setName("Skipped")).click();
+    public void waitForRow(String label) {
+        row(label).waitFor();
     }
 
-    public void assertSkipped(String label) {
-        assertThat(card(label).getByRole(AriaRole.CHECKBOX,
-                new Locator.GetByRoleOptions().setName("Skipped"))).isChecked();
+    /** Taps "+ Add {slot}", fills the sheet and saves it. */
+    public void logMeal(String slot, String name, String calories, String protein) {
+        button("+ Add " + slot).click();
+        fillFields(name, calories, protein);
+        saveSheet();
     }
 
-    public void waitForSkippedSummary(String label) {
-        card(label).locator(".meal-card-skipped-text",
-                new Locator.LocatorOptions().setHasText("Skipped " + label)).waitFor();
+    /** Taps "+ Add {slot}" and marks the meal as skipped. */
+    public void skipMeal(String slot) {
+        button("+ Add " + slot).click();
+        sheet().getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Mark as skipped")).click();
+        sheet().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
     }
 
-    /** Click "+ Add meal", type the label into the (auto-focused) label field and press Enter. */
-    public void addMeal(String label) {
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("+ Add meal")).click();
-        Locator labelInput = page.getByLabel("Meal label",
-                new Page.GetByLabelOptions().setExact(true)).last();
-        assertThat(labelInput).isFocused();
-        labelInput.fill(label);
-        labelInput.press("Enter");
-        waitForCard(label);
+    /** "+ Add meal": names the meal, fills it and saves it. */
+    public void addExtraMeal(String label, String name, String calories, String protein) {
+        button("+ Add meal").click();
+        field("Meal name").fill(label);
+        fillFields(name, calories, protein);
+        saveSheet();
+        waitForRow(label);
     }
 
+    /** Retries until the row's one-line summary shows {@code expected}. */
+    public void assertRowDetail(String label, String expected) {
+        assertThat(row(label).locator(".status-row-detail")).hasText(expected);
+    }
+
+    /** Deletes a meal from its row's ••• menu; no confirmation, an Undo bar appears. */
     public void deleteMeal(String label) {
-        // Deletes straight away; an Undo bar appears instead of a confirmation.
-        card(label).getByRole(AriaRole.BUTTON,
-                new Locator.GetByRoleOptions().setName("Delete meal")).click();
-        card(label).waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
+        button("More actions for " + label).click();
+        page.getByRole(AriaRole.MENUITEM,
+                new Page.GetByRoleOptions().setName("Delete").setExact(true)).click();
+        button("Edit " + label).waitFor(
+                new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
     }
 
-    /** Type where the meal came from into the box's Restaurant field and leave it. */
-    public void fillRestaurant(String label, String restaurant) {
-        field(label, "Restaurant").fill(restaurant);
-        field(label, "Restaurant").press("Tab");
-    }
-
-    /** Change a saved meal's restaurant and wait for the PUT that saves it to finish. */
-    public void editRestaurant(String label, String restaurant) {
-        page.waitForResponse(
-                r -> r.url().contains("/meals/") && "PUT".equals(r.request().method()),
-                () -> fillRestaurant(label, restaurant));
-    }
-
-    /** Retries until the box's Restaurant field shows {@code expected}. */
-    public void assertRestaurant(String label, String expected) {
-        assertThat(field(label, "Restaurant")).hasValue(expected);
-    }
-
-    /** True when the Restaurant field sits on the label's row, to its right (desktop layout). */
-    public boolean restaurantIsRightOfLabel(String label) {
-        BoundingBox name = card(label).locator(".meal-card-label").boundingBox();
-        BoundingBox restaurant = field(label, "Restaurant").boundingBox();
-        boolean sameRow = restaurant.y < name.y + name.height && name.y < restaurant.y + restaurant.height;
-        return sameRow && restaurant.x >= name.x + name.width;
-    }
-
-    /** Pixels from where the meal label starts to where the restaurant pill starts. */
-    public double restaurantOffsetFromLabelStart(String label) {
-        BoundingBox name = card(label).locator(".meal-card-label").boundingBox();
-        BoundingBox pill = card(label).locator(".meal-card-restaurant-pill").boundingBox();
-        return pill.x - name.x;
-    }
-
-    /** True when the Restaurant field sits on its own line right under the label, left-aligned (mobile layout). */
-    public boolean restaurantIsBelowLabel(String label) {
-        BoundingBox name = card(label).locator(".meal-card-label").boundingBox();
-        BoundingBox restaurant = card(label).locator(".meal-card-restaurant-pill").boundingBox();
-        BoundingBox whatYouAte = field(label, "What you ate").boundingBox();
-        boolean underLabel = restaurant.y >= name.y + name.height - 1;
-        boolean leftAligned = Math.abs(restaurant.x - name.x) <= 8;
-        boolean aboveFields = restaurant.y + restaurant.height <= whatYouAte.y + 1;
-        return underLabel && leftAligned && aboveFields;
-    }
-
-    /** Delete an extra meal, then press Undo on the Undo bar and wait for its box to come back. */
+    /** Deletes a meal, then presses Undo and waits for its row to come back. */
     public void deleteMealAndUndo(String label) {
-        card(label).getByRole(AriaRole.BUTTON,
-                new Locator.GetByRoleOptions().setName("Delete meal")).click();
-        card(label).waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
+        deleteMeal(label);
         page.waitForResponse(
                 r -> r.url().endsWith("/undo") && "POST".equals(r.request().method()),
-                () -> page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Undo")).click());
-        waitForCard(label);
+                () -> button("Undo").click());
+        button("Edit " + label).waitFor();
+    }
+
+    /** Opens a logged meal, sets where it came from and waits for the PUT that saves it. */
+    public void setRestaurant(String label, String restaurant) {
+        button("Edit " + label).click();
+        field("Restaurant").fill(restaurant);
+        page.waitForResponse(
+                r -> r.url().contains("/meals/") && "PUT".equals(r.request().method()),
+                this::saveSheet);
+    }
+
+    /** Opens a logged meal, checks its Restaurant field, then closes the sheet with Cancel. */
+    public void assertRestaurant(String label, String expected) {
+        button("Edit " + label).click();
+        assertThat(field("Restaurant")).hasValue(expected);
+        sheet().getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Cancel")).click();
+        sheet().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
     }
 }
