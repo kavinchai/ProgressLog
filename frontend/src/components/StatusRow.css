@@ -1,0 +1,66 @@
+.status-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+.status-row-icon {
+	flex-shrink: 0;
+}
+
+.status-row-icon--done {
+	color: var(--success);
+}
+
+.status-row-icon--skipped,
+.status-row-icon--empty {
+	color: var(--text-subtle);
+}
+
+.status-row-text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.status-row-title {
+	font-size: var(--fs);
+	font-weight: var(--fw-medium);
+	color: var(--fg);
+}
+
+.status-row-detail {
+	font-size: var(--fs-sm);
+	color: var(--muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.status-add-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	border: none;
+	background: transparent;
+	font-family: var(--font);
+	text-align: left;
+	cursor: pointer;
+}
+
+/* Mouse only: on iPhone a tap would leave the tint stuck on. */
+@media (hover: hover) {
+	.status-add-row:hover {
+		background: var(--hover-bg);
+	}
+}
+
+.status-add-row-label {
+	flex-shrink: 0;
+	color: var(--accent);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+}

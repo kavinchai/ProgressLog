@@ -50,7 +50,7 @@ public class TodayPage {
     }
 
     public void waitForWeightValue(String expected) {
-        section(DAILY_IDX).locator(".today-data-value",
+        section(DAILY_IDX).locator(".status-row-detail",
                 new Locator.LocatorOptions().setHasText(expected)).waitFor();
     }
 
@@ -73,6 +73,8 @@ public class TodayPage {
     // ── Steps ────────────────────────────────────────────────────────────────
 
     public void clickAddSteps() {
+        page.waitForCondition(
+                () -> button("+ Add steps").count() > 0 || button("Edit steps").count() > 0);
         if (button("+ Add steps").count() > 0) {
             button("+ Add steps").click();
         } else {
@@ -85,21 +87,39 @@ public class TodayPage {
         chooseFromMenu("More actions for Steps", "Delete");
     }
 
-    public void enterSteps(String value) {
-        page.locator(".today-steps-edit input[type='number']").fill(value);
+    private Locator stepsField() {
+        return page.locator(".modal-box").getByLabel("Steps",
+                new Locator.GetByLabelOptions().setExact(true));
     }
 
+    /** Waits for the steps sheet with this title ("Log Steps" / "Edit Steps"). */
+    public void waitForStepsSheet(String title) {
+        page.locator(".modal-box .modal-title:text-is(\"" + title + "\")").waitFor();
+    }
+
+    public String getStepsInputValue() {
+        return stepsField().inputValue();
+    }
+
+    /** Types into the Steps field of the steps sheet. */
+    public void enterSteps(String value) {
+        stepsField().fill(value);
+    }
+
+    /** Presses Save at the top of the steps sheet and waits for it to close. */
     public void saveSteps() {
-        page.locator(".today-steps-edit .btn-primary").click();
+        page.locator(".modal-box .modal-header-save").click();
+        page.locator(".modal-box").waitFor(
+                new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
     }
 
     public void waitForStepsValue(String expected) {
-        if ("--".equals(expected)) {
-            button("+ Add steps").waitFor();
-        } else {
-            section(DAILY_IDX).locator(".today-data-value",
-                    new Locator.LocatorOptions().setHasText(expected)).waitFor();
-        }
+        section(DAILY_IDX).locator(".status-row-detail",
+                new Locator.LocatorOptions().setHasText(expected)).waitFor();
+    }
+
+    public void waitForNoSteps() {
+        button("+ Add steps").waitFor();
     }
 
     // ── Nutrition / Meals ────────────────────────────────────────────────────

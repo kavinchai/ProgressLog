@@ -26,29 +26,6 @@
 	font-size: var(--fs-sm);
 }
 
-.today-data-row {
-	display: flex;
-	align-items: baseline;
-	gap: 10px;
-	padding: 4px 0;
-	font-size: var(--fs);
-}
-
-.today-data-label {
-	color: var(--muted);
-	min-width: 70px;
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-semibold);
-	text-transform: capitalize;
-	letter-spacing: 0.02em;
-	flex-shrink: 0;
-}
-
-.today-data-value {
-	color: var(--fg);
-	font-weight: var(--fw-medium);
-}
-
 .today-session-info {
 	margin-bottom: 12px;
 }
@@ -289,33 +266,11 @@
 	margin-right: 8px;
 }
 
-.today-row .today-data-row {
-	padding: 0;
-}
-
-.today-row-add {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	width: 100%;
-	border: none;
-	background: transparent;
-	font-family: var(--font);
-	text-align: left;
-	cursor: pointer;
-}
-
-/* Mouse only: on iPhone a tap would leave the tint stuck on. */
-@media (hover: hover) {
-	.today-row-add:hover {
-		background: var(--hover-bg);
-	}
-}
-
-.today-row-add-label {
-	color: var(--accent);
+/* Day totals beside the Nutrition title */
+.section-header-meta {
 	font-size: var(--fs-sm);
-	font-weight: var(--fw-semibold);
+	color: var(--muted);
+	white-space: nowrap;
 }
 
 /* ── Exercises: the whole card is the tap / swipe target ── */
@@ -327,26 +282,10 @@
 	display: none;
 }
 
-/* ── Steps inline edit ── */
-.today-steps-edit {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.today-steps-edit .modal-input {
-	width: 140px;
-	padding: 4px 8px;
-}
-
 /* ── Mobile ── */
 @media (max-width: 640px) {
 	.today-page-header {
 		flex-wrap: wrap;
 		gap: 8px;
-	}
-
-	.today-data-row {
-		gap: 6px;
 	}
 }

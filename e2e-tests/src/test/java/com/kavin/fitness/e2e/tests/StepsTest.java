@@ -1,5 +1,7 @@
 package com.kavin.fitness.e2e.tests;
 
+import static org.testng.Assert.assertEquals;
+
 import com.kavin.fitness.e2e.pages.TodayPage;
 import com.kavin.fitness.e2e.support.BaseTest;
 import org.testng.annotations.BeforeClass;
@@ -16,8 +18,9 @@ public class StepsTest extends BaseTest {
 
     @Test(priority = 1)
     public void addStepsForTheDay() {
-        step("click Add Steps, enter 10000, save");
+        step("click + Add steps: Log Steps opens; enter 10000, save");
         today.clickAddSteps();
+        today.waitForStepsSheet("Log Steps");
         today.enterSteps("10000");
         today.saveSteps();
 
@@ -27,8 +30,10 @@ public class StepsTest extends BaseTest {
 
     @Test(priority = 2, dependsOnMethods = "addStepsForTheDay")
     public void editExistingStepsCount() {
-        step("click Add/Edit Steps, enter 12345, save");
+        step("tap the steps row: Edit Steps opens showing 10000; enter 12345, save");
         today.clickAddSteps();
+        today.waitForStepsSheet("Edit Steps");
+        assertEquals(today.getStepsInputValue(), "10000");
         today.enterSteps("12345");
         today.saveSteps();
 
@@ -41,7 +46,7 @@ public class StepsTest extends BaseTest {
         step("click Delete Steps");
         today.clickDeleteSteps();
 
-        step("steps displays '--' on page");
-        today.waitForStepsValue("--");
+        step("steps row goes back to + Add");
+        today.waitForNoSteps();
     }
 }

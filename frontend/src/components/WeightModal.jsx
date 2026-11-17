@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import api from "../api";
 import { tapSuccess } from "../native/haptics";
 import Modal from "./Modal";
+import SheetField from "./SheetField";
 import useWeightUnit from "../hooks/useWeightUnit";
 
 export default function WeightModal({
@@ -10,6 +11,7 @@ export default function WeightModal({
 	onClose,
 	onSaved,
 }) {
+	const formId = useId();
 	const { unit, toDisplay, fromDisplay } = useWeightUnit();
 	const [date, setDate] = useState(existing?.logDate ?? prefillDate ?? "");
 	const [weight, setWeight] = useState(
@@ -39,44 +41,33 @@ export default function WeightModal({
 	}
 
 	return (
-		<Modal title={existing ? "Edit Weight" : "Log Weight"} onClose={onClose}>
-			<form className="modal-form" onSubmit={submit}>
+		<Modal
+			title={existing ? "Edit Weight" : "Log Weight"}
+			onClose={onClose}
+			form={{ id: formId, saving }}
+		>
+			<form id={formId} className="modal-form" onSubmit={submit}>
 				{err && <div className="modal-error">{err}</div>}
-				<div className="modal-field">
-					<label className="modal-label" htmlFor="weight-date">
-						Date
-					</label>
-					<input
-						id="weight-date"
-						className="modal-input"
+				<div className="sheet-group">
+					<SheetField
+						label="Date"
 						type="date"
 						value={date}
 						onChange={(e) => setDate(e.target.value)}
 						required
 					/>
-				</div>
-				<div className="modal-field">
-					<label className="modal-label" htmlFor="weight-value">
-						Weight ({unit})
-					</label>
-					<input
-						id="weight-value"
-						className="modal-input"
+					<SheetField
+						label="Weight"
 						type="number"
+						inputMode="decimal"
 						step="0.1"
 						min="0"
+						placeholder="0"
+						unit={unit}
 						value={weight}
 						onChange={(e) => setWeight(e.target.value)}
 						required
 					/>
-				</div>
-				<div className="modal-actions">
-					<button type="button" className="btn-ghost" onClick={onClose}>
-						Cancel
-					</button>
-					<button type="submit" className="btn-primary" disabled={saving}>
-						{saving ? "Saving..." : "Save"}
-					</button>
 				</div>
 			</form>
 		</Modal>

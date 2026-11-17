@@ -7,7 +7,7 @@ public class WeightModal {
 
     private static final String TITLE = ".modal-title";
     private static final String INPUT = ".modal-box input[type='number']";
-    private static final String SAVE = ".modal-box >> button:has-text(\"Save\")";
+    private static final String SAVE = ".modal-box .modal-header-save";
 
     public WeightModal(Page page) {
         this.page = page;
@@ -31,6 +31,6 @@ public class WeightModal {
     }
 
     public void save() {
-        page.locator(SAVE).first().click();
+        page.locator(SAVE).click();
     }
 }

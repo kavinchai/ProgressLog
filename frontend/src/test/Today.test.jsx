@@ -40,6 +40,18 @@ vi.mock("../components/WeightModal", () => ({
 		</div>
 	),
 }));
+vi.mock("../components/StepsModal", () => ({
+	default: ({ prefillDate, existing, onClose, onSaved }) => (
+		<div
+			data-testid="steps-modal"
+			data-existing-id={existing?.id ?? ""}
+			data-date={prefillDate}
+		>
+			<button onClick={onSaved}>steps-save</button>
+			<button onClick={onClose}>modal-close</button>
+		</div>
+	),
+}));
 vi.mock("../components/WorkoutBuilderModal", () => ({
 	default: ({
 		prefillExercises,
@@ -575,6 +587,20 @@ describe("Today — nutrition display", () => {
 		expect(screen.getByTestId("meal-cards").dataset.logId).toBe("5");
 	});
 
+	it("shows the day's calories and protein in the Nutrition header", () => {
+		setup({ nutrition: [NUTRITION_ENTRY] });
+		render(<Today />);
+		const header = screen.getByText("Nutrition").closest(".section-header");
+		expect(header).toHaveTextContent("1,800 kcal · 120 g");
+	});
+
+	it("leaves the Nutrition header totals off when nothing is logged", () => {
+		setup();
+		render(<Today />);
+		const header = screen.getByText("Nutrition").closest(".section-header");
+		expect(header).not.toHaveTextContent("kcal");
+	});
+
 	it("shows day type toggle button", () => {
 		setup({ nutrition: [NUTRITION_ENTRY] });
 		render(<Today />);
@@ -930,15 +956,6 @@ describe("Today — load errors", () => {
 // ── A11y: inline inputs have labels ──────────────────────────────────────────
 
 describe("Today — inline input labels", () => {
-	it("labels the inline steps input", async () => {
-		setup();
-		render(<Today />);
-		await userEvent.click(
-			screen.getByRole("button", { name: /\+ add steps/i }),
-		);
-		expect(screen.getByLabelText("Steps")).toHaveAttribute("type", "number");
-	});
-
 	it("labels the inline session name input", async () => {
 		setup({ workouts: [WORKOUT_ENTRY] });
 		render(<Today />);
@@ -1005,11 +1022,42 @@ describe("Today — swipe, exercise delete and Undo", () => {
 		expect(refetchWeight).toHaveBeenCalledTimes(1);
 	});
 
-	it("tapping the steps row edits steps inline", async () => {
+	it("+ Add steps opens today's steps sheet, which refreshes steps on save", async () => {
+		const { refetchSteps } = setup();
+		render(<Today />);
+		await userEvent.click(
+			screen.getByRole("button", { name: /\+ add steps/i }),
+		);
+		const sheet = screen.getByTestId("steps-modal");
+		expect(sheet.dataset.existingId).toBe("");
+		expect(sheet.dataset.date).toBe(TODAY);
+		await userEvent.click(screen.getByRole("button", { name: "steps-save" }));
+		expect(refetchSteps).toHaveBeenCalledTimes(1);
+	});
+
+	it("tapping the steps row opens the steps sheet for that entry", async () => {
 		setup({ steps: [STEP_ENTRY] });
 		render(<Today />);
 		await userEvent.click(screen.getByRole("button", { name: "Edit steps" }));
-		expect(screen.getByLabelText("Steps")).toHaveValue(8000);
+		expect(screen.getByTestId("steps-modal").dataset.existingId).toBe("20");
+	});
+
+	it("shows a check on logged rows and the value underneath", () => {
+		setup({ weight: [WEIGHT_ENTRY], steps: [STEP_ENTRY] });
+		render(<Today />);
+		const stepsRow = screen.getByRole("button", { name: "Edit steps" });
+		expect(stepsRow.querySelector(".status-row-icon--done")).not.toBeNull();
+		expect(stepsRow.querySelector(".status-row-detail")).toHaveTextContent(
+			"8,000 steps",
+		);
+	});
+
+	it("shows an empty row with a dashed circle and + Add", () => {
+		setup();
+		render(<Today />);
+		const addSteps = screen.getByRole("button", { name: "+ Add steps" });
+		expect(addSteps.querySelector(".status-row-icon--empty")).not.toBeNull();
+		expect(addSteps).toHaveTextContent("Steps+ Add");
 	});
 
 	it("Delete steps calls DELETE /steps/{id} without a confirmation", async () => {

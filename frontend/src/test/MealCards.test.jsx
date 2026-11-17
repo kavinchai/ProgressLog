@@ -7,6 +7,11 @@ vi.mock("../api", () => ({
 	default: { post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 vi.mock("../components/MealCards.css", () => ({}));
+vi.mock("../native/haptics", () => ({
+	tapSuccess: vi.fn(),
+	tapDelete: vi.fn(),
+	tapLight: vi.fn(),
+}));
 // One shared toast stub so tests can check the Undo bar.
 const toast = vi.hoisted(() => ({
 	error: () => {},
@@ -16,6 +21,7 @@ const toast = vi.hoisted(() => ({
 vi.mock("../components/Toast", () => ({ useToast: () => toast }));
 
 import api from "../api";
+import { tapSuccess } from "../native/haptics";
 
 const LOG_ID = 42;
 const onSaved = vi.fn();
@@ -28,17 +34,53 @@ const logWith = (meals) => ({
 	meals,
 });
 
-function setup(nutritionEntry = null) {
+const BREAKFAST = {
+	id: 1,
+	mealLabel: "Breakfast",
+	mealName: "Oatmeal and eggs",
+	calories: 620,
+	proteinGrams: 42,
+};
+const SKIPPED_LUNCH = {
+	id: 3,
+	mealLabel: "Lunch",
+	mealName: "Skipped Lunch",
+	calories: 0,
+	proteinGrams: 0,
+};
+const SNACK = {
+	id: 9,
+	mealLabel: "Snack",
+	mealName: "Protein bar",
+	calories: 300,
+	proteinGrams: 23,
+};
+
+function setup(nutritionEntry = null, nutritionData) {
 	return render(
 		<MealCards
 			nutritionEntry={nutritionEntry}
+			nutritionData={nutritionData}
 			getOrCreateNutritionLogId={getOrCreateNutritionLogId}
 			onSaved={onSaved}
 		/>,
 	);
 }
 
-const card = (label) => screen.getByRole("group", { name: label });
+const button = (name) => screen.getByRole("button", { name });
+const sheet = () => within(screen.getByRole("dialog"));
+const field = (name) => sheet().getByLabelText(name);
+
+async function fillSheet(values) {
+	for (const [name, value] of Object.entries(values)) {
+		await userEvent.clear(field(name));
+		if (value !== "") await userEvent.type(field(name), value);
+	}
+}
+
+async function save() {
+	await userEvent.click(sheet().getByRole("button", { name: /^save$/i }));
+}
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -48,52 +90,64 @@ beforeEach(() => {
 	api.delete.mockResolvedValue({});
 });
 
-describe("MealCards — fixed slots", () => {
-	it("always shows Breakfast, Lunch and Dinner boxes, even with no log", () => {
+describe("MealCards — rows", () => {
+	it("always lists Breakfast, Lunch and Dinner, each with + Add when empty", () => {
 		setup(null);
-		for (const label of ["Breakfast", "Lunch", "Dinner"]) {
-			expect(card(label)).toBeInTheDocument();
-			expect(
-				within(card(label)).getByRole("checkbox", { name: /skipped/i }),
-			).not.toBeChecked();
+		for (const slot of ["Breakfast", "Lunch", "Dinner"]) {
+			expect(button(`+ Add ${slot}`)).toHaveTextContent(slot);
 		}
+		expect(button("+ Add meal")).toBeInTheDocument();
 	});
 
-	it("fills a slot from the meal with the matching label", () => {
-		setup(
-			logWith([
-				{
-					id: 1,
-					mealLabel: "Breakfast",
-					mealName: "Oatmeal & eggs",
-					calories: 620,
-					proteinGrams: 42,
-				},
-			]),
-		);
-		const b = within(card("Breakfast"));
-		expect(b.getByRole("textbox", { name: /what you ate/i })).toHaveValue(
-			"Oatmeal & eggs",
-		);
-		expect(b.getByRole("spinbutton", { name: /calories/i })).toHaveValue(620);
-		expect(b.getByRole("spinbutton", { name: /protein/i })).toHaveValue(42);
+	it("shows a logged meal as one line: what, kcal and protein", () => {
+		setup(logWith([BREAKFAST]));
+		const row = button("Edit Breakfast");
+		expect(row).toHaveTextContent("Oatmeal and eggs · 620 kcal · 42 g");
+		expect(
+			screen.queryByRole("button", { name: "+ Add Breakfast" }),
+		).not.toBeInTheDocument();
 	});
 
-	it("creates the day log, then POSTs the slot meal when a field is left", async () => {
+	it("shows a skipped meal as Skipped", () => {
+		setup(logWith([SKIPPED_LUNCH]));
+		const row = button("Edit Lunch");
+		expect(row).toHaveTextContent("Skipped");
+		expect(row).not.toHaveTextContent("0 kcal");
+	});
+
+	it("lists extra meals under their own label", () => {
+		setup(logWith([SNACK]));
+		expect(button("Edit Snack")).toHaveTextContent(
+			"Protein bar · 300 kcal · 23 g",
+		);
+	});
+
+	it("has no inline inputs; meals are edited in a sheet", () => {
+		setup(logWith([BREAKFAST]));
+		expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+	});
+});
+
+describe("MealCards — adding and editing in the sheet", () => {
+	it("+ Add Breakfast opens an empty Breakfast sheet", async () => {
 		setup(null);
-		const b = within(card("Breakfast"));
-		await userEvent.type(
-			b.getByRole("textbox", { name: /what you ate/i }),
-			"Bagel",
-		);
-		await userEvent.type(
-			b.getByRole("spinbutton", { name: /calories/i }),
-			"350",
-		);
-		await userEvent.tab();
+		await userEvent.click(button("+ Add Breakfast"));
+		expect(
+			screen.getByRole("dialog", { name: "Breakfast" }),
+		).toBeInTheDocument();
+		expect(field("What you ate")).toHaveValue("");
+		expect(sheet().queryByLabelText("Meal name")).not.toBeInTheDocument();
+	});
+
+	it("creates the day log, then POSTs the meal on Save and closes", async () => {
+		setup(null);
+		await userEvent.click(button("+ Add Breakfast"));
+		await fillSheet({ "What you ate": "Bagel", Calories: "350" });
+		await save();
 
 		await waitFor(() =>
-			expect(api.post).toHaveBeenLastCalledWith(`/nutrition/${LOG_ID}/meals`, {
+			expect(api.post).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals`, {
 				mealLabel: "Breakfast",
 				mealName: "Bagel",
 				calories: 350,
@@ -102,64 +156,77 @@ describe("MealCards — fixed slots", () => {
 		);
 		expect(getOrCreateNutritionLogId).toHaveBeenCalled();
 		expect(onSaved).toHaveBeenCalled();
+		expect(tapSuccess).toHaveBeenCalledTimes(1);
+		await waitFor(() =>
+			expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+		);
 	});
 
-	it("PUTs an existing slot meal when it is edited", async () => {
-		setup(
-			logWith([
-				{
-					id: 7,
-					mealLabel: "Dinner",
-					mealName: "Rice",
-					calories: 500,
-					proteinGrams: 20,
-				},
-			]),
-		);
-		const cal = within(card("Dinner")).getByRole("spinbutton", {
-			name: /calories/i,
-		});
-		await userEvent.clear(cal);
-		await userEvent.type(cal, "640");
-		await userEvent.tab();
+	it("tapping a logged meal opens it filled in, and Save PUTs the change", async () => {
+		setup(logWith([{ ...BREAKFAST, mealLabel: "Dinner", id: 7 }]));
+		await userEvent.click(button("Edit Dinner"));
+		expect(field("What you ate")).toHaveValue("Oatmeal and eggs");
+		expect(field("Protein (g)")).toHaveValue(42);
+		await fillSheet({ Calories: "640" });
+		await save();
 
 		await waitFor(() =>
 			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/7`, {
 				mealLabel: "Dinner",
-				mealName: "Rice",
+				mealName: "Oatmeal and eggs",
 				calories: 640,
-				proteinGrams: 20,
+				proteinGrams: 42,
 			}),
 		);
 		expect(api.post).not.toHaveBeenCalled();
+		expect(getOrCreateNutritionLogId).not.toHaveBeenCalled();
 	});
 
-	it("does not save when nothing changed", async () => {
-		setup(
-			logWith([
-				{
-					id: 7,
-					mealLabel: "Dinner",
-					mealName: "Rice",
-					calories: 500,
-					proteinGrams: 20,
-				},
-			]),
+	it("Save with nothing changed just closes", async () => {
+		setup(logWith([BREAKFAST]));
+		await userEvent.click(button("Edit Breakfast"));
+		await save();
+		await waitFor(() =>
+			expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
 		);
-		await userEvent.click(
-			within(card("Dinner")).getByRole("textbox", { name: /what you ate/i }),
-		);
-		await userEvent.tab();
 		expect(api.put).not.toHaveBeenCalled();
 		expect(api.post).not.toHaveBeenCalled();
+	});
+
+	it("Save on an empty new meal just closes", async () => {
+		setup(null);
+		await userEvent.click(button("+ Add Dinner"));
+		await save();
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		expect(api.post).not.toHaveBeenCalled();
+	});
+
+	it("Cancel closes without saving", async () => {
+		setup(null);
+		await userEvent.click(button("+ Add Dinner"));
+		await fillSheet({ "What you ate": "Pasta" });
+		await userEvent.click(sheet().getByRole("button", { name: "Cancel" }));
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		expect(api.post).not.toHaveBeenCalled();
+	});
+
+	it("keeps the sheet open with a message when saving fails", async () => {
+		api.post.mockRejectedValueOnce(new Error("500"));
+		setup(null);
+		await userEvent.click(button("+ Add Lunch"));
+		await fillSheet({ "What you ate": "Soup" });
+		await save();
+		expect(await sheet().findByText(/couldn't save/i)).toBeInTheDocument();
+		expect(onSaved).not.toHaveBeenCalled();
 	});
 });
 
 describe("MealCards — skipping a meal", () => {
-	it('ticking Skipped saves "Skipped Lunch" with 0 kcal and 0 g', async () => {
+	it('Mark as skipped saves "Skipped Lunch" with 0 kcal and 0 g', async () => {
 		setup(logWith([]));
+		await userEvent.click(button("+ Add Lunch"));
 		await userEvent.click(
-			within(card("Lunch")).getByRole("checkbox", { name: /skipped/i }),
+			sheet().getByRole("button", { name: "Mark as skipped" }),
 		);
 		await waitFor(() =>
 			expect(api.post).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals`, {
@@ -169,174 +236,141 @@ describe("MealCards — skipping a meal", () => {
 				proteinGrams: 0,
 			}),
 		);
+		await waitFor(() =>
+			expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+		);
 	});
 
-	it("a skipped meal shows a summary instead of inputs", () => {
-		setup(
-			logWith([
-				{
-					id: 3,
-					mealLabel: "Lunch",
-					mealName: "Skipped Lunch",
-					calories: 0,
-					proteinGrams: 0,
-				},
-			]),
-		);
-		const l = within(card("Lunch"));
-		expect(l.getByRole("checkbox", { name: /skipped/i })).toBeChecked();
-		expect(l.getByText(/skipped lunch/i)).toBeInTheDocument();
-		expect(l.queryByRole("spinbutton")).not.toBeInTheDocument();
-	});
-
-	it("unticking Skipped removes the skipped entry", async () => {
-		setup(
-			logWith([
-				{
-					id: 3,
-					mealLabel: "Lunch",
-					mealName: "Skipped Lunch",
-					calories: 0,
-					proteinGrams: 0,
-				},
-			]),
-		);
+	it("skipping a logged meal drops its restaurant", async () => {
+		setup(logWith([{ ...BREAKFAST, mealLabel: "Lunch", restaurant: "Cava" }]));
+		await userEvent.click(button("Edit Lunch"));
 		await userEvent.click(
-			within(card("Lunch")).getByRole("checkbox", { name: /skipped/i }),
+			sheet().getByRole("button", { name: "Mark as skipped" }),
 		);
 		await waitFor(() =>
-			expect(api.delete).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/3`),
+			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/1`, {
+				mealLabel: "Lunch",
+				mealName: "Skipped Lunch",
+				calories: 0,
+				proteinGrams: 0,
+			}),
 		);
+	});
+
+	it("opening a skipped meal starts blank, so you can log what you ate", async () => {
+		setup(logWith([SKIPPED_LUNCH]));
+		await userEvent.click(button("Edit Lunch"));
+		expect(field("What you ate")).toHaveValue("");
+		await fillSheet({ "What you ate": "Wrap", Calories: "500" });
+		await save();
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/3`, {
+				mealLabel: "Lunch",
+				mealName: "Wrap",
+				calories: 500,
+				proteinGrams: 0,
+			}),
+		);
+	});
+
+	it("extra meals can't be marked as skipped", async () => {
+		setup(logWith([SNACK]));
+		await userEvent.click(button("Edit Snack"));
 		expect(
-			within(card("Lunch")).getByRole("spinbutton", { name: /calories/i }),
-		).toBeInTheDocument();
+			sheet().queryByRole("button", { name: "Mark as skipped" }),
+		).not.toBeInTheDocument();
 	});
 });
 
 describe("MealCards — extra meals", () => {
-	it("shows meals without a slot label as editable, deletable extra boxes", () => {
-		setup(
-			logWith([
-				{
-					id: 9,
-					mealLabel: "Snack",
-					mealName: "Protein bar",
-					calories: 300,
-					proteinGrams: 23,
-				},
-			]),
-		);
-		const s = within(card("Snack"));
-		expect(s.getByRole("textbox", { name: /meal label/i })).toHaveValue(
-			"Snack",
-		);
-		expect(s.getByRole("button", { name: /delete meal/i })).toBeInTheDocument();
+	it("+ Add meal opens a sheet with a name field", async () => {
+		setup(logWith([]));
+		await userEvent.click(button("+ Add meal"));
 		expect(
-			within(card("Breakfast")).queryByRole("button", { name: /delete meal/i }),
-		).not.toBeInTheDocument();
+			screen.getByRole("dialog", { name: "Add meal" }),
+		).toBeInTheDocument();
+		expect(field("Meal name")).toHaveValue("");
 	});
 
-	it("+ Add meal adds a box with its label field focused first", async () => {
+	it("saves a new extra meal with its name as the label", async () => {
 		setup(logWith([]));
-		await userEvent.click(screen.getByRole("button", { name: /\+ add meal/i }));
-		const label = screen.getByRole("textbox", { name: /meal label/i });
-		expect(label).toHaveFocus();
-		expect(label).toHaveValue("");
-	});
-
-	it("Enter in the label field moves to what you ate", async () => {
-		setup(logWith([]));
-		await userEvent.click(screen.getByRole("button", { name: /\+ add meal/i }));
-		await userEvent.type(
-			screen.getByRole("textbox", { name: /meal label/i }),
-			"Pre-workout{Enter}",
-		);
-		const extra = within(card("Pre-workout"));
-		expect(extra.getByRole("textbox", { name: /what you ate/i })).toHaveFocus();
-	});
-
-	it("saves a new extra meal once, then updates the same meal", async () => {
-		api.post.mockResolvedValueOnce({
-			data: logWith([
-				{
-					id: 77,
-					mealLabel: "Snack",
-					mealName: null,
-					calories: 0,
-					proteinGrams: 0,
-				},
-			]),
-		});
-		setup(logWith([]));
-		await userEvent.click(screen.getByRole("button", { name: /\+ add meal/i }));
-		await userEvent.type(
-			screen.getByRole("textbox", { name: /meal label/i }),
-			"Snack",
-		);
-		await userEvent.tab(); // leave label → first save
-		await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-		expect(api.post).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals`, {
-			mealLabel: "Snack",
-			mealName: null,
-			calories: 0,
-			proteinGrams: 0,
-		});
-
-		const cal = within(card("Snack")).getByRole("spinbutton", {
-			name: /calories/i,
-		});
-		await userEvent.type(cal, "300");
-		await userEvent.tab();
+		await userEvent.click(button("+ Add meal"));
+		await fillSheet({ "Meal name": "Snack", Calories: "300" });
+		await save();
 		await waitFor(() =>
-			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/77`, {
+			expect(api.post).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals`, {
 				mealLabel: "Snack",
 				mealName: null,
 				calories: 300,
 				proteinGrams: 0,
 			}),
 		);
-		expect(api.post).toHaveBeenCalledTimes(1);
 	});
 
-	it("deleting a saved extra meal deletes it straight away, with Undo", async () => {
-		setup(
-			logWith([
-				{
-					id: 9,
-					mealLabel: "Snack",
-					mealName: "Protein bar",
-					calories: 300,
-					proteinGrams: 23,
-				},
-			]),
-		);
-		api.delete.mockResolvedValue({});
-		const show = vi.spyOn(toast, "show");
+	it("shows an extra meal with no name as Meal, with a restaurant field", async () => {
+		setup(logWith([{ ...SNACK, mealLabel: null }]));
+		await userEvent.click(button("Edit Meal"));
+		expect(
+			sheet().getByRole("combobox", { name: /restaurant/i }),
+		).toBeInTheDocument();
+	});
+
+	it("saves only once if Save is pressed twice quickly", async () => {
+		api.post.mockReturnValue(new Promise(() => {}));
+		setup(logWith([]));
+		await userEvent.click(button("+ Add Lunch"));
+		await fillSheet({ "What you ate": "Soup" });
+		await save();
 		await userEvent.click(
-			within(card("Snack")).getByRole("button", { name: /delete meal/i }),
+			sheet().getByRole("button", { name: "Mark as skipped" }),
 		);
+		expect(api.post).toHaveBeenCalledTimes(1);
+		expect(sheet().getByRole("button", { name: "Saving…" })).toBeDisabled();
+	});
+
+	it("renaming an extra meal PUTs the new label", async () => {
+		setup(logWith([SNACK]));
+		await userEvent.click(button("Edit Snack"));
+		expect(field("Meal name")).toHaveValue("Snack");
+		await fillSheet({ "Meal name": "Pre-workout" });
+		await save();
 		await waitFor(() =>
-			expect(api.delete).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`),
-		);
-		await waitFor(() => expect(onSaved).toHaveBeenCalled());
-		expect(show).toHaveBeenCalledWith(
-			expect.objectContaining({
-				message: "Meal deleted",
-				action: expect.objectContaining({ label: "Undo" }),
+			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`, {
+				mealLabel: "Pre-workout",
+				mealName: "Protein bar",
+				calories: 300,
+				proteinGrams: 23,
 			}),
 		);
 	});
+});
 
-	it("deleting an unsaved extra box removes it without a request", async () => {
-		setup(logWith([]));
-		await userEvent.click(screen.getByRole("button", { name: /\+ add meal/i }));
-		await userEvent.click(screen.getByRole("button", { name: /delete meal/i }));
-		expect(
-			screen.queryByRole("textbox", { name: /meal label/i }),
-		).not.toBeInTheDocument();
-		expect(api.delete).not.toHaveBeenCalled();
-		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-	});
+describe("MealCards — deleting", () => {
+	it.each([
+		["an extra meal", SNACK, "Snack"],
+		["a slot meal", BREAKFAST, "Breakfast"],
+	])(
+		"deleting %s from its menu deletes it straight away, with Undo",
+		async (_, meal, label) => {
+			setup(logWith([meal]));
+			const show = vi.spyOn(toast, "show");
+			await userEvent.click(button(`More actions for ${label}`));
+			await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+			await waitFor(() =>
+				expect(api.delete).toHaveBeenCalledWith(
+					`/nutrition/${LOG_ID}/meals/${meal.id}`,
+				),
+			);
+			await waitFor(() => expect(onSaved).toHaveBeenCalled());
+			expect(show).toHaveBeenCalledWith(
+				expect.objectContaining({
+					message: "Meal deleted",
+					action: expect.objectContaining({ label: "Undo" }),
+				}),
+			);
+			expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		},
+	);
 });
 
 describe("MealCards — restaurant", () => {
@@ -348,45 +382,25 @@ describe("MealCards — restaurant", () => {
 		calories: 900,
 		proteinGrams: 50,
 	});
-	const restaurantField = (label) =>
-		within(card(label)).getByRole("combobox", { name: /restaurant/i });
+	const restaurantField = () =>
+		sheet().getByRole("combobox", { name: /restaurant/i });
 
-	it("shows the saved restaurant in the card header, next to the label", () => {
+	it("shows the saved restaurant in the sheet", async () => {
 		setup(logWith([lunch("Chipotle")]));
-		const field = restaurantField("Lunch");
-		expect(field).toHaveValue("Chipotle");
-		expect(field.closest(".meal-card-head")).toBeInTheDocument();
+		await userEvent.click(button("Edit Lunch"));
+		expect(restaurantField()).toHaveValue("Chipotle");
 	});
 
-	it("every box, including extras, has a restaurant field", () => {
-		setup(
-			logWith([
-				{
-					id: 4,
-					mealLabel: "Snack",
-					mealName: "Bar",
-					calories: 200,
-					proteinGrams: 20,
-				},
-			]),
-		);
-		for (const label of ["Breakfast", "Lunch", "Dinner", "Snack"]) {
-			expect(restaurantField(label)).toHaveValue("");
-		}
-	});
-
-	it("saves a new meal with its restaurant", async () => {
+	it("saves a new meal with its restaurant, trimmed", async () => {
 		setup(null);
-		const b = within(card("Breakfast"));
-		await userEvent.type(restaurantField("Breakfast"), "Starbucks");
-		await userEvent.type(
-			b.getByRole("textbox", { name: /what you ate/i }),
-			"Egg bites",
-		);
-		await userEvent.tab();
-
+		await userEvent.click(button("+ Add Breakfast"));
+		await fillSheet({
+			Restaurant: "  Starbucks ",
+			"What you ate": "Egg bites",
+		});
+		await save();
 		await waitFor(() =>
-			expect(api.post).toHaveBeenLastCalledWith(`/nutrition/${LOG_ID}/meals`, {
+			expect(api.post).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals`, {
 				mealLabel: "Breakfast",
 				mealName: "Egg bites",
 				restaurant: "Starbucks",
@@ -396,27 +410,11 @@ describe("MealCards — restaurant", () => {
 		);
 	});
 
-	it("PUTs the meal when only the restaurant is edited", async () => {
-		setup(logWith([lunch(null)]));
-		await userEvent.type(restaurantField("Lunch"), "  Chipotle ");
-		await userEvent.tab();
-
-		await waitFor(() =>
-			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`, {
-				mealLabel: "Lunch",
-				mealName: "Burrito bowl",
-				restaurant: "Chipotle",
-				calories: 900,
-				proteinGrams: 50,
-			}),
-		);
-	});
-
 	it("clearing the restaurant saves the meal without one", async () => {
 		setup(logWith([lunch("Chipotle")]));
-		await userEvent.clear(restaurantField("Lunch"));
-		await userEvent.tab();
-
+		await userEvent.click(button("Edit Lunch"));
+		await userEvent.clear(restaurantField());
+		await save();
 		await waitFor(() =>
 			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`, {
 				mealLabel: "Lunch",
@@ -427,97 +425,33 @@ describe("MealCards — restaurant", () => {
 		);
 	});
 
-	it("a blank restaurant is not filled in with a default", async () => {
+	it("a restaurant alone on an empty new meal does not save", async () => {
 		setup(null);
-		await userEvent.type(
-			within(card("Dinner")).getByRole("textbox", { name: /what you ate/i }),
-			"Pasta",
-		);
-		await userEvent.tab();
-		await waitFor(() => expect(api.post).toHaveBeenCalled());
-		expect(api.post.mock.calls.at(-1)[1]).not.toHaveProperty("restaurant");
+		await userEvent.click(button("+ Add Breakfast"));
+		await fillSheet({ Restaurant: "Starbucks" });
+		await save();
+		expect(api.post).not.toHaveBeenCalled();
 	});
 
-	it("suggests restaurants used before, once each, in A–Z order", () => {
-		render(
-			<MealCards
-				nutritionEntry={null}
-				nutritionData={[
-					logWith([lunch("Chipotle"), { ...lunch("cava"), id: 10 }]),
-					{
-						...logWith([
-							{ ...lunch("Chipotle"), id: 11 },
-							{ ...lunch(""), id: 12 },
-						]),
-						id: 43,
-					},
-					{ ...logWith([{ ...lunch(null), id: 13 }]), id: 44 },
-				]}
-				getOrCreateNutritionLogId={getOrCreateNutritionLogId}
-				onSaved={onSaved}
-			/>,
+	it("suggests restaurants used before, once each, in A–Z order", async () => {
+		setup(null, [
+			logWith([lunch("Chipotle"), { ...lunch("cava"), id: 10 }]),
+			{
+				...logWith([
+					{ ...lunch("Chipotle"), id: 11 },
+					{ ...lunch(""), id: 12 },
+				]),
+				id: 43,
+			},
+			{ ...logWith([{ ...lunch(null), id: 13 }]), id: 44 },
+		]);
+		await userEvent.click(button("+ Add Breakfast"));
+		const list = document.getElementById(
+			restaurantField().getAttribute("list"),
 		);
-		const field = restaurantField("Breakfast");
-		const list = document.getElementById(field.getAttribute("list"));
 		expect([...list.querySelectorAll("option")].map((o) => o.value)).toEqual([
 			"cava",
 			"Chipotle",
 		]);
-	});
-
-	it("a skipped meal hides the restaurant field", () => {
-		setup(
-			logWith([
-				{
-					id: 3,
-					mealLabel: "Lunch",
-					mealName: "Skipped Lunch",
-					calories: 0,
-					proteinGrams: 0,
-				},
-			]),
-		);
-		expect(
-			within(card("Lunch")).queryByRole("combobox", { name: /restaurant/i }),
-		).not.toBeInTheDocument();
-	});
-});
-
-describe("MealCards — restaurant edge cases", () => {
-	it("a restaurant alone on an empty box does not save a meal", async () => {
-		setup(null);
-		await userEvent.type(
-			within(card("Breakfast")).getByRole("combobox", { name: /restaurant/i }),
-			"Starbucks",
-		);
-		await userEvent.tab();
-		expect(api.post).not.toHaveBeenCalled();
-		expect(api.put).not.toHaveBeenCalled();
-	});
-
-	it("ticking Skipped drops the meal's restaurant", async () => {
-		setup(
-			logWith([
-				{
-					id: 9,
-					mealLabel: "Lunch",
-					mealName: "Burrito bowl",
-					restaurant: "Chipotle",
-					calories: 900,
-					proteinGrams: 50,
-				},
-			]),
-		);
-		await userEvent.click(
-			within(card("Lunch")).getByRole("checkbox", { name: /skipped/i }),
-		);
-		await waitFor(() =>
-			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/9`, {
-				mealLabel: "Lunch",
-				mealName: "Skipped Lunch",
-				calories: 0,
-				proteinGrams: 0,
-			}),
-		);
 	});
 });

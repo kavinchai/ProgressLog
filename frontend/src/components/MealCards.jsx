@@ -1,298 +1,26 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { MapPin, Trash2 } from "lucide-react";
+import { useState } from "react";
 import api from "../api";
-import { useToast } from "./Toast";
 import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
+import SwipeRow from "./SwipeRow";
+import StatusRow, { AddRow } from "./StatusRow";
+import MealSheet from "./MealSheet";
 import "./MealCards.css";
 
-// Breakfast / Lunch / Dinner are always shown; any other meal is an "extra"
-// box with an editable label. Every box saves itself when a field is left.
+// Breakfast / Lunch / Dinner always have a row; any other meal is an "extra"
+// row under its own label. Tapping a row (or + Add) opens the meal sheet.
 const SLOTS = ["Breakfast", "Lunch", "Dinner"];
 
 const sameLabel = (a, b) =>
 	(a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
 
-const toInt = (v) => {
-	const n = parseInt(v, 10);
-	return Number.isNaN(n) ? 0 : n;
-};
-
-function fieldsFrom(meal, slot) {
-	return {
-		label: meal?.mealLabel ?? slot ?? "",
-		name: meal?.mealName ?? "",
-		restaurant: meal?.restaurant ?? "",
-		calories: meal?.calories ?? "",
-		protein: meal?.proteinGrams ?? "",
-	};
-}
-
-// A blank restaurant is left out, which the backend stores as none.
-function bodyFrom(fields, slot) {
-	const restaurant = fields.restaurant.trim();
-	return {
-		mealLabel: slot ?? (fields.label.trim() || null),
-		mealName: fields.name.trim() || null,
-		...(restaurant && { restaurant }),
-		calories: toInt(fields.calories),
-		proteinGrams: toInt(fields.protein),
-	};
-}
-
-// Sizes an input to its text: a hidden copy of the text (CSS ::after) sits in
-// the same grid cell and sets the width.
-function AutoWidth({ className = "", value, placeholder, children }) {
-	return (
-		<span
-			className={`auto-width ${className}`}
-			data-value={value || placeholder}
-		>
-			{children}
-		</span>
-	);
-}
-
-function MealCard({
-	slot,
-	meal,
-	autoFocusLabel,
-	restaurantListId,
-	saveMeal,
-	removeMeal,
-	onCreated,
-	onDelete,
-}) {
-	const toast = useToast();
-	const [fields, setFields] = useState(() => fieldsFrom(meal, slot));
-	const [status, setStatus] = useState(null); // "saving" | "saved" | null
-	const fieldsRef = useRef(fields);
-	const savedRef = useRef(fields);
-	const idRef = useRef(meal?.id ?? null);
-	const editingRef = useRef(false);
-	const queueRef = useRef(null); // tail of the save queue
-	const nameRef = useRef(null);
-
-	// Pick up refetched data (e.g. after undo) unless the user is mid-edit.
-	useEffect(() => {
-		if (meal?.id) idRef.current = meal.id;
-		if (editingRef.current) return;
-		const next = fieldsFrom(meal, slot);
-		savedRef.current = next;
-		fieldsRef.current = next;
-		setFields(next);
-	}, [meal, slot]);
-
-	function update(patch) {
-		const next = { ...fieldsRef.current, ...patch };
-		fieldsRef.current = next;
-		setFields(next);
-		return next;
-	}
-
-	function commit(next = fieldsRef.current) {
-		queueRef.current = (queueRef.current ?? Promise.resolve()).then(
-			async () => {
-				const body = bodyFrom(next, slot);
-				const saved = bodyFrom(savedRef.current, slot);
-				const blank =
-					!idRef.current &&
-					!body.mealName &&
-					next.calories === "" &&
-					next.protein === "" &&
-					(slot || !body.mealLabel);
-				if (blank || JSON.stringify(body) === JSON.stringify(saved)) return;
-				setStatus("saving");
-				try {
-					const id = await saveMeal(idRef.current, body);
-					if (id && !idRef.current) {
-						idRef.current = id;
-						onCreated?.(id);
-					}
-					savedRef.current = next;
-					setStatus("saved");
-				} catch {
-					toast.error("Failed to save meal");
-					setStatus(null);
-				}
-			},
-		);
-	}
-
-	async function toggleSkipped(checked) {
-		if (checked) {
-			commit(
-				update({
-					name: `Skipped ${slot}`,
-					restaurant: "",
-					calories: 0,
-					protein: 0,
-				}),
-			);
-			return;
-		}
-		const blank = update({ name: "", calories: "", protein: "" });
-		savedRef.current = blank;
-		if (idRef.current) {
-			const id = idRef.current;
-			idRef.current = null;
-			try {
-				await removeMeal(id);
-			} catch {
-				toast.error("Failed to save meal");
-			}
-		}
-		setStatus(null);
-	}
-
-	const skipped = slot && fields.name === `Skipped ${slot}`;
-	const groupName = slot ?? (fields.label.trim() || "New meal");
-
-	return (
-		<div
-			role="group"
-			aria-label={groupName}
-			className={"meal-card" + (skipped ? " meal-card--skipped" : "")}
-			onFocus={() => (editingRef.current = true)}
-			onBlur={(e) => {
-				if (!e.currentTarget.contains(e.relatedTarget)) {
-					editingRef.current = false;
-				}
-			}}
-		>
-			<div className="meal-card-head">
-				<div className="meal-card-title">
-					{slot ? (
-						<span className="meal-card-label">{slot}</span>
-					) : (
-						<AutoWidth
-							className="meal-card-label-wrap"
-							value={fields.label}
-							placeholder="Name this meal"
-						>
-							<input
-								className="meal-card-label meal-card-label-input"
-								size={1}
-								type="text"
-								placeholder="Name this meal"
-								aria-label="Meal label"
-								maxLength={50}
-								value={fields.label}
-								autoFocus={autoFocusLabel}
-								onChange={(e) => update({ label: e.target.value })}
-								onBlur={() => commit()}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										e.preventDefault();
-										nameRef.current?.focus();
-									}
-								}}
-							/>
-						</AutoWidth>
-					)}
-					{!skipped && (
-						<label
-							className={
-								"meal-card-restaurant-pill" +
-								(fields.restaurant ? "" : " meal-card-restaurant-pill--empty")
-							}
-						>
-							<MapPin size={12} aria-hidden="true" />
-							<AutoWidth value={fields.restaurant} placeholder="Where from?">
-								<input
-									className="meal-card-restaurant"
-									size={1}
-									type="text"
-									placeholder="Where from?"
-									aria-label="Restaurant"
-									maxLength={100}
-									list={restaurantListId}
-									value={fields.restaurant}
-									onChange={(e) => update({ restaurant: e.target.value })}
-									onBlur={() => commit()}
-									onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-								/>
-							</AutoWidth>
-						</label>
-					)}
-				</div>
-				<div className="meal-card-actions">
-					{status && (
-						<span className="meal-card-status">
-							{status === "saving" ? "Saving…" : "Saved"}
-						</span>
-					)}
-					{slot ? (
-						<label className="meal-card-skip">
-							<input
-								type="checkbox"
-								checked={!!skipped}
-								onChange={(e) => toggleSkipped(e.target.checked)}
-							/>
-							Skipped
-						</label>
-					) : (
-						<button
-							type="button"
-							className="meal-card-delete"
-							aria-label="Delete meal"
-							onClick={() => onDelete(idRef.current)}
-						>
-							<Trash2 size={16} aria-hidden="true" />
-						</button>
-					)}
-				</div>
-			</div>
-
-			{skipped ? (
-				<span className="meal-card-skipped-text">
-					Skipped {slot} · 0 kcal · 0 g
-				</span>
-			) : (
-				<div className="meal-card-fields">
-					<input
-						ref={nameRef}
-						className="modal-input meal-card-name"
-						type="text"
-						placeholder="What did you eat?"
-						aria-label="What you ate"
-						maxLength={100}
-						value={fields.name}
-						onChange={(e) => update({ name: e.target.value })}
-						onBlur={() => commit()}
-						onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-					/>
-					<div className="meal-card-unit">
-						<input
-							className="modal-input"
-							type="number"
-							min="0"
-							placeholder="0"
-							aria-label="Calories"
-							value={fields.calories}
-							onChange={(e) => update({ calories: e.target.value })}
-							onBlur={() => commit()}
-							onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-						/>
-						<span aria-hidden="true">kcal</span>
-					</div>
-					<div className="meal-card-unit">
-						<input
-							className="modal-input"
-							type="number"
-							min="0"
-							placeholder="0"
-							aria-label="Protein (g)"
-							value={fields.protein}
-							onChange={(e) => update({ protein: e.target.value })}
-							onBlur={() => commit()}
-							onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-						/>
-						<span aria-hidden="true">g</span>
-					</div>
-				</div>
-			)}
-		</div>
-	);
+function mealDetail(meal) {
+	return [
+		meal.mealName,
+		`${(meal.calories ?? 0).toLocaleString()} kcal`,
+		`${meal.proteinGrams ?? 0} g`,
+	]
+		.filter(Boolean)
+		.join(" · ");
 }
 
 // Restaurants from every logged meal, once each (ignoring case), A–Z.
@@ -318,14 +46,8 @@ export default function MealCards({
 	onSaved,
 }) {
 	const meals = nutritionEntry?.meals ?? [];
-	const restaurantListId = useId();
-	const [drafts, setDrafts] = useState([]); // [{ key, mealId }]
+	const [editing, setEditing] = useState(null); // { slot, meal }
 	const deleteWithUndo = useDeleteWithUndo();
-	const nextKeyRef = useRef(0);
-	const logIdRef = useRef(nutritionEntry?.id ?? null);
-	useEffect(() => {
-		if (nutritionEntry?.id) logIdRef.current = nutritionEntry.id;
-	}, [nutritionEntry?.id]);
 
 	// First meal labelled after each slot fills it; everything else is extra.
 	const used = new Set();
@@ -342,96 +64,74 @@ export default function MealCards({
 	const extraMeals = meals.filter((m) => !used.has(m.id));
 
 	async function saveMeal(mealId, body) {
-		const logId = logIdRef.current ?? (await getOrCreateNutritionLogId());
+		const logId = nutritionEntry?.id ?? (await getOrCreateNutritionLogId());
 		if (!logId) throw new Error("No nutrition log");
-		logIdRef.current = logId;
-		if (mealId) {
-			await api.put(`/nutrition/${logId}/meals/${mealId}`, body);
-			onSaved();
-			return mealId;
-		}
-		const res = await api.post(`/nutrition/${logId}/meals`, body);
-		onSaved();
-		// IDs are sequential, so the new meal is the highest one in the log.
-		const ids = (res.data?.meals ?? []).map((m) => m.id);
-		return ids.length ? Math.max(...ids) : null;
-	}
-
-	async function removeMeal(mealId) {
-		await api.delete(`/nutrition/${logIdRef.current}/meals/${mealId}`);
+		if (mealId) await api.put(`/nutrition/${logId}/meals/${mealId}`, body);
+		else await api.post(`/nutrition/${logId}/meals`, body);
 		onSaved();
 	}
 
-	function addMeal() {
-		const key = `draft-${nextKeyRef.current++}`;
-		setDrafts((d) => [...d, { key, mealId: null }]);
+	function mealRow(title, slot, meal) {
+		const skipped = slot && meal.mealName === `Skipped ${slot}`;
+		return (
+			<SwipeRow
+				key={meal.id}
+				label={title}
+				openLabel={`Edit ${title}`}
+				className="meal-row"
+				onOpen={() => setEditing({ slot, meal })}
+				onDelete={() =>
+					deleteWithUndo({
+						remove: () =>
+							api.delete(`/nutrition/${nutritionEntry.id}/meals/${meal.id}`),
+						message: "Meal deleted",
+						refresh: onSaved,
+					})
+				}
+			>
+				<StatusRow
+					status={skipped ? "skipped" : "done"}
+					title={title}
+					detail={skipped ? "Skipped" : mealDetail(meal)}
+				/>
+			</SwipeRow>
+		);
 	}
-
-	function requestDelete(key, mealId) {
-		const dropDraft = () => setDrafts((d) => d.filter((x) => x.key !== key));
-		if (!mealId) {
-			dropDraft();
-			return;
-		}
-		// Deletes straight away, with Undo (no "Are you sure?").
-		deleteWithUndo({
-			remove: () =>
-				api
-					.delete(`/nutrition/${logIdRef.current}/meals/${mealId}`)
-					.then(dropDraft),
-			message: "Meal deleted",
-			refresh: onSaved,
-		});
-	}
-
-	// Saved extras keep the key of the draft box they were typed into, so the
-	// box isn't remounted (and doesn't lose focus) when the refetch lands.
-	const extraRows = [
-		...extraMeals.map((m) => ({
-			key: drafts.find((d) => d.mealId === m.id)?.key ?? `meal-${m.id}`,
-			meal: m,
-		})),
-		...drafts
-			.filter((d) => !extraMeals.some((m) => m.id === d.mealId))
-			.map((d) => ({ key: d.key, meal: null, autoFocus: !d.mealId })),
-	];
 
 	return (
-		<div className="meal-cards">
-			<datalist id={restaurantListId}>
-				{pastRestaurants(nutritionData).map((name) => (
-					<option key={name} value={name} />
-				))}
-			</datalist>
-			{SLOTS.map((slot) => (
-				<MealCard
-					key={slot}
-					slot={slot}
-					meal={slotMeals[slot] ?? null}
-					restaurantListId={restaurantListId}
-					saveMeal={saveMeal}
-					removeMeal={removeMeal}
+		<div className="meal-rows">
+			{SLOTS.map((slot) =>
+				slotMeals[slot] ? (
+					mealRow(slot, slot, slotMeals[slot])
+				) : (
+					<AddRow
+						key={slot}
+						title={slot}
+						label={`+ Add ${slot}`}
+						className="meal-row"
+						onClick={() => setEditing({ slot, meal: null })}
+					/>
+				),
+			)}
+			{extraMeals.map((m) => mealRow(m.mealLabel || "Meal", null, m))}
+			<div className="meal-rows-footer">
+				<button
+					type="button"
+					className="meal-add-chip"
+					onClick={() => setEditing({ slot: null, meal: null })}
+				>
+					+ Add meal
+				</button>
+			</div>
+			{editing && (
+				<MealSheet
+					slot={editing.slot}
+					meal={editing.meal}
+					restaurants={pastRestaurants(nutritionData)}
+					onSave={saveMeal}
+					onClose={() => setEditing(null)}
 				/>
-			))}
-			{extraRows.map((row) => (
-				<MealCard
-					key={row.key}
-					meal={row.meal}
-					autoFocusLabel={row.autoFocus}
-					restaurantListId={restaurantListId}
-					saveMeal={saveMeal}
-					removeMeal={removeMeal}
-					onCreated={(id) =>
-						setDrafts((d) =>
-							d.map((x) => (x.key === row.key ? { ...x, mealId: id } : x)),
-						)
-					}
-					onDelete={(mealId) => requestDelete(row.key, mealId)}
-				/>
-			))}
-			<button type="button" className="meal-card-add" onClick={addMeal}>
-				+ Add meal
-			</button>
+			)}
 		</div>
 	);
 }

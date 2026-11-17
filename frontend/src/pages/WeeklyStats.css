@@ -94,34 +94,26 @@
 	background: var(--bg);
 }
 
-.day-detail-row .swipe-row-main {
-	padding: 6px 2px;
+.day-detail-row .swipe-row-main,
+.day-detail-row.status-add-row {
+	padding: 8px 2px;
 }
 
-.day-detail-row .swipe-row-content {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 10px;
+.day-detail-meta {
+	margin-left: auto;
+	font-size: var(--fs-xs);
+	color: var(--muted);
 }
 
-.day-detail-add {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	width: 100%;
-	padding: 6px 2px;
-	border: none;
-	background: transparent;
-	font-family: var(--font);
-	text-align: left;
-	cursor: pointer;
+/* Meal rows inside day detail sit flush with the other rows */
+.day-detail .meal-row.status-add-row,
+.day-detail .meal-row .swipe-row-main {
+	padding: 8px 2px;
 }
 
-.day-detail-add-label {
-	color: var(--accent);
-	font-size: var(--fs-sm);
-	font-weight: var(--fw-semibold);
+.day-detail .meal-rows-footer {
+	padding: 6px 0 2px;
+	border-top: none;
 }
 
 .day-exercise-item .swipe-row-main {
@@ -139,22 +131,6 @@
 	font-size: var(--fs-sm);
 	font-weight: var(--fw-semibold);
 	cursor: pointer;
-}
-
-/* Meals inside day detail */
-.day-detail-section .meal-cards {
-	margin-top: 6px;
-}
-
-.day-nutrition-total {
-	font-size: var(--fs-xs);
-	color: var(--muted);
-	margin-top: 6px;
-	padding-top: 6px;
-	border-top: 1px solid var(--border-dim);
-	text-transform: capitalize;
-	letter-spacing: 0.02em;
-	font-weight: var(--fw-semibold);
 }
 
 /* ── Mobile ── */
