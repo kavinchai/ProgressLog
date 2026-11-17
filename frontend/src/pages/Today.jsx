@@ -17,10 +17,11 @@ import EditExerciseModal from "../components/EditExerciseModal";
 import DailyProgressBar from "../components/DailyProgressBar";
 import SwipeRow from "../components/SwipeRow";
 import StatusRow, { AddRow } from "../components/StatusRow";
+import ExerciseRow from "../components/ExerciseRow";
 import MoreMenu from "../components/MoreMenu";
 import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
 import useLongPress from "../hooks/useLongPress";
-import { groupByExercise } from "../utils/workout";
+import { exerciseSummary, groupByExercise } from "../utils/workout";
 import { mergeWorkoutSessions } from "../utils/stats";
 import useWeightUnit from "../hooks/useWeightUnit";
 import useToday from "../hooks/useToday";
@@ -28,45 +29,6 @@ import { todayTotals } from "../utils/widget";
 import { formatDayLabel } from "../utils/date";
 import "../pages/WeeklyStats.css";
 import "./Today.css";
-
-// ── Exercise cards ────────────────────────────────────────────────────────────
-
-// Tapping, swiping or long-pressing the card is handled by the SwipeRow around it.
-function ExerciseCard({ name, weight, sets, isPR }) {
-	const { unit, toDisplay } = useWeightUnit();
-
-	return (
-		<div className="exercise-card">
-			<div className="exercise-card-header">
-				<span className="exercise-card-name">
-					{name}
-					<span className="exercise-card-weight">
-						{toDisplay(weight)} {unit}
-					</span>
-					{isPR && <span className="pr-badge">PR</span>}
-				</span>
-			</div>
-			<div className="exercise-card-sets">
-				<>
-					<div className="exercise-sets-head">
-						<span>Set</span>
-						<span>Weight</span>
-						<span>Reps</span>
-					</div>
-					{sets.map((s) => (
-						<div key={s.id} className="exercise-set-row">
-							<span>{s.setNumber}</span>
-							<span>
-								{toDisplay(s.weightLbs)} {unit}
-							</span>
-							<span>{s.reps}</span>
-						</div>
-					))}
-				</>
-			</div>
-		</div>
-	);
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -425,128 +387,124 @@ export default function Today() {
 										</button>
 									</>
 								) : todayWorkoutEntry ? (
-									<MoreMenu
-										label="More actions for workout"
-										open={workoutMenuOpen}
-										onOpenChange={setWorkoutMenuOpen}
-										items={[
-											{
-												label: "Rename",
-												onSelect: () => {
-													setRenameValue(todayWorkoutEntry.sessionName ?? "");
-													setRenamingSession(true);
+									<>
+										{exerciseGroups.length > 0 && (
+											<span className="section-header-meta">
+												{exerciseSummary(todayWorkoutEntry.exerciseSets)}
+											</span>
+										)}
+										<MoreMenu
+											label="More actions for workout"
+											open={workoutMenuOpen}
+											onOpenChange={setWorkoutMenuOpen}
+											items={[
+												{
+													label: "Rename",
+													onSelect: () => {
+														setRenameValue(todayWorkoutEntry.sessionName ?? "");
+														setRenamingSession(true);
+													},
 												},
-											},
-											{
-												label: "Edit workout",
-												onSelect: () => openWorkoutModal(),
-												hidden: !hasSingleWorkoutSession,
-											},
-											{
-												label: "Delete workout",
-												destructive: true,
-												onSelect: () =>
-													deleteWithUndo({
-														remove: () =>
-															api.delete(`/workouts/${todayWorkoutEntry.id}`),
-														message: "Workout deleted",
-														refresh: refreshWorkouts,
-													}),
-											},
-										]}
-									/>
-								) : (
-									!errorWorkouts && (
-										<button
-											className="btn btn-sm btn-primary"
-											onClick={() => openWorkoutModal()}
-										>
-											Start Workout
-										</button>
-									)
-								)}
-							</div>
-						</div>
-						<div className="section-body">
-							{todayWorkoutEntry ? (
-								exerciseGroups.length > 0 ? (
-									<div className="exercise-cards">
-										{exerciseGroups.map((g) => {
-											const groupTuple = tupleForGroup(g);
-											const todayBest = todayBestByExercise[g.name];
-											const allTimePR = prMap[g.name];
-											const isBestOfDay =
-												comparePRTuple(groupTuple, todayBest) === 0;
-											const beatsAllTime =
-												allTimePR == null ||
-												comparePRTuple(todayBest, allTimePR) >= 0;
-											// No badges until PRs arrive, or every lift would look like one.
-											const isPR = !loadingPRs && isBestOfDay && beatsAllTime;
-											const sessionId =
-												g.sets[0]._sessionId ?? todayWorkoutEntry.id;
-											return (
-												<SwipeRow
-													key={`${g.name}-${g.weight}`}
-													label={g.name}
-													openLabel={`Edit ${g.name}`}
-													className="exercise-swipe-row"
-													onOpen={() =>
-														setEditExercise({
-															sessionId,
-															name: g.name,
-															sets: g.sets,
-														})
-													}
-													onDelete={() =>
+												{
+													label: "Edit workout",
+													onSelect: () => openWorkoutModal(),
+													hidden: !hasSingleWorkoutSession,
+												},
+												{
+													label: "Delete workout",
+													destructive: true,
+													onSelect: () =>
 														deleteWithUndo({
 															remove: () =>
-																api.delete(`/workouts/${sessionId}/exercises`, {
-																	params: { name: g.name },
-																}),
-															message: `${g.name} deleted`,
+																api.delete(`/workouts/${todayWorkoutEntry.id}`),
+															message: "Workout deleted",
 															refresh: refreshWorkouts,
-														})
-													}
-												>
-													<ExerciseCard
-														name={g.name}
-														weight={g.weight}
-														sets={g.sets}
-														isPR={isPR}
-													/>
-												</SwipeRow>
-											);
-										})}
-										{editableWorkoutSession && (
-											<button
-												className="today-add-exercise-row"
-												onClick={() => openWorkoutModal({ appendBlank: true })}
-											>
-												+ Add another exercise
-											</button>
-										)}
-									</div>
-								) : (
-									<div className="today-workout-empty">
-										<span className="muted">
-											Session logged. No exercises yet.
-										</span>
-										{editableWorkoutSession && (
-											<button
-												className="btn btn-sm btn-primary"
-												onClick={() => openWorkoutModal({ appendBlank: true })}
-											>
-												+ Add exercise
-											</button>
-										)}
-									</div>
-								)
-							) : (
-								<span className="muted">
-									{errorWorkouts ? "Not loaded." : "No entry for today."}
-								</span>
-							)}
+														}),
+												},
+											]}
+										/>
+									</>
+								) : null}
+							</div>
 						</div>
+						{errorWorkouts ? (
+							<div className="section-body">
+								<span className="muted">Not loaded.</span>
+							</div>
+						) : !todayWorkoutEntry ? (
+							<AddRow
+								title="No workout yet"
+								label="Start workout"
+								action="+ Start"
+								className="today-row"
+								onClick={() => openWorkoutModal()}
+							/>
+						) : (
+							<div className="status-rows">
+								{exerciseGroups.length === 0 && (
+									<div className="status-row-static">
+										<StatusRow status="empty" title="No exercises yet" />
+									</div>
+								)}
+								{exerciseGroups.map((g) => {
+									const groupTuple = tupleForGroup(g);
+									const todayBest = todayBestByExercise[g.name];
+									const allTimePR = prMap[g.name];
+									const isBestOfDay =
+										comparePRTuple(groupTuple, todayBest) === 0;
+									const beatsAllTime =
+										allTimePR == null ||
+										comparePRTuple(todayBest, allTimePR) >= 0;
+									// No badges until PRs arrive, or every lift would look like one.
+									const isPR = !loadingPRs && isBestOfDay && beatsAllTime;
+									const sessionId =
+										g.sets[0]._sessionId ?? todayWorkoutEntry.id;
+									return (
+										<SwipeRow
+											key={`${g.name}-${g.weight}`}
+											label={g.name}
+											openLabel={`Edit ${g.name}`}
+											className="exercise-row"
+											onOpen={() =>
+												setEditExercise({
+													sessionId,
+													name: g.name,
+													sets: g.sets,
+												})
+											}
+											onDelete={() =>
+												deleteWithUndo({
+													remove: () =>
+														api.delete(`/workouts/${sessionId}/exercises`, {
+															params: { name: g.name },
+														}),
+													message: `${g.name} deleted`,
+													refresh: refreshWorkouts,
+												})
+											}
+										>
+											<ExerciseRow
+												name={g.name}
+												weight={g.weight}
+												sets={g.sets}
+												isPR={isPR}
+											/>
+										</SwipeRow>
+									);
+								})}
+								{editableWorkoutSession && (
+									<div className="status-rows-footer">
+										<button
+											type="button"
+											className="status-add-chip"
+											onClick={() => openWorkoutModal({ appendBlank: true })}
+										>
+											+ Add exercise
+										</button>
+									</div>
+								)}
+							</div>
+						)}
 					</div>
 
 					{/* NUTRITION */}

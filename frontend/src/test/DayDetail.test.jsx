@@ -129,7 +129,7 @@ const MULTI_SESSION = {
 };
 
 // Give weight + steps real entries so they render as "Edit weight" / "Edit steps"
-// rows, leaving the workout's "+ Add" as the only plain "+ Add" button.
+// rows, so the only add buttons left are the workout's.
 function renderDetail(workoutEntry) {
 	return render(
 		<DayDetail
@@ -209,7 +209,9 @@ describe("DayDetail — nutrition header", () => {
 describe("DayDetail — workout add", () => {
 	it("creates a new workout when no session exists for the day", async () => {
 		renderDetail(null);
-		await userEvent.click(screen.getByRole("button", { name: /^\+ Add$/i }));
+		const add = screen.getByRole("button", { name: "+ Add workout" });
+		expect(add).toHaveTextContent("No workout");
+		await userEvent.click(add);
 		const modal = screen.getByTestId("workout-modal");
 		expect(modal.dataset.existingSessionId).toBe("");
 		expect(modal.dataset.appendBlank).toBe("false");
@@ -227,12 +229,41 @@ describe("DayDetail — workout add", () => {
 
 	it("falls back to creating a new workout when the day has multiple sessions", async () => {
 		renderDetail(MULTI_SESSION);
-		await userEvent.click(
-			screen.getByRole("button", { name: /\+ Add workout/i }),
-		);
+		const add = screen.getByRole("button", { name: "+ Add workout" });
+		expect(add).toHaveClass("status-add-chip");
+		await userEvent.click(add);
 		const modal = screen.getByTestId("workout-modal");
 		expect(modal.dataset.existingSessionId).toBe("");
 		expect(modal.dataset.appendBlank).toBe("false");
+	});
+});
+
+describe("DayDetail — exercise rows", () => {
+	it("shows each exercise with its weight and a pill per set", () => {
+		renderDetail(MULTI_SESSION);
+		const squat = screen.getByRole("button", { name: "Edit Squat" });
+		expect(squat.querySelector(".status-row-title")).toHaveTextContent("Squat");
+		expect(squat.querySelector(".exercise-row-weight")).toHaveTextContent(
+			"225 lbs",
+		);
+		expect(
+			[...squat.querySelectorAll(".set-pill")].map((p) => p.textContent),
+		).toEqual(["5"]);
+	});
+
+	it("shows No exercises yet for a session with no sets, with + Add exercise", () => {
+		renderDetail({ ...SINGLE_SESSION, exerciseSets: [] });
+		expect(screen.getByText("No exercises yet")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "+ Add exercise" }),
+		).toBeInTheDocument();
+	});
+
+	it("sums up the workout in the header", () => {
+		renderDetail(MULTI_SESSION);
+		expect(
+			screen.getByText("Workout").closest(".day-detail-section-head"),
+		).toHaveTextContent("2 exercises · 2 sets");
 	});
 });
 
@@ -269,6 +300,11 @@ describe("DayDetail — workout only", () => {
 		expect(
 			screen.getByText("2 exercises · 2 sets · 2,205 lbs volume"),
 		).toBeInTheDocument();
+	});
+
+	it("doesn't repeat the summary in the header in the workout-only view", () => {
+		const { container } = renderWorkoutOnly(MULTI_SESSION);
+		expect(container.querySelector(".day-detail-meta")).toBeNull();
 	});
 
 	it("only shows the summary in the workout-only view", () => {
@@ -408,11 +444,9 @@ describe("DayDetail — tap, swipe and ••• menus", () => {
 		expect(setRenameValue).toHaveBeenCalledWith("Push");
 	});
 
-	it("hides the header + Add once the day has a workout", () => {
+	it("swaps the No workout row for + Add exercise once the day has a workout", () => {
 		renderWith();
-		expect(
-			screen.queryByRole("button", { name: /^\+ Add$/i }),
-		).not.toBeInTheDocument();
+		expect(screen.queryByText("No workout")).not.toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: /\+ Add exercise/i }),
 		).toBeInTheDocument();

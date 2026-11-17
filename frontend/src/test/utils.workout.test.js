@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	groupByExercise,
+	exerciseSummary,
 	canonicalExerciseName,
 	emptySet,
 	emptyExercise,
@@ -143,5 +144,28 @@ describe("workout form helpers", () => {
 		expect(
 			exercisesToPayload([{ exerciseName: "  ", sets: [emptySet(1)] }]),
 		).toEqual([]);
+	});
+});
+
+describe("exerciseSummary", () => {
+	it("counts exercises (by canonical name) and sets", () => {
+		expect(
+			exerciseSummary([
+				{ exerciseName: "Bench Press", weightLbs: 135 },
+				{ exerciseName: "Bench Press", weightLbs: 145 },
+				{ exerciseName: "Lat raises", weightLbs: 20 },
+				{ exerciseName: "Lateral Raises", weightLbs: 20 },
+			]),
+		).toBe("2 exercises · 4 sets");
+	});
+
+	it("handles no sets", () => {
+		expect(exerciseSummary(null)).toBe("0 exercises · 0 sets");
+	});
+
+	it("uses the singular for one", () => {
+		expect(exerciseSummary([{ exerciseName: "Squat" }])).toBe(
+			"1 exercise · 1 set",
+		);
 	});
 });

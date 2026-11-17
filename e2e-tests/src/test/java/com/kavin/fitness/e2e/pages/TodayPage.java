@@ -1,5 +1,7 @@
 package com.kavin.fitness.e2e.pages;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -148,18 +150,13 @@ public class TodayPage {
         return button("More actions for workout");
     }
 
+    /** The "No workout yet · + Start" row shown when today has no workout. */
     private Locator workoutStartBtn() {
-        return section(WORKOUT_IDX).locator("button",
-                new Locator.LocatorOptions().setHasText("Start Workout"));
+        return button("Start workout");
     }
 
     private Locator workoutAddExerciseBtn() {
-        // The workout section offers two ways to add an exercise to an existing
-        // session: the empty-state "+ Add exercise" button and the "+ Add
-        // another exercise" row shown once exercises are present.
-        return section(WORKOUT_IDX).locator("button",
-                new Locator.LocatorOptions().setHasText(
-                        Pattern.compile("\\+ Add( another)? exercise", Pattern.CASE_INSENSITIVE)));
+        return button("+ Add exercise");
     }
 
     /** Wait until the workout section has rendered its initial state. */
@@ -192,7 +189,7 @@ public class TodayPage {
         } else if (workoutAddExerciseBtn().count() > 0) {
             workoutAddExerciseBtn().first().click();
         } else {
-            throw new AssertionError("Neither Start Workout nor + Exercise visible in workout section");
+            throw new AssertionError("Neither Start workout nor + Add exercise visible in workout section");
         }
     }
 
@@ -211,14 +208,23 @@ public class TodayPage {
     // ── Exercises ────────────────────────────────────────────────────────────
 
     public void waitForExercise(String name) {
-        page.locator("span.exercise-card-name",
-                new Page.LocatorOptions().setHasText(name)).first().waitFor();
+        button("Edit " + name).first().waitFor();
+    }
+
+    /** Waits until the exercise's row shows exactly these reps, one pill per set. */
+    public void waitForSetReps(String name, String... reps) {
+        assertThat(button("Edit " + name).first().locator(".set-pill")).hasText(reps);
+    }
+
+    /** Waits for the "No workout yet · + Start" row. */
+    public void waitForNoWorkout() {
+        workoutStartBtn().waitFor();
     }
 
     public void waitForExerciseDetail(String exerciseName, String detail) {
         try {
             page.waitForCondition(() -> {
-                List<Locator> cards = page.locator(".exercise-card").all();
+                List<Locator> cards = page.locator(".exercise-row").all();
                 for (Locator card : cards) {
                     String text = card.innerText();
                     if (text.contains(exerciseName) && text.contains(detail)) return true;
@@ -227,53 +233,44 @@ public class TodayPage {
             });
         } catch (com.microsoft.playwright.TimeoutError e) {
             System.err.println(">>> waitForExerciseDetail FAILED — expected name='" + exerciseName
-                    + "' detail='" + detail + "'. Dumping all exercise-card text:");
-            List<Locator> cards = page.locator(".exercise-card").all();
+                    + "' detail='" + detail + "'. Dumping all exercise-row text:");
+            List<Locator> cards = page.locator(".exercise-row").all();
             if (cards.isEmpty()) {
-                System.err.println("    (no exercise-card elements on page)");
+                System.err.println("    (no exercise-row elements on page)");
             } else {
                 for (int i = 0; i < cards.size(); i++) {
                     String text = cards.get(i).innerText().replace("\n", " | ");
-                    System.err.println("    card[" + i + "]: " + text);
+                    System.err.println("    row[" + i + "]: " + text);
                 }
             }
             throw e;
         }
     }
 
-    /** Taps the exercise card at {@code index}, which opens it for editing. */
+    /** Taps the exercise row at {@code index}, which opens it for editing. */
     public void clickEditExercise(int index) {
-        page.locator(".exercise-swipe-row .swipe-row-main").nth(index).click();
+        page.locator(".exercise-row .swipe-row-main").nth(index).click();
     }
 
-    /** Taps the card for {@code name}; cards are sorted by name, so don't rely on position. */
+    /** Taps the row for {@code name}; rows are sorted by name, so don't rely on position. */
     public void clickEditExercise(String name) {
         button("Edit " + name).click();
     }
 
-    /** Deletes an exercise from its card's ••• menu; no confirmation, an Undo bar appears. */
+    /** Deletes an exercise from its row's ••• menu; no confirmation, an Undo bar appears. */
     public void deleteExercise(String name) {
         chooseFromMenu("More actions for " + name, "Delete");
     }
 
-    public boolean isTextVisible(String text) {
-        return page.locator(":text(\"" + text + "\")").count() > 0;
-    }
-
-    /** Waits up to 5s for the exercise's card to disappear; false if it's still there. */
+    /** Waits up to 5s for the exercise's row to disappear; false if it's still there. */
     public boolean waitForExerciseGone(String name) {
         try {
-            page.locator("span.exercise-card-name", new Page.LocatorOptions().setHasText(name))
-                    .first().waitFor(new Locator.WaitForOptions()
-                            .setState(WaitForSelectorState.DETACHED).setTimeout(5000));
+            button("Edit " + name).first().waitFor(new Locator.WaitForOptions()
+                    .setState(WaitForSelectorState.DETACHED).setTimeout(5000));
             return true;
         } catch (com.microsoft.playwright.TimeoutError e) {
             return false;
         }
     }
 
-    public boolean isExerciseVisible(String name) {
-        return page.locator("span.exercise-card-name",
-                new Page.LocatorOptions().setHasText(name)).count() > 0;
-    }
 }

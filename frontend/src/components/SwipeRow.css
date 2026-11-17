@@ -19,6 +19,13 @@
 	cursor: pointer;
 }
 
+/* Hidden while the row is closed, so no red hairline shows at its edges;
+   it hides only after the row has finished sliding back. */
+.swipe-row--closed .swipe-row-delete {
+	visibility: hidden;
+	transition: visibility 0s 200ms;
+}
+
 .swipe-row-front {
 	position: relative;
 	display: flex;

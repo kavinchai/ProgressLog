@@ -64,3 +64,45 @@
 	font-size: var(--fs-sm);
 	font-weight: var(--fw-semibold);
 }
+
+/* A card's list of rows, edge to edge, with an add button at the bottom */
+.status-rows {
+	display: flex;
+	flex-direction: column;
+}
+
+.status-rows > * + * {
+	border-top: 1px solid var(--border-dim);
+}
+
+.status-rows > .status-add-row,
+.status-rows > .status-row-static,
+.status-rows > .swipe-row .swipe-row-main {
+	padding: 12px 16px;
+}
+
+.status-rows > .swipe-row .swipe-row-more {
+	margin-right: 8px;
+}
+
+.status-rows-footer {
+	padding: 10px 16px 14px;
+}
+
+.status-add-chip {
+	padding: 6px 14px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--accent);
+	font-family: var(--font);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+	cursor: pointer;
+}
+
+@media (hover: hover) {
+	.status-add-chip:hover {
+		background: var(--hover-bg);
+	}
+}

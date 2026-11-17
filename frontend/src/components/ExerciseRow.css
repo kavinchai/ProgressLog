@@ -1,0 +1,25 @@
+.exercise-row-weight {
+	margin-left: 8px;
+	color: var(--muted);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-normal);
+}
+
+.set-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 4px;
+}
+
+.set-pill {
+	min-width: 26px;
+	padding: 1px 7px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: var(--bg);
+	color: var(--fg);
+	font-size: var(--fs-sm);
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+}

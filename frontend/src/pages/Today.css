@@ -30,14 +30,6 @@
 	margin-bottom: 12px;
 }
 
-/* ── Exercise cards ── */
-.exercise-cards {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.today-add-exercise-row,
 .today-add-row {
 	width: 100%;
 	padding: 10px 12px;
@@ -54,7 +46,6 @@
 		border-color var(--transition-fast);
 }
 
-.today-add-exercise-row:hover,
 .today-add-row:hover {
 	background: var(--hover-bg);
 	border-color: var(--accent);
@@ -62,71 +53,6 @@
 
 .today-add-row {
 	margin-top: 12px;
-}
-
-.today-workout-empty {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-}
-
-.exercise-card {
-	border: 1px solid var(--border-dim);
-	border-radius: var(--radius-md);
-	overflow: hidden;
-	background: var(--bg);
-}
-
-.exercise-card-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--border-dim);
-	background: var(--bg-card);
-}
-
-.exercise-card-name {
-	font-weight: var(--fw-semibold);
-	font-size: var(--fs);
-}
-
-.exercise-card-weight {
-	color: var(--muted);
-	font-weight: var(--fw-normal);
-	margin-left: 8px;
-	font-size: var(--fs-sm);
-}
-
-.exercise-card-sets {
-	padding: 8px 12px;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.exercise-sets-head {
-	display: grid;
-	grid-template-columns: 36px 1fr 1fr;
-	gap: 8px;
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-semibold);
-	color: var(--muted);
-	text-transform: capitalize;
-	letter-spacing: 0.02em;
-	margin-bottom: 4px;
-}
-
-.exercise-set-row {
-	display: grid;
-	grid-template-columns: 36px 1fr 1fr;
-	gap: 8px;
-	font-size: var(--fs);
-}
-
-.exercise-set-row span:first-child {
-	color: var(--muted);
 }
 
 /* ── PR badge ── */
@@ -271,15 +197,6 @@
 	font-size: var(--fs-sm);
 	color: var(--muted);
 	white-space: nowrap;
-}
-
-/* ── Exercises: the whole card is the tap / swipe target ── */
-.exercise-swipe-row {
-	border-radius: var(--radius-md);
-}
-
-.exercise-swipe-row .swipe-row-chevron {
-	display: none;
 }
 
 /* ── Mobile ── */

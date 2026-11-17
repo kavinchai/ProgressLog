@@ -4,7 +4,6 @@ import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
 import SwipeRow from "./SwipeRow";
 import StatusRow, { AddRow } from "./StatusRow";
 import MealSheet from "./MealSheet";
-import "./MealCards.css";
 
 // Breakfast / Lunch / Dinner always have a row; any other meal is an "extra"
 // row under its own label. Tapping a row (or + Add) opens the meal sheet.
@@ -99,7 +98,7 @@ export default function MealCards({
 	}
 
 	return (
-		<div className="meal-rows">
+		<div className="meal-rows status-rows">
 			{SLOTS.map((slot) =>
 				slotMeals[slot] ? (
 					mealRow(slot, slot, slotMeals[slot])
@@ -114,10 +113,10 @@ export default function MealCards({
 				),
 			)}
 			{extraMeals.map((m) => mealRow(m.mealLabel || "Meal", null, m))}
-			<div className="meal-rows-footer">
+			<div className="status-rows-footer">
 				<button
 					type="button"
-					className="meal-add-chip"
+					className="status-add-chip"
 					onClick={() => setEditing({ slot: null, meal: null })}
 				>
 					+ Add meal

@@ -69,6 +69,14 @@ describe("SwipeRow — swipe to delete", () => {
 		expect(onOpen).not.toHaveBeenCalled();
 	});
 
+	it("hides the Delete behind a closed row, so none of its red shows", () => {
+		renderRow();
+		const row = document.querySelector(".swipe-row");
+		expect(row).toHaveClass("swipe-row--closed");
+		swipe(main(), 260, 200);
+		expect(row).not.toHaveClass("swipe-row--closed");
+	});
+
 	it("springs back after a short swipe", () => {
 		renderRow();
 		swipe(main(), 285);

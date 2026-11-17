@@ -58,37 +58,6 @@
 	padding-left: 2px;
 }
 
-/* Exercises inside day detail */
-.day-exercise-list {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	margin-top: 6px;
-}
-
-.day-exercise-item {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-.day-exercise-row {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	font-size: var(--fs-sm);
-}
-
-.day-exercise-name {
-	font-weight: var(--fw-semibold);
-}
-
-.day-exercise-reps {
-	font-size: var(--fs-sm);
-	color: var(--muted);
-	padding-left: 2px;
-}
-
 /* Rows in day detail: tap to edit, swipe to delete (see SwipeRow) */
 .day-detail .swipe-row-front {
 	background: var(--bg);
@@ -105,32 +74,16 @@
 	color: var(--muted);
 }
 
-/* Meal rows inside day detail sit flush with the other rows */
-.day-detail .meal-row.status-add-row,
-.day-detail .meal-row .swipe-row-main {
+/* Row lists (meals, exercises) inside day detail sit flush with the other rows */
+.day-detail .status-rows > .status-add-row,
+.day-detail .status-rows > .status-row-static,
+.day-detail .status-rows > .swipe-row .swipe-row-main {
 	padding: 8px 2px;
 }
 
-.day-detail .meal-rows-footer {
+.day-detail .status-rows > .status-rows-footer {
 	padding: 6px 0 2px;
 	border-top: none;
-}
-
-.day-exercise-item .swipe-row-main {
-	padding: 4px 2px;
-}
-
-.day-detail-add-exercise {
-	align-self: flex-start;
-	margin-top: 6px;
-	padding: 4px 0;
-	border: none;
-	background: transparent;
-	color: var(--accent);
-	font-family: var(--font);
-	font-size: var(--fs-sm);
-	font-weight: var(--fw-semibold);
-	cursor: pointer;
 }
 
 /* ── Mobile ── */
@@ -146,11 +99,6 @@
 
 	.day-detail {
 		padding: 12px;
-	}
-
-	.day-exercise-row {
-		flex-wrap: wrap;
-		gap: 6px;
 	}
 
 	.weekly-content-layout {

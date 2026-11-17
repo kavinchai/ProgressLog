@@ -22,7 +22,13 @@ export default function StatusRow({ status, title, detail }) {
 }
 
 /** The row for something not logged yet: a dashed circle and "+ Add". */
-export function AddRow({ title, label, onClick, className = "" }) {
+export function AddRow({
+	title,
+	label,
+	action = "+ Add",
+	onClick,
+	className = "",
+}) {
 	return (
 		<button
 			type="button"
@@ -31,7 +37,7 @@ export function AddRow({ title, label, onClick, className = "" }) {
 			onClick={onClick}
 		>
 			<StatusRow status="empty" title={title} />
-			<span className="status-add-row-label">+ Add</span>
+			<span className="status-add-row-label">{action}</span>
 		</button>
 	);
 }

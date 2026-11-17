@@ -108,7 +108,13 @@ export default function SwipeRow({
 	];
 
 	return (
-		<div className={"swipe-row " + className}>
+		<div
+			className={
+				"swipe-row " +
+				className +
+				(revealed || dragging ? "" : " swipe-row--closed")
+			}
+		>
 			{onDelete && (
 				<button
 					type="button"

@@ -124,7 +124,7 @@ public class HistoryPage {
     }
 
     public void clickAddExerciseInDayPanel() {
-        page.locator(DAY_PANEL + " button:has-text(\"+ Add exercise\")").click();
+        page.locator(DAY_PANEL + " .status-add-chip:text-is(\"+ Add exercise\")").click();
     }
 
     public boolean dayPanelContains(String text) {

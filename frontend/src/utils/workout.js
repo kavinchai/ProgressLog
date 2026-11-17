@@ -28,6 +28,16 @@ export function groupByExercise(exerciseSets) {
 		}));
 }
 
+/** "3 exercises · 9 sets" for a session's sets. */
+export function exerciseSummary(exerciseSets) {
+	const sets = exerciseSets ?? [];
+	const exercises = new Set(
+		sets.map((s) => canonicalExerciseName(s.exerciseName)),
+	).size;
+	const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+	return `${plural(exercises, "exercise")} · ${plural(sets.length, "set")}`;
+}
+
 // ── Workout form state ⇄ API payload ─────────────────────────────────────────
 
 export function emptySet(num) {

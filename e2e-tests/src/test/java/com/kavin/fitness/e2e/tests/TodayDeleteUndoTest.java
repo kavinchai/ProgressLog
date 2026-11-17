@@ -68,12 +68,12 @@ public class TodayDeleteUndoTest extends BaseTest {
     public void deletingAnExerciseIsImmediateAndUndoBringsItBack() {
         today.waitForExercise("Deadlift");
 
-        step("delete the exercise from its card's ••• menu");
+        step("delete the exercise from its row's ••• menu");
         today.deleteExercise("Deadlift");
 
-        step("the card is gone");
+        step("the row is gone");
         if (!today.waitForExerciseGone("Deadlift")) {
-            throw new AssertionError("Expected the Deadlift card to disappear");
+            throw new AssertionError("Expected the Deadlift row to disappear");
         }
 
         step("Undo brings it back");

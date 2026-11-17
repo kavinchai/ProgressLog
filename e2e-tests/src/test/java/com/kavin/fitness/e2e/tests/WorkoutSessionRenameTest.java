@@ -52,7 +52,7 @@ public class WorkoutSessionRenameTest extends BaseTest {
         step("delete workout");
         today.deleteWorkoutIfExists();
 
-        step("verify workout is deleted (Start Workout button visible)");
-        page.waitForCondition(() -> today.isTextVisible("Start Workout"));
+        step("verify workout is deleted (No workout yet row visible)");
+        today.waitForNoWorkout();
     }
 }

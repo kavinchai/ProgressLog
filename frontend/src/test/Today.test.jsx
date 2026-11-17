@@ -7,7 +7,13 @@
  *   ACTION   — does clicking delete/rename call the API and trigger a refetch?
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Today from "../pages/Today";
 
@@ -234,17 +240,16 @@ describe("Today — empty states", () => {
 		expect(screen.getByTestId("daily-progress-bar")).toBeInTheDocument();
 	});
 
-	it('shows "No entry for today" in the workout card and an add row for weight', () => {
+	it('shows "No workout yet" in the workout card and an add row for weight', () => {
 		setup();
 		render(<Today />);
-		// Workout shows this span; weight is an add row; nutrition shows meal boxes
-		expect(screen.getAllByText(/no entry for today/i)).toHaveLength(1);
+		expect(screen.getByText("No workout yet")).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: /\+ add weight/i }),
 		).toBeInTheDocument();
 	});
 
-	it("shows + Add buttons for daily logs and Start Workout when nothing logged", () => {
+	it("shows + Add buttons for daily logs and a Start workout row when nothing logged", () => {
 		setup();
 		render(<Today />);
 		// Weight and steps each show a labelled add button in their section body
@@ -255,7 +260,7 @@ describe("Today — empty states", () => {
 			screen.getByRole("button", { name: /\+ add steps/i }),
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /start workout/i }),
+			screen.getByRole("button", { name: "Start workout" }),
 		).toBeInTheDocument();
 	});
 
@@ -270,10 +275,13 @@ describe("Today — empty states", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it('shows "No entry for today" in workout section when no workout logged', () => {
+	it("shows a No workout yet row with + Start when no workout is logged", () => {
 		setup();
 		render(<Today />);
-		expect(screen.getByText(/no entry for today/i)).toBeInTheDocument();
+		const start = screen.getByRole("button", { name: "Start workout" });
+		expect(start).toHaveTextContent("No workout yet");
+		expect(start).toHaveTextContent("+ Start");
+		expect(start.querySelector(".status-row-icon--empty")).not.toBeNull();
 	});
 
 	it("shows the meal boxes in nutrition even when no nutrition logged", () => {
@@ -336,19 +344,13 @@ describe("Today — workout display", () => {
 		expect(screen.getByText("OHP")).toBeInTheDocument();
 	});
 
-	it("shows exercise weight in the exercise card", () => {
+	it("shows each exercise's own weight and reps in its row", () => {
 		setup({ workouts: [WORKOUT_ENTRY] });
 		render(<Today />);
-		// 135 lbs should appear for Bench Press
-		expect(screen.getAllByText(/135 lbs/i).length).toBeGreaterThan(0);
-	});
-
-	it("shows individual set reps in the exercise card", () => {
-		setup({ workouts: [WORKOUT_ENTRY] });
-		render(<Today />);
-		// Bench Press has reps 8 and 6
-		expect(screen.getByText("8")).toBeInTheDocument();
-		expect(screen.getByText("6")).toBeInTheDocument();
+		const ohp = within(screen.getByRole("button", { name: "Edit OHP" }));
+		expect(ohp.getByText("95 lbs")).toBeInTheDocument();
+		expect(ohp.getByText("10")).toHaveClass("set-pill");
+		expect(ohp.queryByText("8")).not.toBeInTheDocument();
 	});
 
 	it("shows session name in the workout header", () => {
@@ -357,7 +359,7 @@ describe("Today — workout display", () => {
 		expect(screen.getByText("Push")).toBeInTheDocument();
 	});
 
-	it('shows "Session logged. No exercises yet." when session exists but has no sets', () => {
+	it('shows "No exercises yet" when a session exists but has no sets', () => {
 		const emptySession = {
 			id: 20,
 			sessionDate: TODAY,
@@ -366,7 +368,45 @@ describe("Today — workout display", () => {
 		};
 		setup({ workouts: [emptySession] });
 		render(<Today />);
-		expect(screen.getByText(/session logged/i)).toBeInTheDocument();
+		expect(screen.getByText("No exercises yet")).toBeInTheDocument();
+		expect(
+			screen.getByText("Workout").closest(".section-header"),
+		).not.toHaveTextContent("0 exercises");
+		expect(
+			screen.getByRole("button", { name: "+ Add exercise" }),
+		).toBeInTheDocument();
+	});
+
+	it("shows each exercise as a row: name and weight, then a pill per set", () => {
+		setup({ workouts: [WORKOUT_ENTRY] });
+		render(<Today />);
+		const bench = screen.getByRole("button", { name: "Edit Bench Press" });
+		expect(bench.querySelector(".status-row-icon--done")).not.toBeNull();
+		expect(bench.querySelector(".status-row-title")).toHaveTextContent(
+			"Bench Press",
+		);
+		expect(bench.querySelector(".exercise-row-weight")).toHaveTextContent(
+			"135 lbs",
+		);
+		expect(
+			[...bench.querySelectorAll(".set-pill")].map((p) => p.textContent),
+		).toEqual(["8", "6"]);
+	});
+
+	it("sums up the workout in the header: exercises and sets", () => {
+		setup({ workouts: [WORKOUT_ENTRY] });
+		render(<Today />);
+		const header = screen.getByText("Workout").closest(".section-header");
+		expect(header).toHaveTextContent("2 exercises · 3 sets");
+	});
+
+	it("has no set table or Start Workout button once a workout is logged", () => {
+		setup({ workouts: [WORKOUT_ENTRY] });
+		render(<Today />);
+		expect(screen.queryByText("Reps")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /start workout/i }),
+		).not.toBeInTheDocument();
 	});
 
 	it("lets you tap each exercise to edit it", () => {
@@ -645,11 +685,11 @@ describe("Today — opening modals", () => {
 		expect(modal.dataset.existingId).toBe("1");
 	});
 
-	it("Start Workout button opens WorkoutBuilderModal for a new session", async () => {
+	it("the Start workout row opens WorkoutBuilderModal for a new session", async () => {
 		setup({ weight: [WEIGHT_ENTRY] });
 		render(<Today />);
 		await userEvent.click(
-			screen.getByRole("button", { name: /start workout/i }),
+			screen.getByRole("button", { name: "Start workout" }),
 		);
 		const modal = screen.getByTestId("workout-modal");
 		expect(modal).toBeInTheDocument();
@@ -666,11 +706,11 @@ describe("Today — opening modals", () => {
 		expect(modal.dataset.appendBlank).toBe("false");
 	});
 
-	it("+ Add another exercise opens the existing workout with a blank exercise appended", async () => {
+	it("+ Add exercise opens the existing workout with a blank exercise appended", async () => {
 		setup({ workouts: [WORKOUT_ENTRY] });
 		render(<Today />);
 		await userEvent.click(
-			screen.getByRole("button", { name: /add another exercise/i }),
+			screen.getByRole("button", { name: "+ Add exercise" }),
 		);
 		const modal = screen.getByTestId("workout-modal");
 		expect(modal).toBeInTheDocument();
@@ -939,6 +979,7 @@ describe("Today — load errors", () => {
 		expect(
 			screen.queryByRole("button", { name: /start workout/i }),
 		).not.toBeInTheDocument();
+		expect(screen.queryByText("No workout yet")).not.toBeInTheDocument();
 	});
 
 	it("hides the meal boxes when nutrition failed to load", () => {

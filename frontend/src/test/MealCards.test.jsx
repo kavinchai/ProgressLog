@@ -6,7 +6,6 @@ import MealCards from "../components/MealCards";
 vi.mock("../api", () => ({
 	default: { post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
-vi.mock("../components/MealCards.css", () => ({}));
 vi.mock("../native/haptics", () => ({
 	tapSuccess: vi.fn(),
 	tapDelete: vi.fn(),

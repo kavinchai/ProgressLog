@@ -39,7 +39,7 @@ public class WorkoutLiftingTest extends BaseTest {
         waitForModalClosed();
         today.waitForExercise("Bench Press");
         today.waitForExerciseDetail("Bench Press", "135 lbs");
-        today.waitForExerciseDetail("Bench Press", "8");
+        today.waitForSetReps("Bench Press", "8");
     }
 
     @Test(priority = 2, dependsOnMethods = "addSingleLiftingExerciseWithOneSet")
@@ -68,7 +68,7 @@ public class WorkoutLiftingTest extends BaseTest {
 
         step("Bench Press no longer visible");
         waitForModalClosed();
-        if (today.isExerciseVisible("Bench Press")) {
+        if (!today.waitForExerciseGone("Bench Press")) {
             throw new AssertionError("Expected Bench Press to be removed");
         }
     }
