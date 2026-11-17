@@ -1,0 +1,24 @@
+/* Covers the whole app, above sheets and toasts, until Face ID succeeds. */
+.app-lock {
+	position: fixed;
+	inset: 0;
+	z-index: 1100; /* above toasts (1000) */
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-md);
+	padding: var(--space-lg);
+	background: var(--bg);
+}
+
+.app-lock-icon {
+	color: var(--accent);
+}
+
+.app-lock-title {
+	margin: 0;
+	font-size: var(--fs-lg);
+	font-weight: var(--fw-semibold);
+	color: var(--fg);
+}

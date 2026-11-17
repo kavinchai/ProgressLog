@@ -1,11 +1,11 @@
 package com.kavin.fitness.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public class UpdateCredentialsRequest {
 
-    @NotBlank private String currentPassword;
+    // Required unless the account was created with Apple and has no password yet.
+    private String currentPassword;
 
     @Size(min = 3, max = 50)
     private String newUsername;

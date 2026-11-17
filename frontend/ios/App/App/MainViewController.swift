@@ -6,5 +6,7 @@ class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(HealthImportPlugin())
         bridge?.registerPluginInstance(WidgetBridgePlugin())
+        bridge?.registerPluginInstance(AppleSignInPlugin())
+        bridge?.registerPluginInstance(BiometricLockPlugin())
     }
 }

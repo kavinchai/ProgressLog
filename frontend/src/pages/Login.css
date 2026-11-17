@@ -180,3 +180,63 @@
 		background: transparent;
 	}
 }
+
+/* ── Sign in with Apple (iPhone app only) ── */
+
+/* Apple's style: black button with white text, white on black in dark mode. */
+.login-apple-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	width: 100%;
+	padding: 10px 0;
+	font-family: var(--font);
+	font-size: var(--fs);
+	font-weight: var(--fw-semibold);
+	color: #fff;
+	background: #000;
+	border: none;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+}
+
+.dark .login-apple-btn {
+	color: #000;
+	background: #fff;
+}
+
+.login-apple-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.login-or {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 16px 0;
+	font-size: var(--fs-xs);
+	color: var(--muted);
+}
+
+.login-or::before,
+.login-or::after {
+	content: "";
+	flex: 1;
+	border-top: 1px solid var(--border);
+}
+
+.login-apple-title {
+	margin: 0 0 6px;
+	font-size: var(--fs-xl);
+	font-weight: var(--fw-semibold);
+	color: var(--fg);
+}
+
+.login-apple-hint {
+	margin: 0 0 20px;
+	font-size: var(--fs-sm);
+	line-height: var(--lh);
+	color: var(--muted);
+}

@@ -24,6 +24,13 @@ import {
 	setAutoSteps,
 	syncHealth,
 } from "../native/health";
+import { isAppleSignInAvailable, signInWithApple } from "../native/appleSignIn";
+import {
+	biometryType,
+	isLockOn,
+	setLockOn,
+	unlockWithBiometrics,
+} from "../native/biometricLock";
 import "./Settings.css";
 
 const MIN_PASSWORD = 6;
@@ -433,7 +440,9 @@ function CurrentPassword({ value, onChange }) {
 	);
 }
 
-function UsernameForm({ onDone, onCancel }) {
+// Accounts created with Apple have no password until they set one, so the
+// account forms skip "Current password" for them (hasPassword false).
+function UsernameForm({ hasPassword, onDone, onCancel }) {
 	const login = useAuthStore((s) => s.login);
 	const [newUsername, setNewUsername] = useState("");
 	const [currentPassword, setCurrentPassword] = useState("");
@@ -446,10 +455,12 @@ function UsernameForm({ onDone, onCancel }) {
 		setError(null);
 		setBusy(true);
 		try {
-			const res = await api.put("/profile/credentials", {
-				currentPassword,
-				newUsername: newUsername.trim(),
-			});
+			const res = await api.put(
+				"/profile/credentials",
+				hasPassword
+					? { currentPassword, newUsername: newUsername.trim() }
+					: { newUsername: newUsername.trim() },
+			);
 			login(res.data.username);
 			onDone();
 		} catch (err) {
@@ -478,10 +489,12 @@ function UsernameForm({ onDone, onCancel }) {
 						required
 					/>
 				</Field>
-				<CurrentPassword
-					value={currentPassword}
-					onChange={setCurrentPassword}
-				/>
+				{hasPassword && (
+					<CurrentPassword
+						value={currentPassword}
+						onChange={setCurrentPassword}
+					/>
+				)}
 			</div>
 			{error && <p className="settings-error">{error}</p>}
 			<FormActions
@@ -493,7 +506,7 @@ function UsernameForm({ onDone, onCancel }) {
 	);
 }
 
-function EmailForm({ currentEmail, onDone, onCancel }) {
+function EmailForm({ currentEmail, hasPassword, onDone, onCancel }) {
 	const [email, setEmail] = useState("");
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [busy, setBusy] = useState(false);
@@ -510,7 +523,11 @@ function EmailForm({ currentEmail, onDone, onCancel }) {
 		}
 		setBusy(true);
 		try {
-			await api.post("/profile/verify-password", { password: currentPassword });
+			if (hasPassword) {
+				await api.post("/profile/verify-password", {
+					password: currentPassword,
+				});
+			}
 			await api.put("/profile/email", { email: newEmail });
 			onDone(newEmail);
 		} catch (err) {
@@ -535,10 +552,12 @@ function EmailForm({ currentEmail, onDone, onCancel }) {
 						required
 					/>
 				</Field>
-				<CurrentPassword
-					value={currentPassword}
-					onChange={setCurrentPassword}
-				/>
+				{hasPassword && (
+					<CurrentPassword
+						value={currentPassword}
+						onChange={setCurrentPassword}
+					/>
+				)}
 			</div>
 			{error && <p className="settings-error">{error}</p>}
 			<FormActions submitLabel="Save email" busy={busy} onCancel={onCancel} />
@@ -546,7 +565,7 @@ function EmailForm({ currentEmail, onDone, onCancel }) {
 	);
 }
 
-function PasswordForm({ onDone, onCancel }) {
+function PasswordForm({ hasPassword, onDone, onCancel }) {
 	const [form, setForm] = useState({ current: "", next: "", confirm: "" });
 	const [show, setShow] = useState(false);
 	const [busy, setBusy] = useState(false);
@@ -568,10 +587,12 @@ function PasswordForm({ onDone, onCancel }) {
 		}
 		setBusy(true);
 		try {
-			await api.put("/profile/credentials", {
-				currentPassword: form.current,
-				newPassword: form.next,
-			});
+			await api.put(
+				"/profile/credentials",
+				hasPassword
+					? { currentPassword: form.current, newPassword: form.next }
+					: { newPassword: form.next },
+			);
 			onDone();
 		} catch (err) {
 			setError(apiError(err, "Failed to change password."));
@@ -583,17 +604,19 @@ function PasswordForm({ onDone, onCancel }) {
 	return (
 		<form className="settings-form" onSubmit={handleSubmit}>
 			<div className="settings-fields">
-				<Field id="currentPassword" label="Current password">
-					<input
-						id="currentPassword"
-						type={type}
-						autoComplete="current-password"
-						className="settings-input"
-						value={form.current}
-						onChange={set("current")}
-						required
-					/>
-				</Field>
+				{hasPassword && (
+					<Field id="currentPassword" label="Current password">
+						<input
+							id="currentPassword"
+							type={type}
+							autoComplete="current-password"
+							className="settings-input"
+							value={form.current}
+							onChange={set("current")}
+							required
+						/>
+					</Field>
+				)}
 				<Field id="newPassword" label="New password">
 					<input
 						id="newPassword"
@@ -628,7 +651,7 @@ function PasswordForm({ onDone, onCancel }) {
 			<p className="settings-hint">At least {MIN_PASSWORD} characters.</p>
 			{error && <p className="settings-error">{error}</p>}
 			<FormActions
-				submitLabel="Update password"
+				submitLabel={hasPassword ? "Update password" : "Set password"}
 				busy={busy}
 				onCancel={onCancel}
 			/>
@@ -636,7 +659,7 @@ function PasswordForm({ onDone, onCancel }) {
 	);
 }
 
-function DeleteAccountForm({ onDeleted, onCancel }) {
+function DeleteAccountForm({ hasPassword, onDeleted, onCancel }) {
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState(null);
@@ -647,7 +670,21 @@ function DeleteAccountForm({ onDeleted, onCancel }) {
 		setError(null);
 		setBusy(true);
 		try {
-			await api.post("/profile/delete-account", { password: currentPassword });
+			if (hasPassword) {
+				await api.post("/profile/delete-account", {
+					password: currentPassword,
+				});
+			} else {
+				// No password: confirm with Apple instead.
+				const creds = await signInWithApple();
+				if (!creds) {
+					setBusy(false);
+					return;
+				}
+				await api.post("/profile/delete-account", {
+					appleIdentityToken: creds.identityToken,
+				});
+			}
 			onDeleted();
 		} catch (err) {
 			setError(apiError(err, "Failed to delete account."));
@@ -661,12 +698,18 @@ function DeleteAccountForm({ onDeleted, onCancel }) {
 				This permanently deletes your account and all your workouts, meals,
 				weight and steps. It can't be undone.
 			</p>
-			<div className="settings-fields">
-				<CurrentPassword
-					value={currentPassword}
-					onChange={setCurrentPassword}
-				/>
-			</div>
+			{hasPassword ? (
+				<div className="settings-fields">
+					<CurrentPassword
+						value={currentPassword}
+						onChange={setCurrentPassword}
+					/>
+				</div>
+			) : (
+				<p className="settings-row-hint">
+					You'll confirm with Apple before it's deleted.
+				</p>
+			)}
 			{error && <p className="settings-error">{error}</p>}
 			<div className="settings-actions">
 				<button className="btn btn-danger" type="submit" disabled={busy}>
@@ -677,6 +720,114 @@ function DeleteAccountForm({ onDeleted, onCancel }) {
 				</button>
 			</div>
 		</form>
+	);
+}
+
+// ── Sign in with Apple (iOS app only) ───────────────────────────────────────
+
+function AppleIdRow({ connected, onConnected }) {
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState(null);
+
+	if (!isAppleSignInAvailable()) return null;
+
+	async function connect() {
+		setError(null);
+		let creds;
+		try {
+			creds = await signInWithApple();
+		} catch {
+			setError("Sign in with Apple didn't work. Try again.");
+			return;
+		}
+		if (!creds) return;
+		setBusy(true);
+		try {
+			const res = await api.post("/profile/apple", {
+				identityToken: creds.identityToken,
+				authorizationCode: creds.authorizationCode,
+			});
+			onConnected(res.data);
+		} catch (err) {
+			setError(apiError(err, "Couldn't connect your Apple ID."));
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<>
+			<Row
+				label="Apple ID"
+				hint={
+					connected
+						? "Sign in with Apple opens this account"
+						: "Use Sign in with Apple for this account"
+				}
+			>
+				{connected ? (
+					<span className="settings-value">Connected</span>
+				) : (
+					<button
+						type="button"
+						className="btn btn-sm"
+						aria-label="Connect Apple ID"
+						disabled={busy}
+						onClick={connect}
+					>
+						{busy ? "Connecting…" : "Connect"}
+					</button>
+				)}
+			</Row>
+			{error && <p className="settings-error settings-row-note">{error}</p>}
+		</>
+	);
+}
+
+// ── Face ID unlock (iOS app only) ───────────────────────────────────────────
+
+function SecurityGroup() {
+	const [type, setType] = useState("none");
+	const [on, setOn] = useState(isLockOn);
+	const [busy, setBusy] = useState(false);
+
+	useEffect(() => {
+		biometryType().then(setType);
+	}, []);
+
+	if (type === "none") return null;
+	const name = type === "touchID" ? "Touch ID" : "Face ID";
+
+	async function toggle() {
+		if (on) {
+			setLockOn(false);
+			setOn(false);
+			return;
+		}
+		// Check it works before turning it on, so nobody gets locked out.
+		setBusy(true);
+		const ok = await unlockWithBiometrics(`Turn on ${name} unlock`);
+		setBusy(false);
+		if (ok) {
+			setLockOn(true);
+			setOn(true);
+		}
+	}
+
+	return (
+		<Group title="Security">
+			<Row
+				label={`Unlock with ${name}`}
+				hint={`Asks for ${name} when you open the app or come back after a minute.`}
+			>
+				<Switch
+					ariaLabel={`Unlock with ${name}`}
+					on={on}
+					saving={busy}
+					onToggle={toggle}
+				/>
+			</Row>
+		</Group>
 	);
 }
 
@@ -995,6 +1146,15 @@ function DataGroup() {
 
 // ── Page ────────────────────────────────────────────────────────────────────
 
+// Assume a password unless the server says otherwise, so the forms never
+// drop "Current password" for an account that has one.
+function signInMethods(data) {
+	return {
+		appleConnected: data?.appleConnected === true,
+		passwordSet: data?.passwordSet !== false,
+	};
+}
+
 export default function Settings() {
 	const navigate = useNavigate();
 	const { goals, loading, saving, error, saveGoals } = useUserProfile();
@@ -1007,11 +1167,19 @@ export default function Settings() {
 	const [openRow, setOpenRow] = useState(null);
 	const [savedRow, setSavedRow] = useState(null);
 	const [currentEmail, setCurrentEmail] = useState("");
+	const [signIn, setSignIn] = useState({
+		appleConnected: false,
+		passwordSet: true,
+	});
 
 	useEffect(() => {
 		api
 			.get("/profile/email")
 			.then((res) => setCurrentEmail(res.data.email ?? ""))
+			.catch(() => {});
+		api
+			.get("/profile/sign-in")
+			.then((res) => setSignIn(signInMethods(res.data)))
 			.catch(() => {});
 	}, []);
 
@@ -1139,6 +1307,7 @@ export default function Settings() {
 					onToggle={() => toggleRow("username")}
 				>
 					<UsernameForm
+						hasPassword={signIn.passwordSet}
 						onDone={() => finishRow("username")}
 						onCancel={() => toggleRow("username")}
 					/>
@@ -1152,6 +1321,7 @@ export default function Settings() {
 				>
 					<EmailForm
 						currentEmail={currentEmail}
+						hasPassword={signIn.passwordSet}
 						onDone={(newEmail) => {
 							setCurrentEmail(newEmail);
 							finishRow("email");
@@ -1159,15 +1329,23 @@ export default function Settings() {
 						onCancel={() => toggleRow("email")}
 					/>
 				</EditRow>
+				<AppleIdRow
+					connected={signIn.appleConnected}
+					onConnected={(data) => setSignIn(signInMethods(data))}
+				/>
 				<EditRow
 					label="Password"
-					value="••••••••"
+					value={signIn.passwordSet ? "••••••••" : "Not set"}
 					saved={savedRow === "password"}
 					open={openRow === "password"}
 					onToggle={() => toggleRow("password")}
 				>
 					<PasswordForm
-						onDone={() => finishRow("password")}
+						hasPassword={signIn.passwordSet}
+						onDone={() => {
+							setSignIn((current) => ({ ...current, passwordSet: true }));
+							finishRow("password");
+						}}
 						onCancel={() => toggleRow("password")}
 					/>
 				</EditRow>
@@ -1184,11 +1362,14 @@ export default function Settings() {
 					onToggle={() => toggleRow("delete")}
 				>
 					<DeleteAccountForm
+						hasPassword={signIn.passwordSet}
 						onDeleted={clearAuth}
 						onCancel={() => toggleRow("delete")}
 					/>
 				</EditRow>
 			</Group>
+
+			<SecurityGroup />
 		</div>
 	);
 }

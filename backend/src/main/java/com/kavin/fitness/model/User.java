@@ -49,4 +49,16 @@ public class User {
 
     @Column(name = "share_calendar", nullable = false)
     private boolean shareCalendar = false;
+
+    /** Apple's user id for the connected Apple ID (Sign in with Apple), or null. */
+    @Column(name = "apple_sub", unique = true)
+    private String appleSub;
+
+    /** Used to revoke the Apple sign-in when the account is deleted. */
+    @Column(name = "apple_refresh_token", length = 1024)
+    private String appleRefreshToken;
+
+    /** False for accounts created with Apple until the user sets a password. */
+    @Column(name = "password_set", nullable = false)
+    private boolean passwordSet = true;
 }

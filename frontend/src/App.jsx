@@ -20,6 +20,7 @@ import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
 import BottomTabBar from "./components/layout/BottomTabBar";
 import PullToRefresh from "./components/PullToRefresh";
+import AppLock from "./components/AppLock";
 import SplashPage from "./pages/SplashPage";
 import Community from "./pages/Community";
 import Login from "./pages/Login";
@@ -105,35 +106,37 @@ export default function App() {
 	return (
 		<BrowserRouter>
 			<ScrollToTop />
-			<AppLayout>
-				<Routes>
-					<Route path="/" element={<Navigate to="/today" replace />} />
-					<Route path="/today" element={<Today />} />
-					<Route path="/history/*" element={<History />} />
-					<Route path="/progress/*" element={<Progress />} />
-					<Route
-						path="/weekly"
-						element={<Navigate to="/history/weekly" replace />}
-					/>
-					<Route
-						path="/total"
-						element={<Navigate to="/history/total" replace />}
-					/>
-					<Route
-						path="/strength"
-						element={<Navigate to="/progress/strength" replace />}
-					/>
-					<Route path="/community" element={<Community />} />
-					<Route
-						path="/leaderboard"
-						element={<Navigate to="/community" replace />}
-					/>
-					<Route path="/settings" element={<Settings />} />
-					<Route path="/claude-setup" element={<ClaudeSetup />} />
-					<Route path="/privacy" element={<PrivacyPolicy />} />
-					<Route path="*" element={<Navigate to="/today" replace />} />
-				</Routes>
-			</AppLayout>
+			<AppLock>
+				<AppLayout>
+					<Routes>
+						<Route path="/" element={<Navigate to="/today" replace />} />
+						<Route path="/today" element={<Today />} />
+						<Route path="/history/*" element={<History />} />
+						<Route path="/progress/*" element={<Progress />} />
+						<Route
+							path="/weekly"
+							element={<Navigate to="/history/weekly" replace />}
+						/>
+						<Route
+							path="/total"
+							element={<Navigate to="/history/total" replace />}
+						/>
+						<Route
+							path="/strength"
+							element={<Navigate to="/progress/strength" replace />}
+						/>
+						<Route path="/community" element={<Community />} />
+						<Route
+							path="/leaderboard"
+							element={<Navigate to="/community" replace />}
+						/>
+						<Route path="/settings" element={<Settings />} />
+						<Route path="/claude-setup" element={<ClaudeSetup />} />
+						<Route path="/privacy" element={<PrivacyPolicy />} />
+						<Route path="*" element={<Navigate to="/today" replace />} />
+					</Routes>
+				</AppLayout>
+			</AppLock>
 		</BrowserRouter>
 	);
 }
