@@ -1,14 +1,16 @@
 /**
- * DayDetail (History day expansion) — workout add behavior.
+ * DayDetail (History day expansion).
  *
- * Mirrors Today: when a single workout session already exists for the day,
- * the workout "+ Add" button should append an exercise to that session
- * (existingSession + appendBlankExercise) rather than create a brand-new workout.
+ * Mirrors Today: rows tap to edit and swipe (or ••• on the website) to delete,
+ * with an Undo bar. When a single workout session already exists for the day,
+ * "+ Add exercise" appends to that session (existingSession +
+ * appendBlankExercise) rather than creating a brand-new workout.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DayDetail from "../components/DayDetail";
+import api from "../api";
 
 // ── Modal stubs — each records the props it received ──────────────────────────
 vi.mock("../components/WorkoutBuilderModal", () => ({
@@ -40,23 +42,32 @@ vi.mock("../components/MealCards", () => ({
 vi.mock("../components/EditExerciseModal", () => ({
 	default: () => <div data-testid="edit-exercise-modal" />,
 }));
-vi.mock("../components/ConfirmDeleteModal", () => ({
-	default: () => <div data-testid="confirm-delete-modal" />,
-}));
 
 vi.mock("../api", () => ({
 	default: { delete: vi.fn(), post: vi.fn(), put: vi.fn() },
 }));
 
+// One shared toast stub so tests can check the Undo toast.
+const toast = vi.hoisted(() => ({
+	error: () => {},
+	show: () => 1,
+	dismiss: () => {},
+}));
+vi.mock("../components/Toast", () => ({ useToast: () => toast }));
+
 vi.mock("../hooks/useWeightUnit", () => ({
 	default: () => ({ unit: "lbs", toDisplay: (x) => x }),
+}));
+const { setRenamingSession, setRenameValue } = vi.hoisted(() => ({
+	setRenamingSession: vi.fn(),
+	setRenameValue: vi.fn(),
 }));
 vi.mock("../hooks/useDayActions", () => ({
 	useDayActions: () => ({
 		renamingSession: false,
-		setRenamingSession: vi.fn(),
+		setRenamingSession,
 		renameValue: "",
-		setRenameValue: vi.fn(),
+		setRenameValue,
 		submitRename: vi.fn(),
 		saveSteps: vi.fn(),
 		getOrCreateNutritionLogId: vi.fn(),
@@ -107,8 +118,8 @@ const MULTI_SESSION = {
 	],
 };
 
-// Give weight + steps real entries so those sections render "Edit", leaving the
-// workout section as the only "+ Add" button on screen.
+// Give weight + steps real entries so they render as "Edit weight" / "Edit steps"
+// rows, leaving the workout's "+ Add" as the only plain "+ Add" button.
 function renderDetail(workoutEntry) {
 	return render(
 		<DayDetail
@@ -195,7 +206,9 @@ describe("DayDetail — workout add", () => {
 
 	it("falls back to creating a new workout when the day has multiple sessions", async () => {
 		renderDetail(MULTI_SESSION);
-		await userEvent.click(screen.getByRole("button", { name: /^\+ Add$/i }));
+		await userEvent.click(
+			screen.getByRole("button", { name: /\+ Add workout/i }),
+		);
 		const modal = screen.getByTestId("workout-modal");
 		expect(modal.dataset.existingSessionId).toBe("");
 		expect(modal.dataset.appendBlank).toBe("false");
@@ -244,7 +257,9 @@ describe("DayDetail — workout only", () => {
 
 	it("still lets you edit an exercise from the workout view", async () => {
 		renderWorkoutOnly(SINGLE_SESSION);
-		await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+		await userEvent.click(
+			screen.getByRole("button", { name: "Edit Bench Press" }),
+		);
 		expect(screen.getByTestId("edit-exercise-modal")).toBeInTheDocument();
 	});
 });
@@ -252,12 +267,135 @@ describe("DayDetail — workout only", () => {
 describe("DayDetail — inline input labels", () => {
 	it("labels the inline steps input", async () => {
 		renderDetail(null);
-		const stepsSection = screen
-			.getByText("Steps", { selector: ".day-detail-label" })
-			.closest(".day-detail-section");
-		await userEvent.click(
-			within(stepsSection).getByRole("button", { name: /^edit$/i }),
-		);
+		await userEvent.click(screen.getByRole("button", { name: "Edit steps" }));
 		expect(screen.getByLabelText("Steps")).toHaveAttribute("type", "number");
+	});
+});
+
+describe("DayDetail — tap, swipe and ••• menus", () => {
+	async function chooseFromMenu(menuName, item) {
+		await userEvent.click(screen.getByRole("button", { name: menuName }));
+		await userEvent.click(screen.getByRole("menuitem", { name: item }));
+	}
+
+	function renderWith(props = {}) {
+		const refetch = {
+			onRefetchW: vi.fn(),
+			onRefetchN: vi.fn(),
+			onRefetchWo: vi.fn(),
+			onRefetchS: vi.fn(),
+		};
+		render(
+			<DayDetail
+				date={DATE}
+				weightEntry={{ id: 99, logDate: DATE, weightLbs: 185 }}
+				nutritionEntry={{ id: 7, logDate: DATE, meals: [] }}
+				workoutEntry={SINGLE_SESSION}
+				stepEntry={{ id: 98, logDate: DATE, steps: 8000 }}
+				{...refetch}
+				{...props}
+			/>,
+		);
+		return refetch;
+	}
+
+	it("tapping the weight opens it for editing", async () => {
+		renderWith();
+		await userEvent.click(screen.getByRole("button", { name: "Edit weight" }));
+		expect(screen.getByTestId("weight-modal")).toBeInTheDocument();
+	});
+
+	it("offers to add weight when the day has none", () => {
+		renderWith({ weightEntry: null });
+		expect(
+			screen.getByRole("button", { name: /\+ add weight/i }),
+		).toBeInTheDocument();
+	});
+
+	it("deletes the weight straight away and offers Undo", async () => {
+		api.delete.mockResolvedValue({});
+		const show = vi.spyOn(toast, "show");
+		const { onRefetchW } = renderWith();
+
+		await chooseFromMenu("More actions for Weight", "Delete");
+
+		await waitFor(() => expect(api.delete).toHaveBeenCalledWith("/weight/99"));
+		expect(onRefetchW).toHaveBeenCalledTimes(1);
+		expect(show).toHaveBeenCalledWith(
+			expect.objectContaining({ message: "Weight deleted" }),
+		);
+	});
+
+	it("deletes steps, the workout, an exercise and the nutrition log", async () => {
+		api.delete.mockResolvedValue({});
+		const { onRefetchS, onRefetchWo, onRefetchN } = renderWith();
+
+		await chooseFromMenu("More actions for Steps", "Delete");
+		await waitFor(() => expect(api.delete).toHaveBeenCalledWith("/steps/98"));
+		expect(onRefetchS).toHaveBeenCalled();
+
+		await chooseFromMenu("More actions for Bench Press", "Delete");
+		await waitFor(() =>
+			expect(api.delete).toHaveBeenCalledWith("/workouts/10/exercises", {
+				params: { name: "Bench Press" },
+			}),
+		);
+
+		await chooseFromMenu("More actions for workout", "Delete workout");
+		await waitFor(() =>
+			expect(api.delete).toHaveBeenCalledWith("/workouts/10"),
+		);
+		expect(onRefetchWo).toHaveBeenCalled();
+
+		await chooseFromMenu("More actions for nutrition", "Delete nutrition log");
+		await waitFor(() =>
+			expect(api.delete).toHaveBeenCalledWith("/nutrition/7"),
+		);
+		expect(onRefetchN).toHaveBeenCalled();
+	});
+
+	it("opens Edit day and Rename from the menus", async () => {
+		renderWith();
+		await chooseFromMenu("More actions for nutrition", "Edit day");
+		expect(screen.getByTestId("dayinfo-modal")).toBeInTheDocument();
+
+		await chooseFromMenu("More actions for workout", "Rename");
+		expect(setRenamingSession).toHaveBeenCalledWith(true);
+		expect(setRenameValue).toHaveBeenCalledWith("Push");
+	});
+
+	it("hides the header + Add once the day has a workout", () => {
+		renderWith();
+		expect(
+			screen.queryByRole("button", { name: /^\+ Add$/i }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /\+ Add exercise/i }),
+		).toBeInTheDocument();
+	});
+
+	it("offers no deleting when showDelete is off", async () => {
+		renderWith({ showDelete: false });
+		await userEvent.click(
+			screen.getByRole("button", { name: "More actions for workout" }),
+		);
+		expect(
+			screen.queryByRole("menuitem", { name: "Delete workout" }),
+		).not.toBeInTheDocument();
+		for (const row of ["Weight", "Steps", "Bench Press"]) {
+			expect(
+				screen.queryByRole("button", { name: `More actions for ${row}` }),
+			).not.toBeInTheDocument();
+		}
+		await userEvent.keyboard("{Escape}");
+		await userEvent.click(
+			screen.getByRole("button", { name: "More actions for nutrition" }),
+		);
+		expect(
+			screen.queryByRole("menuitem", { name: "Delete nutrition log" }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Edit weight" }),
+		).toBeInTheDocument();
 	});
 });

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { MapPin, Trash2 } from "lucide-react";
 import api from "../api";
 import { useToast } from "./Toast";
-import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
 import "./MealCards.css";
 
 // Breakfast / Lunch / Dinner are always shown; any other meal is an "extra"
@@ -320,7 +320,7 @@ export default function MealCards({
 	const meals = nutritionEntry?.meals ?? [];
 	const restaurantListId = useId();
 	const [drafts, setDrafts] = useState([]); // [{ key, mealId }]
-	const [confirmDelete, setConfirmDelete] = useState(null);
+	const deleteWithUndo = useDeleteWithUndo();
 	const nextKeyRef = useRef(0);
 	const logIdRef = useRef(nutritionEntry?.id ?? null);
 	useEffect(() => {
@@ -373,14 +373,14 @@ export default function MealCards({
 			dropDraft();
 			return;
 		}
-		setConfirmDelete({
-			onDelete: () =>
+		// Deletes straight away, with Undo (no "Are you sure?").
+		deleteWithUndo({
+			remove: () =>
 				api
 					.delete(`/nutrition/${logIdRef.current}/meals/${mealId}`)
-					.then(() => {
-						dropDraft();
-						onSaved();
-					}),
+					.then(dropDraft),
+			message: "Meal deleted",
+			refresh: onSaved,
 		});
 	}
 
@@ -432,19 +432,6 @@ export default function MealCards({
 			<button type="button" className="meal-card-add" onClick={addMeal}>
 				+ Add meal
 			</button>
-
-			{confirmDelete && (
-				<ConfirmDeleteModal
-					title="Delete Meal"
-					message="Are you sure you want to delete this meal?"
-					onClose={() => setConfirmDelete(null)}
-					onDelete={confirmDelete.onDelete}
-					onUndone={() => {
-						onSaved();
-						setConfirmDelete(null);
-					}}
-				/>
-			)}
 		</div>
 	);
 }

@@ -13,8 +13,11 @@ import DayInfoModal from "../components/DayInfoModal";
 import MealCards from "../components/MealCards";
 import WorkoutBuilderModal from "../components/WorkoutBuilderModal";
 import EditExerciseModal from "../components/EditExerciseModal";
-import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import DailyProgressBar from "../components/DailyProgressBar";
+import SwipeRow from "../components/SwipeRow";
+import MoreMenu from "../components/MoreMenu";
+import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
+import useLongPress from "../hooks/useLongPress";
 import { groupByExercise } from "../utils/workout";
 import { mergeWorkoutSessions } from "../utils/stats";
 import useWeightUnit from "../hooks/useWeightUnit";
@@ -26,7 +29,8 @@ import "./Today.css";
 
 // ── Exercise cards ────────────────────────────────────────────────────────────
 
-function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
+// Tapping, swiping or long-pressing the card is handled by the SwipeRow around it.
+function ExerciseCard({ name, weight, sets, isPR }) {
 	const { unit, toDisplay } = useWeightUnit();
 
 	return (
@@ -39,9 +43,6 @@ function ExerciseCard({ name, weight, sets, onEdit, isPR }) {
 					</span>
 					{isPR && <span className="pr-badge">PR</span>}
 				</span>
-				<button className="btn btn-sm" onClick={onEdit}>
-					Edit
-				</button>
 			</div>
 			<div className="exercise-card-sets">
 				<>
@@ -136,7 +137,11 @@ export default function Today() {
 	const [editingEntry, setEditingEntry] = useState(null);
 	const [editExercise, setEditExercise] = useState(null);
 	const [appendBlankExercise, setAppendBlankExercise] = useState(false);
-	const [confirmDelete, setConfirmDelete] = useState(null);
+	const [workoutMenuOpen, setWorkoutMenuOpen] = useState(false);
+	const [nutritionMenuOpen, setNutritionMenuOpen] = useState(false);
+	const deleteWithUndo = useDeleteWithUndo();
+	const workoutLongPress = useLongPress(() => setWorkoutMenuOpen(true));
+	const nutritionLongPress = useLongPress(() => setNutritionMenuOpen(true));
 
 	const todayWeightEntry = weightData.find((w) => w.logDate === TODAY);
 	const todayWorkoutSessions = workoutData.filter(
@@ -217,6 +222,11 @@ export default function Today() {
 		if (current == null || comparePRTuple(tuple, current) > 0) {
 			todayBestByExercise[g.name] = tuple;
 		}
+	}
+
+	function refreshWorkouts() {
+		refetchWorkouts();
+		refetchPRs();
 	}
 
 	function closeModal() {
@@ -313,165 +323,127 @@ export default function Today() {
 
 			<div className="weekly-content-layout">
 				<div className="weekly-main-col">
-					{/* WEIGHT */}
-					<div className="section-box">
-						<div className="section-header">
-							<span className="section-title">Weight</span>
-							<div className="btn-actions">
-								{todayWeightEntry && (
-									<>
-										<button
-											className="btn btn-sm"
-											onClick={() => {
-												setEditingEntry(todayWeightEntry);
-												setModal("weight");
-											}}
-										>
-											Edit
-										</button>
-										<button
-											className="btn btn-sm btn-danger"
-											onClick={() =>
-												setConfirmDelete({
-													title: "Delete Weight Entry",
-													message:
-														"Are you sure you want to delete this weight entry?",
-													onDelete: () =>
-														api
-															.delete(`/weight/${todayWeightEntry.id}`)
-															.then(refetchWeight),
-													onUndone: refetchWeight,
-												})
-											}
-										>
-											Delete
-										</button>
-									</>
-								)}
+					{/* WEIGHT + STEPS: one row each — tap to edit, swipe to delete */}
+					<div className="section-box today-daily-rows">
+						{errorWeight ? (
+							<div className="today-row">
+								<DataRow label="Weight" value="Not loaded." />
 							</div>
-						</div>
-						<div className="section-body">
-							{errorWeight ? (
-								<span className="muted">Not loaded.</span>
-							) : todayWeightEntry ? (
+						) : todayWeightEntry ? (
+							<SwipeRow
+								label="Weight"
+								openLabel="Edit weight"
+								className="today-row"
+								onOpen={() => {
+									setEditingEntry(todayWeightEntry);
+									setModal("weight");
+								}}
+								onDelete={() =>
+									deleteWithUndo({
+										remove: () => api.delete(`/weight/${todayWeightEntry.id}`),
+										message: "Weight deleted",
+										refresh: refetchWeight,
+									})
+								}
+							>
 								<DataRow
 									label="Weight"
 									value={toDisplay(todayWeightEntry.weightLbs) + " " + unit}
 								/>
-							) : (
-								<>
-									<span className="muted">No entry for today.</span>
-									<button
-										className="today-add-row"
-										onClick={() => {
-											setEditingEntry(null);
-											setModal("weight");
-										}}
-									>
-										+ Add weight
-									</button>
-								</>
-							)}
-						</div>
-					</div>
+							</SwipeRow>
+						) : (
+							<button
+								className="today-row today-row-add"
+								aria-label="+ Add weight"
+								onClick={() => {
+									setEditingEntry(null);
+									setModal("weight");
+								}}
+							>
+								<span className="today-data-label">Weight</span>
+								<span className="today-row-add-label">+ Add</span>
+							</button>
+						)}
 
-					{/* STEPS */}
-					<div className="section-box">
-						<div className="section-header">
-							<span className="section-title">Steps</span>
-							<div className="btn-actions">
-								{!editingSteps && todayStepEntry && (
-									<button
-										className="btn btn-sm"
-										onClick={() => {
-											setStepsValue(String(todayStepEntry.steps));
-											setEditingSteps(true);
-										}}
-									>
-										Edit
-									</button>
-								)}
-								{!editingSteps && todayStepEntry && (
-									<button
-										className="btn btn-sm btn-danger"
-										onClick={() =>
-											setConfirmDelete({
-												title: "Delete Steps",
-												message:
-													"Are you sure you want to delete this step entry?",
-												onDelete: () =>
-													api
-														.delete(`/steps/${todayStepEntry.id}`)
-														.then(refetchSteps),
-												onUndone: refetchSteps,
-											})
-										}
-									>
-										Delete
-									</button>
-								)}
+						{errorSteps ? (
+							<div className="today-row">
+								<DataRow label="Steps" value="Not loaded." />
 							</div>
-						</div>
-						<div className="section-body">
-							{errorSteps ? (
-								<span className="muted">Not loaded.</span>
-							) : editingSteps ? (
-								<div className="today-steps-edit">
-									<input
-										className="modal-input"
-										type="number"
-										min="0"
-										placeholder="Steps"
-										aria-label="Steps"
-										value={stepsValue}
-										disabled={stepsSaving}
-										onChange={(e) => setStepsValue(e.target.value)}
-										onKeyDown={(e) => {
-											if (e.key === "Enter") commitSteps();
-											if (e.key === "Escape") setEditingSteps(false);
-										}}
-										autoFocus
-									/>
-									<button
-										className="btn btn-sm btn-primary"
-										onClick={commitSteps}
-										disabled={stepsSaving}
-									>
-										{stepsSaving ? "Saving…" : "Save"}
-									</button>
-									<button
-										className="btn btn-sm"
-										onClick={() => setEditingSteps(false)}
-										disabled={stepsSaving}
-									>
-										&times;
-									</button>
-								</div>
-							) : todayStepEntry ? (
+						) : editingSteps ? (
+							<div className="today-row today-steps-edit">
+								<input
+									className="modal-input"
+									type="number"
+									min="0"
+									placeholder="Steps"
+									aria-label="Steps"
+									value={stepsValue}
+									disabled={stepsSaving}
+									onChange={(e) => setStepsValue(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") commitSteps();
+										if (e.key === "Escape") setEditingSteps(false);
+									}}
+									autoFocus
+								/>
+								<button
+									className="btn btn-sm btn-primary"
+									onClick={commitSteps}
+									disabled={stepsSaving}
+								>
+									{stepsSaving ? "Saving…" : "Save"}
+								</button>
+								<button
+									className="btn btn-sm"
+									onClick={() => setEditingSteps(false)}
+									disabled={stepsSaving}
+								>
+									&times;
+								</button>
+							</div>
+						) : todayStepEntry ? (
+							<SwipeRow
+								label="Steps"
+								openLabel="Edit steps"
+								className="today-row"
+								onOpen={() => {
+									setStepsValue(String(todayStepEntry.steps));
+									setEditingSteps(true);
+								}}
+								onDelete={() =>
+									deleteWithUndo({
+										remove: () => api.delete(`/steps/${todayStepEntry.id}`),
+										message: "Steps deleted",
+										refresh: refetchSteps,
+									})
+								}
+							>
 								<DataRow
 									label="Steps"
 									value={todayStepEntry.steps.toLocaleString()}
 								/>
-							) : (
-								<>
-									<span className="muted">No steps logged.</span>
-									<button
-										className="today-add-row"
-										onClick={() => {
-											setStepsValue("");
-											setEditingSteps(true);
-										}}
-									>
-										+ Add steps
-									</button>
-								</>
-							)}
-						</div>
+							</SwipeRow>
+						) : (
+							<button
+								className="today-row today-row-add"
+								aria-label="+ Add steps"
+								onClick={() => {
+									setStepsValue("");
+									setEditingSteps(true);
+								}}
+							>
+								<span className="today-data-label">Steps</span>
+								<span className="today-row-add-label">+ Add</span>
+							</button>
+						)}
 					</div>
 
 					{/* WORKOUT */}
 					<div className="section-box">
-						<div className="section-header">
+						<div
+							className="section-header"
+							{...(todayWorkoutEntry && workoutLongPress)}
+						>
 							<span className="section-title">
 								Workout
 								{todayWorkoutEntry?.sessionName && (
@@ -481,18 +453,7 @@ export default function Today() {
 								)}
 							</span>
 							<div className="btn-actions">
-								{todayWorkoutEntry && !renamingSession && (
-									<button
-										className="btn btn-sm"
-										onClick={() => {
-											setRenameValue(todayWorkoutEntry.sessionName ?? "");
-											setRenamingSession(true);
-										}}
-									>
-										Rename
-									</button>
-								)}
-								{renamingSession && (
+								{renamingSession ? (
 									<>
 										<input
 											className="modal-input rename-session-input"
@@ -523,41 +484,46 @@ export default function Today() {
 											&times;
 										</button>
 									</>
-								)}
-								{todayWorkoutEntry && hasSingleWorkoutSession && (
-									<button
-										className="btn btn-sm"
-										onClick={() => openWorkoutModal()}
-									>
-										Edit Workout
-									</button>
-								)}
-								{todayWorkoutEntry && (
-									<button
-										className="btn btn-sm btn-danger"
-										onClick={() =>
-											setConfirmDelete({
-												title: "Delete Workout",
-												message:
-													"Are you sure you want to delete this workout session?",
-												onDelete: () =>
-													api
-														.delete(`/workouts/${todayWorkoutEntry.id}`)
-														.then(refetchWorkouts),
-												onUndone: refetchWorkouts,
-											})
-										}
-									>
-										Delete
-									</button>
-								)}
-								{!todayWorkoutEntry && !errorWorkouts && (
-									<button
-										className="btn btn-sm btn-primary"
-										onClick={() => openWorkoutModal()}
-									>
-										Start Workout
-									</button>
+								) : todayWorkoutEntry ? (
+									<MoreMenu
+										label="More actions for workout"
+										open={workoutMenuOpen}
+										onOpenChange={setWorkoutMenuOpen}
+										items={[
+											{
+												label: "Rename",
+												onSelect: () => {
+													setRenameValue(todayWorkoutEntry.sessionName ?? "");
+													setRenamingSession(true);
+												},
+											},
+											{
+												label: "Edit workout",
+												onSelect: () => openWorkoutModal(),
+												hidden: !hasSingleWorkoutSession,
+											},
+											{
+												label: "Delete workout",
+												destructive: true,
+												onSelect: () =>
+													deleteWithUndo({
+														remove: () =>
+															api.delete(`/workouts/${todayWorkoutEntry.id}`),
+														message: "Workout deleted",
+														refresh: refreshWorkouts,
+													}),
+											},
+										]}
+									/>
+								) : (
+									!errorWorkouts && (
+										<button
+											className="btn btn-sm btn-primary"
+											onClick={() => openWorkoutModal()}
+										>
+											Start Workout
+										</button>
+									)
 								)}
 							</div>
 						</div>
@@ -576,22 +542,39 @@ export default function Today() {
 												comparePRTuple(todayBest, allTimePR) >= 0;
 											// No badges until PRs arrive, or every lift would look like one.
 											const isPR = !loadingPRs && isBestOfDay && beatsAllTime;
+											const sessionId =
+												g.sets[0]._sessionId ?? todayWorkoutEntry.id;
 											return (
-												<ExerciseCard
+												<SwipeRow
 													key={`${g.name}-${g.weight}`}
-													name={g.name}
-													weight={g.weight}
-													sets={g.sets}
-													isPR={isPR}
-													onEdit={() =>
+													label={g.name}
+													openLabel={`Edit ${g.name}`}
+													className="exercise-swipe-row"
+													onOpen={() =>
 														setEditExercise({
-															sessionId:
-																g.sets[0]._sessionId ?? todayWorkoutEntry.id,
+															sessionId,
 															name: g.name,
 															sets: g.sets,
 														})
 													}
-												/>
+													onDelete={() =>
+														deleteWithUndo({
+															remove: () =>
+																api.delete(`/workouts/${sessionId}/exercises`, {
+																	params: { name: g.name },
+																}),
+															message: `${g.name} deleted`,
+															refresh: refreshWorkouts,
+														})
+													}
+												>
+													<ExerciseCard
+														name={g.name}
+														weight={g.weight}
+														sets={g.sets}
+														isPR={isPR}
+													/>
+												</SwipeRow>
 											);
 										})}
 										{editableWorkoutSession && (
@@ -628,38 +611,40 @@ export default function Today() {
 
 					{/* NUTRITION */}
 					<div className="section-box">
-						<div className="section-header">
+						<div
+							className="section-header"
+							{...(todayNutritionEntry && nutritionLongPress)}
+						>
 							<span className="section-title">Nutrition</span>
 							<div className="btn-actions">
 								{todayNutritionEntry && (
-									<>
-										<button
-											className="btn btn-sm"
-											onClick={() => {
-												setEditingEntry(todayNutritionEntry);
-												setModal("dayinfo");
-											}}
-										>
-											Edit Day
-										</button>
-										<button
-											className="btn btn-sm btn-danger"
-											onClick={() =>
-												setConfirmDelete({
-													title: "Delete Nutrition Log",
-													message:
-														"Are you sure you want to delete this nutrition log and all its meals?",
-													onDelete: () =>
-														api
-															.delete(`/nutrition/${todayNutritionEntry.id}`)
-															.then(refetchNutrition),
-													onUndone: refetchNutrition,
-												})
-											}
-										>
-											Delete
-										</button>
-									</>
+									<MoreMenu
+										label="More actions for nutrition"
+										open={nutritionMenuOpen}
+										onOpenChange={setNutritionMenuOpen}
+										items={[
+											{
+												label: "Edit day",
+												onSelect: () => {
+													setEditingEntry(todayNutritionEntry);
+													setModal("dayinfo");
+												},
+											},
+											{
+												label: "Delete nutrition log",
+												destructive: true,
+												onSelect: () =>
+													deleteWithUndo({
+														remove: () =>
+															api.delete(
+																`/nutrition/${todayNutritionEntry.id}`,
+															),
+														message: "Nutrition log deleted",
+														refresh: refetchNutrition,
+													}),
+											},
+										]}
+									/>
 								)}
 							</div>
 						</div>
@@ -715,18 +700,6 @@ export default function Today() {
 					exerciseSets={editExercise.sets}
 					onClose={() => setEditExercise(null)}
 					onSaved={refetchWorkouts}
-				/>
-			)}
-			{confirmDelete && (
-				<ConfirmDeleteModal
-					title={confirmDelete.title}
-					message={confirmDelete.message}
-					onClose={() => setConfirmDelete(null)}
-					onDelete={confirmDelete.onDelete}
-					onUndone={() => {
-						confirmDelete.onUndone();
-						setConfirmDelete(null);
-					}}
 				/>
 			)}
 		</div>

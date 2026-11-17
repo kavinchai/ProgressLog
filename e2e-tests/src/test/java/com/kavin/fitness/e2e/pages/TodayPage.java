@@ -2,6 +2,7 @@ package com.kavin.fitness.e2e.pages;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.WaitForSelectorState;
 
 import java.util.List;
@@ -13,10 +14,9 @@ public class TodayPage {
 
     // 0-based here; section-box index used by tests is 1-based to match the
     // original Selenium suite. Subtract one before .nth() lookups.
-    private static final int WEIGHT_IDX = 1;
-    private static final int STEPS_IDX = 2;
-    private static final int WORKOUT_IDX = 3;
-    private static final int NUTRITION_IDX = 4;
+    // Weight and steps share the first card, a row each.
+    private static final int DAILY_IDX = 1;
+    private static final int WORKOUT_IDX = 2;
 
     public TodayPage(Page page) {
         this.page = page;
@@ -26,43 +26,63 @@ public class TodayPage {
         return page.locator(".section-box").nth(sectionIdx - 1);
     }
 
-    private Locator sectionBtnContains(int sectionIdx, String text) {
-        return section(sectionIdx).locator("button", new Locator.LocatorOptions().setHasText(text));
+    private Locator button(String name) {
+        return page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName(name).setExact(true));
     }
 
-    private Locator sectionBtnExact(int sectionIdx, String text) {
-        return section(sectionIdx).locator("button:text-is(\"" + text + "\")");
+    /** Opens a ••• menu (shown on the website, where you can't swipe) and picks an action. */
+    private void chooseFromMenu(String menuName, String item) {
+        button(menuName).click();
+        page.getByRole(AriaRole.MENUITEM,
+                new Page.GetByRoleOptions().setName(item).setExact(true)).click();
     }
 
     // ── Weight ───────────────────────────────────────────────────────────────
 
     public void clickAddWeight() {
-        sectionBtnContains(WEIGHT_IDX, "+ Add").first().click();
+        button("+ Add weight").click();
     }
 
+    /** Taps the weight row, which opens it for editing. */
     public void clickEditWeight() {
-        sectionBtnExact(WEIGHT_IDX, "Edit").first().click();
+        button("Edit weight").click();
     }
 
     public void waitForWeightValue(String expected) {
-        section(WEIGHT_IDX).locator(".today-data-value",
+        section(DAILY_IDX).locator(".today-data-value",
                 new Locator.LocatorOptions().setHasText(expected)).waitFor();
+    }
+
+    /** Deletes today's weight from its ••• menu; no confirmation, an Undo bar appears. */
+    public void deleteWeight() {
+        chooseFromMenu("More actions for Weight", "Delete");
+    }
+
+    public void waitForNoWeight() {
+        button("+ Add weight").waitFor();
+    }
+
+    /** Presses Undo on the Undo bar and waits for the server to restore the entry. */
+    public void undoLastDelete() {
+        page.waitForResponse(
+                r -> r.url().endsWith("/undo") && "POST".equals(r.request().method()),
+                () -> button("Undo").click());
     }
 
     // ── Steps ────────────────────────────────────────────────────────────────
 
     public void clickAddSteps() {
-        Locator addBtns = sectionBtnContains(STEPS_IDX, "+ Add");
-        if (addBtns.count() > 0) {
-            addBtns.first().click();
+        if (button("+ Add steps").count() > 0) {
+            button("+ Add steps").click();
         } else {
-            sectionBtnExact(STEPS_IDX, "Edit").first().click();
+            button("Edit steps").click();
         }
     }
 
+    /** Deletes today's steps from the row's ••• menu; no confirmation, an Undo bar appears. */
     public void clickDeleteSteps() {
-        section(STEPS_IDX).locator("button.btn-danger").click();
-        confirmDeleteAndDismiss();
+        chooseFromMenu("More actions for Steps", "Delete");
     }
 
     public void enterSteps(String value) {
@@ -75,10 +95,9 @@ public class TodayPage {
 
     public void waitForStepsValue(String expected) {
         if ("--".equals(expected)) {
-            section(STEPS_IDX).locator(".section-body",
-                    new Locator.LocatorOptions().setHasText("No steps logged")).waitFor();
+            button("+ Add steps").waitFor();
         } else {
-            section(STEPS_IDX).locator(".today-data-value",
+            section(DAILY_IDX).locator(".today-data-value",
                     new Locator.LocatorOptions().setHasText(expected)).waitFor();
         }
     }
@@ -105,8 +124,8 @@ public class TodayPage {
 
     // ── Workout ──────────────────────────────────────────────────────────────
 
-    private Locator workoutDeleteBtn() {
-        return section(WORKOUT_IDX).locator("button.btn-danger:text-is(\"Delete\")");
+    private Locator workoutMenuBtn() {
+        return button("More actions for workout");
     }
 
     private Locator workoutStartBtn() {
@@ -126,21 +145,23 @@ public class TodayPage {
     /** Wait until the workout section has rendered its initial state. */
     private void waitForWorkoutSectionReady() {
         page.waitForCondition(() ->
-                workoutStartBtn().count() > 0 || workoutDeleteBtn().count() > 0);
+                workoutStartBtn().count() > 0 || workoutMenuBtn().count() > 0);
     }
 
     public void deleteWorkoutIfExists() {
         waitForWorkoutSectionReady();
-        // Loop because an account can have multiple workout sessions per day.
-        while (workoutDeleteBtn().count() > 0) {
+        // Loop because an account can have multiple workout sessions per day;
+        // each delete removes one and the next one takes its place.
+        while (workoutMenuBtn().count() > 0) {
+            String before = section(WORKOUT_IDX).innerText();
             try {
-                workoutDeleteBtn().first().click();
+                chooseFromMenu("More actions for workout", "Delete workout");
             } catch (Exception ignored) {
                 continue;
             }
-            confirmDeleteAndDismiss();
             page.waitForCondition(() ->
-                    workoutStartBtn().count() > 0 || workoutDeleteBtn().count() > 0);
+                    workoutStartBtn().count() > 0
+                            || !section(WORKOUT_IDX).innerText().equals(before));
         }
     }
 
@@ -156,7 +177,7 @@ public class TodayPage {
     }
 
     public void renameWorkoutSession(String newName) {
-        sectionBtnExact(WORKOUT_IDX, "Rename").click();
+        chooseFromMenu("More actions for workout", "Rename");
         Locator input = section(WORKOUT_IDX).locator("input[type='text']");
         input.fill(newName);
         section(WORKOUT_IDX).locator("button.btn-primary:text-is(\"Save\")").click();
@@ -200,18 +221,19 @@ public class TodayPage {
         }
     }
 
+    /** Taps the exercise card at {@code index}, which opens it for editing. */
     public void clickEditExercise(int index) {
-        page.locator(".exercise-card .btn.btn-sm").nth(index).click();
+        page.locator(".exercise-swipe-row .swipe-row-main").nth(index).click();
     }
 
-    /** Clicks Edit on the card for {@code name}; cards are sorted by name, so don't rely on position. */
+    /** Taps the card for {@code name}; cards are sorted by name, so don't rely on position. */
     public void clickEditExercise(String name) {
-        page.locator(".exercise-card")
-                .filter(new Locator.FilterOptions().setHas(page.locator(
-                        "span.exercise-card-name", new Page.LocatorOptions().setHasText(name))))
-                .locator(".btn.btn-sm")
-                .first()
-                .click();
+        button("Edit " + name).click();
+    }
+
+    /** Deletes an exercise from its card's ••• menu; no confirmation, an Undo bar appears. */
+    public void deleteExercise(String name) {
+        chooseFromMenu("More actions for " + name, "Delete");
     }
 
     public boolean isTextVisible(String text) {
@@ -233,18 +255,5 @@ public class TodayPage {
     public boolean isExerciseVisible(String name) {
         return page.locator("span.exercise-card-name",
                 new Page.LocatorOptions().setHasText(name)).count() > 0;
-    }
-
-    /**
-     * After clicking a delete button that opens a ConfirmDeleteModal,
-     * click "Confirm Delete", wait for success, then click "Done".
-     */
-    private void confirmDeleteAndDismiss() {
-        page.locator(".modal-box >> button:has-text(\"Confirm Delete\")").click();
-        Locator done = page.locator(".modal-box >> button:has-text(\"Done\")");
-        done.waitFor(new Locator.WaitForOptions().setTimeout(30000));
-        done.click();
-        page.locator(".modal-title").first().waitFor(
-                new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
     }
 }

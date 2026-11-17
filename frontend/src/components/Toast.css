@@ -45,6 +45,28 @@
 	color: var(--danger);
 }
 
+/* Undo bar: dark, like the iOS snackbar, with the action on the right. */
+.toast--undo {
+	cursor: default;
+	background: var(--fg);
+	border-color: var(--fg);
+	color: var(--bg);
+}
+
+.toast-action {
+	flex-shrink: 0;
+	padding: 4px 6px;
+	margin: -4px -6px -4px 0;
+	border: none;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: #a5b4fc;
+	font-family: var(--font);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+	cursor: pointer;
+}
+
 .toast-icon {
 	flex-shrink: 0;
 }

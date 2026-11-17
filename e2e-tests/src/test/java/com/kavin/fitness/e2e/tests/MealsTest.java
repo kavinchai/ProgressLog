@@ -81,7 +81,7 @@ public class MealsTest extends BaseTest {
 
     @Test(priority = 5, dependsOnMethods = "extraMealGetsItsOwnLabel")
     public void deletingAnExtraMealRemovesItsBox() {
-        step("delete Snack through the delete-with-undo dialog");
+        step("delete Snack (straight away, with an Undo bar)");
         meals.deleteMeal("Snack");
 
         step("totals drop back to 620 kcal eaten");

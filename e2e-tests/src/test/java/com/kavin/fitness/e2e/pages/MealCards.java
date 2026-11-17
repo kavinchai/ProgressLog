@@ -83,12 +83,9 @@ public class MealCards {
     }
 
     public void deleteMeal(String label) {
+        // Deletes straight away; an Undo bar appears instead of a confirmation.
         card(label).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Delete meal")).click();
-        page.getByRole(AriaRole.BUTTON,
-                new Page.GetByRoleOptions().setName("Confirm Delete")).click();
-        page.getByText("Deleted successfully.").waitFor();
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Done")).click();
         card(label).waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
     }
 
@@ -136,13 +133,10 @@ public class MealCards {
         return underLabel && leftAligned && aboveFields;
     }
 
-    /** Delete an extra meal, then press Undo in the dialog and wait for its box to come back. */
+    /** Delete an extra meal, then press Undo on the Undo bar and wait for its box to come back. */
     public void deleteMealAndUndo(String label) {
         card(label).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Delete meal")).click();
-        page.getByRole(AriaRole.BUTTON,
-                new Page.GetByRoleOptions().setName("Confirm Delete")).click();
-        page.getByText("Deleted successfully.").waitFor();
         card(label).waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
         page.waitForResponse(
                 r -> r.url().endsWith("/undo") && "POST".equals(r.request().method()),

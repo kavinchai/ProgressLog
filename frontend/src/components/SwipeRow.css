@@ -1,0 +1,79 @@
+.swipe-row {
+	position: relative;
+	overflow: hidden;
+}
+
+/* Sits behind the row; the row slides left to uncover it. */
+.swipe-row-delete {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 80px;
+	border: none;
+	background: var(--danger);
+	color: #fff;
+	font-family: var(--font);
+	font-size: var(--fs);
+	font-weight: var(--fw-semibold);
+	cursor: pointer;
+}
+
+.swipe-row-front {
+	position: relative;
+	display: flex;
+	align-items: center;
+	background: var(--bg-card);
+	transition: transform 200ms ease;
+	touch-action: pan-y;
+}
+
+.swipe-row-front--dragging {
+	transition: none;
+}
+
+.swipe-row-main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+	cursor: pointer;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+
+.swipe-row-main:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -2px;
+}
+
+.swipe-row-content {
+	flex: 1;
+	min-width: 0;
+}
+
+.swipe-row-chevron {
+	flex-shrink: 0;
+	color: var(--text-subtle);
+}
+
+/* Phones swipe and long-press, so the ••• button is only for screen readers. */
+@media (hover: none) and (pointer: coarse) {
+	.swipe-row-more {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.swipe-row-front {
+		transition: none;
+	}
+}

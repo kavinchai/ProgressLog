@@ -89,6 +89,58 @@
 	padding-left: 2px;
 }
 
+/* Rows in day detail: tap to edit, swipe to delete (see SwipeRow) */
+.day-detail .swipe-row-front {
+	background: var(--bg);
+}
+
+.day-detail-row .swipe-row-main {
+	padding: 6px 2px;
+}
+
+.day-detail-row .swipe-row-content {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.day-detail-add {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 6px 2px;
+	border: none;
+	background: transparent;
+	font-family: var(--font);
+	text-align: left;
+	cursor: pointer;
+}
+
+.day-detail-add-label {
+	color: var(--accent);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+}
+
+.day-exercise-item .swipe-row-main {
+	padding: 4px 2px;
+}
+
+.day-detail-add-exercise {
+	align-self: flex-start;
+	margin-top: 6px;
+	padding: 4px 0;
+	border: none;
+	background: transparent;
+	color: var(--accent);
+	font-family: var(--font);
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-semibold);
+	cursor: pointer;
+}
+
 /* Meals inside day detail */
 .day-detail-section .meal-cards {
 	margin-top: 6px;

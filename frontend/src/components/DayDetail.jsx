@@ -6,7 +6,10 @@ import DayInfoModal from "./DayInfoModal";
 import MealCards from "./MealCards";
 import WorkoutBuilderModal from "./WorkoutBuilderModal";
 import EditExerciseModal from "./EditExerciseModal";
-import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import SwipeRow from "./SwipeRow";
+import MoreMenu from "./MoreMenu";
+import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
+import useLongPress from "../hooks/useLongPress";
 import api from "../api";
 import { groupByExercise } from "../utils/workout";
 
@@ -29,7 +32,11 @@ export default function DayDetail({
 	const [editExercise, setEditExercise] = useState(null);
 	const [editingSteps, setEditingSteps] = useState(false);
 	const [stepsValue, setStepsValue] = useState("");
-	const [confirmDelete, setConfirmDelete] = useState(null);
+	const [workoutMenuOpen, setWorkoutMenuOpen] = useState(false);
+	const [nutritionMenuOpen, setNutritionMenuOpen] = useState(false);
+	const deleteWithUndo = useDeleteWithUndo();
+	const workoutLongPress = useLongPress(() => setWorkoutMenuOpen(true));
+	const nutritionLongPress = useLongPress(() => setNutritionMenuOpen(true));
 	const [appendBlank, setAppendBlank] = useState(false);
 
 	const canAppendExercise = workoutEntry?._sessionCount === 1;
@@ -79,97 +86,83 @@ export default function DayDetail({
 		setModal(null);
 	}
 
+	function saveStepsAndClose() {
+		saveSteps(stepsValue || null);
+		setEditingSteps(false);
+	}
+
+	// Deleting is offered (swipe, menu) only where showDelete allows it.
+	function deleter(remove, message, refresh) {
+		if (!showDelete) return undefined;
+		return () => deleteWithUndo({ remove, message, refresh });
+	}
+
+	function addWorkout() {
+		setAppendBlank(canAppendExercise);
+		setModal("workout-add");
+	}
+
 	return (
 		<div className="day-detail">
 			{!workoutOnly && (
 				<>
 					{/* Weight */}
 					<div className="day-detail-section">
-						<div className="day-detail-section-head">
-							<span className="day-detail-label">Weight</span>
-							<div className="btn-actions">
-								{weightEntry ? (
-									<>
-										<button
-											className="btn btn-sm"
-											onClick={() => setModal("weight-edit")}
-										>
-											Edit
-										</button>
-										{showDelete && (
-											<button
-												className="btn btn-sm btn-danger"
-												onClick={() =>
-													setConfirmDelete({
-														title: "Delete Weight Entry",
-														message:
-															"Are you sure you want to delete this weight entry?",
-														onDelete: () =>
-															api
-																.delete(`/weight/${weightEntry.id}`)
-																.then(onRefetchW),
-														onUndone: onRefetchW,
-													})
-												}
-											>
-												Delete
-											</button>
-										)}
-									</>
-								) : (
-									<button
-										className="btn btn-sm btn-primary"
-										onClick={() => setModal("weight-add")}
-									>
-										+ Add
-									</button>
+						{weightEntry ? (
+							<SwipeRow
+								label="Weight"
+								openLabel="Edit weight"
+								className="day-detail-row"
+								onOpen={() => setModal("weight-edit")}
+								onDelete={deleter(
+									() => api.delete(`/weight/${weightEntry.id}`),
+									"Weight deleted",
+									onRefetchW,
 								)}
-							</div>
-						</div>
-						<div className="day-detail-value">
-							{weightEntry ? (
-								toDisplay(weightEntry.weightLbs) + " " + unit
-							) : (
-								<span className="muted">--</span>
-							)}
-						</div>
+							>
+								<span className="day-detail-label">Weight</span>
+								<span className="day-detail-value">
+									{toDisplay(weightEntry.weightLbs) + " " + unit}
+								</span>
+							</SwipeRow>
+						) : (
+							<button
+								className="day-detail-row day-detail-add"
+								aria-label="+ Add weight"
+								onClick={() => setModal("weight-add")}
+							>
+								<span className="day-detail-label">Weight</span>
+								<span className="day-detail-add-label">+ Add</span>
+							</button>
+						)}
 					</div>
-
 					{/* Nutrition */}
 					<div className="day-detail-section">
-						<div className="day-detail-section-head">
+						<div
+							className="day-detail-section-head"
+							{...(nutritionEntry && nutritionLongPress)}
+						>
 							<span className="day-detail-label">Nutrition</span>
-							<div className="btn-actions">
-								{nutritionEntry && (
-									<>
-										<button
-											className="btn btn-sm"
-											onClick={() => setModal("dayinfo")}
-										>
-											Edit Day
-										</button>
-										{showDelete && (
-											<button
-												className="btn btn-sm btn-danger"
-												onClick={() =>
-													setConfirmDelete({
-														title: "Delete Nutrition Log",
-														message:
-															"Are you sure you want to delete this nutrition log and all its meals?",
-														onDelete: () =>
-															api
-																.delete(`/nutrition/${nutritionEntry.id}`)
-																.then(onRefetchN),
-														onUndone: onRefetchN,
-													})
-												}
-											>
-												Delete
-											</button>
-										)}
-									</>
-								)}
-							</div>
+							{nutritionEntry && (
+								<MoreMenu
+									label="More actions for nutrition"
+									open={nutritionMenuOpen}
+									onOpenChange={setNutritionMenuOpen}
+									items={[
+										{ label: "Edit day", onSelect: () => setModal("dayinfo") },
+										{
+											label: "Delete nutrition log",
+											destructive: true,
+											hidden: !showDelete,
+											onSelect: deleter(
+												() => api.delete(`/nutrition/${nutritionEntry.id}`),
+												"Nutrition log deleted",
+												onRefetchN,
+											),
+										},
+									]}
+								/>
+							)}
 						</div>
 						<MealCards
 							nutritionEntry={nutritionEntry ?? null}
@@ -184,42 +177,8 @@ export default function DayDetail({
 							</div>
 						)}
 					</div>
-
 					{/* Steps */}
 					<div className="day-detail-section">
-						<div className="day-detail-section-head">
-							<span className="day-detail-label">Steps</span>
-							<div className="btn-actions">
-								{!editingSteps && (
-									<button
-										className="btn btn-sm"
-										onClick={() => {
-											setStepsValue(stepEntry ? String(stepEntry.steps) : "");
-											setEditingSteps(true);
-										}}
-									>
-										{stepEntry ? "Edit" : "+ Add"}
-									</button>
-								)}
-								{!editingSteps && stepEntry && showDelete && (
-									<button
-										className="btn btn-sm btn-danger"
-										onClick={() =>
-											setConfirmDelete({
-												title: "Delete Steps",
-												message:
-													"Are you sure you want to delete this step entry?",
-												onDelete: () =>
-													api.delete(`/steps/${stepEntry.id}`).then(onRefetchS),
-												onUndone: onRefetchS,
-											})
-										}
-									>
-										Delete
-									</button>
-								)}
-							</div>
-						</div>
 						{editingSteps ? (
 							<div className="today-steps-edit">
 								<input
@@ -231,20 +190,14 @@ export default function DayDetail({
 									value={stepsValue}
 									onChange={(e) => setStepsValue(e.target.value)}
 									onKeyDown={(e) => {
-										if (e.key === "Enter") {
-											saveSteps(stepsValue || null);
-											setEditingSteps(false);
-										}
+										if (e.key === "Enter") saveStepsAndClose();
 										if (e.key === "Escape") setEditingSteps(false);
 									}}
 									autoFocus
 								/>
 								<button
 									className="btn btn-sm btn-primary"
-									onClick={() => {
-										saveSteps(stepsValue || null);
-										setEditingSteps(false);
-									}}
+									onClick={saveStepsAndClose}
 								>
 									Save
 								</button>
@@ -255,22 +208,48 @@ export default function DayDetail({
 									&times;
 								</button>
 							</div>
-						) : (
-							<div className="day-detail-value">
-								{stepEntry ? (
-									stepEntry.steps.toLocaleString() + " steps"
-								) : (
-									<span className="muted">--</span>
+						) : stepEntry ? (
+							<SwipeRow
+								label="Steps"
+								openLabel="Edit steps"
+								className="day-detail-row"
+								onOpen={() => {
+									setStepsValue(String(stepEntry.steps));
+									setEditingSteps(true);
+								}}
+								onDelete={deleter(
+									() => api.delete(`/steps/${stepEntry.id}`),
+									"Steps deleted",
+									onRefetchS,
 								)}
-							</div>
+							>
+								<span className="day-detail-label">Steps</span>
+								<span className="day-detail-value">
+									{stepEntry.steps.toLocaleString() + " steps"}
+								</span>
+							</SwipeRow>
+						) : (
+							<button
+								className="day-detail-row day-detail-add"
+								aria-label="+ Add steps"
+								onClick={() => {
+									setStepsValue("");
+									setEditingSteps(true);
+								}}
+							>
+								<span className="day-detail-label">Steps</span>
+								<span className="day-detail-add-label">+ Add</span>
+							</button>
 						)}
 					</div>
 				</>
 			)}
-
 			{/* Workout */}
 			<div className="day-detail-section">
-				<div className="day-detail-section-head">
+				<div
+					className="day-detail-section-head"
+					{...(workoutEntry && workoutLongPress)}
+				>
 					<span className="day-detail-label">
 						Workout
 						{workoutEntry?.sessionName && (
@@ -283,18 +262,7 @@ export default function DayDetail({
 						)}
 					</span>
 					<div className="btn-actions">
-						{workoutEntry && !renamingSession && (
-							<button
-								className="btn btn-sm"
-								onClick={() => {
-									setRenameValue(workoutEntry.sessionName ?? "");
-									setRenamingSession(true);
-								}}
-							>
-								Rename
-							</button>
-						)}
-						{renamingSession && (
+						{renamingSession ? (
 							<>
 								<input
 									className="modal-input"
@@ -323,87 +291,99 @@ export default function DayDetail({
 									&times;
 								</button>
 							</>
-						)}
-						{showDelete && workoutEntry && (
-							<button
-								className="btn btn-sm btn-danger"
-								onClick={() =>
-									setConfirmDelete({
-										title: "Delete Workout",
-										message:
-											"Are you sure you want to delete this workout session?",
-										onDelete: () =>
-											api
-												.delete(`/workouts/${workoutEntry.id}`)
-												.then(onRefetchWo),
-										onUndone: onRefetchWo,
-									})
-								}
-							>
-								Delete
+						) : workoutEntry ? (
+							<MoreMenu
+								label="More actions for workout"
+								open={workoutMenuOpen}
+								onOpenChange={setWorkoutMenuOpen}
+								items={[
+									{
+										label: "Rename",
+										onSelect: () => {
+											setRenameValue(workoutEntry.sessionName ?? "");
+											setRenamingSession(true);
+										},
+									},
+									{
+										label: "Delete workout",
+										destructive: true,
+										hidden: !showDelete,
+										onSelect: deleter(
+											() => api.delete(`/workouts/${workoutEntry.id}`),
+											"Workout deleted",
+											onRefetchWo,
+										),
+									},
+								]}
+							/>
+						) : (
+							<button className="btn btn-sm btn-primary" onClick={addWorkout}>
+								+ Add
 							</button>
 						)}
-						<button
-							className="btn btn-sm btn-primary"
-							onClick={() => {
-								setAppendBlank(canAppendExercise);
-								setModal("workout-add");
-							}}
-						>
-							{canAppendExercise ? "+ Add exercise" : "+ Add"}
-						</button>
 					</div>
 				</div>
 				{workoutOnly && workoutSummary && (
 					<div className="day-detail-value muted">{workoutSummary}</div>
 				)}
 				{workoutEntry ? (
-					exerciseGroups.length > 0 ? (
-						<div className="day-exercise-list">
-							{exerciseGroups.map((g) => (
-								<div
-									key={`${g.name}-${g.weight}`}
-									className="day-exercise-item"
-								>
-									<div className="day-exercise-row">
-										<span className="day-exercise-name">{g.name}</span>
-										{g.weight != null && (
-											<span className="muted">
-												{toDisplay(g.weight)} {unit}
-											</span>
-										)}
-										<button
-											className="btn btn-sm"
-											style={{ marginLeft: "auto" }}
-											onClick={() =>
+					<>
+						{exerciseGroups.length > 0 ? (
+							<div className="day-exercise-list">
+								{exerciseGroups.map((g) => {
+									const sessionId = g.sets[0]._sessionId ?? workoutEntry.id;
+									return (
+										<SwipeRow
+											key={`${g.name}-${g.weight}`}
+											label={g.name}
+											openLabel={`Edit ${g.name}`}
+											className="day-exercise-item"
+											onOpen={() =>
 												setEditExercise({
-													sessionId: g.sets[0]._sessionId ?? workoutEntry.id,
+													sessionId,
 													name: g.name,
 													sets: g.sets,
 												})
 											}
+											onDelete={deleter(
+												() =>
+													api.delete(`/workouts/${sessionId}/exercises`, {
+														params: { name: g.name },
+													}),
+												`${g.name} deleted`,
+												onRefetchWo,
+											)}
 										>
-											Edit
-										</button>
-									</div>
-									<div className="day-exercise-reps">
-										{g.sets.map((s) => s.reps ?? "--").join("  ")}
-									</div>
-								</div>
-							))}
-						</div>
-					) : (
-						<div className="day-detail-value">
-							<span className="muted">session logged</span>
-						</div>
-					)
+											<div className="day-exercise-row">
+												<span className="day-exercise-name">{g.name}</span>
+												{g.weight != null && (
+													<span className="muted">
+														{toDisplay(g.weight)} {unit}
+													</span>
+												)}
+											</div>
+											<div className="day-exercise-reps">
+												{g.sets.map((s) => s.reps ?? "--").join("  ")}
+											</div>
+										</SwipeRow>
+									);
+								})}
+							</div>
+						) : (
+							<div className="day-detail-value">
+								<span className="muted">session logged</span>
+							</div>
+						)}
+						<button className="day-detail-add-exercise" onClick={addWorkout}>
+							{canAppendExercise ? "+ Add exercise" : "+ Add workout"}
+						</button>
+					</>
 				) : (
 					<div className="day-detail-value">
 						<span className="muted">--</span>
 					</div>
 				)}
 			</div>
-
 			{/* Modals */}
 			{(modal === "weight-add" || modal === "weight-edit") && (
 				<WeightModal
@@ -437,18 +417,6 @@ export default function DayDetail({
 					exerciseSets={editExercise.sets}
 					onClose={() => setEditExercise(null)}
 					onSaved={onRefetchWo}
-				/>
-			)}
-			{confirmDelete && (
-				<ConfirmDeleteModal
-					title={confirmDelete.title}
-					message={confirmDelete.message}
-					onClose={() => setConfirmDelete(null)}
-					onDelete={confirmDelete.onDelete}
-					onUndone={() => {
-						confirmDelete.onUndone();
-						setConfirmDelete(null);
-					}}
 				/>
 			)}
 		</div>

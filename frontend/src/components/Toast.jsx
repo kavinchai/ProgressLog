@@ -32,6 +32,7 @@ export function ToastProvider({ children }) {
 			const id = ++idRef.current;
 			setToasts((curr) => [...curr, { id, ...toast }].slice(-MAX_VISIBLE));
 			setTimeout(() => dismiss(id), toast.durationMs ?? ERROR_DURATION_MS);
+			return id;
 		},
 		[dismiss],
 	);
@@ -60,16 +61,33 @@ function ToastViewport({ toasts, onDismiss }) {
 		<div className="toast-viewport" aria-live="polite">
 			{toasts.map((t) => (
 				<div key={t.id} role="status">
-					<button
-						type="button"
-						className={`toast toast--${t.variant}`}
-						onClick={() => onDismiss(t.id)}
-					>
-						{t.variant === "error" && (
-							<AlertTriangle size={16} className="toast-icon" />
-						)}
-						<span className="toast-message">{t.message}</span>
-					</button>
+					{t.action ? (
+						// A toast with an action (e.g. Undo) can't itself be a button.
+						<div className={`toast toast--${t.variant}`}>
+							<span className="toast-message">{t.message}</span>
+							<button
+								type="button"
+								className="toast-action"
+								onClick={() => {
+									onDismiss(t.id);
+									t.action.onClick();
+								}}
+							>
+								{t.action.label}
+							</button>
+						</div>
+					) : (
+						<button
+							type="button"
+							className={`toast toast--${t.variant}`}
+							onClick={() => onDismiss(t.id)}
+						>
+							{t.variant === "error" && (
+								<AlertTriangle size={16} className="toast-icon" />
+							)}
+							<span className="toast-message">{t.message}</span>
+						</button>
+					)}
 				</div>
 			))}
 		</div>
