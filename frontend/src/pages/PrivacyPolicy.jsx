@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
 			</Link>
 
 			<h1 className="privacy-title">Privacy Policy</h1>
-			<p className="privacy-date">Effective November 10, 2026</p>
+			<p className="privacy-date">Effective November 16, 2026</p>
 
 			<p>
 				This policy explains what Progress Logger collects, why, and the choices
@@ -22,7 +22,9 @@ export default function PrivacyPolicy() {
 			<ul>
 				<li>
 					<strong>Account details:</strong> your username, email address and
-					password. Passwords are stored only as a one-way hash.
+					password. Passwords are stored only as a one-way hash. If you use Sign
+					in with Apple, we store the ID Apple gives us for your account instead
+					of needing a password.
 				</li>
 				<li>
 					<strong>What you log:</strong> workouts (exercises, sets, reps and
@@ -31,7 +33,7 @@ export default function PrivacyPolicy() {
 				</li>
 				<li>
 					<strong>Settings:</strong> your goals and sharing choices. Your weight
-					unit and theme are saved only on your device.
+					unit, theme and Face ID unlock setting are saved only on your device.
 				</li>
 				<li>
 					<strong>Claude integration:</strong> an API key, only if you create
@@ -86,6 +88,28 @@ export default function PrivacyPolicy() {
 				data is never used for advertising and never shared with or sold to
 				anyone. To stop the import, turn off Progress Logger in the iPhone
 				Settings app under Privacy &amp; Security › Health.
+			</p>
+
+			<h2>Sign in with Apple</h2>
+			<p>
+				In the iOS app you can sign in with your Apple ID. Apple gives us an ID
+				that identifies you to Progress Logger and, the first time you sign in,
+				your first name and email address if you choose to share them. If you
+				choose Hide My Email, we get a private relay address that forwards to
+				your real one. We use your first name only to suggest a username and
+				don&apos;t store it. We store the Apple ID and a token from Apple that
+				lets us end the Apple sign-in. When you delete your account, we ask
+				Apple to revoke Progress Logger&apos;s access. You can also stop using
+				Sign in with Apple for Progress Logger in the iPhone Settings app under
+				your name › Sign-In &amp; Security › Sign in with Apple.
+			</p>
+
+			<h2>Face ID unlock</h2>
+			<p>
+				If you turn on Unlock with Face ID in Settings › Security, the iOS app
+				asks for Face ID (or Touch ID, or your passcode) when you open it. Face
+				ID is handled entirely by your iPhone: Progress Logger only learns
+				whether it succeeded, and never sees or stores your face data.
 			</p>
 
 			<h2>Where your data is stored</h2>
