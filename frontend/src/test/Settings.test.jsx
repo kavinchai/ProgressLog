@@ -63,8 +63,24 @@ vi.mock("../native/health", () => ({
 	syncHealth: vi.fn(),
 }));
 
+// Sign in with Apple and the Face ID lock (iPhone app only) — off unless a
+// test turns them on.
+const ios = vi.hoisted(() => ({ apple: false, biometry: "none", lock: false }));
+vi.mock("../native/appleSignIn", () => ({
+	isAppleSignInAvailable: () => ios.apple,
+	signInWithApple: vi.fn(),
+}));
+vi.mock("../native/biometricLock", () => ({
+	biometryType: vi.fn(() => Promise.resolve(ios.biometry)),
+	isLockOn: () => ios.lock,
+	setLockOn: vi.fn((on) => (ios.lock = on)),
+	unlockWithBiometrics: vi.fn(),
+}));
+
 import api from "../api";
 import * as health from "../native/health";
+import { signInWithApple } from "../native/appleSignIn";
+import { setLockOn, unlockWithBiometrics } from "../native/biometricLock";
 import useUserProfile from "../hooks/useUserProfile";
 import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
@@ -1368,5 +1384,390 @@ describe("Settings — privacy load failure", () => {
 		expect(
 			screen.queryByText(/could not load privacy setting/i),
 		).not.toBeInTheDocument();
+	});
+});
+
+// ── Sign in with Apple and accounts without a password ─────────────────────
+
+function mockSignInMethods(methods) {
+	api.get.mockImplementation((url) => {
+		if (url === "/profile/sign-in") return Promise.resolve({ data: methods });
+		if (url === "/profile/privacy")
+			return Promise.resolve({
+				data: { shareData: false, shareCalendar: false },
+			});
+		return Promise.resolve({ data: { email: "alice@example.com" } });
+	});
+}
+
+const APPLE_CREDS = {
+	identityToken: "id-token",
+	authorizationCode: "auth-code",
+	givenName: "",
+	email: "",
+};
+
+describe("Settings — Apple ID", () => {
+	afterEach(() => {
+		ios.apple = false;
+	});
+
+	it("isn't shown on the website", async () => {
+		mockSignInMethods({ appleConnected: false, passwordSet: true });
+		setupProfile();
+		renderSettings();
+		await screen.findByText("alice@example.com");
+		expect(screen.queryByText("Apple ID")).not.toBeInTheDocument();
+	});
+
+	it("connects the account to an Apple ID in the iPhone app", async () => {
+		ios.apple = true;
+		mockSignInMethods({ appleConnected: false, passwordSet: true });
+		signInWithApple.mockResolvedValue(APPLE_CREDS);
+		api.post.mockResolvedValue({
+			data: { appleConnected: true, passwordSet: true },
+		});
+		setupProfile();
+		renderSettings();
+
+		await userEvent.click(
+			await screen.findByRole("button", { name: /connect apple id/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith("/profile/apple", {
+				identityToken: "id-token",
+				authorizationCode: "auth-code",
+			}),
+		);
+		expect(await screen.findByText("Connected")).toBeInTheDocument();
+	});
+
+	it("shows Connected when the Apple ID is already connected", async () => {
+		ios.apple = true;
+		mockSignInMethods({ appleConnected: true, passwordSet: true });
+		setupProfile();
+		renderSettings();
+		expect(await screen.findByText("Connected")).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /connect apple id/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows the error when connecting fails", async () => {
+		ios.apple = true;
+		mockSignInMethods({ appleConnected: false, passwordSet: true });
+		signInWithApple.mockResolvedValue(APPLE_CREDS);
+		api.post.mockRejectedValue({
+			response: {
+				data: {
+					message: "This Apple ID is already connected to another account.",
+				},
+			},
+		});
+		setupProfile();
+		renderSettings();
+
+		await userEvent.click(
+			await screen.findByRole("button", { name: /connect apple id/i }),
+		);
+
+		expect(
+			await screen.findByText(
+				"This Apple ID is already connected to another account.",
+			),
+		).toBeInTheDocument();
+	});
+
+	it("does nothing when the person closes Apple's sheet", async () => {
+		ios.apple = true;
+		mockSignInMethods({ appleConnected: false, passwordSet: true });
+		signInWithApple.mockResolvedValue(null);
+		setupProfile();
+		renderSettings();
+
+		await userEvent.click(
+			await screen.findByRole("button", { name: /connect apple id/i }),
+		);
+
+		expect(api.post).not.toHaveBeenCalled();
+	});
+});
+
+describe("Settings — account created with Apple (no password)", () => {
+	beforeEach(() => {
+		mockSignInMethods({ appleConnected: true, passwordSet: false });
+		setupProfile();
+	});
+
+	async function openRow(name) {
+		const row = await screen.findByRole("button", { name });
+		await waitFor(() => expect(row).toHaveTextContent(/not set|alice|@/i));
+		await userEvent.click(row);
+	}
+
+	it("shows the password as not set", async () => {
+		renderSettings();
+		await waitFor(() =>
+			expect(
+				screen.getByRole("button", { name: /^password/i }),
+			).toHaveTextContent("Not set"),
+		);
+	});
+
+	it("sets a password without asking for a current one", async () => {
+		api.put.mockResolvedValue({ data: { username: "alice" } });
+		renderSettings();
+		await waitFor(() =>
+			expect(
+				screen.getByRole("button", { name: /^password/i }),
+			).toHaveTextContent("Not set"),
+		);
+		await userEvent.click(screen.getByRole("button", { name: /^password/i }));
+
+		expect(
+			screen.queryByLabelText(/current password/i),
+		).not.toBeInTheDocument();
+		await userEvent.type(screen.getByLabelText(/^new password/i), "brandnew1");
+		await userEvent.type(
+			screen.getByLabelText(/confirm new password/i),
+			"brandnew1",
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /set password/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/credentials", {
+				newPassword: "brandnew1",
+			}),
+		);
+		await waitFor(() =>
+			expect(
+				screen.getByRole("button", { name: /^password/i }),
+			).toHaveTextContent("••••••••"),
+		);
+	});
+
+	it("changes the username without a password", async () => {
+		api.put.mockResolvedValue({ data: { username: "bob" } });
+		renderSettings();
+		await openRow(/^username/i);
+
+		expect(
+			screen.queryByLabelText(/current password/i),
+		).not.toBeInTheDocument();
+		await userEvent.type(screen.getByLabelText(/new username/i), "bob");
+		await userEvent.click(
+			screen.getByRole("button", { name: /save username/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/credentials", {
+				newUsername: "bob",
+			}),
+		);
+	});
+
+	it("changes the email without checking a password", async () => {
+		api.put.mockResolvedValue({ data: { email: "new@example.com" } });
+		renderSettings();
+		await openRow(/^email/i);
+
+		expect(
+			screen.queryByLabelText(/current password/i),
+		).not.toBeInTheDocument();
+		await userEvent.type(
+			screen.getByLabelText(/new email/i),
+			"new@example.com",
+		);
+		await userEvent.click(screen.getByRole("button", { name: /save email/i }));
+
+		await waitFor(() =>
+			expect(api.put).toHaveBeenCalledWith("/profile/email", {
+				email: "new@example.com",
+			}),
+		);
+		expect(api.post).not.toHaveBeenCalledWith(
+			"/profile/verify-password",
+			expect.anything(),
+		);
+	});
+
+	it("deletes the account after confirming with Apple", async () => {
+		signInWithApple.mockResolvedValue(APPLE_CREDS);
+		api.post.mockResolvedValue({});
+		renderSettings();
+		await waitFor(() =>
+			expect(
+				screen.getByRole("button", { name: /^password/i }),
+			).toHaveTextContent("Not set"),
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /delete account/i }),
+		);
+
+		expect(
+			screen.queryByLabelText(/current password/i),
+		).not.toBeInTheDocument();
+		expect(screen.getByText(/confirm with apple/i)).toBeInTheDocument();
+		await userEvent.click(
+			screen.getByRole("button", { name: /permanently delete/i }),
+		);
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith("/profile/delete-account", {
+				appleIdentityToken: "id-token",
+			}),
+		);
+		await waitFor(() =>
+			expect(useAuthStore.getState().authenticated).toBe(false),
+		);
+	});
+
+	it("keeps the account when the Apple sheet is closed", async () => {
+		signInWithApple.mockResolvedValue(null);
+		renderSettings();
+		await waitFor(() =>
+			expect(
+				screen.getByRole("button", { name: /^password/i }),
+			).toHaveTextContent("Not set"),
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /delete account/i }),
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /permanently delete/i }),
+		);
+
+		expect(api.post).not.toHaveBeenCalledWith(
+			"/profile/delete-account",
+			expect.anything(),
+		);
+		expect(useAuthStore.getState().authenticated).toBe(true);
+	});
+});
+
+describe("Settings — Face ID unlock", () => {
+	afterEach(() => {
+		ios.biometry = "none";
+		ios.lock = false;
+	});
+
+	it("isn't shown on the website or without Face ID", async () => {
+		setupProfile();
+		renderSettings();
+		await screen.findByText("alice@example.com");
+		expect(screen.queryByText(/unlock with face id/i)).not.toBeInTheDocument();
+	});
+
+	it("turns on after Face ID succeeds", async () => {
+		ios.biometry = "faceID";
+		unlockWithBiometrics.mockResolvedValue(true);
+		setupProfile();
+		renderSettings();
+
+		const toggle = await screen.findByRole("button", {
+			name: /unlock with face id/i,
+		});
+		expect(toggle).toHaveAttribute("aria-pressed", "false");
+		await userEvent.click(toggle);
+
+		await waitFor(() => expect(setLockOn).toHaveBeenCalledWith(true));
+		expect(toggle).toHaveAttribute("aria-pressed", "true");
+	});
+
+	it("stays off when Face ID fails", async () => {
+		ios.biometry = "faceID";
+		unlockWithBiometrics.mockResolvedValue(false);
+		setupProfile();
+		renderSettings();
+
+		const toggle = await screen.findByRole("button", {
+			name: /unlock with face id/i,
+		});
+		await userEvent.click(toggle);
+
+		await waitFor(() => expect(unlockWithBiometrics).toHaveBeenCalled());
+		expect(setLockOn).not.toHaveBeenCalled();
+		expect(toggle).toHaveAttribute("aria-pressed", "false");
+	});
+
+	it("turns off without asking for Face ID", async () => {
+		ios.biometry = "faceID";
+		ios.lock = true;
+		setupProfile();
+		renderSettings();
+
+		const toggle = await screen.findByRole("button", {
+			name: /unlock with face id/i,
+		});
+		expect(toggle).toHaveAttribute("aria-pressed", "true");
+		await userEvent.click(toggle);
+
+		expect(setLockOn).toHaveBeenCalledWith(false);
+		expect(unlockWithBiometrics).not.toHaveBeenCalled();
+		expect(toggle).toHaveAttribute("aria-pressed", "false");
+	});
+
+	it("says Touch ID on phones with Touch ID", async () => {
+		ios.biometry = "touchID";
+		setupProfile();
+		renderSettings();
+		expect(
+			await screen.findByRole("button", { name: /unlock with touch id/i }),
+		).toBeInTheDocument();
+	});
+});
+
+describe("Settings — sign-in methods fail to load", () => {
+	it("still asks for the current password", async () => {
+		api.get.mockImplementation((url) => {
+			if (url === "/profile/sign-in")
+				return Promise.reject(new Error("offline"));
+			if (url === "/profile/privacy")
+				return Promise.resolve({
+					data: { shareData: false, shareCalendar: false },
+				});
+			return Promise.resolve({ data: { email: "alice@example.com" } });
+		});
+		setupProfile();
+		renderSettings();
+		await screen.findByText("alice@example.com");
+		await userEvent.click(screen.getByRole("button", { name: /^password/i }));
+		expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
+	});
+});
+
+describe("Settings — deleting an Apple account fails", () => {
+	it("shows the error and keeps you signed in", async () => {
+		mockSignInMethods({ appleConnected: true, passwordSet: false });
+		setupProfile();
+		signInWithApple.mockResolvedValue(APPLE_CREDS);
+		api.post.mockRejectedValue({
+			response: {
+				data: { message: "That Apple ID isn't connected to this account." },
+			},
+		});
+		renderSettings();
+		await waitFor(() =>
+			expect(
+				screen.getByRole("button", { name: /^password/i }),
+			).toHaveTextContent("Not set"),
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /delete account/i }),
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /permanently delete/i }),
+		);
+
+		expect(
+			await screen.findByText("That Apple ID isn't connected to this account."),
+		).toBeInTheDocument();
+		expect(useAuthStore.getState().authenticated).toBe(true);
+		expect(
+			screen.getByRole("button", { name: /permanently delete/i }),
+		).toBeEnabled();
 	});
 });

@@ -176,6 +176,21 @@ public class SettingsPage {
                 page.locator(".settings-row-label", new Page.LocatorOptions().setHasText(label))));
     }
 
+    /** Whether a row with exactly this label is on the page. Call after open(). */
+    public boolean hasRow(String label) {
+        return page.locator(".settings-row-label:text-is(\"" + label + "\")").count() > 0;
+    }
+
+    /** Waits for the account email to load, after which the page's checks have all settled. */
+    public void waitForEmailLoaded() {
+        page.locator(".settings-value:has-text(\"@\")").first().waitFor();
+    }
+
+    /** Whether a settings group with this title is on the page. Call after open(). */
+    public boolean hasGroup(String title) {
+        return page.locator(groupTitle(title)).count() > 0;
+    }
+
     public void openAccountRow(String label) {
         accountRow(label).click();
     }

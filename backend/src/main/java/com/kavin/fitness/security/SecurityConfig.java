@@ -66,6 +66,8 @@ public class SecurityConfig {
                                 auth.requestMatchers(
                                                 "/api/auth/login",
                                                 "/api/auth/register",
+                                                "/api/auth/apple",
+                                                "/api/auth/apple/register",
                                                 "/api/auth/logout")
                                         .permitAll()
                                         .requestMatchers("/api/leaderboard")

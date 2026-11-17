@@ -18,6 +18,8 @@
 		A1B2C3D401F0000000000002 /* HealthImportPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D401F0000000000001 /* HealthImportPlugin.swift */; };
 		A1B2C3D401F0000000000004 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D401F0000000000003 /* MainViewController.swift */; };
 		A1B2C3D401F0000000000007 /* WidgetBridgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D401F0000000000006 /* WidgetBridgePlugin.swift */; };
+		A1B2C3D401F0000000000302 /* AppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D401F0000000000301 /* AppleSignInPlugin.swift */; };
+		A1B2C3D401F0000000000402 /* BiometricLockPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D401F0000000000401 /* BiometricLockPlugin.swift */; };
 		A1B2C3D401F0000000000011 /* ProgressWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D401F0000000000010 /* ProgressWidget.swift */; };
 		A1B2C3D401F0000000000015 /* ProgressWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1B2C3D401F0000000000014 /* ProgressWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -61,6 +63,8 @@
 		A1B2C3D401F0000000000003 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D401F0000000000005 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		A1B2C3D401F0000000000006 /* WidgetBridgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgePlugin.swift; sourceTree = "<group>"; };
+		A1B2C3D401F0000000000301 /* AppleSignInPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInPlugin.swift; sourceTree = "<group>"; };
+		A1B2C3D401F0000000000401 /* BiometricLockPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricLockPlugin.swift; sourceTree = "<group>"; };
 		A1B2C3D401F0000000000010 /* ProgressWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressWidget.swift; sourceTree = "<group>"; };
 		A1B2C3D401F0000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D401F0000000000013 /* ProgressWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ProgressWidget.entitlements; sourceTree = "<group>"; };
@@ -113,6 +117,8 @@
 				A1B2C3D401F0000000000003 /* MainViewController.swift */,
 				A1B2C3D401F0000000000001 /* HealthImportPlugin.swift */,
 				A1B2C3D401F0000000000006 /* WidgetBridgePlugin.swift */,
+				A1B2C3D401F0000000000301 /* AppleSignInPlugin.swift */,
+				A1B2C3D401F0000000000401 /* BiometricLockPlugin.swift */,
 				A1B2C3D401F0000000000005 /* App.entitlements */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -250,6 +256,8 @@
 				A1B2C3D401F0000000000004 /* MainViewController.swift in Sources */,
 				A1B2C3D401F0000000000002 /* HealthImportPlugin.swift in Sources */,
 				A1B2C3D401F0000000000007 /* WidgetBridgePlugin.swift in Sources */,
+				A1B2C3D401F0000000000302 /* AppleSignInPlugin.swift in Sources */,
+				A1B2C3D401F0000000000402 /* BiometricLockPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

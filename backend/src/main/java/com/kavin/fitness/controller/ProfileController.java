@@ -1,14 +1,20 @@
 package com.kavin.fitness.controller;
 
+import com.kavin.fitness.dto.AppleSignInRequest;
 import com.kavin.fitness.dto.CredentialsUpdateResponse;
+import com.kavin.fitness.dto.DeleteAccountRequest;
 import com.kavin.fitness.dto.EmailRequest;
 import com.kavin.fitness.dto.EmailResponse;
 import com.kavin.fitness.dto.PasswordVerifyRequest;
 import com.kavin.fitness.dto.PrivacyDTO;
+import com.kavin.fitness.dto.SignInMethodsResponse;
 import com.kavin.fitness.dto.UpdateCredentialsRequest;
 import com.kavin.fitness.dto.UserGoalsDTO;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
+import com.kavin.fitness.security.AppleIdentityVerifier;
+import com.kavin.fitness.security.AppleIdentityVerifier.AppleIdentity;
+import com.kavin.fitness.security.AppleTokenClient;
 import com.kavin.fitness.security.CookieUtil;
 import com.kavin.fitness.security.JwtFilter;
 import com.kavin.fitness.security.JwtUtil;
@@ -36,6 +42,8 @@ public class ProfileController {
     private final JwtUtil jwtUtil;
     private final CookieUtil cookieUtil;
     private final UserResolver userResolver;
+    private final AppleIdentityVerifier appleIdentityVerifier;
+    private final AppleTokenClient appleTokenClient;
 
     @GetMapping("/goals")
     public ResponseEntity<UserGoalsDTO> getGoals(@AuthenticationPrincipal UserDetails userDetails) {
@@ -124,16 +132,31 @@ public class ProfileController {
     @PostMapping("/delete-account")
     public ResponseEntity<Void> deleteAccount(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody PasswordVerifyRequest request,
+            @RequestBody DeleteAccountRequest request,
             HttpServletResponse response) {
 
         User user = userResolver.resolve(userDetails);
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("Account deletion failed — wrong password for user={}", user.getUsername());
-            throw new IllegalArgumentException("Incorrect password.");
+        if (user.isPasswordSet()) {
+            String password = request.getPassword();
+            if (password == null || !passwordEncoder.matches(password, user.getPassword())) {
+                log.warn(
+                        "Account deletion failed — wrong password for user={}", user.getUsername());
+                throw new IllegalArgumentException("Incorrect password.");
+            }
+        } else {
+            // Created with Apple and no password: confirm with a fresh Apple sign-in.
+            if (request.getAppleIdentityToken() == null) {
+                throw new IllegalArgumentException("Confirm with Apple to delete your account.");
+            }
+            AppleIdentity identity = appleIdentityVerifier.verify(request.getAppleIdentityToken());
+            if (!identity.subject().equals(user.getAppleSub())) {
+                throw new IllegalArgumentException(
+                        "That Apple ID isn't connected to this account.");
+            }
         }
 
+        appleTokenClient.revoke(user.getAppleRefreshToken());
         userRepository.delete(user);
         cookieUtil.clearJwtCookie(response);
         log.info("Account deleted for user={}", user.getUsername());
@@ -150,7 +173,11 @@ public class ProfileController {
         log.info("PUT credentials user={}", userDetails.getUsername());
         User user = userResolver.resolve(userDetails);
 
-        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+        // An account created with Apple has no password to confirm until it sets one.
+        if (user.isPasswordSet()
+                && (dto.getCurrentPassword() == null
+                        || !passwordEncoder.matches(
+                                dto.getCurrentPassword(), user.getPassword()))) {
             log.warn(
                     "Credentials update failed — wrong current password for user={}",
                     userDetails.getUsername());
@@ -169,6 +196,7 @@ public class ProfileController {
 
         if (dto.getNewPassword() != null && !dto.getNewPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+            user.setPasswordSet(true);
         }
 
         userRepository.save(user);
@@ -179,6 +207,41 @@ public class ProfileController {
         String token = jwtUtil.generateToken(user.getUsername(), lifetime);
         cookieUtil.addJwtCookie(response, token, lifetime);
         return ResponseEntity.ok(new CredentialsUpdateResponse(user.getUsername()));
+    }
+
+    @GetMapping("/sign-in")
+    public ResponseEntity<SignInMethodsResponse> getSignInMethods(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(signInMethodsOf(userResolver.resolve(userDetails)));
+    }
+
+    /** Connects an Apple ID, so Sign in with Apple opens this account. */
+    @PostMapping("/apple")
+    public ResponseEntity<SignInMethodsResponse> connectApple(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody AppleSignInRequest request) {
+        User user = userResolver.resolve(userDetails);
+        AppleIdentity identity = appleIdentityVerifier.verify(request.getIdentityToken());
+        userRepository
+                .findByAppleSub(identity.subject())
+                .filter(owner -> !owner.getId().equals(user.getId()))
+                .ifPresent(
+                        owner -> {
+                            throw new IllegalArgumentException(
+                                    "This Apple ID is already connected to another account.");
+                        });
+
+        user.setAppleSub(identity.subject());
+        appleTokenClient
+                .exchangeForRefreshToken(request.getAuthorizationCode())
+                .ifPresent(user::setAppleRefreshToken);
+        userRepository.save(user);
+        log.info("Apple ID connected for user={}", user.getUsername());
+        return ResponseEntity.ok(signInMethodsOf(user));
+    }
+
+    private static SignInMethodsResponse signInMethodsOf(User user) {
+        return new SignInMethodsResponse(user.getAppleSub() != null, user.isPasswordSet());
     }
 
     @GetMapping("/privacy")

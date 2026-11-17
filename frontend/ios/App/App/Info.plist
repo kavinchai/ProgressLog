@@ -24,6 +24,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Progress Logger uses Face ID to unlock the app when you turn on Face ID unlock in Settings.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Progress Logger reads your daily steps and body weight from Apple Health so you don't have to type them in.</string>
 	<key>NSHealthUpdateUsageDescription</key>

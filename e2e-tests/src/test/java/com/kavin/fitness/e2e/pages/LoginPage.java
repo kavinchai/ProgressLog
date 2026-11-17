@@ -27,6 +27,18 @@ public class LoginPage {
         return this;
     }
 
+    /** Whether a button on the form has this class (e.g. "login-apple-btn"). Call after open(). */
+    public boolean hasButton(String cssClass) {
+        return page.locator("button." + cssClass).count() > 0;
+    }
+
+    /** Whether any button's name mentions Apple, whatever its class. Call after open(). */
+    public boolean hasAppleButtonText() {
+        return page.getByRole(com.microsoft.playwright.options.AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName(java.util.regex.Pattern.compile("with Apple")))
+                .count() > 0;
+    }
+
     public void login(String username, String password) {
         page.locator("#username").fill(username);
         page.locator("#password").fill(password);

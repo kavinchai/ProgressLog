@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
@@ -10,7 +10,15 @@ vi.mock("../api", () => ({
 }));
 vi.mock("../pages/Login.css", () => ({}));
 
+// Sign in with Apple is iPhone-app only — off unless a test turns it on.
+const apple = vi.hoisted(() => ({ available: false }));
+vi.mock("../native/appleSignIn", () => ({
+	isAppleSignInAvailable: () => apple.available,
+	signInWithApple: vi.fn(),
+}));
+
 import api from "../api";
+import { signInWithApple } from "../native/appleSignIn";
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -322,5 +330,162 @@ describe("Login — keep me signed in", () => {
 		expect(
 			screen.getByRole("checkbox", { name: /keep me signed in/i }),
 		).toBeChecked();
+	});
+});
+
+// ── Sign in with Apple (iPhone app) ──────────────────────────────────────────
+
+describe("Login — Sign in with Apple", () => {
+	const CREDS = {
+		identityToken: "id-token",
+		authorizationCode: "auth-code",
+		givenName: "Kav",
+		email: "",
+	};
+
+	beforeEach(() => {
+		apple.available = true;
+	});
+
+	afterEach(() => {
+		apple.available = false;
+	});
+
+	const appleButton = () =>
+		screen.getByRole("button", { name: /sign in with apple/i });
+
+	it("isn't shown on the website", () => {
+		apple.available = false;
+		renderLogin();
+		expect(
+			screen.queryByRole("button", { name: /with apple/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("is shown above the username form in the iPhone app", () => {
+		renderLogin();
+		expect(appleButton()).toBeInTheDocument();
+	});
+
+	it("says Sign up with Apple when creating an account", () => {
+		renderLogin("/login?mode=signup");
+		expect(
+			screen.getByRole("button", { name: /sign up with apple/i }),
+		).toBeInTheDocument();
+	});
+
+	it("signs straight in when the Apple ID has an account", async () => {
+		signInWithApple.mockResolvedValue(CREDS);
+		api.post.mockResolvedValue({
+			data: { username: "kav", needsUsername: false },
+		});
+		renderLogin();
+
+		await userEvent.click(appleButton());
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith("/auth/apple", {
+				identityToken: "id-token",
+				authorizationCode: "auth-code",
+				rememberMe: true,
+			}),
+		);
+		await waitFor(() => expect(useAuthStore.getState().username).toBe("kav"));
+	});
+
+	it("asks a new Apple ID for a username, then creates the account", async () => {
+		signInWithApple.mockResolvedValue(CREDS);
+		api.post.mockResolvedValueOnce({ data: { needsUsername: true } });
+		api.post.mockResolvedValueOnce({
+			data: { username: "kavlifts", needsUsername: false },
+		});
+		renderLogin();
+
+		await userEvent.click(appleButton());
+
+		const input = await screen.findByLabelText(/^username$/i);
+		expect(
+			screen.getByRole("heading", { name: /pick a username/i }),
+		).toBeInTheDocument();
+		expect(input).toHaveValue("kav");
+		expect(input).toHaveAttribute("autocapitalize", "none");
+		await userEvent.clear(input);
+		await userEvent.type(input, "kavlifts");
+		await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenLastCalledWith("/auth/apple/register", {
+				identityToken: "id-token",
+				authorizationCode: "auth-code",
+				username: "kavlifts",
+				rememberMe: true,
+			}),
+		);
+		await waitFor(() =>
+			expect(useAuthStore.getState().username).toBe("kavlifts"),
+		);
+	});
+
+	it("shows the server's message when the username is taken", async () => {
+		signInWithApple.mockResolvedValue(CREDS);
+		api.post.mockResolvedValueOnce({ data: { needsUsername: true } });
+		api.post.mockRejectedValueOnce({
+			response: { status: 400, data: { message: "Username already taken." } },
+		});
+		renderLogin();
+
+		await userEvent.click(appleButton());
+		await screen.findByLabelText(/^username$/i);
+		await userEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+		expect(
+			await screen.findByText("Username already taken."),
+		).toBeInTheDocument();
+		expect(useAuthStore.getState().authenticated).toBe(false);
+		expect(screen.getByRole("button", { name: /continue/i })).toBeEnabled();
+	});
+
+	it("goes back to sign in from the username screen", async () => {
+		signInWithApple.mockResolvedValue(CREDS);
+		api.post.mockResolvedValueOnce({ data: { needsUsername: true } });
+		renderLogin();
+
+		await userEvent.click(appleButton());
+		await screen.findByLabelText(/^username$/i);
+		await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+		expect(appleButton()).toBeInTheDocument();
+		expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+	});
+
+	it("does nothing when the person closes Apple's sheet", async () => {
+		signInWithApple.mockResolvedValue(null);
+		renderLogin();
+
+		await userEvent.click(appleButton());
+
+		expect(api.post).not.toHaveBeenCalled();
+		expect(document.querySelector(".login-error")).toBeNull();
+	});
+
+	it("shows an error when Apple sign-in fails", async () => {
+		signInWithApple.mockResolvedValue(CREDS);
+		api.post.mockRejectedValue({
+			response: {
+				status: 400,
+				data: {
+					message: "Sign in with Apple couldn't be verified. Try again.",
+				},
+			},
+		});
+		renderLogin();
+
+		await userEvent.click(appleButton());
+
+		expect(
+			await screen.findByText(
+				"Sign in with Apple couldn't be verified. Try again.",
+			),
+		).toBeInTheDocument();
 	});
 });
