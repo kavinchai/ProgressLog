@@ -221,12 +221,17 @@ describe("MealCards — adding and editing in the sheet", () => {
 });
 
 describe("MealCards — skipping a meal", () => {
-	it('Mark as skipped saves "Skipped Lunch" with 0 kcal and 0 g', async () => {
+	const skipBox = () =>
+		sheet().getByRole("checkbox", { name: "Skipped lunch" });
+
+	it('ticking Skipped lunch and pressing Save saves "Skipped Lunch" with 0 kcal and 0 g', async () => {
 		setup(logWith([]));
 		await userEvent.click(button("+ Add Lunch"));
-		await userEvent.click(
-			sheet().getByRole("button", { name: "Mark as skipped" }),
-		);
+		await userEvent.click(skipBox());
+		expect(skipBox()).toBeChecked();
+		expect(field("What you ate")).toBeDisabled();
+		expect(api.post).not.toHaveBeenCalled();
+		await save();
 		await waitFor(() =>
 			expect(api.post).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals`, {
 				mealLabel: "Lunch",
@@ -243,9 +248,9 @@ describe("MealCards — skipping a meal", () => {
 	it("skipping a logged meal drops its restaurant", async () => {
 		setup(logWith([{ ...BREAKFAST, mealLabel: "Lunch", restaurant: "Cava" }]));
 		await userEvent.click(button("Edit Lunch"));
-		await userEvent.click(
-			sheet().getByRole("button", { name: "Mark as skipped" }),
-		);
+		expect(skipBox()).not.toBeChecked();
+		await userEvent.click(skipBox());
+		await save();
 		await waitFor(() =>
 			expect(api.put).toHaveBeenCalledWith(`/nutrition/${LOG_ID}/meals/1`, {
 				mealLabel: "Lunch",
@@ -256,10 +261,13 @@ describe("MealCards — skipping a meal", () => {
 		);
 	});
 
-	it("opening a skipped meal starts blank, so you can log what you ate", async () => {
+	it("opening a skipped meal shows it ticked; untick to log what you ate", async () => {
 		setup(logWith([SKIPPED_LUNCH]));
 		await userEvent.click(button("Edit Lunch"));
+		expect(skipBox()).toBeChecked();
+		expect(field("What you ate")).toBeDisabled();
 		expect(field("What you ate")).toHaveValue("");
+		await userEvent.click(skipBox());
 		await fillSheet({ "What you ate": "Wrap", Calories: "500" });
 		await save();
 		await waitFor(() =>
@@ -272,12 +280,18 @@ describe("MealCards — skipping a meal", () => {
 		);
 	});
 
-	it("extra meals can't be marked as skipped", async () => {
+	it("saving a skipped meal that's still ticked just closes the sheet", async () => {
+		setup(logWith([SKIPPED_LUNCH]));
+		await userEvent.click(button("Edit Lunch"));
+		await save();
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		expect(api.put).not.toHaveBeenCalled();
+	});
+
+	it("extra meals have no Skipped box", async () => {
 		setup(logWith([SNACK]));
 		await userEvent.click(button("Edit Snack"));
-		expect(
-			sheet().queryByRole("button", { name: "Mark as skipped" }),
-		).not.toBeInTheDocument();
+		expect(sheet().queryByRole("checkbox")).not.toBeInTheDocument();
 	});
 });
 
@@ -320,9 +334,7 @@ describe("MealCards — extra meals", () => {
 		await userEvent.click(button("+ Add Lunch"));
 		await fillSheet({ "What you ate": "Soup" });
 		await save();
-		await userEvent.click(
-			sheet().getByRole("button", { name: "Mark as skipped" }),
-		);
+		await userEvent.click(sheet().getByRole("button", { name: "Saving…" }));
 		expect(api.post).toHaveBeenCalledTimes(1);
 		expect(sheet().getByRole("button", { name: "Saving…" })).toBeDisabled();
 	});

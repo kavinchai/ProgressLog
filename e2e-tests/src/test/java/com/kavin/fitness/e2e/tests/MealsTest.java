@@ -57,7 +57,7 @@ public class MealsTest extends BaseTest {
 
     @Test(priority = 3, dependsOnMethods = "loggingBreakfastInTheSheetSavesIt")
     public void markingLunchSkippedRecordsASkippedMeal() {
-        step("+ Add Lunch, then Mark as skipped");
+        step("+ Add Lunch, tick Skipped lunch, Save");
         meals.skipMeal("Lunch");
         meals.assertRowDetail("Lunch", "Skipped");
 

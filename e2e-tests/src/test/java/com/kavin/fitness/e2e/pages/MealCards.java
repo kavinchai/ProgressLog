@@ -59,12 +59,12 @@ public class MealCards {
         saveSheet();
     }
 
-    /** Taps "+ Add {slot}" and marks the meal as skipped. */
+    /** Taps "+ Add {slot}", ticks "Skipped {slot}" and saves the sheet. */
     public void skipMeal(String slot) {
         button("+ Add " + slot).click();
-        sheet().getByRole(AriaRole.BUTTON,
-                new Locator.GetByRoleOptions().setName("Mark as skipped")).click();
-        sheet().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.DETACHED));
+        sheet().getByRole(AriaRole.CHECKBOX, new Locator.GetByRoleOptions()
+                .setName("Skipped " + slot.toLowerCase()).setExact(true)).check();
+        saveSheet();
     }
 
     /** "+ Add meal": names the meal, fills it and saves it. */

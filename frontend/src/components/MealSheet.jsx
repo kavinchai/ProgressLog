@@ -10,10 +10,11 @@ const toInt = (v) => {
 	return Number.isNaN(n) ? 0 : n;
 };
 
-// A skipped meal opens blank, so you can log what you ate instead.
+// A skipped meal opens ticked with blank fields; untick to log what you ate.
 function fieldsFrom(meal, slot) {
-	const skipped = slot && meal?.mealName === skippedName(slot);
+	const skipped = Boolean(slot) && meal?.mealName === skippedName(slot);
 	return {
+		skipped,
 		label: meal?.mealLabel ?? "",
 		name: skipped ? "" : (meal?.mealName ?? ""),
 		restaurant: skipped ? "" : (meal?.restaurant ?? ""),
@@ -24,6 +25,14 @@ function fieldsFrom(meal, slot) {
 
 // A blank restaurant is left out, which the backend stores as none.
 function bodyFrom(fields, slot) {
+	if (fields.skipped) {
+		return {
+			mealLabel: slot,
+			mealName: skippedName(slot),
+			calories: 0,
+			proteinGrams: 0,
+		};
+	}
 	const restaurant = fields.restaurant.trim();
 	return {
 		mealLabel: slot ?? (fields.label.trim() || null),
@@ -35,8 +44,8 @@ function bodyFrom(fields, slot) {
 }
 
 /**
- * Add or edit one meal. Breakfast / Lunch / Dinner (`slot`) can be marked as
- * skipped; any other meal gets a name field instead.
+ * Add or edit one meal. Breakfast / Lunch / Dinner (`slot`) get a "Skipped"
+ * tick box; any other meal gets a name field instead.
  */
 export default function MealSheet({
 	slot,
@@ -91,7 +100,19 @@ export default function MealSheet({
 		<Modal title={title} onClose={onClose} form={{ id: formId, saving }}>
 			<form id={formId} className="modal-form" onSubmit={submit}>
 				{err && <div className="modal-error">{err}</div>}
-				<div className="sheet-group">
+				{slot && (
+					<label className="sheet-group sheet-check">
+						<input
+							type="checkbox"
+							className="sheet-check-box"
+							checked={fields.skipped}
+							disabled={saving}
+							onChange={(e) => update({ skipped: e.target.checked })}
+						/>
+						Skipped {slot.toLowerCase()}
+					</label>
+				)}
+				<fieldset className="sheet-group" disabled={fields.skipped}>
 					{!slot && (
 						<SheetField
 							label="Name"
@@ -140,29 +161,12 @@ export default function MealSheet({
 						value={fields.protein}
 						onChange={(e) => update({ protein: e.target.value })}
 					/>
-				</div>
+				</fieldset>
 				<datalist id={restaurantListId}>
 					{restaurants.map((name) => (
 						<option key={name} value={name} />
 					))}
 				</datalist>
-				{slot && (
-					<button
-						type="button"
-						className="sheet-link-btn"
-						disabled={saving}
-						onClick={() =>
-							save({
-								mealLabel: slot,
-								mealName: skippedName(slot),
-								calories: 0,
-								proteinGrams: 0,
-							})
-						}
-					>
-						Mark as skipped
-					</button>
-				)}
 			</form>
 		</Modal>
 	);
