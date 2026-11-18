@@ -59,3 +59,29 @@ describe("useDayActions error surfacing", () => {
 		expect(document.querySelector('[role="status"]')).toBeNull();
 	});
 });
+
+describe("useDayActions — creating the day's nutrition log", () => {
+	it("returns null with no toast when offline (the meal sheet says so)", async () => {
+		api.post.mockRejectedValueOnce({ code: "ERR_NETWORK" });
+		const { result } = renderHook(() => useDayActions(baseArgs), { wrapper });
+		let id;
+		await act(async () => {
+			id = await result.current.getOrCreateNutritionLogId();
+		});
+		expect(id).toBeNull();
+		expect(document.querySelector('[role="status"]')).toBeNull();
+	});
+
+	it("returns null and shows a toast for other failures", async () => {
+		api.post.mockRejectedValueOnce(new Error("500"));
+		const { result } = renderHook(() => useDayActions(baseArgs), { wrapper });
+		let id;
+		await act(async () => {
+			id = await result.current.getOrCreateNutritionLogId();
+		});
+		expect(id).toBeNull();
+		expect(document.querySelector('[role="status"]')?.textContent).toMatch(
+			/nutrition log/i,
+		);
+	});
+});

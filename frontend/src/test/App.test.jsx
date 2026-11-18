@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import App from "../App";
 import useAuthStore from "../store/authStore";
+import useNetworkStore from "../store/networkStore";
 
 // Stub all page/layout components to keep tests fast and focused on routing
 vi.mock("../pages/Community", () => ({
@@ -109,6 +110,12 @@ describe("App routing — authenticated", () => {
 		expect(screen.getByText("Sidebar")).toBeInTheDocument();
 		expect(screen.getByText("Navbar")).toBeInTheDocument();
 		expect(screen.getByText("BottomTabBar")).toBeInTheDocument();
+	});
+
+	it("shows the offline banner in the app layout when offline", () => {
+		useNetworkStore.setState({ offline: true });
+		render(<App />);
+		expect(screen.getByText("You're offline")).toBeInTheDocument();
 	});
 
 	it("does NOT show Login page when authenticated", () => {

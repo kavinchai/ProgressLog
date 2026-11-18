@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import api from "../api";
+import { errorMessage } from "../utils/errors";
 import { useToast } from "../components/Toast";
 import { tapDelete } from "../native/haptics";
 
@@ -23,7 +24,11 @@ export default function useDeleteWithUndo() {
 				await remove();
 			} catch (err) {
 				toast.error(
-					err?.response?.data?.message ?? "Couldn't delete. Try again.",
+					errorMessage(
+						err,
+						"Couldn't delete. Try again.",
+						"You're offline. Connect to delete this.",
+					),
 				);
 				return false;
 			}

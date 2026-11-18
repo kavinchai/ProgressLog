@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api";
+import { errorMessage } from "../utils/errors";
 import { tapDelete, tapSuccess } from "../native/haptics";
 import Modal from "./Modal";
 import useWeightUnit from "../hooks/useWeightUnit";
@@ -67,7 +68,7 @@ export default function EditExerciseModal({
 			onSaved();
 			onClose();
 		} catch (ex) {
-			setErr(ex.response?.data?.message ?? "Failed to save.");
+			setErr(errorMessage(ex, "Failed to save."));
 		} finally {
 			setSaving(false);
 		}
@@ -84,7 +85,13 @@ export default function EditExerciseModal({
 			onSaved();
 			setDeletePhase("deleted");
 		} catch (ex) {
-			setErr(ex.response?.data?.message ?? "Failed to delete.");
+			setErr(
+				errorMessage(
+					ex,
+					"Failed to delete.",
+					"You're offline. Connect to delete this.",
+				),
+			);
 			setDeletePhase(null);
 		} finally {
 			setSaving(false);

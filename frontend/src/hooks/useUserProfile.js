@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../api";
+import useAuthStore from "../store/authStore";
+import { loadSaved, save } from "../utils/offlineCache";
 
 const DEFAULT_GOALS = {
 	calorieTargetTraining: 2600,
@@ -12,7 +14,10 @@ const DEFAULT_GOALS = {
 const goalListeners = new Set();
 
 export default function useUserProfile() {
-	const [goals, setGoals] = useState(DEFAULT_GOALS);
+	// The last goals loaded are kept on the phone for when it's offline.
+	const [goals, setGoals] = useState(
+		() => loadSaved(useAuthStore.getState().username, "goals") ?? DEFAULT_GOALS,
+	);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [saving, setSaving] = useState(false);
@@ -29,6 +34,7 @@ export default function useUserProfile() {
 		api
 			.get("/profile/goals")
 			.then((res) => {
+				save(useAuthStore.getState().username, "goals", res.data);
 				if (!cancelled) setGoals(res.data);
 			})
 			.catch(() => {
@@ -48,6 +54,7 @@ export default function useUserProfile() {
 		setError(null);
 		try {
 			const res = await api.put("/profile/goals", updated);
+			save(useAuthStore.getState().username, "goals", res.data);
 			goalListeners.forEach((set) => set(res.data));
 		} catch (err) {
 			setError(err.response?.data?.message ?? "Failed to save goals");

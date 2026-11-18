@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../api";
 import useAuthStore from "../store/authStore";
+import useNetworkStore from "../store/networkStore";
+import { isNetworkError } from "../utils/errors";
+import { clearSavedData, loadSaved, save } from "../utils/offlineCache";
 
 // One cache shared by every useFetch caller, keyed by endpoint. A page shows
 // cached data instantly and revalidates in the background (data can change
 // outside the app, e.g. via the MCP server), so switching pages doesn't
 // re-download everything before rendering. Cleared on logout / user change.
+// Each endpoint is also saved on the phone, so the app opens offline.
 const cache = new Map(); // endpoint -> data
 const inflight = new Map(); // endpoint -> promise
 const latestRequest = new Map(); // endpoint -> request id (newest wins)
@@ -18,10 +22,18 @@ export function clearFetchCache() {
 	latestRequest.clear();
 }
 
+const currentUser = () => useAuthStore.getState().username;
+
 useAuthStore.subscribe((state, prev) => {
 	if (!state.authenticated || state.username !== prev.username) {
 		clearFetchCache();
 	}
+	if (!state.authenticated) clearSavedData();
+});
+
+// Back online: reload whatever is on screen.
+useNetworkStore.subscribe((state, prev) => {
+	if (prev.offline && !state.offline) refreshAll();
 });
 
 function notify(endpoint, patch) {
@@ -37,10 +49,16 @@ function revalidate(endpoint, { force = false } = {}) {
 		.then((res) => {
 			if (latestRequest.get(endpoint) !== id) return;
 			cache.set(endpoint, res.data);
+			save(currentUser(), endpoint, res.data);
 			notify(endpoint, { data: res.data, loading: false, error: null });
 		})
 		.catch((err) => {
 			if (latestRequest.get(endpoint) !== id) return;
+			// Offline with saved data: keep showing it (the banner says so).
+			if (isNetworkError(err) && cache.has(endpoint)) {
+				notify(endpoint, { loading: false, error: null });
+				return;
+			}
 			notify(endpoint, {
 				loading: false,
 				error: err.message ?? "Failed to load data",
@@ -65,6 +83,10 @@ export function refreshAll() {
 }
 
 function initialState(endpoint) {
+	if (!cache.has(endpoint)) {
+		const saved = loadSaved(currentUser(), endpoint);
+		if (saved !== undefined) cache.set(endpoint, saved);
+	}
 	return cache.has(endpoint)
 		? { data: cache.get(endpoint), loading: false, error: null }
 		: { data: [], loading: true, error: null };

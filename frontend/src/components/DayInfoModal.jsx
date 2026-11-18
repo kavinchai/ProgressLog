@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api";
+import { errorMessage } from "../utils/errors";
 import Modal from "./Modal";
 
 export default function DayInfoModal({
@@ -25,7 +26,7 @@ export default function DayInfoModal({
 			onSaved();
 			onClose();
 		} catch (ex) {
-			setErr(ex.response?.data?.message ?? "Failed to save.");
+			setErr(errorMessage(ex, "Failed to save."));
 		} finally {
 			setSaving(false);
 		}

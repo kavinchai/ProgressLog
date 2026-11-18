@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { tapSuccess } from "../native/haptics";
 import Modal from "./Modal";
 import SheetField from "./SheetField";
+import { errorMessage } from "../utils/errors";
 
 const skippedName = (slot) => `Skipped ${slot}`;
 
@@ -69,8 +70,8 @@ export default function MealSheet({
 			await onSave(meal?.id ?? null, body);
 			tapSuccess();
 			onClose();
-		} catch {
-			setErr("Couldn't save. Try again.");
+		} catch (ex) {
+			setErr(errorMessage(ex, "Couldn't save. Try again."));
 			setSaving(false);
 		}
 	}

@@ -30,6 +30,7 @@ import Progress from "./pages/Progress";
 import Settings from "./pages/Settings";
 import ClaudeSetup from "./pages/ClaudeSetup";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import OfflineBanner from "./components/OfflineBanner";
 
 function ScrollToTop() {
 	const { pathname } = useLocation();
@@ -78,6 +79,7 @@ function AppLayout({ children }) {
 			<Sidebar />
 			<Navbar />
 			<div className="main-content">
+				<OfflineBanner />
 				<PullToRefresh onRefresh={refreshScreen}>{children}</PullToRefresh>
 			</div>
 			<BottomTabBar />

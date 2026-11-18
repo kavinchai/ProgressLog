@@ -95,6 +95,23 @@ describe("useDeleteWithUndo", () => {
 		expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 	});
 
+	it("says you're offline when the delete can't reach the server", async () => {
+		renderHarness();
+		const refresh = vi.fn();
+		await act(() =>
+			deleteWithUndo({
+				remove: () => Promise.reject({ code: "ERR_NETWORK" }),
+				message: "Weight deleted",
+				refresh,
+			}),
+		);
+		expect(refresh).not.toHaveBeenCalled();
+		expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+		expect(
+			screen.getByText("You're offline. Connect to delete this."),
+		).toBeInTheDocument();
+	});
+
 	it("says so when Undo fails", async () => {
 		api.post.mockRejectedValue(new Error("500"));
 		renderHarness();

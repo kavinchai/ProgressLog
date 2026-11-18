@@ -3,6 +3,7 @@ package com.kavin.fitness.e2e.pages;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class ProgressPage {
@@ -41,7 +42,10 @@ public class ProgressPage {
         waitForLoaded();
     }
 
+    // Screens open straight from data saved on the phone, so also wait for the
+    // server's fresh data to arrive.
     private void waitForLoaded() {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         Locator loading = page.locator(LOADING);
         if (loading.count() > 0) {
             loading.first().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));

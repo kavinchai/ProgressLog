@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api";
+import { isNetworkError } from "../utils/errors";
 import { useToast } from "../components/Toast";
 
 export function useDayActions({
@@ -40,8 +41,8 @@ export function useDayActions({
 			});
 			onRefetchN();
 			return res.data?.id;
-		} catch {
-			toast.error("Failed to create nutrition log");
+		} catch (ex) {
+			if (!isNetworkError(ex)) toast.error("Failed to create nutrition log");
 			return null;
 		}
 	}

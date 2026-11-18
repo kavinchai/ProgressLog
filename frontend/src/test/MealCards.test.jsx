@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import MealCards from "../components/MealCards";
+import useNetworkStore from "../store/networkStore";
 
 vi.mock("../api", () => ({
 	default: { post: vi.fn(), put: vi.fn(), delete: vi.fn() },
@@ -217,6 +218,44 @@ describe("MealCards — adding and editing in the sheet", () => {
 		await save();
 		expect(await sheet().findByText(/couldn't save/i)).toBeInTheDocument();
 		expect(onSaved).not.toHaveBeenCalled();
+	});
+});
+
+describe("MealCards — offline", () => {
+	it("says you're offline and keeps the sheet open when there's no connection", async () => {
+		api.post.mockRejectedValue({
+			code: "ERR_NETWORK",
+			message: "Network Error",
+		});
+		setup(logWith([]));
+		await userEvent.click(button("+ Add Lunch"));
+		await fillSheet({ "What you ate": "Soup" });
+		await save();
+		expect(
+			await sheet().findByText("You're offline. Connect to save this."),
+		).toBeInTheDocument();
+		expect(field("What you ate")).toHaveValue("Soup");
+	});
+
+	it("says you're offline for the day's first meal, before a nutrition log exists", async () => {
+		getOrCreateNutritionLogId.mockResolvedValue(null);
+		useNetworkStore.setState({ offline: true });
+		setup(null);
+		await userEvent.click(button("+ Add Lunch"));
+		await fillSheet({ "What you ate": "Soup" });
+		await save();
+		expect(
+			await sheet().findByText("You're offline. Connect to save this."),
+		).toBeInTheDocument();
+	});
+
+	it("shows the server's message when it gives one", async () => {
+		api.post.mockRejectedValue({ response: { data: { message: "Too long" } } });
+		setup(logWith([]));
+		await userEvent.click(button("+ Add Lunch"));
+		await fillSheet({ "What you ate": "Soup" });
+		await save();
+		expect(await sheet().findByText("Too long")).toBeInTheDocument();
 	});
 });
 

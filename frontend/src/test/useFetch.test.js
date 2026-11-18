@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import useFetch, { refreshAll } from "../hooks/useFetch";
 import useAuthStore from "../store/authStore";
+import useNetworkStore from "../store/networkStore";
 
 vi.mock("../api", () => ({
 	default: { get: vi.fn() },
@@ -217,5 +218,78 @@ describe("useFetch — refreshAll", () => {
 		await act(() => refreshAll());
 
 		expect(api.get).not.toHaveBeenCalledWith("/all-gone");
+	});
+});
+
+describe("useFetch — offline", () => {
+	const NETWORK_ERROR = Object.assign(new Error("Network Error"), {
+		code: "ERR_NETWORK",
+	});
+	const savedKey = (user, endpoint) => `progresslog-cache:${user}:${endpoint}`;
+
+	beforeEach(() => {
+		act(() => useAuthStore.getState().login("alice"));
+	});
+
+	it("saves what it loads on the phone, per user", async () => {
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const { result } = renderHook(() => useFetch("/weight"));
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(
+			JSON.parse(localStorage.getItem(savedKey("alice", "/weight"))),
+		).toEqual([{ id: 1 }]);
+	});
+
+	it("opens straight from saved data and shows no error when the server can't be reached", async () => {
+		localStorage.setItem(
+			savedKey("alice", "/weight"),
+			JSON.stringify([{ id: 7 }]),
+		);
+		api.get.mockRejectedValue(NETWORK_ERROR);
+		const { result } = renderHook(() => useFetch("/weight"));
+		expect(result.current.loading).toBe(false);
+		expect(result.current.data).toEqual([{ id: 7 }]);
+		await waitFor(() => expect(api.get).toHaveBeenCalled());
+		await act(async () => {});
+		expect(result.current.error).toBeNull();
+		expect(result.current.data).toEqual([{ id: 7 }]);
+	});
+
+	it("still shows the error when offline with nothing saved", async () => {
+		api.get.mockRejectedValue(NETWORK_ERROR);
+		const { result } = renderHook(() => useFetch("/weight"));
+		await waitFor(() => expect(result.current.error).toBe("Network Error"));
+		expect(result.current.data).toEqual([]);
+	});
+
+	it("doesn't show another user's saved data", () => {
+		localStorage.setItem(
+			savedKey("bob", "/weight"),
+			JSON.stringify([{ id: 7 }]),
+		);
+		api.get.mockReturnValue(new Promise(() => {}));
+		const { result } = renderHook(() => useFetch("/weight"));
+		expect(result.current.loading).toBe(true);
+		expect(result.current.data).toEqual([]);
+	});
+
+	it("logging out deletes the saved data", async () => {
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const { result } = renderHook(() => useFetch("/weight"));
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		act(() => useAuthStore.getState().logout());
+		expect(localStorage.getItem(savedKey("alice", "/weight"))).toBeNull();
+	});
+
+	it("reloads what's on screen when the connection comes back", async () => {
+		api.get.mockResolvedValue({ data: [{ id: 1 }] });
+		const { result } = renderHook(() => useFetch("/weight"));
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		act(() => useNetworkStore.setState({ offline: true }));
+		api.get.mockClear();
+		api.get.mockResolvedValue({ data: [{ id: 2 }] });
+		act(() => useNetworkStore.setState({ offline: false }));
+		await waitFor(() => expect(result.current.data).toEqual([{ id: 2 }]));
+		expect(api.get).toHaveBeenCalledWith("/weight");
 	});
 });

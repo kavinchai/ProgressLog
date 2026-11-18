@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import useUserProfile from "../hooks/useUserProfile";
+import useAuthStore from "../store/authStore";
 
 vi.mock("../api", () => ({
 	default: { get: vi.fn(), put: vi.fn() },
@@ -44,6 +45,22 @@ describe("useUserProfile", () => {
 		await waitFor(() => expect(result.current.loading).toBe(false));
 		expect(result.current.goals).toEqual(DEFAULT_GOALS);
 		expect(result.current.error).toBeNull();
+	});
+
+	it("keeps the last loaded goals on the phone for when it's offline", async () => {
+		useAuthStore.setState({ authenticated: true, username: "alice" });
+		api.get.mockResolvedValue({ data: CUSTOM_GOALS });
+		const first = renderHook(() => useUserProfile());
+		await waitFor(() =>
+			expect(first.result.current.goals).toEqual(CUSTOM_GOALS),
+		);
+		first.unmount();
+
+		api.get.mockRejectedValue({ code: "ERR_NETWORK" });
+		const second = renderHook(() => useUserProfile());
+		expect(second.result.current.goals).toEqual(CUSTOM_GOALS);
+		await waitFor(() => expect(second.result.current.loading).toBe(false));
+		expect(second.result.current.goals).toEqual(CUSTOM_GOALS);
 	});
 
 	it("saveGoals calls PUT and updates goals on success", async () => {

@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import api from "../api";
+import { errorMessage } from "../utils/errors";
 import { tapSuccess } from "../native/haptics";
 import Modal from "./Modal";
 import SheetField from "./SheetField";
@@ -34,7 +35,7 @@ export default function WeightModal({
 			onSaved();
 			onClose();
 		} catch (ex) {
-			setErr(ex.response?.data?.message ?? "Failed to save.");
+			setErr(errorMessage(ex, "Failed to save."));
 		} finally {
 			setSaving(false);
 		}

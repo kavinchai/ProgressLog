@@ -76,6 +76,21 @@ describe("StepsModal", () => {
 		expect(onClose).not.toHaveBeenCalled();
 	});
 
+	it("says you're offline and keeps what you typed when there's no connection", async () => {
+		api.post.mockRejectedValue({
+			code: "ERR_NETWORK",
+			message: "Network Error",
+		});
+		renderModal();
+		await userEvent.type(screen.getByLabelText("Steps"), "8500");
+		await userEvent.click(screen.getByRole("button", { name: "Save" }));
+		expect(
+			await screen.findByText("You're offline. Connect to save this."),
+		).toBeInTheDocument();
+		expect(screen.getByLabelText("Steps")).toHaveValue(8500);
+		expect(onClose).not.toHaveBeenCalled();
+	});
+
 	it("won't save with no steps entered (delete is a swipe instead)", async () => {
 		renderModal();
 		await userEvent.click(screen.getByRole("button", { name: "Save" }));

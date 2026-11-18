@@ -6,4 +6,8 @@ import { afterEach } from "vitest";
 afterEach(async () => {
 	const { clearFetchCache } = await import("../hooks/useFetch");
 	clearFetchCache();
+	const { clearSavedData } = await import("../utils/offlineCache");
+	clearSavedData();
+	const useNetworkStore = (await import("../store/networkStore")).default;
+	useNetworkStore.setState({ offline: false });
 });
