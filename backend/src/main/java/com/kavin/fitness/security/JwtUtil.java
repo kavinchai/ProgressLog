@@ -2,6 +2,7 @@ package com.kavin.fitness.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -26,12 +27,15 @@ public class JwtUtil {
     private long rememberMeExpirationMs;
 
     private SecretKey key;
+    private JwtParser parser;
 
     @PostConstruct
     public void init() {
         // HMAC-SHA key derived from the configured secret
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         this.key = Keys.hmacShaKeyFor(keyBytes);
+        // Built once here: jjwt's first parser build isn't safe when two requests race.
+        this.parser = Jwts.parser().verifyWith(key).build();
     }
 
     /** How long a sign-in lasts: 30 days with "Keep me signed in", otherwise a day. */
@@ -79,6 +83,6 @@ public class JwtUtil {
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        return parser.parseSignedClaims(token).getPayload();
     }
 }

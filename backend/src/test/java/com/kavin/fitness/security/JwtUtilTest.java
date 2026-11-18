@@ -3,6 +3,12 @@ package com.kavin.fitness.security;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -42,6 +48,25 @@ class JwtUtilTest {
     void validateToken_falseForTamperedToken() {
         String token = jwtUtil.generateToken("bob") + "tampered";
         assertFalse(jwtUtil.validateToken(token));
+    }
+
+    // A smoke test only: jjwt's race is on the first parser build in a JVM, which
+    // other tests usually do first, so this can pass even without the fix.
+    @Test
+    void validateToken_isSafeWhenManyRequestsArriveAtOnce() throws Exception {
+        String token = jwtUtil.generateToken("alice");
+        ExecutorService pool = Executors.newFixedThreadPool(16);
+        try {
+            List<Callable<Boolean>> calls = new ArrayList<>();
+            for (int i = 0; i < 200; i++) {
+                calls.add(() -> jwtUtil.validateToken(token));
+            }
+            for (Future<Boolean> result : pool.invokeAll(calls)) {
+                assertTrue(result.get());
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test
