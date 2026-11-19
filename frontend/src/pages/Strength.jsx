@@ -2,7 +2,7 @@ import { useState, useMemo, lazy, Suspense } from "react";
 import useFetch from "../hooks/useFetch";
 import useWeightUnit from "../hooks/useWeightUnit";
 import { formatDate } from "../utils/date";
-import { ChevronLeft, ListFilter } from "lucide-react";
+import { ListFilter } from "lucide-react";
 import { rangeDaysFor, filterByRange, RANGE_OPTIONS } from "../utils/dateRange";
 import {
 	ListGroup,
@@ -242,14 +242,11 @@ function LiftDetail({ exercise, rangeKey, onRange, unit, toDisplay, onBack }) {
 
 	return (
 		<div className="strength-detail">
-			<div className="ios-nav strength-detail-nav">
-				<button type="button" onClick={onBack}>
-					<ChevronLeft size={26} aria-hidden="true" />
-					Progress
-				</button>
-				<h1 className="strength-detail-title">{exercise.exerciseName}</h1>
-				<span />
-			</div>
+			<PageHeader
+				title={exercise.exerciseName}
+				titleClassName="strength-detail-title"
+				back={{ label: "Back to Progress", onClick: onBack }}
+			/>
 
 			{stats ? (
 				<div className="strength-hero">
@@ -448,34 +445,34 @@ export default function Strength({ above = null }) {
 			<PageHeader
 				title="Progress"
 				subtitle={`Best set per session · ${RANGE_WORDS[rangeKey]}`}
-				leading={
-					<button type="button" onClick={() => setChoosing(true)}>
-						Edit
-					</button>
-				}
-				trailing={
-					<PullDownMenu
-						label="Sort and range"
-						buttonLabel=""
-						icon={<ListFilter size={22} aria-hidden="true" />}
-						sections={[
-							{
-								title: "Sort by",
-								options: SORTS.map((o) => ({ value: o.key, label: o.label })),
-								value: sortKey,
-								onChange: setSortKey,
-							},
-							{
-								title: "Range",
-								options: RANGE_OPTIONS.map((r) => ({
-									value: r.key,
-									label: RANGE_MENU_LABELS[r.key],
-								})),
-								value: rangeKey,
-								onChange: setRangeKey,
-							},
-						]}
-					/>
+				below={
+					<>
+						<button type="button" onClick={() => setChoosing(true)}>
+							Edit
+						</button>
+						<PullDownMenu
+							label="Sort and range"
+							buttonLabel=""
+							icon={<ListFilter size={22} aria-hidden="true" />}
+							sections={[
+								{
+									title: "Sort by",
+									options: SORTS.map((o) => ({ value: o.key, label: o.label })),
+									value: sortKey,
+									onChange: setSortKey,
+								},
+								{
+									title: "Range",
+									options: RANGE_OPTIONS.map((r) => ({
+										value: r.key,
+										label: RANGE_MENU_LABELS[r.key],
+									})),
+									value: rangeKey,
+									onChange: setRangeKey,
+								},
+							]}
+						/>
+					</>
 				}
 			/>
 

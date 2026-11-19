@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
-import { Check, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { Check, ChevronRight, Lock } from "lucide-react";
 import useAchievements from "../hooks/useAchievements";
 import useWeightUnit from "../hooks/useWeightUnit";
 import Modal from "../components/Modal";
@@ -32,14 +32,10 @@ function useFormat() {
 	return { weight, progress };
 }
 
-function BackButton({ to, label }) {
+// The header's back chevron, going to `to`.
+function useBack(to, label) {
 	const navigate = useNavigate();
-	return (
-		<button type="button" onClick={() => navigate(to)}>
-			<ChevronLeft size={26} aria-hidden="true" />
-			{label}
-		</button>
-	);
+	return { label, onClick: () => navigate(to) };
 }
 
 // ── Badge sheet ─────────────────────────────────────────────────────────────
@@ -144,6 +140,7 @@ function AchievementsHome() {
 	const achievements = useAchievements();
 	const { progress } = useFormat();
 	const [open, setOpen] = useState(null);
+	const back = useBack("/progress", "Back to Progress");
 
 	// The other levels of the same badge: every club for a lift, every workout
 	// count, or the badges sharing its icon (protein, steps, streaks).
@@ -164,7 +161,7 @@ function AchievementsHome() {
 			<PageHeader
 				title="Achievements"
 				subtitle={`${achievements.earnedCount} of ${achievements.totalCount} earned`}
-				leading={<BackButton to="/progress" label="Progress" />}
+				back={back}
 			/>
 			<VolumeCard volume={achievements.volume} />
 			{achievements.groups.map((g) => (
@@ -217,11 +214,12 @@ function WeightLifted() {
 	const { weight } = useFormat();
 	return (
 		<div className="achievements-page">
-			<div className="ios-nav weight-nav">
-				<BackButton to="/progress/achievements" label="Achievements" />
-			</div>
+			<PageHeader
+				title="Weight lifted"
+				back={useBack("/progress/achievements", "Back to Achievements")}
+			/>
 			<div className="weight-hero">
-				<h1 className="weight-hero-total">{weight(volume.total)}</h1>
+				<div className="weight-hero-total">{weight(volume.total)}</div>
 				<p className="weight-hero-sub">
 					lifted in total · sets × reps × weight
 				</p>

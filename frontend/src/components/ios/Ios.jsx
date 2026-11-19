@@ -3,17 +3,36 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import "./ios.css";
 
-/** Large-title page header, like iOS: an optional nav row, then the title. */
-export function PageHeader({ title, subtitle, leading, trailing }) {
+/**
+ * Large-title page header at the very top of the page. `trailing` sits on the
+ * title's row at the right, `back` ({ label, onClick }) is a chevron before the
+ * title, and `below` is a row of buttons under the title.
+ */
+export function PageHeader({
+	title,
+	subtitle,
+	trailing,
+	back,
+	below,
+	titleClassName = "",
+}) {
 	return (
 		<header className="ios-header">
-			{(leading || trailing) && (
-				<div className="ios-nav">
-					<span className="ios-nav-side">{leading}</span>
-					<span className="ios-nav-side ios-nav-trailing">{trailing}</span>
-				</div>
-			)}
-			<h1 className="ios-large-title">{title}</h1>
+			<div className="ios-title-row">
+				{back && (
+					<button
+						type="button"
+						className="ios-back"
+						aria-label={back.label}
+						onClick={back.onClick}
+					>
+						<ChevronLeft size={30} aria-hidden="true" />
+					</button>
+				)}
+				<h1 className={"ios-large-title " + titleClassName}>{title}</h1>
+				{trailing && <span className="ios-title-trailing">{trailing}</span>}
+			</div>
+			{below && <div className="ios-header-below">{below}</div>}
 			{subtitle && <p className="ios-subtitle">{subtitle}</p>}
 		</header>
 	);

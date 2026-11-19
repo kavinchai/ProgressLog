@@ -3,20 +3,42 @@
 .ios-header {
 	margin: 0 0 var(--space-md);
 }
-.ios-nav {
+/* Title at the top of the page, with its buttons on the same row. */
+.ios-title-row {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
-	min-height: 44px;
-	color: var(--accent);
-	font-size: 1.0625rem;
+	gap: 8px;
+	min-width: 0;
 }
-.ios-nav-side {
+.ios-title-trailing {
+	margin-left: auto;
 	display: flex;
 	align-items: center;
 	gap: 16px;
+	flex: none;
 }
-.ios-nav button,
+.ios-header-below {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 16px;
+}
+.ios-back {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 36px;
+	height: 44px;
+	margin-left: -10px;
+	border: 0;
+	background: none;
+	color: var(--accent);
+	cursor: pointer;
+}
+
+.ios-title-trailing button:not(.ios-pulldown),
+.ios-header-below button:not(.ios-pulldown),
 .ios-link {
 	background: none;
 	border: 0;
@@ -30,12 +52,15 @@
 	gap: 4px;
 	min-height: 44px;
 }
-.ios-nav button:disabled,
+.ios-title-trailing button:disabled,
+.ios-header-below button:disabled,
 .ios-link:disabled {
 	color: var(--text-subtle);
 	cursor: default;
 }
 .ios-large-title {
+	flex: 1;
+	min-width: 0;
 	font-size: 2.125rem;
 	font-weight: var(--fw-bold);
 	letter-spacing: -0.02em;
@@ -382,11 +407,4 @@
 }
 .ios-badge--down {
 	background: var(--danger);
-}
-
-/* Without a nav row, leave the nav bar's height above the large title. */
-@media (max-width: 640px) {
-	.ios-header > .ios-large-title:first-child {
-		margin-top: 44px;
-	}
 }
