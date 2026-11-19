@@ -60,19 +60,6 @@
 }
 
 /* ── Lift detail ── */
-.strength-detail-nav {
-	display: grid;
-	grid-template-columns: 1fr auto 1fr;
-	margin-left: -8px;
-}
-
-.strength-detail-title {
-	font-size: 1.0625rem;
-	font-weight: var(--fw-semibold);
-	color: var(--fg);
-	margin: 0;
-	text-align: center;
-}
 
 .strength-hero {
 	padding: 8px 0 4px;
