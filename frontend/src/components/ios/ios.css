@@ -383,3 +383,10 @@
 .ios-badge--down {
 	background: var(--danger);
 }
+
+/* Without a nav row, leave the nav bar's height above the large title. */
+@media (max-width: 640px) {
+	.ios-header > .ios-large-title:first-child {
+		margin-top: 44px;
+	}
+}

@@ -5,6 +5,11 @@ import useWeightUnit from "../hooks/useWeightUnit";
 import api from "../api";
 import featuredConfig from "../config/featuredExercises.json";
 import SharedCalendar from "./SharedCalendar";
+import {
+	PageHeader,
+	PullDownMenu,
+	SegmentedControl,
+} from "../components/ios/Ios";
 import ChooseLiftsModal from "../components/ChooseLiftsModal";
 import { loadChosen, saveChosen } from "../utils/chosenLifts";
 import "./Community.css";
@@ -66,24 +71,6 @@ function noChoiceMessage(signedIn, chosen) {
 }
 
 // ── Small controls ──────────────────────────────────────────────────────────
-
-function Segmented({ label, options, value, onChange, className = "" }) {
-	return (
-		<div className={`lb-seg ${className}`} role="group" aria-label={label}>
-			{options.map((o) => (
-				<button
-					key={o.value}
-					type="button"
-					className={o.value === value ? "on" : ""}
-					aria-pressed={o.value === value}
-					onClick={() => onChange(o.value)}
-				>
-					{o.label}
-				</button>
-			))}
-		</div>
-	);
-}
 
 const VIEW_OPTIONS = [
 	{ value: "leaderboard", label: "Leaderboard" },
@@ -209,7 +196,27 @@ function BoardCard({
 		<section className="lb-card lb-board">
 			<div className="lb-card-head">
 				<div>
-					<h2 className="lb-card-title">{current?.exerciseName ?? "Lifts"}</h2>
+					<h2 className="lb-card-title">
+						{current && choices.length > 1 ? (
+							<PullDownMenu
+								label="Lift"
+								className="lb-lift-menu"
+								buttonLabel={current.exerciseName}
+								sections={[
+									{
+										options: choices.map((name) => ({
+											value: name,
+											label: name,
+										})),
+										value: current.exerciseName,
+										onChange: onLift,
+									},
+								]}
+							/>
+						) : (
+							(current?.exerciseName ?? "Lifts")
+						)}
+					</h2>
 					{current && (
 						<span className="lb-muted">
 							{current.participantCount} lifter
@@ -219,41 +226,21 @@ function BoardCard({
 					)}
 				</div>
 				<div className="lb-board-actions">
-					<Segmented
+					<SegmentedControl
 						label="Period"
 						options={PERIOD_OPTIONS}
 						value={period}
 						onChange={onPeriod}
 					/>
 					{onChoose && (
-						<button
-							type="button"
-							className="btn btn-sm btn-primary"
-							onClick={onChoose}
-						>
-							Choose lifts{" "}
-							<span className="lb-choose-count">
-								{choices.length} of {boards.length}
-							</span>
+						<button type="button" className="ios-link" onClick={onChoose}>
+							Edit lifts
 						</button>
 					)}
 				</div>
 			</div>
 			{current ? (
 				<>
-					<div className="lb-chips" role="group" aria-label="Lift">
-						{choices.map((name) => (
-							<button
-								key={name}
-								type="button"
-								className={`lb-chip${name === current.exerciseName ? " on" : ""}`}
-								aria-pressed={name === current.exerciseName}
-								onClick={() => onLift(name)}
-							>
-								{name}
-							</button>
-						))}
-					</div>
 					<BoardTable
 						board={current}
 						rows={current.entries}
@@ -654,7 +641,7 @@ export default function Community() {
 	const content = statusMessage(data, error, authenticated);
 
 	const viewSwitch = (
-		<Segmented
+		<SegmentedControl
 			label="View"
 			options={VIEW_OPTIONS}
 			value={view}
@@ -681,18 +668,15 @@ export default function Community() {
 	const month = new Date().toLocaleString("en-US", { month: "long" });
 	return (
 		<div className="lb-page">
-			<header className="lb-head">
-				<div>
-					<h1 className="lb-title">Community</h1>
-					{view === "leaderboard" && data && data.totalUsers > 0 && (
-						<span className="lb-muted">
-							{data.totalUsers} lifters sharing ·{" "}
-							{period === "month" ? month : "all time"}
-						</span>
-					)}
-				</div>
-				{viewSwitch}
-			</header>
+			<PageHeader
+				title="Community"
+				subtitle={
+					view === "leaderboard" && data && data.totalUsers > 0
+						? `${data.totalUsers} lifters sharing · ${period === "month" ? month : "all time"}`
+						: null
+				}
+			/>
+			{viewSwitch}
 			{view === "calendar" ? (
 				<SharedCalendar />
 			) : (
