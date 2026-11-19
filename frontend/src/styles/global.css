@@ -71,7 +71,8 @@ a:hover {
 	.main-content {
 		margin-left: 0;
 		padding: var(--space-md);
-		padding-top: calc(env(safe-area-inset-top, 0px) + var(--space-sm));
+		/* body already clears the status bar. */
+		padding-top: var(--space-sm);
 		padding-bottom: calc(
 			var(--bottom-tab-height) + env(safe-area-inset-bottom, 0px) +
 				var(--space-md)
