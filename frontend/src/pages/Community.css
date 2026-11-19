@@ -52,53 +52,9 @@
 }
 
 /* ── Header (signed in) ── */
-.lb-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-md);
-	margin-bottom: var(--space-lg);
-}
-
-.lb-head > div:not(.lb-seg) {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
 
 /* ── Segmented choice ── */
-.lb-seg {
-	display: inline-flex;
-	flex: none;
-	gap: 2px;
-	padding: 3px;
-	background: var(--bg);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-md);
-}
 
-.lb-seg button {
-	font-family: var(--font);
-	font-size: var(--fs-xs);
-	min-height: 30px;
-	padding: 0 12px;
-	border: none;
-	border-radius: var(--radius-sm);
-	background: transparent;
-	color: var(--muted);
-	white-space: nowrap;
-	cursor: pointer;
-}
-
-.lb-seg button.on {
-	background: var(--bg-card);
-	color: var(--fg);
-	font-weight: var(--fw-semibold);
-	box-shadow: var(--shadow-xs);
-}
-
-.lb-seg button:focus-visible,
-.lb-chip:focus-visible,
 .lb-stand:focus-visible {
 	outline: 2px solid var(--accent);
 	outline-offset: 1px;
@@ -107,9 +63,7 @@
 /* ── Cards ── */
 .lb-card {
 	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-xs);
+	border-radius: 12px;
 	padding: 16px 18px;
 	min-width: 0;
 }
@@ -121,12 +75,6 @@
 	flex-wrap: wrap;
 	gap: 6px 12px;
 	margin-bottom: 12px;
-}
-
-.lb-card-head > div:not(.lb-seg):not(.lb-board-actions) {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
 }
 
 .lb-card-title {
@@ -156,21 +104,18 @@
 	gap: 8px;
 }
 
-.lb-choose-count {
-	margin-left: 6px;
-	font-weight: var(--fw-normal);
-	opacity: 0.85;
-}
-
 /* ── Your standing ── */
 .lb-section {
 	margin-bottom: var(--space-lg);
 }
 
 .lb-section-title {
-	font-size: var(--fs-sm);
-	font-weight: var(--fw-bold);
-	margin: 0 0 8px;
+	font-size: 0.8125rem;
+	font-weight: var(--fw-normal);
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: var(--text-muted);
+	margin: 0 0 6px 16px;
 }
 
 .lb-standing {
@@ -237,34 +182,6 @@
 }
 
 /* ── Lift chips ── */
-.lb-chips {
-	display: flex;
-	gap: 8px;
-	overflow-x: auto;
-	padding-bottom: 4px;
-	margin-bottom: 8px;
-	scrollbar-width: none;
-}
-
-.lb-chip {
-	flex: none;
-	font-family: var(--font);
-	font-size: var(--fs-xs);
-	min-height: 34px;
-	padding: 0 14px;
-	border-radius: var(--radius-full);
-	border: 1px solid var(--border-strong);
-	background: var(--bg-card);
-	color: var(--fg);
-	cursor: pointer;
-}
-
-.lb-chip.on {
-	background: var(--accent);
-	border-color: var(--accent);
-	color: #fff;
-	font-weight: var(--fw-semibold);
-}
 
 /* ── Ranked table ── */
 .lb-table {
@@ -286,8 +203,8 @@
 }
 
 .lb-table td {
-	padding: 8px;
-	border-bottom: 1px solid var(--border-dim);
+	padding: 10px 8px;
+	border-bottom: 0.5px solid var(--border);
 	white-space: nowrap;
 }
 
@@ -591,22 +508,15 @@
 
 /* ── Phone ── */
 @media (max-width: 640px) {
-	.lb-head {
-		margin-bottom: var(--space-md);
-	}
+	
 
 	.lb-title {
 		font-size: var(--fs-xl);
 	}
 
-	.lb-head {
-		align-items: flex-start;
-	}
+	
 
-	.lb-seg button {
-		min-height: 28px;
-		padding: 0 9px;
-	}
+	
 
 	/* Standing cards: compact, scrolling sideways instead of stacking. */
 	.lb-standing {
@@ -657,23 +567,13 @@
 		white-space: nowrap;
 	}
 
-	.lb-board-actions .lb-seg button {
-		padding: 0 8px;
-		font-size: 11px;
-	}
+	
 
-	.lb-board-actions .lb-choose-count {
-		margin-left: 4px;
-	}
+	
 
-	.lb-chips {
-		gap: 6px;
-	}
+	
 
-	.lb-chip {
-		min-height: 30px;
-		padding: 0 var(--space-sm);
-	}
+	
 
 	.lb-col-date {
 		display: none;
@@ -734,11 +634,22 @@
 		gap: var(--space-xs);
 	}
 
-	.lb-topbar .lb-seg button {
-		padding: 0 8px;
-	}
+	
 
 	.lb-topbar .btn-ghost {
 		padding: 10px 12px;
 	}
+}
+
+/* Full-width Leaderboard | Calendar switch under the large title. */
+.lb-view {
+	margin-bottom: var(--space-md);
+}
+
+/* The board's title is the lift picker. */
+.lb-lift-menu {
+	font-size: var(--fs-lg);
+	font-weight: var(--fw-bold);
+	padding: 0;
+	min-height: 0;
 }

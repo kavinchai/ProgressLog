@@ -96,7 +96,7 @@ describe("MealCards — rows", () => {
 		for (const slot of ["Breakfast", "Lunch", "Dinner"]) {
 			expect(button(`+ Add ${slot}`)).toHaveTextContent(slot);
 		}
-		expect(button("+ Add meal")).toBeInTheDocument();
+		expect(button("Add meal")).toBeInTheDocument();
 	});
 
 	it("shows a logged meal as one line: what, kcal and protein", () => {
@@ -260,8 +260,7 @@ describe("MealCards — offline", () => {
 });
 
 describe("MealCards — skipping a meal", () => {
-	const skipBox = () =>
-		sheet().getByRole("checkbox", { name: "Skipped lunch" });
+	const skipBox = () => sheet().getByRole("switch", { name: "Skipped lunch" });
 
 	it('ticking Skipped lunch and pressing Save saves "Skipped Lunch" with 0 kcal and 0 g', async () => {
 		setup(logWith([]));
@@ -327,17 +326,17 @@ describe("MealCards — skipping a meal", () => {
 		expect(api.put).not.toHaveBeenCalled();
 	});
 
-	it("extra meals have no Skipped box", async () => {
+	it("extra meals have no Skipped switch", async () => {
 		setup(logWith([SNACK]));
 		await userEvent.click(button("Edit Snack"));
-		expect(sheet().queryByRole("checkbox")).not.toBeInTheDocument();
+		expect(sheet().queryByRole("switch")).not.toBeInTheDocument();
 	});
 });
 
 describe("MealCards — extra meals", () => {
-	it("+ Add meal opens a sheet with a name field", async () => {
+	it("Add meal opens a sheet with a name field", async () => {
 		setup(logWith([]));
-		await userEvent.click(button("+ Add meal"));
+		await userEvent.click(button("Add meal"));
 		expect(
 			screen.getByRole("dialog", { name: "Add meal" }),
 		).toBeInTheDocument();
@@ -346,7 +345,7 @@ describe("MealCards — extra meals", () => {
 
 	it("saves a new extra meal with its name as the label", async () => {
 		setup(logWith([]));
-		await userEvent.click(button("+ Add meal"));
+		await userEvent.click(button("Add meal"));
 		await fillSheet({ "Meal name": "Snack", Calories: "300" });
 		await save();
 		await waitFor(() =>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ArrowLeftRight } from "lucide-react";
+import { CirclePlus } from "lucide-react";
+import { PageHeader, PullDownMenu } from "../components/ios/Ios";
 import api from "../api";
 import useWeightLog from "../hooks/useWeightLog";
 import useNutrition from "../hooks/useNutrition";
@@ -205,13 +206,12 @@ export default function Today() {
 		}
 	}
 
+	const dayType = todayNutritionEntry?.dayType ?? "training";
+
 	if (isLoading) {
 		return (
 			<div className="today-page">
-				<div className="today-page-header">
-					<span className="today-title">Today</span>
-					<span className="today-date muted">{formatDayLabel(TODAY)}</span>
-				</div>
+				<PageHeader title="Today" subtitle={formatDayLabel(TODAY)} />
 				<div className="loading-state">Loading your daily stats…</div>
 			</div>
 		);
@@ -227,26 +227,30 @@ export default function Today() {
 					</button>
 				</div>
 			)}
-			<div className="today-page-header">
-				<span className="today-title">Today</span>
-				<span className="today-date muted">{formatDayLabel(TODAY)}</span>
-				{(() => {
-					const dayType = todayNutritionEntry?.dayType ?? "training";
-					const other = dayType === "training" ? "rest" : "training";
-					return (
-						<button
-							className="today-day-type-toggle"
-							onClick={toggleDayType}
-							disabled={dayTypeSaving || Boolean(errorNutrition)}
-							aria-label={`${dayType} day, switch to ${other} day`}
-							title={`Switch to ${other} day`}
-						>
-							{dayType} day
-							<ArrowLeftRight size={12} aria-hidden="true" />
-						</button>
-					);
-				})()}
-			</div>
+			<PageHeader
+				title="Today"
+				subtitle={formatDayLabel(TODAY)}
+				trailing={
+					<PullDownMenu
+						label="Day type"
+						buttonLabel={dayType === "rest" ? "Rest day" : "Training day"}
+						sections={[
+							{
+								options: [
+									{ value: "training", label: "Training day" },
+									{ value: "rest", label: "Rest day" },
+								],
+								value: dayType,
+								onChange: (v) => {
+									if (v !== dayType && !dayTypeSaving && !errorNutrition) {
+										toggleDayType();
+									}
+								},
+							},
+						]}
+					/>
+				}
+			/>
 
 			<DailyProgressBar
 				caloriesCurrent={totals.calories}
@@ -499,7 +503,8 @@ export default function Today() {
 											className="status-add-chip"
 											onClick={() => openWorkoutModal({ appendBlank: true })}
 										>
-											+ Add exercise
+											<CirclePlus size={20} aria-hidden="true" />
+											Add exercise
 										</button>
 									</div>
 								)}

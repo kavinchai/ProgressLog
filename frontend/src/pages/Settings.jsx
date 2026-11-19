@@ -1,6 +1,25 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+	Apple,
+	CalendarDays,
+	Download,
+	Flame,
+	Footprints,
+	Heart,
+	KeyRound,
+	Mail,
+	Moon,
+	Ruler,
+	ScanFace,
+	Sparkles,
+	Trash2,
+	Trophy,
+	Upload,
+	User,
+} from "lucide-react";
 import Modal from "../components/Modal";
+import { PageHeader } from "../components/ios/Ios";
 import useUserProfile from "../hooks/useUserProfile";
 import useAuthStore from "../store/authStore";
 import useWeightUnit from "../hooks/useWeightUnit";
@@ -198,9 +217,20 @@ function Group({ title, children }) {
 	);
 }
 
-function Row({ label, hint, children }) {
+// iOS Settings-style colored tile in front of a row's label.
+function RowIcon({ icon: Icon, color }) {
+	if (!Icon) return null;
+	return (
+		<span className="settings-icon" style={{ background: color }} aria-hidden="true">
+			<Icon size={17} strokeWidth={2.2} />
+		</span>
+	);
+}
+
+function Row({ label, hint, icon, iconColor, children }) {
 	return (
 		<div className="settings-row">
+			<RowIcon icon={icon} color={iconColor} />
 			<span className="settings-row-text">
 				<span className="settings-row-label">{label}</span>
 				{hint && <span className="settings-row-hint">{hint}</span>}
@@ -211,7 +241,17 @@ function Row({ label, hint, children }) {
 }
 
 // A row whose form opens under it on desktop, or in a bottom sheet on phones.
-function EditRow({ label, value, saved, open, disabled, onToggle, children }) {
+function EditRow({
+	label,
+	value,
+	saved,
+	open,
+	disabled,
+	onToggle,
+	icon,
+	iconColor,
+	children,
+}) {
 	const isMobile = useMediaQuery(MOBILE_QUERY);
 	return (
 		<div className={"settings-edit" + (open ? " settings-edit-open" : "")}>
@@ -222,6 +262,7 @@ function EditRow({ label, value, saved, open, disabled, onToggle, children }) {
 				disabled={disabled}
 				onClick={onToggle}
 			>
+				<RowIcon icon={icon} color={iconColor} />
 				<span className="settings-row-main">
 					<span className="settings-row-label">{label}</span>
 					{saved && <span className="settings-saved">Saved!</span>}
@@ -265,7 +306,6 @@ function Switch({ ariaLabel, on, saving, onToggle }) {
 	return (
 		<>
 			{saving && <span className="settings-saved">Saving…</span>}
-			<span className="settings-value">{on ? "On" : "Off"}</span>
 			<button
 				type="button"
 				className={"settings-switch" + (on ? " on" : "")}
@@ -759,6 +799,8 @@ function AppleIdRow({ connected, onConnected }) {
 		<>
 			<Row
 				label="Apple ID"
+				icon={Apple}
+				iconColor="#111318"
 				hint={
 					connected
 						? "Sign in with Apple opens this account"
@@ -818,6 +860,8 @@ function SecurityGroup() {
 		<Group title="Security">
 			<Row
 				label={`Unlock with ${name}`}
+				icon={ScanFace}
+				iconColor="#2f8f5b"
 				hint={`Asks for ${name} when you open the app or come back after a minute.`}
 			>
 				<Switch
@@ -880,7 +924,7 @@ function AppleHealthRow() {
 
 	return (
 		<>
-			<Row label="Apple Health" hint={hint}>
+			<Row label="Apple Health" hint={hint} icon={Heart} iconColor="#e0457b">
 				<button
 					type="button"
 					className="btn btn-sm"
@@ -985,7 +1029,12 @@ function PrivacyGroup() {
 				</Row>
 			) : (
 				<>
-					<Row label="Share data on leaderboard" hint={leaderboardHint}>
+					<Row
+						label="Share data on leaderboard"
+						hint={leaderboardHint}
+						icon={Trophy}
+						iconColor="#4f46e5"
+					>
 						<Switch
 							ariaLabel="Toggle data sharing"
 							on={privacy.shareData}
@@ -993,7 +1042,12 @@ function PrivacyGroup() {
 							onToggle={() => updatePrivacy("shareData")}
 						/>
 					</Row>
-					<Row label="Share on community calendar" hint="The days you trained">
+					<Row
+						label="Share on community calendar"
+						hint="The days you trained"
+						icon={CalendarDays}
+						iconColor="#4f46e5"
+					>
 						<Switch
 							ariaLabel="Toggle calendar sharing"
 							on={privacy.shareCalendar}
@@ -1098,6 +1152,8 @@ function DataGroup() {
 		<Group title="Data">
 			<Row
 				label="Export a backup"
+				icon={Download}
+				iconColor="#7b7f8c"
 				hint={hasData ? null : "Log some data to enable export."}
 			>
 				<button
@@ -1121,6 +1177,8 @@ function DataGroup() {
 			</Row>
 			<Row
 				label="Import a backup"
+				icon={Upload}
+				iconColor="#7b7f8c"
 				hint="Restore a JSON export. Duplicates are skipped."
 			>
 				<button
@@ -1210,11 +1268,13 @@ export default function Settings() {
 
 	return (
 		<div className="settings-page">
-			<h1 className="settings-title">Settings</h1>
+			<PageHeader title="Settings" />
 
 			<Group title="Goals">
 				<EditRow
 					label="Calorie & protein goals"
+					icon={Flame}
+					iconColor="#d9622b"
 					value={goalsSummary}
 					saved={savedRow === "goals"}
 					open={openRow === "goals"}
@@ -1232,6 +1292,8 @@ export default function Settings() {
 				</EditRow>
 				<EditRow
 					label="Daily steps goal"
+					icon={Footprints}
+					iconColor="#2f7ad6"
 					value={
 						loading
 							? "Loading…"
@@ -1254,7 +1316,7 @@ export default function Settings() {
 			</Group>
 
 			<Group title="Preferences">
-				<Row label="Weight unit">
+				<Row label="Weight unit" icon={Ruler} iconColor="#5c5f6b">
 					<Segmented
 						label="Weight unit"
 						options={[
@@ -1265,7 +1327,7 @@ export default function Settings() {
 						onChange={(next) => next !== unit && toggleUnit()}
 					/>
 				</Row>
-				<Row label="Theme">
+				<Row label="Theme" icon={Moon} iconColor="#3a3d46">
 					<Segmented
 						label="Theme"
 						options={[
@@ -1287,6 +1349,7 @@ export default function Settings() {
 					className="settings-row settings-row-button"
 					onClick={() => navigate("/claude-setup")}
 				>
+					<RowIcon icon={Sparkles} color="#c06a3f" />
 					<span className="settings-row-label">Claude integration</span>
 					<span className="settings-value">Set up</span>
 					<span className="settings-chevron" aria-hidden="true">
@@ -1301,6 +1364,8 @@ export default function Settings() {
 			<Group title="Account">
 				<EditRow
 					label="Username"
+					icon={User}
+					iconColor="#7b7f8c"
 					value={username ?? "—"}
 					saved={savedRow === "username"}
 					open={openRow === "username"}
@@ -1314,6 +1379,8 @@ export default function Settings() {
 				</EditRow>
 				<EditRow
 					label="Email"
+					icon={Mail}
+					iconColor="#2f7ad6"
 					value={currentEmail || "—"}
 					saved={savedRow === "email"}
 					open={openRow === "email"}
@@ -1335,6 +1402,8 @@ export default function Settings() {
 				/>
 				<EditRow
 					label="Password"
+					icon={KeyRound}
+					iconColor="#7b7f8c"
 					value={signIn.passwordSet ? "••••••••" : "Not set"}
 					saved={savedRow === "password"}
 					open={openRow === "password"}
@@ -1349,15 +1418,10 @@ export default function Settings() {
 						onCancel={() => toggleRow("password")}
 					/>
 				</EditRow>
-				<button
-					type="button"
-					className="settings-row settings-row-button settings-logout"
-					onClick={logout}
-				>
-					<span className="settings-row-label">Log out</span>
-				</button>
 				<EditRow
 					label="Delete account"
+					icon={Trash2}
+					iconColor="#c4361c"
 					open={openRow === "delete"}
 					onToggle={() => toggleRow("delete")}
 				>
@@ -1370,6 +1434,18 @@ export default function Settings() {
 			</Group>
 
 			<SecurityGroup />
+
+			<section className="settings-group" aria-label="Log out">
+				<div className="settings-list">
+					<button
+						type="button"
+						className="settings-row settings-row-button settings-logout"
+						onClick={logout}
+					>
+						<span className="settings-row-label">Log out</span>
+					</button>
+				</div>
+			</section>
 		</div>
 	);
 }

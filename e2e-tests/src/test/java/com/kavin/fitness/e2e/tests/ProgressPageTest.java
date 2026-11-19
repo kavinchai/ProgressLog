@@ -12,10 +12,10 @@ import java.time.LocalDate;
 /**
  * Covers /progress (Strength only). Seeds workout sessions for a lift that
  * isn't featured, then adds it through the "Choose lifts" dialog so the page
- * shows its card, chart, session-history table and PR.
+ * shows its row, then its screen with chart, sessions and PR.
  *
  * Seeding throws on failure (see TestApiClient) so backend/auth issues
- * surface as actionable errors rather than missing-card assertions.
+ * surface as actionable errors rather than missing-row assertions.
  */
 public class ProgressPageTest extends BaseTest {
     private ProgressPage progress;
@@ -108,7 +108,7 @@ public class ProgressPageTest extends BaseTest {
 
     @Test(priority = 3, dependsOnMethods = "strengthPageLoadsWithoutCardioTabs")
     public void chooseLiftsAddsSeededLiftCard() {
-        step("open Choose lifts and search for the seeded lift");
+        step("tap Edit to open Choose lifts and search for the seeded lift");
         progress.openStrength(baseUrl);
         progress.openChooser();
         progress.searchChooser(STRENGTH_NAME);
@@ -117,9 +117,9 @@ public class ProgressPageTest extends BaseTest {
         progress.chooseLift(STRENGTH_NAME);
         progress.confirmChooser();
 
-        step("verify its card is on the page");
+        step("verify its row is in the list");
         if (!progress.isLiftCardVisible(STRENGTH_NAME)) {
-            throw new AssertionError("Expected a card for '" + STRENGTH_NAME + "' — "
+            throw new AssertionError("Expected a row for '" + STRENGTH_NAME + "' — "
                     + "seeded data may not have been created (check TestApiClient errors)");
         }
     }
@@ -131,18 +131,18 @@ public class ProgressPageTest extends BaseTest {
 
         step("verify the chosen lift is still shown");
         if (!progress.isLiftCardVisible(STRENGTH_NAME)) {
-            throw new AssertionError("Expected '" + STRENGTH_NAME + "' card after reload");
+            throw new AssertionError("Expected '" + STRENGTH_NAME + "' row after reload");
         }
     }
 
     @Test(priority = 5, dependsOnMethods = "chooseLiftsAddsSeededLiftCard")
     public void liftCardShowsSessionHistoryAndPR() {
-        step("click the seeded lift's card");
+        step("tap the seeded lift's row");
         progress.clickLiftCard(STRENGTH_NAME);
 
-        step("verify card becomes active");
-        if (!progress.isLiftCardActive(STRENGTH_NAME)) {
-            throw new AssertionError("Expected '" + STRENGTH_NAME + "' card to be active");
+        step("verify the lift's screen opens");
+        if (!progress.isLiftDetailOpen(STRENGTH_NAME)) {
+            throw new AssertionError("Expected '" + STRENGTH_NAME + "' screen to open");
         }
 
         step("verify session history table renders");

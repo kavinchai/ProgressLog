@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { tapSuccess } from "../native/haptics";
 import Modal from "./Modal";
+import { Switch } from "./ios/Ios";
 import SheetField from "./SheetField";
 import { errorMessage } from "../utils/errors";
 
@@ -101,18 +102,6 @@ export default function MealSheet({
 		<Modal title={title} onClose={onClose} form={{ id: formId, saving }}>
 			<form id={formId} className="modal-form" onSubmit={submit}>
 				{err && <div className="modal-error">{err}</div>}
-				{slot && (
-					<label className="sheet-group sheet-check">
-						<input
-							type="checkbox"
-							className="sheet-check-box"
-							checked={fields.skipped}
-							disabled={saving}
-							onChange={(e) => update({ skipped: e.target.checked })}
-						/>
-						Skipped {slot.toLowerCase()}
-					</label>
-				)}
 				<fieldset className="sheet-group" disabled={fields.skipped}>
 					{!slot && (
 						<SheetField
@@ -163,6 +152,24 @@ export default function MealSheet({
 						onChange={(e) => update({ protein: e.target.value })}
 					/>
 				</fieldset>
+				{slot && (
+					<>
+						<div className="sheet-group sheet-group--spaced">
+							<div className="sheet-switch-row">
+								<span>Skipped {slot.toLowerCase()}</span>
+								<Switch
+									label={`Skipped ${slot.toLowerCase()}`}
+									checked={fields.skipped}
+									disabled={saving}
+									onChange={(skipped) => update({ skipped })}
+								/>
+							</div>
+						</div>
+						<p className="sheet-footnote">
+							Logs {slot.toLowerCase()} as skipped, with 0 kcal and 0 g protein.
+						</p>
+					</>
+				)}
 				<datalist id={restaurantListId}>
 					{restaurants.map((name) => (
 						<option key={name} value={name} />

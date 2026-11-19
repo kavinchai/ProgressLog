@@ -6,7 +6,9 @@ import useSteps from "../hooks/useSteps";
 import useUserProfile from "../hooks/useUserProfile";
 import useWeightUnit from "../hooks/useWeightUnit";
 import DayDetail from "../components/DayDetail";
-import { DailyBarChart } from "../components/HistoryCharts";
+import { DailyBarChart, WeightTrendChart } from "../components/HistoryCharts";
+import { PeriodNav, StatTile } from "../components/ios/Ios";
+import useSwipe from "../hooks/useSwipe";
 import { localDateStr, shortDate, getWeek } from "../utils/date";
 import { buildDayRows } from "../utils/stats";
 import { summarize } from "../utils/history";
@@ -29,6 +31,11 @@ const MONTHS = [
 	"Dec",
 ];
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const CHART_COLORS = {
+	calories: "#d4934e",
+	protein: "#2f8f5b",
+	steps: "#8a7ec8",
+};
 
 const monthDay = (iso) => {
 	const [, m, d] = iso.split("-");
@@ -55,17 +62,6 @@ function Delta({ current, previous, unit = "" }) {
 			{diff > 0 ? "▲" : "▼"} {shown}
 			{unit} vs last week
 		</>
-	);
-}
-
-function Kpi({ label, value, children, extra }) {
-	return (
-		<div className="history-kpi" role="group" aria-label={label}>
-			<span className="history-kpi-label">{label}</span>
-			<span className="history-kpi-value">{value}</span>
-			<span className="history-kpi-sub">{children}</span>
-			{extra}
-		</div>
 	);
 }
 
@@ -212,92 +208,106 @@ export default function WeeklyStats() {
 			value: r.date > today ? null : r[field],
 		}));
 
+	const swipe = useSwipe({
+		onLeft: () => offset < 0 && goWeek(1),
+		onRight: () => goWeek(-1),
+	});
+
+	const weightShown = (v) => (v == null ? null : Number(toDisplay(v)));
+	const metrics = {
+		weight: {
+			label: "Weight",
+			value: week.weight == null ? "--" : toDisplay(week.weight),
+			unit,
+			sub: (
+				<Delta
+					current={weightShown(week.weight)}
+					previous={weightShown(lastWeek.weight)}
+				/>
+			),
+		},
+		calories: {
+			label: "Calories",
+			value: fmt(week.calories),
+			sub: `goal ${fmt(goals.calorieTargetTraining)}`,
+		},
+		protein: {
+			label: "Protein",
+			value: week.protein == null ? "--" : fmt(week.protein),
+			unit: "g",
+			sub: `goal ${goals.proteinTarget}`,
+		},
+		steps: {
+			label: "Steps",
+			value: fmt(week.steps),
+			sub: (
+				<Delta
+					current={week.steps == null ? null : Math.round(week.steps)}
+					previous={lastWeek.steps == null ? null : Math.round(lastWeek.steps)}
+				/>
+			),
+		},
+	};
+
 	return (
-		<div className="weekly-page">
-			<div className="history-head">
-				<span className="history-title">Week of {monthDay(days[0])}</span>
-				{offset === 0 && <span className="history-pill">This week</span>}
-				<span className="history-spacer" />
-				<div className="history-nav">
-					<button
-						type="button"
-						aria-label="Previous week"
-						onClick={() => goWeek(-1)}
-					>
-						‹
-					</button>
-					<span className="history-nav-label">
-						{weekRange(days[0], days[6])}
-					</span>
-					<button
-						type="button"
-						aria-label="Next week"
-						disabled={offset >= 0}
-						onClick={() => goWeek(1)}
-					>
-						›
-					</button>
-				</div>
+		<div className="weekly-page ios-swipe" {...swipe}>
+			<PeriodNav
+				title={weekRange(days[0], days[6])}
+				sub={
+					(offset === 0 ? "This week · " : "") +
+					`${week.workouts} ${week.workouts === 1 ? "workout" : "workouts"}` +
+					` · ${lastWeek.workouts} last week`
+				}
+				prevLabel="Previous week"
+				nextLabel="Next week"
+				onPrev={() => goWeek(-1)}
+				onNext={() => goWeek(1)}
+				nextDisabled={offset >= 0}
+			/>
+
+			<div className="ios-tiles" role="group" aria-label="Chart">
+				{Object.entries(metrics).map(([key, m]) => (
+					<StatTile
+						key={key}
+						label={m.label}
+						value={m.value}
+						unit={m.unit}
+						sub={m.sub}
+						selected={chartShow === key}
+						onSelect={() => setChartShow(key)}
+					/>
+				))}
 			</div>
 
-			<div className="history-kpis">
-				<Kpi
-					label="Avg weight"
-					value={week.weight == null ? "--" : `${toDisplay(week.weight)}`}
-				>
-					{unit} ·{" "}
-					<Delta
-						current={
-							week.weight == null ? null : Number(toDisplay(week.weight))
-						}
-						previous={
-							lastWeek.weight == null
-								? null
-								: Number(toDisplay(lastWeek.weight))
-						}
+			<div
+				className="history-charts"
+				data-testid="weekly-charts"
+				data-show={chartShow}
+			>
+				{chartShow === "weight" ? (
+					<WeightTrendChart
+						title="Weight per day"
+						data={rows.map((r) => ({
+							label: DOW[new Date(`${r.date}T12:00:00`).getDay()],
+							value: r.weight == null ? null : Number(toDisplay(r.weight)),
+						}))}
+						unit={unit}
 					/>
-				</Kpi>
-				<Kpi label="Avg calories" value={fmt(week.calories)}>
-					target {fmt(goals.calorieTargetTraining)}
-				</Kpi>
-				<Kpi
-					label="Avg protein"
-					value={week.protein == null ? "--" : `${fmt(week.protein)}g`}
-				>
-					target {goals.proteinTarget}g
-				</Kpi>
-				<Kpi label="Avg steps" value={fmt(week.steps)}>
-					<Delta current={week.steps} previous={lastWeek.steps} />
-				</Kpi>
-				<Kpi
-					label="Workouts"
-					value={`${week.workouts} / 7`}
-					extra={
-						<ul className="history-week-dots" aria-label="Workouts this week">
-							{rows.map((r) => {
-								const future = r.date > today;
-								const state = future
-									? "upcoming"
-									: r.workout
-										? "workout"
-										: "no workout";
-								return (
-									<li
-										key={r.date}
-										aria-label={`${DOW[new Date(`${r.date}T12:00:00`).getDay()]}: ${state}`}
-										className={
-											"history-week-dot" +
-											(r.workout && !future ? " on" : "") +
-											(future ? " future" : "")
-										}
-									/>
-								);
-							})}
-						</ul>
-					}
-				>
-					{lastWeek.workouts} last week
-				</Kpi>
+				) : (
+					<DailyBarChart
+						title={`${metrics[chartShow].label} per day`}
+						data={chartData(chartShow)}
+						goal={
+							chartShow === "calories"
+								? goals.calorieTargetTraining
+								: chartShow === "protein"
+									? goals.proteinTarget
+									: stepsGoal
+						}
+						color={CHART_COLORS[chartShow]}
+						unit={chartShow === "protein" ? "g" : chartShow === "steps" ? "steps" : "kcal"}
+					/>
+				)}
 			</div>
 
 			<ul className="week-strip" aria-label="Days of the week">
@@ -318,13 +328,9 @@ export default function WeeklyStats() {
 			</ul>
 
 			<section className="history-day-panel" aria-label="Selected day">
-				<div className="history-day-panel-head">
-					<span className="history-day-panel-title">
-						{shortDate(selectedDate)}
-					</span>
-					{selectedDate === today && (
-						<span className="history-pill">Today</span>
-					)}
+				<div className="ios-section-header">
+					<span>{shortDate(selectedDate)}</span>
+					{selectedDate === today && <span>Today</span>}
 				</div>
 				<div className="history-day-panel-body">
 					<DayDetail
@@ -342,51 +348,6 @@ export default function WeeklyStats() {
 					/>
 				</div>
 			</section>
-
-			{/* Phones show one chart at a time; this switch is hidden on desktop. */}
-			<div
-				className="history-seg history-chart-switch"
-				role="group"
-				aria-label="Chart"
-			>
-				{[
-					["calories", "Calories"],
-					["steps", "Steps"],
-				].map(([key, label]) => (
-					<button
-						key={key}
-						type="button"
-						aria-pressed={chartShow === key}
-						onClick={() => setChartShow(key)}
-					>
-						{label}
-					</button>
-				))}
-			</div>
-			<div
-				className="history-charts"
-				data-testid="weekly-charts"
-				data-show={chartShow}
-			>
-				<div className="history-chart-slot" data-chart="calories">
-					<DailyBarChart
-						title="Calories per day"
-						data={chartData("calories")}
-						goal={goals.calorieTargetTraining}
-						color="#d4934e"
-						unit="kcal"
-					/>
-				</div>
-				<div className="history-chart-slot" data-chart="steps">
-					<DailyBarChart
-						title="Steps per day"
-						data={chartData("steps")}
-						goal={stepsGoal}
-						color="#8a7ec8"
-						unit="steps"
-					/>
-				</div>
-			</div>
 		</div>
 	);
 }

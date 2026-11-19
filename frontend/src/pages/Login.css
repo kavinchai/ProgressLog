@@ -8,98 +8,138 @@
 	padding: 20px;
 }
 
+/* No card: the form sits on the grouped gray, like an iOS sign-in screen. */
 .login-card {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-xl);
-	box-shadow: var(--shadow-lg);
-	overflow: hidden;
+	width: 100%;
 }
 
 .login-inner {
-	padding: 32px 28px;
+	padding: 32px 0;
 	width: 100%;
-	max-width: 340px;
+	max-width: 380px;
+}
+
+.login-icon {
+	display: block;
+	width: 76px;
+	height: 76px;
+	border-radius: 18px;
+	margin: 0 auto 12px;
 }
 
 .login-title {
 	text-align: center;
-	font-size: var(--fs-2xl);
+	font-size: 1.75rem;
 	font-weight: var(--fw-bold);
 	letter-spacing: -0.02em;
-	color: var(--accent);
+	color: var(--fg);
 	margin-bottom: 4px;
 }
 
 .login-divider {
 	text-align: center;
-	font-size: var(--fs-sm);
-	margin-bottom: 24px;
-	color: var(--muted);
+	font-size: 0.9375rem;
+	margin-bottom: 28px;
+	color: var(--text-muted);
 }
 
 .login-form {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: 12px;
+}
+
+/* Fields in one rounded group: label left, entry right. */
+.login-group {
+	background: var(--bg-card);
+	border-radius: 12px;
+	overflow: hidden;
 }
 
 .login-field {
 	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	align-items: center;
+	gap: 12px;
+	min-height: 48px;
+	padding: 0 16px;
+}
+
+.login-field + .login-field {
+	border-top: 0.5px solid var(--border);
 }
 
 .login-field label {
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-semibold);
-	color: var(--muted);
-	text-transform: capitalize;
-	letter-spacing: 0.02em;
+	width: 88px;
+	flex: none;
+	font-size: 1rem;
+	color: var(--fg);
 }
 
 .login-input {
+	flex: 1;
+	min-width: 0;
 	font-family: var(--font);
-	font-size: var(--fs);
-	background: var(--bg);
+	font-size: 1rem;
+	background: transparent;
 	color: var(--fg);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-md);
-	padding: 10px 14px;
+	border: none;
+	padding: 12px 0;
 	outline: none;
-	width: 100%;
-	transition:
-		border-color var(--transition-fast),
-		box-shadow var(--transition-fast);
-}
-
-.login-input:focus {
-	border-color: var(--accent);
-	box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 .login-input::placeholder {
-	color: var(--muted);
-	opacity: 0.6;
+	color: var(--text-subtle);
 }
 
 .login-remember {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 8px;
-	font-size: var(--fs-sm);
+	min-height: 48px;
+	padding: 0 16px;
+	font-size: 1rem;
 	color: var(--fg);
 	cursor: pointer;
 }
 
+/* The checkbox drawn as an iOS switch. */
 .login-remember input {
-	width: 16px;
-	height: 16px;
+	appearance: none;
+	-webkit-appearance: none;
+	position: relative;
+	width: 51px;
+	height: 31px;
 	margin: 0;
-	accent-color: var(--accent);
+	border-radius: 16px;
+	background: var(--active-bg);
+	cursor: pointer;
+	transition: background 0.2s;
+	flex: none;
+}
+
+.login-remember input::after {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 27px;
+	height: 27px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	transition: transform 0.2s;
+}
+
+.login-remember input:checked {
+	background: var(--accent);
+}
+
+.login-remember input:checked::after {
+	transform: translateX(20px);
 }
 
 .login-btn {
@@ -109,11 +149,12 @@
 	background: var(--accent);
 	color: var(--accent-fg);
 	border: none;
-	border-radius: var(--radius-md);
-	padding: 10px 0;
+	border-radius: 12px;
+	min-height: 50px;
+	font-size: 1.0625rem;
 	cursor: pointer;
 	width: 100%;
-	margin-top: 4px;
+	margin-top: 10px;
 	text-align: center;
 	transition:
 		background var(--transition-fast),
@@ -190,14 +231,14 @@
 	justify-content: center;
 	gap: 6px;
 	width: 100%;
-	padding: 10px 0;
+	min-height: 50px;
 	font-family: var(--font);
 	font-size: var(--fs);
 	font-weight: var(--fw-semibold);
 	color: #fff;
 	background: #000;
 	border: none;
-	border-radius: var(--radius-md);
+	border-radius: 12px;
 	cursor: pointer;
 }
 

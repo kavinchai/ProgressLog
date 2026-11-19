@@ -2,8 +2,19 @@ import { useState, useMemo, lazy, Suspense } from "react";
 import useFetch from "../hooks/useFetch";
 import useWeightUnit from "../hooks/useWeightUnit";
 import { formatDate } from "../utils/date";
-import { rangeDaysFor, filterByRange } from "../utils/dateRange";
-import RangeSelector from "../components/RangeSelector";
+import { ChevronLeft, ListFilter } from "lucide-react";
+import {
+	rangeDaysFor,
+	filterByRange,
+	RANGE_OPTIONS,
+} from "../utils/dateRange";
+import {
+	ListGroup,
+	ListRow,
+	PageHeader,
+	PullDownMenu,
+	SegmentedControl,
+} from "../components/ios/Ios";
 import ChooseLiftsModal from "../components/ChooseLiftsModal";
 import { loadChosen, saveChosen, sortLifts } from "../utils/chosenLifts";
 import featuredConfig from "../config/featuredExercises.json";
@@ -93,21 +104,6 @@ function StrengthChart({ sessions, prWeightLbs, unit, toDisplay }) {
 
 // ── stat card ─────────────────────────────────────────────────────────────────
 
-function Stat({ label, value, testId, accent }) {
-	return (
-		<div className="strength-stat" data-testid={testId}>
-			<span className="strength-stat-label">{label}</span>
-			<span
-				className={
-					"strength-stat-value" + (accent ? " strength-stat-value-accent" : "")
-				}
-			>
-				{value}
-			</span>
-		</div>
-	);
-}
-
 // ── chosen lifts ──────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "strength.chosenLifts";
@@ -120,10 +116,17 @@ const RANGE_WORDS = {
 	ALL: "all time",
 };
 
+const RANGE_MENU_LABELS = {
+	"4W": "4 weeks",
+	"3M": "3 months",
+	"6M": "6 months",
+	ALL: "All time",
+};
+
 const SORTS = [
 	{ key: "recent", label: "Recent" },
-	{ key: "change", label: "Change" },
-	{ key: "az", label: "A–Z" },
+	{ key: "change", label: "Biggest change" },
+	{ key: "az", label: "Name" },
 ];
 
 // Featured lifts the user has logged; if none, their most recently trained.
@@ -172,46 +175,30 @@ function sparkPoints(series) {
 		.join(" ");
 }
 
-function formatChange(change, unit) {
-	if (change > 0) return `+${change} ${unit}`;
-	if (change < 0) return `${change} ${unit}`;
-	return `±0 ${unit}`;
+function formatChange(change) {
+	if (change > 0) return `+${change}`;
+	if (change < 0) return `${change}`;
+	return "0";
 }
 
-function LiftCard({ lift, active, rangeLabel, unit, onSelect }) {
+function LiftRow({ lift, rangeLabel, unit, onOpen }) {
 	const up = lift.change > 0;
+	const down = lift.change < 0;
 	return (
 		<button
 			type="button"
 			aria-label={lift.name}
-			aria-pressed={active}
-			className={
-				"lift-card" +
-				(active ? " lift-card-active" : "") +
-				(lift.stale ? " lift-card-stale" : "")
-			}
-			onClick={() => onSelect(lift.name)}
+			className={"lift-row" + (lift.stale ? " lift-row-stale" : "")}
+			onClick={() => onOpen(lift.name)}
 		>
-			<span className="lift-card-text">
-				<span className="lift-card-top">
-					<span className="lift-card-name">{lift.name}</span>
-					<span className="lift-card-last">
-						{lastTrainedLabel(lift.lastDate)}
-					</span>
-				</span>
-				<span className="lift-card-values">
-					<span className="lift-card-max">
-						{lift.max} {unit}
-					</span>
-					<span className={"lift-card-change" + (up ? " lift-card-up" : "")}>
-						{lift.stale
-							? `Not trained in ${rangeLabel}`
-							: formatChange(lift.change, unit)}
-					</span>
+			<span className="lift-row-text">
+				<span className="lift-row-name">{lift.name}</span>
+				<span className="lift-row-sub">
+					{lift.max} {unit} · {lastTrainedLabel(lift.lastDate)}
 				</span>
 			</span>
 			<svg
-				className="lift-card-spark"
+				className="lift-row-spark"
 				viewBox="0 0 100 30"
 				preserveAspectRatio="none"
 				aria-hidden="true"
@@ -219,17 +206,27 @@ function LiftCard({ lift, active, rangeLabel, unit, onSelect }) {
 				<polyline
 					points={sparkPoints(lift.series)}
 					fill="none"
-					stroke={up ? "var(--accent)" : "var(--muted)"}
+					stroke={up ? "var(--success)" : "var(--text-subtle)"}
 					strokeWidth="2"
 					vectorEffect="non-scaling-stroke"
 				/>
 			</svg>
+			<span
+				className={
+					"ios-badge" +
+					(up ? "" : down ? " ios-badge--down" : " ios-badge--flat")
+				}
+				title={lift.stale ? `Not trained in ${rangeLabel}` : undefined}
+			>
+				{lift.stale ? "–" : formatChange(lift.change)}
+			</span>
 		</button>
 	);
 }
 
-// Stats, chart and session table for the selected lift over the range.
-function LiftDetail({ exercise, rangeDays, unit, toDisplay }) {
+// Big number, chart, range and the lift's sessions.
+function LiftDetail({ exercise, rangeKey, onRange, unit, toDisplay, onBack }) {
+	const rangeDays = rangeDaysFor(rangeKey);
 	const filteredSessions = useMemo(
 		() => filterByRange(exercise.data, rangeDays),
 		[exercise, rangeDays],
@@ -243,135 +240,121 @@ function LiftDetail({ exercise, rangeDays, unit, toDisplay }) {
 		[filteredSessions, toDisplay],
 	);
 
-	// Sessions sorted by date descending for the table
 	const sortedSessions = [...filteredSessions].sort((a, b) =>
 		b.sessionDate.localeCompare(a.sessionDate),
 	);
 
 	return (
 		<div className="strength-detail">
-			<div className="strength-detail-head">
-				<h2>{exercise.exerciseName}</h2>
-				{stats && (
-					<span className="strength-pr-tag">
-						PR {stats.currentMax} {unit} · {formatDate(stats.prDate)}
-					</span>
-				)}
+			<div className="ios-nav strength-detail-nav">
+				<button type="button" onClick={onBack}>
+					<ChevronLeft size={26} aria-hidden="true" />
+					Progress
+				</button>
+				<h1 className="strength-detail-title">{exercise.exerciseName}</h1>
+				<span />
 			</div>
 
-			{/* Stat row */}
+			{stats ? (
+				<div className="strength-hero">
+					<div className="strength-hero-value" data-testid="stat-current-max">
+						{stats.currentMax} <small>{unit}</small>
+					</div>
+					<div
+						className={
+							"strength-hero-change" +
+							(stats.improvement > 0 ? " strength-hero-up" : "")
+						}
+						data-testid="stat-improvement"
+					>
+						{stats.improvement >= 0 ? "+" : ""}
+						{stats.improvement} {unit}{" "}
+						<span className="muted">{RANGE_WORDS[rangeKey]}</span>
+					</div>
+				</div>
+			) : (
+				<div className="strength-no-data">
+					<p>No sessions in selected range.</p>
+					<p className="strength-empty-hint">
+						Try a longer range like 6M or All.
+					</p>
+				</div>
+			)}
+
+			{filteredSessions.length > 0 && (
+				<div className="strength-chart" data-no-page-swipe>
+					<StrengthChart
+						sessions={filteredSessions}
+						prWeightLbs={stats?.prWeightLbs}
+						unit={unit}
+						toDisplay={toDisplay}
+					/>
+				</div>
+			)}
+
+			<SegmentedControl
+				label="Time range"
+				className="strength-range"
+				options={RANGE_OPTIONS.map((r) => ({ value: r.key, label: r.label }))}
+				value={rangeKey}
+				onChange={onRange}
+			/>
+
 			{stats && (
-				<div className="section-box strength-stats-box">
-					<div className="strength-stats-grid">
-						<Stat
-							label="current max"
-							value={`${stats.currentMax} ${unit}`}
-							testId="stat-current-max"
-							accent
-						/>
-						<Stat
-							label="sessions"
-							value={stats.sessions}
-							testId="stat-sessions"
-						/>
-						<Stat
-							label="improvement"
-							value={`${stats.improvement >= 0 ? "+" : ""}${stats.improvement} ${unit}`}
-							testId="stat-improvement"
-						/>
-						<Stat
-							label="last trained"
+				<ListGroup className="strength-facts">
+					<ListRow
+						label="Personal record"
+						value={`${stats.currentMax} ${unit} · ${formatDate(stats.prDate)}`}
+					/>
+					<div data-testid="stat-sessions">
+						<ListRow label="Sessions" value={stats.sessions} />
+					</div>
+					<div data-testid="stat-last-trained">
+						<ListRow
+							label="Last trained"
 							value={
 								stats.lastTrained.charAt(0).toUpperCase() +
 								stats.lastTrained.slice(1)
 							}
-							testId="stat-last-trained"
 						/>
 					</div>
-				</div>
+				</ListGroup>
 			)}
 
-			{filteredSessions.length === 0 ? (
-				<div className="section-box">
-					<div className="section-body strength-no-data">
-						<p>No sessions in selected range.</p>
-						<p className="strength-empty-hint">
-							Try a longer range like 6M or All.
-						</p>
-					</div>
-				</div>
-			) : (
-				<div className="strength-detail-grid">
-					{/* Chart */}
-					<div className="section-box">
-						<div className="section-header">
-							<span className="section-title">Weight Progression</span>
-							<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-								PR highlighted
-							</span>
-						</div>
-						<div className="section-body">
-							<StrengthChart
-								sessions={filteredSessions}
-								prWeightLbs={stats?.prWeightLbs}
-								unit={unit}
-								toDisplay={toDisplay}
-							/>
-						</div>
-					</div>
-
-					{/* Session history */}
-					<div className="section-box">
-						<div className="section-header">
-							<span className="section-title">Session History</span>
-							<span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
-								{sortedSessions.length}{" "}
-								{sortedSessions.length === 1 ? "session" : "sessions"}
-							</span>
-						</div>
-						<div className="section-body" style={{ padding: 0 }}>
-							<div className="strength-table-wrap">
-								<table
-									className="strength-table"
-									data-testid="session-history-table"
+			{sortedSessions.length > 0 && (
+				<ListGroup
+					header={
+						<>
+							<span>Sessions</span>
+							<span>{sortedSessions.length}</span>
+						</>
+					}
+				>
+					<div data-testid="session-history-table">
+						{sortedSessions.map((s) => {
+							const isPR =
+								stats &&
+								Number(s.maxWeightLbs) === stats.prWeightLbs &&
+								s.sessionDate === stats.prDate;
+							return (
+								<div
+									key={`${s.sessionDate}-${s.maxWeightLbs}`}
+									className={"ios-row" + (isPR ? " strength-pr-row" : "")}
 								>
-									<thead>
-										<tr>
-											<th>Date</th>
-											<th>Max Weight</th>
-											<th>Sets</th>
-											<th>Rep Scheme</th>
-										</tr>
-									</thead>
-									<tbody>
-										{sortedSessions.map((s) => {
-											const isPR =
-												stats &&
-												Number(s.maxWeightLbs) === stats.prWeightLbs &&
-												s.sessionDate === stats.prDate;
-											return (
-												<tr
-													key={`${s.sessionDate}-${s.maxWeightLbs}`}
-													className={isPR ? "strength-pr-row" : ""}
-												>
-													<td>{s.sessionDate}</td>
-													<td className="strength-cell-weight">
-														{toDisplay(Number(s.maxWeightLbs))} {unit}
-														{isPR && (
-															<span className="strength-pr-tag">PR</span>
-														)}
-													</td>
-													<td>{s.setCount}</td>
-													<td className="strength-cell-reps">{s.repScheme}</td>
-												</tr>
-											);
-										})}
-									</tbody>
-								</table>
-							</div>
-						</div>
+									<span className="ios-row-text">
+										<span className="ios-row-label">
+											{formatDate(s.sessionDate)}
+											{isPR && <span className="strength-pr-tag">PR</span>}
+										</span>
+									</span>
+									<span className="ios-row-value">
+										{toDisplay(Number(s.maxWeightLbs))} {unit} · {s.repScheme}
+									</span>
+								</div>
+							);
+						})}
 					</div>
-				</div>
+				</ListGroup>
 			)}
 		</div>
 	);
@@ -382,7 +365,7 @@ function LiftDetail({ exercise, rangeDays, unit, toDisplay }) {
 export default function Strength() {
 	// Cached, so reopening the page shows the last data while it refreshes.
 	const { data: progressData, loading, error } = useFetch("/progress/strength");
-	const [selectedName, setSelectedName] = useState(null);
+	const [openName, setOpenName] = useState(null);
 	const [rangeKey, setRangeKey] = useState("3M");
 	const [sortKey, setSortKey] = useState("recent");
 	const [savedChosen, setSavedChosen] = useState(() => loadChosen(STORAGE_KEY));
@@ -413,25 +396,40 @@ export default function Strength() {
 		);
 	}, [lifts, chosenNames, sortKey]);
 
-	const activeName = cards.some((c) => c.name === selectedName)
-		? selectedName
-		: (cards[0]?.name ?? null);
+	// Opening or leaving a lift starts at the top, like pushing a screen.
+	function openLift(name) {
+		setOpenName(name);
+		window.scrollTo(0, 0);
+	}
 
-	const active = useMemo(
-		() => progressData.find((e) => e.exerciseName === activeName) ?? null,
-		[progressData, activeName],
+	const opened = useMemo(
+		() => progressData.find((e) => e.exerciseName === openName) ?? null,
+		[progressData, openName],
 	);
 
 	if (loading)
 		return <div className="loading-state">Loading strength data…</div>;
 	if (error) return <div className="error-state">Error: {error}</div>;
 
+	if (opened) {
+		return (
+			<div className="strength-page">
+				<LiftDetail
+					exercise={opened}
+					rangeKey={rangeKey}
+					onRange={setRangeKey}
+					unit={unit}
+					toDisplay={toDisplay}
+					onBack={() => openLift(null)}
+				/>
+			</div>
+		);
+	}
+
 	if (!lifts.length) {
 		return (
 			<div className="strength-page">
-				<div className="strength-header">
-					<h1>Strength</h1>
-				</div>
+				<PageHeader title="Progress" />
 				<div className="strength-empty">
 					<p>No strength data logged yet.</p>
 					<p className="strength-empty-hint">
@@ -450,82 +448,63 @@ export default function Strength() {
 
 	return (
 		<div className="strength-page">
-			<div className="strength-header">
-				<div className="strength-title">
-					<h1>Strength</h1>
-					<p>
-						{cards.length} {cards.length === 1 ? "lift" : "lifts"} ·{" "}
-						{RANGE_WORDS[rangeKey]}
-					</p>
-				</div>
-				<div className="strength-controls">
-					<div
-						className="strength-range-buttons"
-						role="group"
-						aria-label="Sort lifts"
-					>
-						{SORTS.map((o) => (
-							<button
-								key={o.key}
-								type="button"
-								aria-pressed={sortKey === o.key}
-								className={
-									"strength-range-btn" +
-									(sortKey === o.key ? " strength-range-btn-active" : "")
-								}
-								onClick={() => setSortKey(o.key)}
-							>
-								{o.label}
-							</button>
-						))}
-					</div>
-					<RangeSelector
-						classPrefix="strength"
-						activeKey={rangeKey}
-						onSelect={setRangeKey}
-					/>
-					<button
-						type="button"
-						className="btn btn-sm btn-primary strength-choose-btn"
-						onClick={() => setChoosing(true)}
-					>
-						Choose lifts
-						<span className="strength-choose-count">
-							{cards.length} of {lifts.length}
-						</span>
+			<PageHeader
+				title="Progress"
+				subtitle={`Best set per session · ${RANGE_WORDS[rangeKey]}`}
+				leading={
+					<button type="button" onClick={() => setChoosing(true)}>
+						Edit
 					</button>
-				</div>
-			</div>
+				}
+				trailing={
+					<PullDownMenu
+						label="Sort and range"
+						buttonLabel=""
+						icon={<ListFilter size={22} aria-hidden="true" />}
+						sections={[
+							{
+								title: "Sort by",
+								options: SORTS.map((o) => ({ value: o.key, label: o.label })),
+								value: sortKey,
+								onChange: setSortKey,
+							},
+							{
+								title: "Range",
+								options: RANGE_OPTIONS.map((r) => ({
+									value: r.key,
+									label: RANGE_MENU_LABELS[r.key],
+								})),
+								value: rangeKey,
+								onChange: setRangeKey,
+							},
+						]}
+					/>
+				}
+			/>
 
 			{cards.length === 0 ? (
 				<div className="strength-empty">
 					<p>No lifts chosen.</p>
 					<p className="strength-empty-hint">
-						Use Choose lifts to pick the exercises to track here.
+						Tap Edit to pick the exercises to track here.
 					</p>
 				</div>
 			) : (
-				<div className="lift-grid" data-testid="lift-grid">
-					{cards.map((lift) => (
-						<LiftCard
-							key={lift.name}
-							lift={lift}
-							active={lift.name === activeName}
-							rangeLabel={rangeKey}
-							unit={unit}
-							onSelect={setSelectedName}
-						/>
-					))}
-				</div>
-			)}
-
-			{active && (
-				<LiftDetail
-					exercise={active}
-					rangeDays={rangeDays}
-					unit={unit}
-					toDisplay={toDisplay}
-				/>
+				<ListGroup
+					footer={`${cards.length} of ${lifts.length} lifts shown. Tap Edit to choose which appear.`}
+				>
+					<div className="lift-list" data-testid="lift-grid">
+						{cards.map((lift) => (
+							<LiftRow
+								key={lift.name}
+								lift={lift}
+								rangeLabel={rangeKey}
+								unit={unit}
+								onOpen={openLift}
+							/>
+						))}
+					</div>
+				</ListGroup>
 			)}
 
 			{choosing && (

@@ -1,3 +1,4 @@
+import { CirclePlus } from "lucide-react";
 import { useState } from "react";
 import { useDayActions } from "../hooks/useDayActions";
 import useWeightUnit from "../hooks/useWeightUnit";
@@ -323,7 +324,8 @@ export default function DayDetail({
 								className="status-add-chip"
 								onClick={addWorkout}
 							>
-								{canAppendExercise ? "+ Add exercise" : "+ Add workout"}
+								<CirclePlus size={20} aria-hidden="true" />
+								{canAppendExercise ? "Add exercise" : "Add workout"}
 							</button>
 						</div>
 					</div>

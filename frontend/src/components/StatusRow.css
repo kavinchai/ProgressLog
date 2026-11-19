@@ -72,7 +72,7 @@
 }
 
 .status-rows > * + * {
-	border-top: 1px solid var(--border-dim);
+	border-top: 0.5px solid var(--border);
 }
 
 .status-rows > .status-add-row,
@@ -86,18 +86,23 @@
 }
 
 .status-rows-footer {
-	padding: 10px 16px 14px;
+	padding: 0;
 }
 
+/* "Add exercise" / "Add meal": an accent row at the end of the list. */
 .status-add-chip {
-	padding: 6px 14px;
-	border: 1px solid var(--border);
-	border-radius: 999px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	min-height: 44px;
+	padding: 10px 16px;
+	border: none;
 	background: transparent;
 	color: var(--accent);
 	font-family: var(--font);
-	font-size: var(--fs-sm);
-	font-weight: var(--fw-semibold);
+	font-size: 1rem;
+	text-align: left;
 	cursor: pointer;
 }
 

@@ -8,7 +8,7 @@ public class EditExerciseModal {
 
     private static final String TITLE = ".modal-title";
     private static final String SAVE = ".modal-box >> button:text-is(\"Save\")";
-    private static final String DELETE = ".modal-box >> button:has-text(\"Delete\")";
+    private static final String DELETE = ".modal-box >> button:text-is(\"Delete exercise\")";
 
     public EditExerciseModal(Page page) {
         this.page = page;
@@ -24,7 +24,7 @@ public class EditExerciseModal {
     }
 
     public void editWeight(int setIdx, String weight) {
-        page.locator(".modal-box .wbm-set-row .wbm-set-input").nth(setIdx * 2).fill(weight);
+        page.locator(".modal-box .sheet-set-row .sheet-set-input").nth(setIdx * 2).fill(weight);
     }
 
     public void save() {
@@ -33,11 +33,11 @@ public class EditExerciseModal {
 
     /**
      * Delete the exercise via the inline confirmation flow:
-     * click "Delete Exercise" → click "Confirm Delete" → click "Done".
+     * click "Delete exercise" → click "Confirm delete" → click "Done".
      */
     public void deleteExercise() {
         page.locator(DELETE).first().click();
-        page.locator(".modal-box >> button:has-text(\"Confirm Delete\")").click();
+        page.locator(".modal-box >> button:text-is(\"Confirm delete\")").click();
         Locator done = page.locator(".modal-box >> button:has-text(\"Done\")");
         done.waitFor(new Locator.WaitForOptions().setTimeout(30000));
         done.click();

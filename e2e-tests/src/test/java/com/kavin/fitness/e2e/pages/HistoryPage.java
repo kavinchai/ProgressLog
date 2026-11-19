@@ -10,15 +10,17 @@ import com.microsoft.playwright.options.WaitForSelectorState;
 public class HistoryPage {
     private final Page page;
 
-    private static final String PAGE_TABS = ".page-tabs .page-tab";
-    private static final String ACTIVE_TAB = ".page-tabs .page-tab-active";
-    // The header row, which every Weekly layout renders.
-    private static final String WEEKLY_TITLE = ".weekly-page .history-head";
-    private static final String TOTAL_TITLE = ".total-page .history-title";
+    // Week | Month segmented control under the large title.
+    private static final String PAGE_TABS = "[role='group'][aria-label='History views'] button";
+    private static final String ACTIVE_TAB = PAGE_TABS + "[aria-pressed='true']";
+    // The date range above the tiles ("Nov 15 – 21"), which every Weekly layout renders.
+    private static final String WEEKLY_TITLE = ".weekly-page .ios-period-title";
+    // The month title button ("November 2026").
+    private static final String TOTAL_TITLE = ".total-page .history-title-btn";
     private static final String DAY_CARDS = ".week-strip .week-day";
     private static final String DAY_PANEL = "section[aria-label='Selected day']";
     private static final String CALENDAR_CELLS = "[data-testid^='calendar-day-']";
-    private static final String MONTH_NAV = ".month-nav";
+    private static final String MONTH_NAV = ".total-page .ios-period-nav";
     private static final String MONTH_PICKER = ".month-picker";
 
     public HistoryPage(Page page) {
@@ -43,20 +45,16 @@ public class HistoryPage {
         page.locator(WEEKLY_TITLE).waitFor();
     }
 
-    /** The "Week of …" title text, or "" if it isn't shown. */
+    /** The week's date range title ("Nov 15 – 21"), or "" if it isn't shown. */
     public String getWeeklyHeading() {
-        Locator title = page.locator(".weekly-page .history-title");
+        Locator title = page.locator(WEEKLY_TITLE);
         return awaitVisible(title) ? title.innerText() : "";
     }
 
     /** True when the title's full text fits (not cut off with an ellipsis). */
     public boolean isWeeklyHeadingUntruncated() {
-        return (Boolean) page.locator(".weekly-page .history-title")
+        return (Boolean) page.locator(WEEKLY_TITLE)
                 .evaluate("el => el.scrollWidth <= el.clientWidth");
-    }
-
-    public boolean isWeeklyRangeLabelVisible() {
-        return page.locator(".weekly-page .history-nav-label").isVisible();
     }
 
     /**
@@ -92,7 +90,7 @@ public class HistoryPage {
     }
 
     public void clickTab(String label) {
-        page.locator("nav.page-tabs a", new Page.LocatorOptions().setHasText(label)).click();
+        page.locator(PAGE_TABS, new Page.LocatorOptions().setHasText(label)).click();
     }
 
     private Locator button(String name) {
@@ -124,7 +122,7 @@ public class HistoryPage {
     }
 
     public void clickAddExerciseInDayPanel() {
-        page.locator(DAY_PANEL + " .status-add-chip:text-is(\"+ Add exercise\")").click();
+        page.locator(DAY_PANEL + " .status-add-chip:text-is(\"Add exercise\")").click();
     }
 
     public boolean dayPanelContains(String text) {
@@ -133,7 +131,9 @@ public class HistoryPage {
 
     /** Waits until the selected-day panel's header reads e.g. "Wed 10/28". */
     public void waitForDayPanelTitle(String title) {
-        assertThat(page.locator(DAY_PANEL + " .history-day-panel-title")).hasText(title);
+        // Weekly: the day's header above its card; Total: the panel's own title.
+        assertThat(page.locator(DAY_PANEL + " .ios-section-header > span:first-child, "
+                + DAY_PANEL + " .history-day-panel-title").first()).hasText(title);
     }
 
     public boolean isChartVisible(String title) {
@@ -157,8 +157,9 @@ public class HistoryPage {
         }
     }
 
+    /** "This week · …" under the date range, shown only on the current week. */
     private Locator thisWeekPill() {
-        return page.locator(".weekly-page .history-pill",
+        return page.locator(".weekly-page .ios-period-sub",
                 new Page.LocatorOptions().setHasText("This week"));
     }
 
@@ -198,8 +199,9 @@ public class HistoryPage {
                 .waitFor();
     }
 
+    /** Total: the stat tiles pick what colors the calendar ("Steps", "Workouts", …). */
     public void selectHeatmapMetric(String metric) {
-        page.locator("[aria-label='Color days by'] button", new Page.LocatorOptions().setHasText(metric))
+        page.locator("[role='group'][aria-label='Color days by'] button[aria-label='" + metric + "']")
                 .click();
     }
 
@@ -213,9 +215,9 @@ public class HistoryPage {
         page.locator(DAY_CARDS + "[aria-label='" + shortDate + "']").click();
     }
 
-    /** Weekly on phones shows one chart at a time, picked by this switch. */
+    /** Weekly shows one chart at a time, picked by tapping a stat tile. */
     public void selectWeeklyChart(String label) {
-        page.locator("[aria-label='Chart'] button", new Page.LocatorOptions().setHasText(label))
+        page.locator("[role='group'][aria-label='Chart'] button[aria-label='" + label + "']")
                 .click();
     }
 
@@ -227,12 +229,6 @@ public class HistoryPage {
     public void waitForChartHidden(String title) {
         assertThat(page.locator("section.history-chart-card[aria-label='" + title + "']"))
                 .isHidden();
-    }
-
-    /** Total on phones picks the heatmap metric with a dropdown. */
-    public void selectHeatmapMetricOnPhone(String value) {
-        page.getByRole(AriaRole.COMBOBOX, new Page.GetByRoleOptions().setName("Color days by"))
-                .selectOption(value);
     }
 
     private Locator daySheet(String title) {

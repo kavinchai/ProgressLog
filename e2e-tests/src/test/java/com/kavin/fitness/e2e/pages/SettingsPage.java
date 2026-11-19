@@ -13,7 +13,7 @@ import com.microsoft.playwright.options.WaitForSelectorState;
 public class SettingsPage {
     private final Page page;
 
-    private static final String PAGE_TITLE = ".settings-title";
+    private static final String PAGE_TITLE = ".settings-page .ios-large-title";
     private static final String GOALS_ROW = "button.settings-row-button:has-text(\"Calorie & protein goals\")";
     private static final String TRAINING_INPUT = "#calorieTargetTraining";
     private static final String REST_INPUT = "#calorieTargetRest";
