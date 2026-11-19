@@ -169,6 +169,7 @@ export default function Login() {
 		<div className="login-page">
 			<div className="login-card">
 				<div className="login-inner">
+					<img className="login-icon" src="/favicon.svg" alt="" />
 					<div className="login-title">Progress Logger</div>
 					<div className="login-divider">
 						{isSignup ? "Create your account" : "Welcome back"}
@@ -191,61 +192,64 @@ export default function Login() {
 					<form className="login-form" onSubmit={handleSubmit}>
 						{error && <div className="login-error">{error}</div>}
 
-						<div className="login-field">
-							<label htmlFor="username">Username</label>
-							<input
-								id="username"
-								type="text"
-								className="login-input"
-								placeholder="Enter your username"
-								value={username}
-								onChange={(e) => setUsername(e.target.value)}
-								required
-								autoComplete="username"
-								autoCapitalize="none"
-								autoCorrect="off"
-								spellCheck={false}
-							/>
-						</div>
-
-						{isSignup && (
+						<div className="login-group">
 							<div className="login-field">
-								<label htmlFor="email">Email</label>
+								<label htmlFor="username">Username</label>
 								<input
-									id="email"
-									type="email"
+									id="username"
+									type="text"
 									className="login-input"
-									placeholder="you@example.com"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
+									placeholder="Required"
+									value={username}
+									onChange={(e) => setUsername(e.target.value)}
 									required
-									autoComplete="email"
+									autoComplete="username"
+									autoCapitalize="none"
+									autoCorrect="off"
+									spellCheck={false}
 								/>
 							</div>
-						)}
 
-						<div className="login-field">
-							<label htmlFor="password">Password</label>
-							<input
-								id="password"
-								type="password"
-								className="login-input"
-								placeholder="Enter your password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								required
-								autoComplete={isSignup ? "new-password" : "current-password"}
-							/>
+							{isSignup && (
+								<div className="login-field">
+									<label htmlFor="email">Email</label>
+									<input
+										id="email"
+										type="email"
+										className="login-input"
+										placeholder="you@example.com"
+										value={email}
+										onChange={(e) => setEmail(e.target.value)}
+										required
+										autoComplete="email"
+									/>
+								</div>
+							)}
+
+							<div className="login-field">
+								<label htmlFor="password">Password</label>
+								<input
+									id="password"
+									type="password"
+									className="login-input"
+									placeholder="Required"
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									required
+									autoComplete={isSignup ? "new-password" : "current-password"}
+								/>
+							</div>
 						</div>
 
-						<label className="login-remember" htmlFor="remember-me">
+						<label className="login-remember login-group" htmlFor="remember-me">
+							Keep me signed in
 							<input
 								id="remember-me"
 								type="checkbox"
+								role="switch"
 								checked={rememberMe}
 								onChange={(e) => setRememberMe(e.target.checked)}
 							/>
-							Keep me signed in
 						</label>
 
 						<button className="login-btn" type="submit" disabled={loading}>
