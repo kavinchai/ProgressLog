@@ -9,7 +9,6 @@ import useWeightUnit from "../hooks/useWeightUnit";
 import DayDetail from "../components/DayDetail";
 import Modal from "../components/Modal";
 import useMediaQuery, { MOBILE_QUERY } from "../hooks/useMediaQuery";
-import RangeSelector from "../components/RangeSelector";
 import {
 	DailyBarChart,
 	WeightTrendChart,
@@ -17,7 +16,7 @@ import {
 } from "../components/HistoryCharts";
 import { localDateStr, formatDate, shortDate } from "../utils/date";
 import { buildDayRows } from "../utils/stats";
-import { rangeDaysFor } from "../utils/dateRange";
+import { RANGE_OPTIONS, rangeDaysFor } from "../utils/dateRange";
 import {
 	datesBetween,
 	summarize,
@@ -25,7 +24,7 @@ import {
 	workoutCountsByDate,
 	shadeAlpha,
 } from "../utils/history";
-import { PeriodNav, StatTile } from "../components/ios/Ios";
+import { PeriodNav, SegmentedControl, StatTile } from "../components/ios/Ios";
 import useSwipe from "../hooks/useSwipe";
 import "./WeeklyStats.css";
 import "./TotalStats.css";
@@ -565,14 +564,14 @@ export default function TotalStats() {
 				</section>
 			)}
 
-			<h2 className="history-section-title">
-				Trends
-				<RangeSelector
-					classPrefix="history"
-					activeKey={range}
-					onSelect={setRange}
-				/>
-			</h2>
+			<h2 className="ios-section-header history-trends-title">Trends</h2>
+			<SegmentedControl
+				label="Time range"
+				className="history-trends-range"
+				options={RANGE_OPTIONS.map((r) => ({ value: r.key, label: r.label }))}
+				value={range}
+				onChange={setRange}
+			/>
 			<div className="history-charts history-charts--stacked">
 				<WeightTrendChart title="Weight trend" data={weightTrend} unit={unit} />
 				<DailyBarChart

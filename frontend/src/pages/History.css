@@ -235,16 +235,6 @@
 	font-weight: var(--fw-bold);
 }
 
-.history-section-title {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: var(--space-sm) 12px;
-	margin: 0 0 var(--space-md);
-	font-size: var(--fs-lg);
-	font-weight: var(--fw-bold);
-}
-
 /* Workout consistency grid */
 .history-grid-wrap {
 	overflow-x: auto;
@@ -433,44 +423,6 @@
 	border-radius: 3px;
 }
 
-.history-range-row {
-	display: flex;
-	align-items: center;
-	gap: var(--space-sm);
-}
-
-.history-range-label {
-	font-size: var(--fs-sm);
-	color: var(--muted);
-}
-
-.history-range-buttons {
-	display: inline-flex;
-	gap: 2px;
-	padding: 3px;
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-md);
-}
-
-.history-range-btn {
-	min-height: 30px;
-	padding: 4px 12px;
-	font-family: var(--font);
-	font-size: var(--fs-sm);
-	color: var(--muted);
-	background: transparent;
-	border: none;
-	border-radius: var(--radius-sm);
-	cursor: pointer;
-}
-
-.history-range-btn-active {
-	color: var(--accent);
-	background: var(--accent-light);
-	font-weight: var(--fw-semibold);
-}
-
 /* ── Tablet ── */
 @media (max-width: 960px) {
 	
@@ -621,4 +573,19 @@
 
 .weekly-page .history-day-panel-body {
 	padding: 0;
+}
+
+/* Weekly shows one chart at a time, at full width. */
+.weekly-page .history-charts {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+/* Trends: section header, then the range control above the charts. */
+.history-trends-title {
+	margin: 22px 0 0;
+	padding-left: 16px;
+}
+
+.history-trends-range {
+	margin: 0 0 var(--space-md);
 }
