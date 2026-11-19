@@ -214,7 +214,7 @@ describe("TotalStats — workout metric", () => {
 
 	it("labels training days with the session name and set count", async () => {
 		render(<TotalStats />);
-		await userEvent.click(screen.getByRole("button", { name: "Workout" }));
+		await userEvent.click(screen.getByRole("button", { name: "Workouts" }));
 		const c = cell("2026-04-10");
 		expect(within(c).getByText("Push Day")).toBeInTheDocument();
 		expect(within(c).getByText("3 sets")).toBeInTheDocument();
@@ -228,7 +228,7 @@ describe("TotalStats — workout metric", () => {
 		await userEvent.click(cell("2026-04-10"));
 		expect(screen.getByTestId("day-detail").dataset.workoutOnly).toBe("false");
 
-		await userEvent.click(screen.getByRole("button", { name: "Workout" }));
+		await userEvent.click(screen.getByRole("button", { name: "Workouts" }));
 		expect(screen.getByTestId("day-detail").dataset.workoutOnly).toBe("true");
 	});
 
@@ -253,20 +253,17 @@ describe("TotalStats — workout metric", () => {
 			refetch: vi.fn(),
 		});
 		render(<TotalStats />);
-		await userEvent.click(screen.getByRole("button", { name: "Workout" }));
+		await userEvent.click(screen.getByRole("button", { name: "Workouts" }));
 		const c = cell("2026-04-10");
 		expect(within(c).getByText("1 set")).toBeInTheDocument();
 		expect(c).toHaveAccessibleName("Fri 4/10: Workout Push Day");
 	});
 
-	it("is offered in the phone dropdown too", async () => {
+	it("is offered on phones too", async () => {
 		useMediaQuery.mockReturnValue(true);
 		try {
 			render(<TotalStats />);
-			await userEvent.selectOptions(
-				screen.getByRole("combobox", { name: /color days by/i }),
-				"workout",
-			);
+			await userEvent.click(screen.getByRole("button", { name: "Workouts" }));
 			expect(
 				within(cell("2026-04-10")).getByText("Push Day"),
 			).toBeInTheDocument();
@@ -333,14 +330,12 @@ describe("TotalStats — selected day panel", () => {
 describe("TotalStats — month summary", () => {
 	it("summarises the active month", () => {
 		render(<TotalStats />);
-		expect(
-			within(screen.getByRole("group", { name: /avg calories/i })).getByText(
-				"2,400",
-			),
-		).toBeInTheDocument();
-		expect(
-			within(screen.getByRole("group", { name: /workouts/i })).getByText("1"),
-		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Calories" })).toHaveTextContent(
+			"2,400",
+		);
+		expect(screen.getByRole("button", { name: "Workouts" })).toHaveTextContent(
+			/^Workouts1/,
+		);
 	});
 });
 
@@ -378,15 +373,12 @@ describe("TotalStats — phones", () => {
 		useMediaQuery.mockReturnValue(false);
 	});
 
-	it("uses a dropdown instead of buttons to pick the heatmap metric", async () => {
+	it("picks the heatmap metric from the stat tiles", async () => {
 		render(<TotalStats />);
 		expect(
-			screen.queryByRole("group", { name: /color days by/i }),
+			screen.queryByRole("combobox", { name: /color days by/i }),
 		).not.toBeInTheDocument();
-		await userEvent.selectOptions(
-			screen.getByRole("combobox", { name: /color days by/i }),
-			"steps",
-		);
+		await userEvent.click(screen.getByRole("button", { name: "Steps" }));
 		expect(within(cell("2026-04-10")).getByText("8,500")).toBeInTheDocument();
 	});
 
@@ -492,10 +484,12 @@ describe("TotalStats — period header", () => {
 		expect(screen.getByText("This month")).toBeInTheDocument();
 	});
 
-	it("shows the month between the arrows as plain text, not a button", () => {
+	it("names the month once, in the title button", () => {
 		render(<TotalStats />);
-		const label = screen.getByText("Apr 2026");
-		expect(label.closest("button")).toBeNull();
+		expect(screen.queryByText("Apr 2026")).toBeNull();
+		expect(
+			screen.getByRole("button", { name: /april 2026/i }),
+		).toBeInTheDocument();
 	});
 
 	it("opens a year and month picker from the title and jumps to the chosen month", async () => {
@@ -521,7 +515,9 @@ describe("TotalStats — period header", () => {
 		withMarchData();
 		render(<TotalStats />);
 		await userEvent.click(screen.getByRole("button", { name: /prev/i }));
-		expect(screen.getByText("Mar 2026")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /march 2026/i }),
+		).toBeInTheDocument();
 		expect(screen.queryByText("This month")).toBeNull();
 	});
 
@@ -570,9 +566,9 @@ describe("TotalStats — steps goal", () => {
 		mockGoals.stepsTarget = 7500;
 		try {
 			render(<TotalStats />);
-			expect(
-				screen.getByRole("group", { name: "Avg steps" }),
-			).toHaveTextContent("goal 7,500");
+			expect(screen.getByRole("button", { name: "Steps" })).toHaveTextContent(
+				"goal 7,500",
+			);
 		} finally {
 			delete mockGoals.stepsTarget;
 		}

@@ -1120,10 +1120,11 @@ describe("Settings — privacy / data sharing", () => {
 	it("toggle starts as Off when shareData is false", async () => {
 		setupProfile();
 		renderSettings();
-		await waitFor(() => {
-			const offLabel = screen.getAllByText(/^off$/i);
-			expect(offLabel.length).toBeGreaterThan(0);
-		});
+		await waitFor(() =>
+			expect(
+				screen.getByRole("button", { name: "Toggle data sharing" }),
+			).toHaveAttribute("aria-pressed", "false"),
+		);
 	});
 
 	it("clicking the toggle calls PUT /profile/privacy with shareData true", async () => {
@@ -1180,10 +1181,11 @@ describe("Settings — privacy / data sharing", () => {
 		setupProfile();
 		renderSettings();
 
-		await waitFor(() => {
-			const onLabel = screen.getAllByText(/^on$/i);
-			expect(onLabel.length).toBeGreaterThan(0);
-		});
+		await waitFor(() =>
+			expect(
+				screen.getByRole("button", { name: "Toggle data sharing" }),
+			).toHaveAttribute("aria-pressed", "true"),
+		);
 	});
 
 	it("shows the Share Calendar label", async () => {

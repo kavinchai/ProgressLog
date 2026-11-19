@@ -3,7 +3,7 @@
  *
  * Mirrors Today: rows tap to edit and swipe (or ••• on the website) to delete,
  * with an Undo bar. When a single workout session already exists for the day,
- * "+ Add exercise" appends to that session (existingSession +
+ * "Add exercise" appends to that session (existingSession +
  * appendBlankExercise) rather than creating a brand-new workout.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -220,7 +220,7 @@ describe("DayDetail — workout add", () => {
 	it("appends an exercise to the existing single session", async () => {
 		renderDetail(SINGLE_SESSION);
 		await userEvent.click(
-			screen.getByRole("button", { name: /\+ Add exercise/i }),
+			screen.getByRole("button", { name: /^Add exercise/i }),
 		);
 		const modal = screen.getByTestId("workout-modal");
 		expect(modal.dataset.existingSessionId).toBe("10");
@@ -229,7 +229,7 @@ describe("DayDetail — workout add", () => {
 
 	it("falls back to creating a new workout when the day has multiple sessions", async () => {
 		renderDetail(MULTI_SESSION);
-		const add = screen.getByRole("button", { name: "+ Add workout" });
+		const add = screen.getByRole("button", { name: "Add workout" });
 		expect(add).toHaveClass("status-add-chip");
 		await userEvent.click(add);
 		const modal = screen.getByTestId("workout-modal");
@@ -255,7 +255,7 @@ describe("DayDetail — exercise rows", () => {
 		renderDetail({ ...SINGLE_SESSION, exerciseSets: [] });
 		expect(screen.getByText("No exercises yet")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "+ Add exercise" }),
+			screen.getByRole("button", { name: "Add exercise" }),
 		).toBeInTheDocument();
 	});
 
@@ -448,7 +448,7 @@ describe("DayDetail — tap, swipe and ••• menus", () => {
 		renderWith();
 		expect(screen.queryByText("No workout")).not.toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /\+ Add exercise/i }),
+			screen.getByRole("button", { name: /^Add exercise/i }),
 		).toBeInTheDocument();
 	});
 

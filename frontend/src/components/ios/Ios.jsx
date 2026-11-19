@@ -157,7 +157,7 @@ export function PullDownMenu({ label, buttonLabel, icon, sections, className = "
 				ref={triggerRef}
 				type="button"
 				className={"ios-pulldown " + className}
-				aria-label={label}
+				aria-label={buttonLabel ? `${label}: ${buttonLabel}` : label}
 				aria-haspopup="menu"
 				aria-expanded={open}
 				onClick={() => setOpen(!open)}

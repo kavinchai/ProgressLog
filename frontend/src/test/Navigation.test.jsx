@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { BrowserRouter } from "react-router-dom";
 import { render, screen, within } from "@testing-library/react";
 import Sidebar from "../components/layout/Sidebar";
-import Navbar from "../components/layout/Navbar";
 import BottomTabBar from "../components/layout/BottomTabBar";
 import useAuthStore from "../store/authStore";
 
@@ -101,34 +100,14 @@ describe("main navigation", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("mobile top bar is just the brand (theme and log out live in Settings)", () => {
-		render(
-			<BrowserRouter>
-				<Navbar />
-			</BrowserRouter>,
-		);
-
-		expect(screen.getByText("Progress Logger")).toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: "Menu" }),
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /dark|light/i }),
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: "Log out" }),
-		).not.toBeInTheDocument();
-	});
-
-	it("shows the anvil logo mark next to the brand in the sidebar and top bar", () => {
+	it("shows the anvil logo mark next to the brand in the sidebar", () => {
 		const { container } = render(
 			<BrowserRouter>
 				<Sidebar />
-				<Navbar />
 			</BrowserRouter>,
 		);
 
-		for (const selector of [".sidebar-logo", ".navbar-brand"]) {
+		for (const selector of [".sidebar-logo"]) {
 			const mark = container.querySelector(`${selector} img.brand-mark`);
 			expect(mark).toHaveAttribute("src", "/favicon.svg");
 			// Decorative: the brand name next to it is the accessible label.

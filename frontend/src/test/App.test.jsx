@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import App from "../App";
 import useAuthStore from "../store/authStore";
 import useNetworkStore from "../store/networkStore";
@@ -30,9 +30,6 @@ vi.mock("../pages/PrivacyPolicy", () => ({
 }));
 vi.mock("../components/layout/Sidebar", () => ({
 	default: () => <nav>Sidebar</nav>,
-}));
-vi.mock("../components/layout/Navbar", () => ({
-	default: () => <nav>Navbar</nav>,
 }));
 vi.mock("../components/layout/BottomTabBar", () => ({
 	default: () => <nav>BottomTabBar</nav>,
@@ -95,7 +92,6 @@ describe("App routing — unauthenticated", () => {
 		window.history.pushState({}, "", "/");
 		render(<App />);
 		expect(screen.queryByText("Sidebar")).not.toBeInTheDocument();
-		expect(screen.queryByText("Navbar")).not.toBeInTheDocument();
 		expect(screen.queryByText("BottomTabBar")).not.toBeInTheDocument();
 	});
 });
@@ -105,10 +101,9 @@ describe("App routing — authenticated", () => {
 		useAuthStore.setState({ authenticated: true, username: "alice" });
 	});
 
-	it("shows the app layout (Sidebar + Navbar + BottomTabBar) when authenticated", () => {
+	it("shows the app layout (Sidebar + BottomTabBar, no top brand bar) when authenticated", () => {
 		render(<App />);
 		expect(screen.getByText("Sidebar")).toBeInTheDocument();
-		expect(screen.getByText("Navbar")).toBeInTheDocument();
 		expect(screen.getByText("BottomTabBar")).toBeInTheDocument();
 	});
 
@@ -132,14 +127,14 @@ describe("App routing — authenticated", () => {
 		window.history.pushState({}, "", "/history");
 		render(<App />);
 		expect(await screen.findByText("Weekly Stats Page")).toBeInTheDocument();
-		expect(screen.getByRole("link", { name: "Weekly" })).toHaveAttribute(
-			"href",
-			"/history/weekly",
+		const views = screen.getByRole("group", { name: "History views" });
+		expect(within(views).getByRole("button", { name: "Week" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
 		);
-		expect(screen.getByRole("link", { name: "Total" })).toHaveAttribute(
-			"href",
-			"/history/total",
-		);
+		expect(
+			within(views).getByRole("button", { name: "Month" }),
+		).toHaveAttribute("aria-pressed", "false");
 	});
 
 	it("routes History total tab to total stats", async () => {

@@ -4,7 +4,7 @@
  * 2026-05-06 is a Wednesday → this week is 2026-05-03 (Sun) to 2026-05-09 (Sat).
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WeeklyStats from "../pages/WeeklyStats";
 
@@ -178,21 +178,21 @@ describe("WeeklyStats — week navigation", () => {
 });
 
 describe("WeeklyStats — summary and charts", () => {
-	it("the Workouts tile marks each day of the week (filled = workout)", () => {
+	it("counts the week's workouts under the date range and dots the workout days", () => {
 		setup({
 			workouts: [{ id: 7, sessionDate: "2026-05-04", sessionName: "Pull" }],
 		});
 		render(<WeeklyStats />);
-		const marks = within(
-			screen.getByRole("group", { name: /workouts/i }),
-		).getAllByRole("listitem");
-		expect(marks).toHaveLength(7);
-		expect(marks[1]).toHaveAccessibleName("Mon: workout");
-		expect(marks[0]).toHaveAccessibleName("Sun: no workout");
-		expect(marks[6]).toHaveAccessibleName("Sat: upcoming");
+		expect(
+			screen.getByText("This week · 1 workout · 0 last week"),
+		).toBeInTheDocument();
+		const dots = document.querySelectorAll(".week-day-dot");
+		expect(dots).toHaveLength(7);
+		expect(dots[1]).toHaveClass("on");
+		expect(dots[0]).not.toHaveClass("on");
 	});
 
-	it("a Calories / Steps switch picks which chart shows on phones", async () => {
+	it("the stat tiles pick which chart shows", async () => {
 		vi.useRealTimers();
 		vi.useFakeTimers({
 			toFake: ["Date"],
@@ -208,8 +208,9 @@ describe("WeeklyStats — summary and charts", () => {
 		);
 		await userEvent.click(screen.getByRole("button", { name: "Steps" }));
 		expect(charts.dataset.show).toBe("steps");
-		// Both charts stay rendered; CSS shows one at a time on phones only
-		expect(screen.getAllByTestId("daily-chart")).toHaveLength(2);
+		const shown = screen.getAllByTestId("daily-chart");
+		expect(shown).toHaveLength(1);
+		expect(shown[0].dataset.title).toBe("Steps per day");
 	});
 
 	it("shows averages and how weight compares to last week", () => {
@@ -222,16 +223,15 @@ describe("WeeklyStats — summary and charts", () => {
 			workouts: [{ id: 7, sessionDate: "2026-05-04", sessionName: "Pull" }],
 		});
 		render(<WeeklyStats />);
-		const avgWeight = screen.getByRole("group", { name: /avg weight/i });
-		expect(within(avgWeight).getByText("179.5")).toBeInTheDocument();
+		const avgWeight = screen.getByRole("button", { name: "Weight" });
+		expect(avgWeight).toHaveTextContent("179.5");
+		expect(avgWeight).toHaveTextContent(/1\.5 vs last week/);
 		expect(
-			within(avgWeight).getByText(/1\.5 vs last week/),
+			screen.getByText("This week · 1 workout · 0 last week"),
 		).toBeInTheDocument();
-		const workouts = screen.getByRole("group", { name: /workouts/i });
-		expect(within(workouts).getByText("1 / 7")).toBeInTheDocument();
 	});
 
-	it("renders calories-per-day and steps-per-day charts under the day panel", () => {
+	it("charts calories per day by default and steps when picked, above the day panel", async () => {
 		setup({
 			steps: [{ id: 1, logDate: "2026-05-04", steps: 8000 }],
 			nutrition: [
@@ -246,19 +246,17 @@ describe("WeeklyStats — summary and charts", () => {
 			],
 		});
 		render(<WeeklyStats />);
-		const charts = screen.getAllByTestId("daily-chart");
-		expect(charts.map((c) => c.dataset.title)).toEqual([
-			"Calories per day",
-			"Steps per day",
-		]);
-		expect(charts[0]).toHaveTextContent("Mon:2100");
-		expect(charts[1]).toHaveTextContent("Mon:8000");
-		// Day panel comes before the charts
+		const calories = screen.getByTestId("daily-chart");
+		expect(calories.dataset.title).toBe("Calories per day");
+		expect(calories).toHaveTextContent("Mon:2100");
+		// The chart comes before the day panel
 		const panel = screen.getByTestId("day-detail");
 		expect(
-			panel.compareDocumentPosition(charts[0]) &
+			calories.compareDocumentPosition(panel) &
 				Node.DOCUMENT_POSITION_FOLLOWING,
 		).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: "Steps" }));
+		expect(screen.getByTestId("daily-chart")).toHaveTextContent("Mon:8000");
 	});
 });
 

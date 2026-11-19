@@ -246,7 +246,6 @@ export default function Login() {
 							<input
 								id="remember-me"
 								type="checkbox"
-								role="switch"
 								checked={rememberMe}
 								onChange={(e) => setRememberMe(e.target.checked)}
 							/>

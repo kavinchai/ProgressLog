@@ -52,9 +52,8 @@ describe("EditExerciseModal", () => {
 				onSaved={onSaved}
 			/>,
 		);
-		// Two set rows plus the header row = 3 rows, but we can check the set numbers
-		expect(screen.getAllByText("1")).not.toHaveLength(0);
-		expect(screen.getAllByText("2")).not.toHaveLength(0);
+		expect(screen.getByText("Set 1")).toBeInTheDocument();
+		expect(screen.getByText("Set 2")).toBeInTheDocument();
 	});
 
 	it("pre-fills weight and reps from existing sets", () => {
@@ -84,12 +83,16 @@ describe("EditExerciseModal", () => {
 				onSaved={onSaved}
 			/>,
 		);
-		const removeButtons = screen.getAllByRole("button", { name: /×/ });
+		const removeButtons = screen.getAllByRole("button", {
+			name: /^Remove set/,
+		});
 		expect(removeButtons).toHaveLength(2);
 
-		await userEvent.click(screen.getByRole("button", { name: /\+ set/i }));
+		await userEvent.click(screen.getByRole("button", { name: "Add set" }));
 
-		expect(screen.getAllByRole("button", { name: /×/ })).toHaveLength(3);
+		expect(screen.getAllByRole("button", { name: /^Remove set/ })).toHaveLength(
+			3,
+		);
 	});
 
 	it("[x] button removes a set and renumbers remaining sets", async () => {
@@ -102,11 +105,15 @@ describe("EditExerciseModal", () => {
 				onSaved={onSaved}
 			/>,
 		);
-		const removeButtons = screen.getAllByRole("button", { name: /×/ });
+		const removeButtons = screen.getAllByRole("button", {
+			name: /^Remove set/,
+		});
 		await userEvent.click(removeButtons[0]); // remove set 1
 
 		// Only set #1 should remain (renumbered from set #2)
-		expect(screen.getAllByRole("button", { name: /×/ })).toHaveLength(1);
+		expect(screen.getAllByRole("button", { name: /^Remove set/ })).toHaveLength(
+			1,
+		);
 	});
 
 	it("Cancel button calls onClose", async () => {

@@ -1,12 +1,13 @@
 /**
- * Strength page — "choose your lifts" card grid + detail.
+ * Progress (Strength) page — a list of chosen lifts and a detail screen.
  *
  * The page is structured as:
- *   1. Header: sort, time range, and a "Choose lifts" button
- *   2. A card per chosen lift (kept in localStorage; defaults to the
+ *   1. Large title with Edit (opens Choose lifts) and a sort/range menu
+ *   2. A row per chosen lift (kept in localStorage; defaults to the
  *      featured lifts the user has logged). Lifts not trained in the
- *      selected range stay on the page, dimmed.
- *   3. Detail for the selected card: stat row, chart, session history table
+ *      selected range stay in the list, dimmed.
+ *   3. Tapping a row opens the lift: big number, chart, range control,
+ *      facts and its sessions. Back returns to the list.
  *   4. "Choose lifts" dialog: every logged lift with a checkbox, search,
  *      filter chips, and lifts trained in the range listed first.
  */
@@ -86,9 +87,27 @@ async function renderLoaded(data = STRENGTH_DATA) {
 }
 
 async function openChooser() {
-	await userEvent.click(screen.getByRole("button", { name: /choose lifts/i }));
+	await userEvent.click(screen.getByRole("button", { name: "Edit" }));
 	return screen.getByRole("dialog");
 }
+
+async function openMenu() {
+	await userEvent.click(screen.getByRole("button", { name: "Sort and range" }));
+	return screen.getByRole("menu", { name: "Sort and range" });
+}
+
+async function pickFromMenu(name) {
+	const menu = await openMenu();
+	await userEvent.click(within(menu).getByRole("menuitemradio", { name }));
+}
+
+async function openLift(name) {
+	await userEvent.click(screen.getByRole("button", { name }));
+	await screen.findByRole("button", { name: /Progress/ });
+}
+
+const sessionRows = () =>
+	screen.getByTestId("session-history-table").querySelectorAll(".ios-row");
 
 beforeEach(() => {
 	vi.useFakeTimers({
@@ -146,7 +165,7 @@ describe("Strength page — chosen lift cards", () => {
 	it("defaults to the featured lifts the user has logged", async () => {
 		await renderLoaded();
 		expect(cardNames()).toEqual(["Bench Press", "Squat", "Deadlift"]);
-		expect(screen.getByText(/3 lifts/i)).toBeInTheDocument();
+		expect(screen.getByText(/3 of 5 lifts shown/i)).toBeInTheDocument();
 	});
 
 	it("falls back to the most recently trained lifts when no featured lift is logged", async () => {
@@ -170,36 +189,38 @@ describe("Strength page — chosen lift cards", () => {
 		await renderLoaded();
 		const bench = screen.getByRole("button", { name: "Bench Press" });
 		expect(bench).toHaveTextContent("155 lbs");
-		expect(bench).toHaveTextContent("+20 lbs");
+		expect(bench).toHaveTextContent("+20");
 	});
 
 	it("dims a chosen lift that was not trained in the selected range", async () => {
 		await renderLoaded();
 		const deadlift = screen.getByRole("button", { name: "Deadlift" });
-		expect(deadlift).toHaveClass("lift-card-stale");
-		expect(deadlift).toHaveTextContent(/not trained in 3M/i);
+		expect(deadlift).toHaveClass("lift-row-stale");
+		expect(deadlift.querySelector(".ios-badge")).toHaveAttribute(
+			"title",
+			expect.stringMatching(/not trained in 3M/i),
+		);
 	});
 
-	it("selects the first card by default", async () => {
+	it("opens a lift when its row is tapped, and Back returns to the list", async () => {
 		await renderLoaded();
-		expect(screen.getByRole("button", { name: "Bench Press" })).toHaveAttribute(
-			"aria-pressed",
-			"true",
-		);
-		expect(screen.getByRole("button", { name: "Squat" })).toHaveAttribute(
-			"aria-pressed",
-			"false",
-		);
+		await openLift("Bench Press");
+		expect(screen.queryByTestId("lift-grid")).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Bench Press" }),
+		).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: /Progress/ }));
+		expect(screen.getByTestId("lift-grid")).toBeInTheDocument();
 	});
 });
 
 describe("Strength page — sort", () => {
 	it("sorts by most recent by default", async () => {
 		await renderLoaded();
-		const sort = screen.getByRole("group", { name: /sort lifts/i });
+		const menu = await openMenu();
 		expect(
-			within(sort).getByRole("button", { name: "Recent" }),
-		).toHaveAttribute("aria-pressed", "true");
+			within(menu).getByRole("menuitemradio", { name: "Recent" }),
+		).toHaveAttribute("aria-checked", "true");
 		expect(cardNames()).toEqual(["Bench Press", "Squat", "Deadlift"]);
 	});
 
@@ -209,15 +230,13 @@ describe("Strength page — sort", () => {
 			JSON.stringify(["Deadlift", "Squat", "Bench Press"]),
 		);
 		await renderLoaded();
-		const sort = screen.getByRole("group", { name: /sort lifts/i });
-		await userEvent.click(within(sort).getByRole("button", { name: "Change" }));
+		await pickFromMenu("Biggest change");
 		expect(cardNames()).toEqual(["Bench Press", "Squat", "Deadlift"]);
 	});
 
-	it("sorts A–Z", async () => {
+	it("sorts by name", async () => {
 		await renderLoaded();
-		const sort = screen.getByRole("group", { name: /sort lifts/i });
-		await userEvent.click(within(sort).getByRole("button", { name: "A–Z" }));
+		await pickFromMenu("Name");
 		expect(cardNames()).toEqual(["Bench Press", "Deadlift", "Squat"]);
 	});
 });
@@ -225,6 +244,7 @@ describe("Strength page — sort", () => {
 describe("Strength page — detail for the selected lift", () => {
 	it("shows current max, sessions, improvement and last trained", async () => {
 		await renderLoaded();
+		await openLift("Bench Press");
 		expect(
 			within(screen.getByTestId("stat-current-max")).getByText(/155/),
 		).toBeInTheDocument();
@@ -239,11 +259,9 @@ describe("Strength page — detail for the selected lift", () => {
 		).toBeInTheDocument();
 	});
 
-	it("updates the detail when another card is clicked", async () => {
+	it("shows the lift that was tapped", async () => {
 		await renderLoaded();
-		const squat = screen.getByRole("button", { name: "Squat" });
-		await userEvent.click(squat);
-		expect(squat).toHaveAttribute("aria-pressed", "true");
+		await openLift("Squat");
 		expect(
 			within(screen.getByTestId("stat-current-max")).getByText(/195/),
 		).toBeInTheDocument();
@@ -257,23 +275,24 @@ describe("Strength page — detail for the selected lift", () => {
 
 	it("renders the chart", async () => {
 		await renderLoaded();
+		await openLift("Bench Press");
 		expect(await screen.findByTestId("line-chart")).toBeInTheDocument();
 	});
 
 	it("lists sessions newest first and highlights the PR row", async () => {
 		await renderLoaded();
-		const table = screen.getByTestId("session-history-table");
-		const rows = within(table).getAllByRole("row").slice(1);
+		await openLift("Bench Press");
+		const rows = sessionRows();
 		expect(rows).toHaveLength(3);
-		expect(rows[0]).toHaveTextContent("2026-04-15");
-		expect(rows[2]).toHaveTextContent("2026-04-01");
+		expect(rows[0]).toHaveTextContent("155 lbs · 5/5/5");
+		expect(rows[2]).toHaveTextContent("135 lbs · 8/8/8");
 		expect(rows[0]).toHaveClass("strength-pr-row");
 		expect(rows[2]).not.toHaveClass("strength-pr-row");
 	});
 
 	it("shows a no-sessions message for a lift not trained in the range", async () => {
 		await renderLoaded();
-		await userEvent.click(screen.getByRole("button", { name: "Deadlift" }));
+		await openLift("Deadlift");
 		expect(
 			screen.getByText(/no sessions in selected range/i),
 		).toBeInTheDocument();
@@ -296,6 +315,7 @@ const RANGED_DATA = [
 describe("Strength page — time range", () => {
 	it("renders the four range buttons with 3M selected by default", async () => {
 		await renderLoaded(RANGED_DATA);
+		await openLift("Bench Press");
 		const range = screen.getByRole("group", { name: /time range/i });
 		for (const label of ["4W", "6M", "All"]) {
 			expect(
@@ -310,6 +330,7 @@ describe("Strength page — time range", () => {
 
 	it("session stat reflects only sessions in the selected range", async () => {
 		await renderLoaded(RANGED_DATA);
+		await openLift("Bench Press");
 		const range = screen.getByRole("group", { name: /time range/i });
 		const sessions = () =>
 			within(screen.getByTestId("stat-sessions")).getByText(/\d+/).textContent;
@@ -364,7 +385,7 @@ describe("Strength page — Choose lifts dialog", () => {
 		).toHaveAccessibleName(/(today|yesterday|days ago).*lbs/);
 		await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
-		await user.click(screen.getByRole("button", { name: "All" }));
+		await pickFromMenu("All time");
 		dialog = await openChooser();
 		expect(
 			within(dialog).queryByRole("button", { name: /Trained in/ }),
@@ -433,16 +454,13 @@ describe("Strength page — Choose lifts dialog", () => {
 		expect(cardNames()).toEqual(["Bench Press", "Squat", "Deadlift"]);
 	});
 
-	it("keeps the selected card valid when it is removed", async () => {
+	it("drops a lift from the list when it is unticked", async () => {
 		await renderLoaded();
 		const dialog = await openChooser();
 		await userEvent.click(
 			within(dialog).getByRole("checkbox", { name: /Bench Press/ }),
 		);
 		await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
-		expect(screen.getByRole("button", { name: "Squat" })).toHaveAttribute(
-			"aria-pressed",
-			"true",
-		);
+		expect(cardNames()).toEqual(["Squat", "Deadlift"]);
 	});
 });

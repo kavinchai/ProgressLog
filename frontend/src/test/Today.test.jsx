@@ -373,7 +373,7 @@ describe("Today — workout display", () => {
 			screen.getByText("Workout").closest(".section-header"),
 		).not.toHaveTextContent("0 exercises");
 		expect(
-			screen.getByRole("button", { name: "+ Add exercise" }),
+			screen.getByRole("button", { name: "Add exercise" }),
 		).toBeInTheDocument();
 	});
 
@@ -641,11 +641,11 @@ describe("Today — nutrition display", () => {
 		expect(header).not.toHaveTextContent("kcal");
 	});
 
-	it("shows day type toggle button", () => {
+	it("shows the day type as a menu in the nav bar", () => {
 		setup({ nutrition: [NUTRITION_ENTRY] });
 		render(<Today />);
 		expect(
-			screen.getByRole("button", { name: /training/i }),
+			screen.getByRole("button", { name: "Day type: Training day" }),
 		).toBeInTheDocument();
 	});
 
@@ -655,12 +655,19 @@ describe("Today — nutrition display", () => {
 		expect(screen.queryByText("Day Type")).not.toBeInTheDocument();
 	});
 
-	it("labels the day-type toggle so it reads as a switch", () => {
+	it("offers Training day and Rest day in the day type menu", async () => {
 		setup({ nutrition: [NUTRITION_ENTRY] });
 		render(<Today />);
+		await userEvent.click(
+			screen.getByRole("button", { name: "Day type: Training day" }),
+		);
+		const menu = screen.getByRole("menu", { name: "Day type" });
 		expect(
-			screen.getByRole("button", { name: /training day.*switch to rest/i }),
-		).toBeInTheDocument();
+			within(menu).getByRole("menuitemradio", { name: "Training day" }),
+		).toHaveAttribute("aria-checked", "true");
+		expect(
+			within(menu).getByRole("menuitemradio", { name: "Rest day" }),
+		).toHaveAttribute("aria-checked", "false");
 	});
 });
 
@@ -709,9 +716,7 @@ describe("Today — opening modals", () => {
 	it("+ Add exercise opens the existing workout with a blank exercise appended", async () => {
 		setup({ workouts: [WORKOUT_ENTRY] });
 		render(<Today />);
-		await userEvent.click(
-			screen.getByRole("button", { name: "+ Add exercise" }),
-		);
+		await userEvent.click(screen.getByRole("button", { name: "Add exercise" }));
 		const modal = screen.getByTestId("workout-modal");
 		expect(modal).toBeInTheDocument();
 		expect(modal.dataset.existingSessionId).toBe("10");
@@ -834,7 +839,12 @@ describe("Today — delete actions", () => {
 		const { refetchNutrition } = setup({ nutrition: [NUTRITION_ENTRY] });
 		render(<Today />);
 
-		await userEvent.click(screen.getByRole("button", { name: /training/i }));
+		await userEvent.click(
+			screen.getByRole("button", { name: "Day type: Training day" }),
+		);
+		await userEvent.click(
+			screen.getByRole("menuitemradio", { name: "Rest day" }),
+		);
 
 		await waitFor(() => {
 			expect(api.post).toHaveBeenCalledWith(

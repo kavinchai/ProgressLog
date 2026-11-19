@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import Community from "../pages/Community";
@@ -199,14 +205,11 @@ describe("Community — lift board", () => {
 	it("shows featured lifts as choices, in featured order, and opens on the first", async () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		const lifts = await screen.findByRole("group", { name: "Lift" });
-		const names = within(lifts)
-			.getAllByRole("button")
-			.map((b) => b.textContent);
-		expect(names).toEqual(["Bench Press", "Squats"]);
+		await screen.findByRole("table");
+		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
 		expect(
-			within(lifts).getByRole("button", { name: "Bench Press" }),
-		).toHaveAttribute("aria-pressed", "true");
+			screen.getByRole("button", { name: "Lift: Bench Press" }),
+		).toBeInTheDocument();
 	});
 
 	it("lists the ranked lifters with their best set", async () => {
@@ -222,12 +225,7 @@ describe("Community — lift board", () => {
 		const user = userEvent.setup();
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		await user.click(
-			within(await screen.findByRole("group", { name: "Lift" })).getByRole(
-				"button",
-				{ name: "Squats" },
-			),
-		);
+		await pickLift(user, "Squats");
 		const table = screen.getByRole("table");
 		expect(within(table).getByText("405 lbs × 2")).toBeInTheDocument();
 		expect(within(table).getByLabelText("Up 1")).toBeInTheDocument();
@@ -293,15 +291,12 @@ describe("Community — lift board", () => {
 		);
 		expect(screen.getByText("You're #1")).toBeInTheDocument();
 		await user.click(screen.getByRole("button", { name: "This month" }));
-		const lifts = await screen.findByRole("group", { name: "Lift" });
-		await waitFor(() =>
-			expect(
-				within(lifts).queryByRole("button", { name: "Overhead Press" }),
-			).not.toBeInTheDocument(),
+		await waitFor(async () =>
+			expect(await liftChips()).not.toContain("Overhead Press"),
 		);
 		expect(
-			within(lifts).getByRole("button", { name: "Bench Press" }),
-		).toHaveAttribute("aria-pressed", "true");
+			screen.getByRole("button", { name: "Lift: Bench Press" }),
+		).toBeInTheDocument();
 	});
 });
 
@@ -323,10 +318,28 @@ const ME_WITH_ZERCHER = {
 	],
 };
 
-function liftChips() {
-	return within(screen.getByRole("group", { name: "Lift" }))
-		.getAllByRole("button")
+// The board's title is a menu of the chosen lifts (just a title for one).
+async function liftChips() {
+	const trigger = screen.queryByRole("button", { name: /^Lift: / });
+	if (!trigger) {
+		return [document.querySelector(".lb-card-title").textContent];
+	}
+	fireEvent.click(trigger);
+	const names = within(screen.getByRole("menu", { name: "Lift" }))
+		.getAllByRole("menuitemradio")
 		.map((b) => b.textContent);
+	fireEvent.click(trigger);
+	return names;
+}
+
+async function pickLift(user, name) {
+	await user.click(await screen.findByRole("button", { name: /^Lift: / }));
+	await user.click(
+		within(screen.getByRole("menu", { name: "Lift" })).getByRole(
+			"menuitemradio",
+			{ name },
+		),
+	);
 }
 
 describe("Community — choose lifts", () => {
@@ -334,9 +347,9 @@ describe("Community — choose lifts", () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
 		await screen.findByRole("table");
-		expect(liftChips()).toEqual(["Bench Press", "Squats"]);
+		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
 		expect(
-			screen.queryByRole("button", { name: /choose lifts/i }),
+			screen.queryByRole("button", { name: "Edit lifts" }),
 		).not.toBeInTheDocument();
 	});
 
@@ -356,9 +369,9 @@ describe("Community — choose lifts", () => {
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
 		renderCommunity();
 		await screen.findByRole("table");
-		expect(liftChips()).toEqual(["Bench Press", "Squats"]);
+		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
 		expect(
-			screen.getByRole("button", { name: /choose lifts.*2 of 3/i }),
+			screen.getByRole("button", { name: "Edit lifts" }),
 		).toBeInTheDocument();
 		expect(
 			screen.queryByRole("button", { name: /zercher squats.*#2/i }),
@@ -370,14 +383,16 @@ describe("Community — choose lifts", () => {
 		signIn();
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
 		renderCommunity();
-		await user.click(
-			await screen.findByRole("button", { name: /choose lifts/i }),
-		);
+		await user.click(await screen.findByRole("button", { name: "Edit lifts" }));
 		const dialog = screen.getByRole("dialog", { name: "Choose lifts" });
 		await user.click(within(dialog).getByLabelText(/zercher squats/i));
 		await user.click(within(dialog).getByRole("button", { name: "Done" }));
 
-		expect(liftChips()).toEqual(["Bench Press", "Squats", "Zercher Squats"]);
+		expect(await liftChips()).toEqual([
+			"Bench Press",
+			"Squats",
+			"Zercher Squats",
+		]);
 		expect(
 			screen.getByRole("button", { name: /zercher squats.*#2/i }),
 		).toBeInTheDocument();
@@ -403,7 +418,7 @@ describe("Community — choose lifts", () => {
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
 		renderCommunity();
 		await screen.findByRole("table");
-		expect(liftChips()).toEqual(["Zercher Squats"]);
+		expect(await liftChips()).toEqual(["Zercher Squats"]);
 		expect(
 			screen.queryByRole("button", { name: /bench press.*#12/i }),
 		).not.toBeInTheDocument();
@@ -417,7 +432,7 @@ describe("Community — choose lifts", () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
 		await screen.findByRole("table");
-		expect(liftChips()).toEqual(["Bench Press", "Squats"]);
+		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
 	});
 
 	it("unticking a lift removes it, Cancel changes nothing", async () => {
@@ -425,23 +440,21 @@ describe("Community — choose lifts", () => {
 		signIn();
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
 		renderCommunity();
-		await user.click(
-			await screen.findByRole("button", { name: /choose lifts/i }),
-		);
+		await user.click(await screen.findByRole("button", { name: "Edit lifts" }));
 		let dialog = screen.getByRole("dialog", { name: "Choose lifts" });
 		await user.click(within(dialog).getByLabelText(/^squats/i));
 		await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-		expect(liftChips()).toEqual(["Bench Press", "Squats"]);
+		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
 		expect(localStorage.getItem("community.chosenLifts")).toBeNull();
 
-		await user.click(screen.getByRole("button", { name: /choose lifts/i }));
+		await user.click(screen.getByRole("button", { name: "Edit lifts" }));
 		dialog = screen.getByRole("dialog", { name: "Choose lifts" });
 		expect(within(dialog).getByLabelText(/^squats/i)).toHaveAccessibleName(
 			/2 lifters.*you #2/i,
 		);
 		await user.click(within(dialog).getByLabelText(/^squats/i));
 		await user.click(within(dialog).getByRole("button", { name: "Done" }));
-		expect(liftChips()).toEqual(["Bench Press"]);
+		expect(await liftChips()).toEqual(["Bench Press"]);
 		expect(
 			JSON.parse(localStorage.getItem("community.chosenLifts")),
 		).not.toContain("Squats");
@@ -564,10 +577,8 @@ describe("Community — signed in", () => {
 			"lb-row-me",
 		);
 		expect(
-			within(screen.getByRole("group", { name: "Lift" })).getByRole("button", {
-				name: "Squats",
-			}),
-		).toHaveAttribute("aria-pressed", "true");
+			screen.getByRole("button", { name: "Lift: Squats" }),
+		).toBeInTheDocument();
 	});
 
 	it("asks you to turn on sharing when you're not on the boards", async () => {
