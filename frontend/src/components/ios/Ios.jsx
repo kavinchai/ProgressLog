@@ -40,8 +40,15 @@ export function PageHeader({
 
 /** iOS segmented control: a gray track with a white selected segment. */
 export function SegmentedControl({ label, options, value, onChange, className = "" }) {
+	const selected = options.findIndex((o) => o.value === value);
 	return (
-		<div className={"ios-seg " + className} role="group" aria-label={label}>
+		<div
+			className={"ios-seg " + className}
+			role="group"
+			aria-label={label}
+			style={{ "--seg-n": options.length, "--seg-i": selected }}
+		>
+			{selected >= 0 && <span className="ios-seg-thumb" aria-hidden="true" />}
 			{options.map((o) => (
 				<button
 					key={o.value}

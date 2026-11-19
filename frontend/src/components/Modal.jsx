@@ -1,7 +1,76 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "./Modal.css";
 
 const DRAG_CLOSE_PX = 80; // drag the sheet down this far to close it
+const SPRING = "cubic-bezier(0.32, 0.72, 0, 1)";
+
+// The page's styles as constructable sheets, for the closing copy below.
+function pageStyles() {
+	const sheets = [];
+	for (const sheet of document.styleSheets) {
+		try {
+			const copy = new CSSStyleSheet();
+			copy.replaceSync([...sheet.cssRules].map((r) => r.cssText).join("\n"));
+			sheets.push(copy);
+		} catch {
+			// A sheet whose rules can't be read is skipped.
+		}
+	}
+	return sheets;
+}
+
+/**
+ * Plays the close animation on an inert copy of the sheet, so it slides away
+ * however it was closed (Cancel, Save, Esc, a tap outside or a drag). The copy
+ * sits in a closed shadow root, so nothing on the page can find or reach it.
+ */
+function animateClose(overlay) {
+	const reduce = window.matchMedia?.(
+		"(prefers-reduced-motion: reduce)",
+	).matches;
+	if (
+		!overlay ||
+		reduce ||
+		typeof overlay.animate !== "function" ||
+		!("adoptedStyleSheets" in Document.prototype)
+	)
+		return;
+	const ghost = overlay.cloneNode(true);
+	// Keep what was typed, which cloneNode leaves out.
+	const fields = overlay.querySelectorAll("input, textarea, select");
+	ghost.querySelectorAll("input, textarea, select").forEach((el, i) => {
+		el.value = fields[i].value;
+	});
+	ghost.style.pointerEvents = "none";
+	ghost.style.animation = "none";
+	const host = document.createElement("div");
+	host.setAttribute("aria-hidden", "true");
+	host.inert = true;
+	const shadow = host.attachShadow({ mode: "closed" });
+	shadow.adoptedStyleSheets = pageStyles();
+	shadow.appendChild(ghost);
+	document.body.appendChild(host);
+	const box = ghost.querySelector(".modal-box");
+	box.style.animation = "none";
+	const from = box.style.transform || "translateY(0)";
+	const sheet = window.matchMedia?.("(max-width: 640px)").matches;
+	ghost.animate([{ opacity: 1 }, { opacity: 0 }], {
+		duration: 300,
+		easing: SPRING,
+		fill: "forwards",
+	});
+	box
+		.animate(
+			sheet
+				? [{ transform: from }, { transform: "translateY(100%)" }]
+				: [
+						{ opacity: 1, transform: "scale(1)" },
+						{ opacity: 0, transform: "scale(0.97)" },
+					],
+			{ duration: sheet ? 340 : 180, easing: SPRING, fill: "forwards" },
+		)
+		.finished.finally(() => host.remove());
+}
 
 /**
  * Pass `grouped` for a sheet of iOS grouped lists (gray behind the rows).
@@ -14,6 +83,17 @@ export default function Modal({ title, onClose, children, form, grouped }) {
 	const previousActiveElement = useRef(null);
 	const drag = useRef(null); // { startY, y } while a finger is down
 	const [dragY, setDragY] = useState(0);
+	const overlayRef = useRef(null);
+
+	useLayoutEffect(() => {
+		const overlay = overlayRef.current;
+		// Only once the sheet has really left the page: React's development
+		// mode also runs this clean-up while the sheet stays open.
+		return () =>
+			queueMicrotask(() => {
+				if (!overlay.isConnected) animateClose(overlay);
+			});
+	}, []);
 
 	// Save the element that triggered the modal (for focus restoration)
 	useEffect(() => {
@@ -104,7 +184,7 @@ export default function Modal({ title, onClose, children, form, grouped }) {
 	const titleId = `modal-title-${Math.random().toString(36).slice(2, 9)}`;
 
 	return (
-		<div className="modal-overlay" onClick={onClose}>
+		<div className="modal-overlay" ref={overlayRef} onClick={onClose}>
 			<dialog
 				open
 				className={"modal-box" + (form || grouped ? " modal-box--sheet" : "")}

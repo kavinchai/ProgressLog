@@ -7,6 +7,7 @@ import Modal from "../components/Modal";
 import { ListGroup, ListRow, PageHeader } from "../components/ios/Ios";
 import { Medal, MilestoneArt } from "../components/achievements/Achievement";
 import { monthDay } from "../utils/achievements";
+import { navTransition } from "../utils/navTransition";
 import "../components/achievements/achievements.css";
 
 const fullDate = (iso) =>
@@ -35,7 +36,7 @@ function useFormat() {
 // The header's back chevron, going to `to`.
 function useBack(to, label) {
 	const navigate = useNavigate();
-	return { label, onClick: () => navigate(to) };
+	return { label, onClick: () => navTransition("pop", () => navigate(to)) };
 }
 
 // ── Badge sheet ─────────────────────────────────────────────────────────────
@@ -94,7 +95,9 @@ function VolumeCard({ volume }) {
 			<button
 				type="button"
 				className="volume-card"
-				onClick={() => navigate("/progress/achievements/weight")}
+				onClick={() =>
+					navTransition("push", () => navigate("/progress/achievements/weight"))
+				}
 				aria-label={`Lifetime weight lifted: ${weight(volume.total)}`}
 			>
 				<span className="volume-card-top">

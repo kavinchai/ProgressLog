@@ -211,6 +211,7 @@ export default function WeeklyStats() {
 	const swipe = useSwipe({
 		onLeft: () => offset < 0 && goWeek(1),
 		onRight: () => goWeek(-1),
+		canLeft: offset < 0,
 	});
 
 	const weightShown = (v) => (v == null ? null : Number(toDisplay(v)));

@@ -13,6 +13,27 @@
 	color: var(--success);
 }
 
+/* The check pops in when something is logged. */
+.status-row-icon--pop {
+	animation: status-pop 420ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes status-pop {
+	0% {
+		transform: scale(0.4);
+	}
+	55% {
+		transform: scale(1.18);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.status-row-icon--pop {
+		animation: none;
+	}
+}
+
 .status-row-icon--skipped,
 .status-row-icon--empty {
 	color: var(--text-subtle);

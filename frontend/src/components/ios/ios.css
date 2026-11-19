@@ -76,6 +76,7 @@
 
 /* Segmented control */
 .ios-seg {
+	position: relative;
 	display: flex;
 	background: var(--active-bg);
 	border-radius: 9px;
@@ -95,11 +96,24 @@
 	cursor: pointer;
 	min-height: 32px;
 	white-space: nowrap;
+	position: relative;
+	z-index: 1;
 }
 .ios-seg button.on {
-	background: var(--bg-card);
 	font-weight: var(--fw-semibold);
+}
+/* One white highlight that glides to the selected option. */
+.ios-seg-thumb {
+	position: absolute;
+	top: 2px;
+	bottom: 2px;
+	left: 2px;
+	width: calc((100% - 4px - (var(--seg-n) - 1) * 2px) / var(--seg-n));
+	transform: translateX(calc(var(--seg-i) * (100% + 2px)));
+	background: var(--bg-card);
+	border-radius: 7px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+	transition: transform 300ms var(--ios-spring);
 }
 
 /* Inset grouped list */
@@ -407,4 +421,136 @@
 }
 .ios-badge--down {
 	background: var(--danger);
+}
+
+/* ── Motion ── */
+:root {
+	--ios-spring: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Push and pop between screens (utils/navTransition.js). Only the page
+   content moves; the tab bar and status bar stay put. */
+:root[data-nav] .main-content {
+	view-transition-name: page;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+}
+::view-transition-old(page),
+::view-transition-new(page) {
+	animation-duration: 380ms;
+	animation-timing-function: var(--ios-spring);
+	animation-fill-mode: both;
+}
+:root[data-nav="push"]::view-transition-old(page) {
+	animation-name: ios-nav-under;
+}
+:root[data-nav="push"]::view-transition-new(page) {
+	animation-name: ios-nav-over;
+	box-shadow: -10px 0 24px rgba(0, 0, 0, 0.12);
+}
+:root[data-nav="pop"]::view-transition-old(page) {
+	animation-name: ios-nav-over;
+	animation-direction: reverse;
+	z-index: 2;
+	box-shadow: -10px 0 24px rgba(0, 0, 0, 0.12);
+}
+:root[data-nav="pop"]::view-transition-new(page) {
+	animation-name: ios-nav-under;
+	animation-direction: reverse;
+}
+@keyframes ios-nav-over {
+	from {
+		transform: translateX(100%);
+	}
+	to {
+		transform: none;
+	}
+}
+@keyframes ios-nav-under {
+	from {
+		transform: none;
+		filter: none;
+	}
+	to {
+		transform: translateX(-30%);
+		filter: brightness(0.9);
+	}
+}
+
+/* Press feedback: rows go gray as soon as they're touched and fade back on
+   release; text buttons dim and shrink; cards shrink a little. */
+.ios-row--button,
+.lift-row,
+.badge-cell,
+.ios-menu-item,
+.status-add-row,
+.status-add-chip,
+.swipe-row-main {
+	transition: background-color 280ms ease;
+}
+.ios-row--button:active,
+.lift-row:active,
+.badge-cell:active,
+.ios-menu-item:active,
+.status-add-row:active,
+.status-add-chip:active,
+.swipe-row-main:active {
+	background-color: var(--active-bg);
+	transition: none;
+}
+.ios-title-trailing button,
+.ios-header-below button,
+.ios-link,
+.ios-back,
+.ios-pulldown,
+.ios-period-nav button,
+.modal-header-btn {
+	transition:
+		opacity 160ms ease,
+		transform 160ms var(--ios-spring);
+}
+.ios-title-trailing button:active:not(:disabled),
+.ios-header-below button:active:not(:disabled),
+.ios-link:active,
+.ios-back:active,
+.ios-pulldown:active,
+.ios-period-nav button:active:not(:disabled),
+.modal-header-btn:active:not(:disabled) {
+	opacity: 0.5;
+	transform: scale(0.96);
+	transition: none;
+}
+.ios-tile,
+.achievements-entry,
+.volume-card {
+	transition: transform 240ms var(--ios-spring);
+}
+.ios-tile:active,
+.achievements-entry:active,
+.volume-card:active {
+	transform: scale(0.97);
+	transition: transform 120ms var(--ios-spring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ios-seg-thumb,
+	.ios-tile,
+	.achievements-entry,
+	.volume-card {
+		transition: none;
+	}
+	.ios-tile:active,
+	.achievements-entry:active,
+	.volume-card:active,
+	.ios-title-trailing button:active,
+	.ios-header-below button:active,
+	.ios-link:active,
+	.ios-back:active,
+	.ios-pulldown:active,
+	.ios-period-nav button:active,
+	.modal-header-btn:active {
+		transform: none;
+	}
 }

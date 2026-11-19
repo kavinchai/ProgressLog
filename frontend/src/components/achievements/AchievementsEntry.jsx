@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import useAchievements from "../../hooks/useAchievements";
 import useWeightUnit from "../../hooks/useWeightUnit";
+import { navTransition } from "../../utils/navTransition";
 import { Medal } from "./Achievement";
 import "./achievements.css";
 
@@ -23,7 +24,9 @@ export default function AchievementsEntry() {
 				<button
 					type="button"
 					className="achievements-entry"
-					onClick={() => navigate("/progress/achievements")}
+					onClick={() =>
+						navTransition("push", () => navigate("/progress/achievements"))
+					}
 				>
 					<span className="achievements-entry-head">
 						<span className="achievements-entry-title">Achievements</span>

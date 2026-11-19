@@ -14,6 +14,7 @@ import {
 import ChooseLiftsModal from "../components/ChooseLiftsModal";
 import { loadChosen, saveChosen, sortLifts } from "../utils/chosenLifts";
 import featuredConfig from "../config/featuredExercises.json";
+import { navTransition } from "../utils/navTransition";
 import "./Strength.css";
 
 const StrengthLineChart = lazy(
@@ -392,8 +393,10 @@ export default function Strength({ above = null }) {
 
 	// Opening or leaving a lift starts at the top, like pushing a screen.
 	function openLift(name) {
-		setOpenName(name);
-		window.scrollTo(0, 0);
+		navTransition(name ? "push" : "pop", () => {
+			setOpenName(name);
+			window.scrollTo(0, 0);
+		});
 	}
 
 	const opened = useMemo(

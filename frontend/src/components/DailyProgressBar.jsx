@@ -1,4 +1,36 @@
+import { useEffect, useRef, useState } from "react";
 import "./DailyProgressBar.css";
+
+const COUNT_MS = 600;
+
+// Counts from the last value to a new one as the bar grows. The first value
+// shows as is; nothing counts without matchMedia or with Reduce Motion on.
+function useCountUp(value) {
+	const [shown, setShown] = useState(value);
+	const from = useRef(value);
+	useEffect(() => {
+		const start = from.current;
+		from.current = value;
+		const reduce = window.matchMedia?.(
+			"(prefers-reduced-motion: reduce)",
+		).matches;
+		if (start === value || !window.matchMedia || reduce) {
+			setShown(value);
+			return;
+		}
+		let frame;
+		const t0 = performance.now();
+		const step = (t) => {
+			const p = Math.min(1, (t - t0) / COUNT_MS);
+			const eased = 1 - (1 - p) ** 3;
+			setShown(start + (value - start) * eased);
+			if (p < 1) frame = requestAnimationFrame(step);
+		};
+		frame = requestAnimationFrame(step);
+		return () => cancelAnimationFrame(frame);
+	}, [value]);
+	return shown;
+}
 
 function ProgressItem({
 	label,
@@ -9,12 +41,13 @@ function ProgressItem({
 	unit,
 	exceeded,
 }) {
+	const counted = useCountUp(current);
 	return (
 		<div className="daily-progress-item">
 			<div className="daily-progress-header">
 				<span className="daily-progress-label">{label}</span>
 				<span className="daily-progress-value">
-					{Math.round(current).toLocaleString()}/
+					{Math.round(counted).toLocaleString()}/
 					{Math.round(goal).toLocaleString()} {unit}
 				</span>
 			</div>

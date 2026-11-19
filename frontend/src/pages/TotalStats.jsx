@@ -277,7 +277,12 @@ export default function TotalStats() {
 		count: counts.get(date) ?? 0,
 	}));
 
-	const swipe = useSwipe({ onLeft: goNextMonth, onRight: goPrevMonth });
+	const swipe = useSwipe({
+		onLeft: goNextMonth,
+		onRight: goPrevMonth,
+		canLeft: monthIdx < navMonths.length - 1,
+		canRight: monthIdx > 0,
+	});
 
 	const firstW = monthWeights[0]?.weight;
 	const lastW = monthWeights[monthWeights.length - 1]?.weight;
