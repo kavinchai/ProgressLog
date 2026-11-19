@@ -428,35 +428,35 @@
 	--ios-spring: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Push and pop between screens (utils/navTransition.js). Only the page
-   content moves; the tab bar and status bar stay put. */
-:root[data-nav] .main-content {
-	view-transition-name: page;
+/* Push and pop between screens (utils/navTransition.js). The whole screen
+   (as you see it, not the full scroll height) slides; the tab bar and
+   sidebar are snapshotted on their own so they stay put. */
+:root[data-nav] .bottom-tab-bar {
+	view-transition-name: tab-bar;
 }
-::view-transition-old(root),
-::view-transition-new(root) {
-	animation: none;
+:root[data-nav] .sidebar {
+	view-transition-name: sidebar;
 }
-::view-transition-old(page),
-::view-transition-new(page) {
-	animation-duration: 380ms;
+:root[data-nav]::view-transition-old(root),
+:root[data-nav]::view-transition-new(root) {
+	animation-duration: 420ms;
 	animation-timing-function: var(--ios-spring);
 	animation-fill-mode: both;
 }
-:root[data-nav="push"]::view-transition-old(page) {
+:root[data-nav="push"]::view-transition-old(root) {
 	animation-name: ios-nav-under;
 }
-:root[data-nav="push"]::view-transition-new(page) {
+:root[data-nav="push"]::view-transition-new(root) {
 	animation-name: ios-nav-over;
 	box-shadow: -10px 0 24px rgba(0, 0, 0, 0.12);
 }
-:root[data-nav="pop"]::view-transition-old(page) {
+:root[data-nav="pop"]::view-transition-old(root) {
 	animation-name: ios-nav-over;
 	animation-direction: reverse;
 	z-index: 2;
 	box-shadow: -10px 0 24px rgba(0, 0, 0, 0.12);
 }
-:root[data-nav="pop"]::view-transition-new(page) {
+:root[data-nav="pop"]::view-transition-new(root) {
 	animation-name: ios-nav-under;
 	animation-direction: reverse;
 }

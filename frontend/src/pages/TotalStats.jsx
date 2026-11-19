@@ -288,7 +288,7 @@ export default function TotalStats() {
 	const lastW = monthWeights[monthWeights.length - 1]?.weight;
 
 	return (
-		<div className="total-page ios-swipe" {...swipe}>
+		<div className="total-page">
 			<PeriodNav
 				title={
 					<button
@@ -424,7 +424,11 @@ export default function TotalStats() {
 							</span>
 						))}
 					</div>
-					<div className="heatmap" style={{ marginTop: 6 }}>
+					<div
+						className="heatmap ios-swipe"
+						style={{ marginTop: 6 }}
+						{...swipe}
+					>
 						{calendarCells.map((row, i) => {
 							if (!row) {
 								return (

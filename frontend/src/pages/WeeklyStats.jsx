@@ -251,7 +251,7 @@ export default function WeeklyStats() {
 	};
 
 	return (
-		<div className="weekly-page ios-swipe" {...swipe}>
+		<div className="weekly-page">
 			<PeriodNav
 				title={weekRange(days[0], days[6])}
 				sub={
@@ -317,7 +317,11 @@ export default function WeeklyStats() {
 				)}
 			</div>
 
-			<ul className="week-strip" aria-label="Days of the week">
+			<ul
+				className="week-strip ios-swipe"
+				aria-label="Days of the week"
+				{...swipe}
+			>
 				{rows.map((row) => (
 					<li key={row.date}>
 						<DayCard
