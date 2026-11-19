@@ -306,9 +306,19 @@
 	font-size: 0.75rem;
 	color: var(--text-muted);
 }
+/* An odd fifth tile spans the row on phones. */
+.ios-tiles--five > :last-child {
+	grid-column: 1 / -1;
+}
 @media (min-width: 900px) {
 	.ios-tiles {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+	.ios-tiles--five {
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+	}
+	.ios-tiles--five > :last-child {
+		grid-column: auto;
 	}
 }
 

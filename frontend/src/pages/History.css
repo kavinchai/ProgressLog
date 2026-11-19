@@ -1,19 +1,5 @@
 /* History (Weekly / Total) — week strip, heatmap calendar, trend charts */
 
-.history-head {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: var(--space-sm) 12px;
-	margin-bottom: var(--space-md);
-}
-
-.history-title {
-	font-size: var(--fs-xl);
-	font-weight: var(--fw-bold);
-	letter-spacing: -0.02em;
-}
-
 /* Total tab: the month title opens the year/month picker */
 .history-title-btn {
 	display: inline-flex;
@@ -22,7 +8,9 @@
 	min-width: 0;
 	padding: 0;
 	font-family: var(--font);
-	color: var(--fg);
+	font-size: 1.25rem;
+	font-weight: var(--fw-bold);
+	color: var(--accent);
 	background: none;
 	border: none;
 	cursor: pointer;
@@ -30,7 +18,6 @@
 
 .history-title-btn svg {
 	flex: none;
-	color: var(--muted);
 }
 
 .history-title-text {
@@ -39,95 +26,7 @@
 	white-space: nowrap;
 }
 
-.history-pill {
-	font-size: 11px;
-	font-weight: var(--fw-bold);
-	color: var(--accent);
-	background: var(--accent-light);
-	border-radius: var(--radius-full);
-	padding: 3px 10px;
-}
-
-.history-spacer {
-	flex: 1;
-}
-
-.history-nav {
-	display: inline-flex;
-	align-items: center;
-	gap: 2px;
-	padding: 3px;
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-md);
-}
-
-.history-nav button {
-	min-width: 36px;
-	min-height: 32px;
-	font-family: var(--font);
-	font-size: var(--fs);
-	color: var(--fg);
-	background: transparent;
-	border: none;
-	border-radius: var(--radius-sm);
-	cursor: pointer;
-}
-
-.history-nav button:hover:not(:disabled) {
-	background: var(--hover-bg);
-}
-
-.history-nav button:disabled {
-	opacity: 0.35;
-	cursor: not-allowed;
-}
-
-.history-nav-label {
-	padding: 0 10px;
-	font-size: var(--fs-sm);
-	font-weight: var(--fw-semibold);
-	white-space: nowrap;
-}
-
 /* KPI tiles */
-.history-kpis {
-	display: grid;
-	grid-template-columns: repeat(5, minmax(0, 1fr));
-	gap: 12px;
-	margin-bottom: var(--space-lg);
-}
-
-.history-kpi {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	padding: 14px 16px;
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-xs);
-	min-width: 0;
-}
-
-.history-kpi-label {
-	font-size: 11px;
-	font-weight: var(--fw-semibold);
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	color: var(--muted);
-}
-
-.history-kpi-value {
-	font-size: var(--fs-xl);
-	font-weight: var(--fw-bold);
-	letter-spacing: -0.02em;
-}
-
-.history-kpi-sub {
-	font-size: var(--fs-xs);
-	color: var(--muted);
-}
 
 .history-good {
 	color: var(--success);
@@ -272,22 +171,25 @@
 
 /* Selected-day panel */
 .history-day-panel {
-	margin-bottom: var(--space-lg);
+	margin-bottom: 22px;
 	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-xs);
+	border-radius: 12px;
 	overflow: hidden;
+}
+
+/* Weekly: the day's header sits above its card, iOS style. */
+.weekly-page .history-day-panel {
+	background: none;
+	overflow: visible;
 }
 
 .history-day-panel-head {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--space-sm);
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--border-dim);
-	background: var(--bg);
+	flex-wrap: wrap;
+	gap: 4px var(--space-sm);
+	padding: 12px 16px 4px;
 }
 
 .history-day-panel-title {
@@ -314,9 +216,7 @@
 .history-chart-card {
 	padding: var(--space-md);
 	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-xs);
+	border-radius: 12px;
 	min-width: 0;
 }
 
@@ -435,34 +335,6 @@
 .history-calendar-hint {
 	margin: var(--space-sm) 0 0;
 	font-size: var(--fs-sm);
-}
-
-.history-seg {
-	display: inline-flex;
-	flex-wrap: wrap;
-	gap: 2px;
-	padding: 3px;
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-md);
-}
-
-.history-seg button {
-	min-height: 30px;
-	padding: 4px 12px;
-	font-family: var(--font);
-	font-size: var(--fs-sm);
-	color: var(--muted);
-	background: transparent;
-	border: none;
-	border-radius: var(--radius-sm);
-	cursor: pointer;
-}
-
-.history-seg button[aria-pressed="true"] {
-	color: var(--accent);
-	background: var(--accent-light);
-	font-weight: var(--fw-semibold);
 }
 
 .heatmap {
@@ -601,9 +473,7 @@
 
 /* ── Tablet ── */
 @media (max-width: 960px) {
-	.history-kpis {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
+	
 
 	.history-charts {
 		grid-template-columns: minmax(0, 1fr);
@@ -611,35 +481,9 @@
 }
 
 /* Workouts tile: one dot per day of the week */
-.history-week-dots {
-	display: flex;
-	gap: 6px;
-	margin: 4px 0 0;
-	padding: 0;
-	list-style: none;
-}
-
-.history-week-dot {
-	width: 12px;
-	height: 12px;
-	border-radius: 50%;
-	background: var(--border-dim);
-	border: 1px solid var(--border-strong);
-}
-
-.history-week-dot.on {
-	background: var(--accent);
-	border-color: var(--accent);
-}
-
-.history-week-dot.future {
-	background: transparent;
-	border-style: dashed;
-}
 
 /* Phone-only pieces, hidden on wider screens */
-.week-day-dot,
-.history-chart-switch {
+.week-day-dot {
 	display: none;
 }
 
@@ -648,45 +492,22 @@
 	/* Weekly and Total headers stay on one line for every period: the
 	   title already names the week or month, so the nav drops its label
 	   and keeps just the arrows. */
-	.history-head {
-		flex-wrap: nowrap;
-		gap: 8px;
-	}
+	
 
-	.history-title {
-		font-size: var(--fs-lg);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		min-width: 0;
-	}
+	
 
-	.history-pill,
-	.history-nav {
-		flex: none;
-	}
+	
 
-	.history-nav-label {
-		display: none;
-	}
+	
 
 	/* Summary: four stats 2×2, Workouts (with its day dots) full width */
-	.history-kpis {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: var(--space-sm);
-	}
+	
 
-	.history-kpis > .history-kpi:nth-child(5) {
-		grid-column: 1 / -1;
-	}
+	
 
-	.history-kpi {
-		padding: 10px 12px;
-	}
+	
 
-	.history-kpi-value {
-		font-size: var(--fs-lg);
-	}
+	
 
 	/* Week strip: 7 compact day buttons (day, date, workout dot) across the width */
 	.week-strip {
@@ -750,15 +571,9 @@
 	}
 
 	/* One chart at a time, picked with the Calories / Steps switch */
-	.history-chart-switch {
-		display: flex;
-		margin-bottom: var(--space-sm);
-	}
+	
 
-	.history-chart-switch button {
-		flex: 1;
-		min-height: 36px;
-	}
+	
 
 	.history-charts[data-show="calories"] [data-chart="steps"],
 	.history-charts[data-show="steps"] [data-chart="calories"] {
@@ -789,16 +604,7 @@
 		display: none;
 	}
 
-	.history-metric-select {
-		min-height: 36px;
-		padding: 0 10px;
-		font-family: var(--font);
-		font-size: var(--fs-sm);
-		color: var(--fg);
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: var(--radius-md);
-	}
+	
 
 	/* Day sheet: prev / next day controls */
 	.history-sheet-nav {
@@ -811,4 +617,8 @@
 	.history-day-panel-body {
 		padding: 12px;
 	}
+}
+
+.weekly-page .history-day-panel-body {
+	padding: 0;
 }

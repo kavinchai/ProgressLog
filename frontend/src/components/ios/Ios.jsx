@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, ChevronRight } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import "./ios.css";
 
 /** Large-title page header, like iOS: an optional nav row, then the title. */
@@ -201,5 +201,66 @@ export function PullDownMenu({ label, buttonLabel, icon, sections, className = "
 					document.body,
 				)}
 		</>
+	);
+}
+
+/** A stat tile that also picks what the chart below shows. */
+export function StatTile({ label, value, unit, sub, selected, onSelect }) {
+	return (
+		<button
+			type="button"
+			className="ios-tile"
+			aria-pressed={selected}
+			aria-label={label}
+			onClick={onSelect}
+		>
+			<span className="ios-tile-label">{label}</span>
+			<span className="ios-tile-value">
+				{value}
+				{unit && <small> {unit}</small>}
+			</span>
+			{sub && <span className="ios-tile-sub">{sub}</span>}
+		</button>
+	);
+}
+
+/** Period title with previous/next chevrons (History). */
+export function PeriodNav({
+	title,
+	sub,
+	prevLabel,
+	nextLabel,
+	onPrev,
+	onNext,
+	prevDisabled,
+	nextDisabled,
+}) {
+	return (
+		<div className="ios-period">
+			<div>
+				<h2 className="ios-period-title">{title}</h2>
+				{sub && <div className="ios-period-sub">{sub}</div>}
+			</div>
+			<div className="ios-period-nav">
+				<button
+					type="button"
+					className="ios-icon-btn"
+					aria-label={prevLabel}
+					onClick={onPrev}
+					disabled={prevDisabled}
+				>
+					<ChevronLeft size={24} aria-hidden="true" />
+				</button>
+				<button
+					type="button"
+					className="ios-icon-btn"
+					aria-label={nextLabel}
+					onClick={onNext}
+					disabled={nextDisabled}
+				>
+					<ChevronRight size={24} aria-hidden="true" />
+				</button>
+			</div>
+		</div>
 	);
 }

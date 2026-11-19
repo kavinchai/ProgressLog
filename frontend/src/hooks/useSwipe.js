@@ -11,8 +11,12 @@ export default function useSwipe({ onLeft, onRight }) {
 	const start = useRef(null);
 	return {
 		onTouchStart(e) {
-			// Rows that swipe to delete, charts and sheets keep their own gestures.
-			if (e.target.closest?.(".swipe-row-main, [data-no-page-swipe]")) {
+			// Rows that swipe to delete keep their own gesture, and touches in
+			// sheets or menus (portals, outside this element) don't count.
+			if (
+				!e.currentTarget.contains(e.target) ||
+				e.target.closest?.(".swipe-row-main, [data-no-page-swipe]")
+			) {
 				start.current = null;
 				return;
 			}

@@ -25,6 +25,8 @@ import {
 	workoutCountsByDate,
 	shadeAlpha,
 } from "../utils/history";
+import { PeriodNav, StatTile } from "../components/ios/Ios";
+import useSwipe from "../hooks/useSwipe";
 import "./WeeklyStats.css";
 import "./TotalStats.css";
 import "./History.css";
@@ -65,16 +67,6 @@ const MONTH_NAMES = [
 ];
 
 const fmt = (n) => (n == null ? "--" : Math.round(n).toLocaleString());
-
-function Kpi({ label, value, children }) {
-	return (
-		<div className="history-kpi" role="group" aria-label={label}>
-			<span className="history-kpi-label">{label}</span>
-			<span className="history-kpi-value">{value}</span>
-			<span className="history-kpi-sub">{children}</span>
-		</div>
-	);
-}
 
 export default function TotalStats() {
 	const { data: weightData, refetch: refetchWeight } = useWeightLog();
@@ -221,6 +213,14 @@ export default function TotalStats() {
 		setSelectedDay(next);
 	}
 
+	function goPrevMonth() {
+		if (monthIdx > 0) goMonth(navMonths[monthIdx - 1]);
+	}
+
+	function goNextMonth() {
+		if (monthIdx < navMonths.length - 1) goMonth(navMonths[monthIdx + 1]);
+	}
+
 	function goMonth(ym) {
 		setLogMonth(ym);
 		setSelectedDay(null);
@@ -278,55 +278,39 @@ export default function TotalStats() {
 		count: counts.get(date) ?? 0,
 	}));
 
+	const swipe = useSwipe({ onLeft: goNextMonth, onRight: goPrevMonth });
+
 	const firstW = monthWeights[0]?.weight;
 	const lastW = monthWeights[monthWeights.length - 1]?.weight;
 
 	return (
-		<div className="total-page">
-			<div className="history-head">
-				<button
-					type="button"
-					className="history-title history-title-btn"
-					aria-expanded={pickerOpen}
-					onClick={() => setPickerOpen((open) => !open)}
-				>
-					<span className="history-title-text">
-						{monthName} {activeYear}
-					</span>
-					{pickerOpen ? (
-						<ChevronUp size={18} aria-hidden="true" />
-					) : (
-						<ChevronDown size={18} aria-hidden="true" />
-					)}
-				</button>
-				{activeMonth === currentMonth && (
-					<span className="history-pill">This month</span>
-				)}
-				<span className="history-spacer" />
-				{allMonths.length > 0 && (
-					<div className="history-nav month-nav">
-						<button
-							type="button"
-							aria-label="Previous month"
-							onClick={() => goMonth(navMonths[monthIdx - 1])}
-							disabled={monthIdx <= 0}
-						>
-							‹
-						</button>
-						<span className="history-nav-label">
-							{monthName.slice(0, 3)} {activeYear}
+		<div className="total-page ios-swipe" {...swipe}>
+			<PeriodNav
+				title={
+					<button
+						type="button"
+						className="history-title-btn"
+						aria-expanded={pickerOpen}
+						onClick={() => setPickerOpen((open) => !open)}
+					>
+						<span className="history-title-text">
+							{monthName} {activeYear}
 						</span>
-						<button
-							type="button"
-							aria-label="Next month"
-							onClick={() => goMonth(navMonths[monthIdx + 1])}
-							disabled={monthIdx >= navMonths.length - 1}
-						>
-							›
-						</button>
-					</div>
-				)}
-			</div>
+						{pickerOpen ? (
+							<ChevronUp size={18} aria-hidden="true" />
+						) : (
+							<ChevronDown size={18} aria-hidden="true" />
+						)}
+					</button>
+				}
+				sub={activeMonth === currentMonth ? "This month" : null}
+				prevLabel="Previous month"
+				nextLabel="Next month"
+				onPrev={goPrevMonth}
+				onNext={goNextMonth}
+				prevDisabled={monthIdx <= 0}
+				nextDisabled={monthIdx >= navMonths.length - 1}
+			/>
 			{pickerOpen && (
 				<div className="month-picker">
 					<div className="month-picker-years">
@@ -363,69 +347,55 @@ export default function TotalStats() {
 				</div>
 			)}
 
-			<div className="history-kpis">
-				<Kpi
-					label="Weight change"
+			<div className="ios-tiles ios-tiles--five" role="group" aria-label="Color days by">
+				<StatTile
+					label="Weight"
 					value={
 						firstW == null
 							? "--"
 							: `${lastW - firstW > 0 ? "+" : ""}${(toDisplay(lastW) - toDisplay(firstW)).toFixed(1)}`
 					}
-				>
-					{firstW == null
-						? unit
-						: `${toDisplay(firstW)} → ${toDisplay(lastW)} ${unit}`}
-				</Kpi>
-				<Kpi label="Avg calories" value={fmt(month.calories)}>
-					target {fmt(goals.calorieTargetTraining)}
-				</Kpi>
-				<Kpi
-					label="Avg protein"
-					value={month.protein == null ? "--" : `${fmt(month.protein)}g`}
-				>
-					target {goals.proteinTarget}g
-				</Kpi>
-				<Kpi label="Avg steps" value={fmt(month.steps)}>
-					goal {fmt(stepsGoal)}
-				</Kpi>
-				<Kpi label="Workouts" value={month.workouts}>
-					this month
-				</Kpi>
+					unit={unit}
+					sub={
+						firstW == null ? null : `${toDisplay(firstW)} → ${toDisplay(lastW)}`
+					}
+					selected={metric === "weight"}
+					onSelect={() => setMetric("weight")}
+				/>
+				<StatTile
+					label="Calories"
+					value={fmt(month.calories)}
+					sub={`goal ${fmt(goals.calorieTargetTraining)}`}
+					selected={metric === "calories"}
+					onSelect={() => setMetric("calories")}
+				/>
+				<StatTile
+					label="Protein"
+					value={month.protein == null ? "--" : fmt(month.protein)}
+					unit="g"
+					sub={`goal ${goals.proteinTarget}`}
+					selected={metric === "protein"}
+					onSelect={() => setMetric("protein")}
+				/>
+				<StatTile
+					label="Steps"
+					value={fmt(month.steps)}
+					sub={`goal ${fmt(stepsGoal)}`}
+					selected={metric === "steps"}
+					onSelect={() => setMetric("steps")}
+				/>
+				<StatTile
+					label="Workouts"
+					value={month.workouts}
+					sub="this month"
+					selected={metric === "workout"}
+					onSelect={() => setMetric("workout")}
+				/>
 			</div>
 
 			<div className="history-day-panel">
 				<div className="history-day-panel-head">
-					{isMobile ? (
-						<select
-							className="history-metric-select"
-							aria-label="Color days by"
-							value={metric}
-							onChange={(e) => setMetric(e.target.value)}
-						>
-							{Object.entries(METRICS).map(([key, m]) => (
-								<option key={key} value={key}>
-									{m.label}
-								</option>
-							))}
-						</select>
-					) : (
-						<div
-							className="history-seg"
-							role="group"
-							aria-label="Color days by"
-						>
-							{Object.entries(METRICS).map(([key, m]) => (
-								<button
-									key={key}
-									type="button"
-									aria-pressed={metric === key}
-									onClick={() => setMetric(key)}
-								>
-									{m.label}
-								</button>
-							))}
-						</div>
-					)}
+					<span className="history-day-panel-title">{active.label} per day</span>
 					<span className="heatmap-legend">
 						<span>less</span>
 						{[0.12, 0.35, 0.6, 0.9].map((a) => (
