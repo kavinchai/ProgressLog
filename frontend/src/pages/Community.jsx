@@ -818,17 +818,9 @@ export default function Community() {
 		);
 	}
 
-	const month = new Date().toLocaleString("en-US", { month: "long" });
 	return (
 		<div className="lb-page">
-			<PageHeader
-				title="Community"
-				subtitle={
-					view === "leaderboard" && data && data.totalUsers > 0
-						? `${data.totalUsers} lifters sharing · ${period === "month" ? month : "all time"}`
-						: null
-				}
-			/>
+			<PageHeader title="Community" />
 			{viewSwitch}
 			{view === "calendar" ? (
 				<SharedCalendar />

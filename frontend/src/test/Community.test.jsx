@@ -658,7 +658,7 @@ describe("Community — signed in", () => {
 // ── Calendar view ────────────────────────────────────────────────────────────
 
 describe("Community — header", () => {
-	it("shows the sharing count on the leaderboard but not on the calendar", async () => {
+	it("shows no sharing count under the title on either tab", async () => {
 		const user = userEvent.setup();
 		signIn();
 		mockApiGet.mockImplementation((url) =>
@@ -670,13 +670,15 @@ describe("Community — header", () => {
 			}),
 		);
 		renderCommunity();
-		expect(await screen.findByText(/23 lifters sharing/)).toBeInTheDocument();
+		await boardLoaded();
+		expect(screen.queryByText(/lifters sharing/)).not.toBeInTheDocument();
 		await user.click(
 			within(screen.getByRole("group", { name: "View" })).getByRole("button", {
 				name: "Calendar",
 			}),
 		);
-		expect(screen.queryByText(/23 lifters sharing/)).not.toBeInTheDocument();
+		await screen.findByRole("group", { name: /days/i });
+		expect(screen.queryByText(/lifters sharing/)).not.toBeInTheDocument();
 	});
 });
 

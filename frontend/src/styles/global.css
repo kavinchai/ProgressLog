@@ -33,7 +33,7 @@ body::before {
 	left: 0;
 	right: 0;
 	height: env(safe-area-inset-top, 0px);
-	background: var(--bg-card);
+	background: var(--bg);
 	z-index: 100;
 }
 
