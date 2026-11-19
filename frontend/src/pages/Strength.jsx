@@ -16,7 +16,6 @@ import {
 	SegmentedControl,
 } from "../components/ios/Ios";
 import ChooseLiftsModal from "../components/ChooseLiftsModal";
-import AchievementsEntry from "../components/achievements/AchievementsEntry";
 import { loadChosen, saveChosen, sortLifts } from "../utils/chosenLifts";
 import featuredConfig from "../config/featuredExercises.json";
 import "./Strength.css";
@@ -363,7 +362,8 @@ function LiftDetail({ exercise, rangeKey, onRange, unit, toDisplay, onBack }) {
 
 // ── page ──────────────────────────────────────────────────────────────────────
 
-export default function Strength() {
+// `above` goes between the title and the lift list (the Achievements card).
+export default function Strength({ above = null }) {
 	// Cached, so reopening the page shows the last data while it refreshes.
 	const { data: progressData, loading, error } = useFetch("/progress/strength");
 	const [openName, setOpenName] = useState(null);
@@ -483,7 +483,7 @@ export default function Strength() {
 				}
 			/>
 
-			<AchievementsEntry />
+			{above}
 
 			{cards.length === 0 ? (
 				<div className="strength-empty">

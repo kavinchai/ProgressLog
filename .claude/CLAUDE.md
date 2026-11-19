@@ -12,12 +12,13 @@ Use this to navigate straight to the relevant file instead of searching the whol
 - `docker-compose.yml`, `.github/workflows/` — deploy, DB backup, scheduled calendar jobs
 
 **Frontend** (`frontend/src/`)
-- `pages/` — one component per route (Today, History, Progress, Settings, Community, Login, Cardio, Strength, WeeklyStats, TotalStats, SharedCalendar, SplashPage, ClaudeSetup). Routing in `App.jsx`.
+- `pages/` — one component per route (Today, History, Progress, Settings, Community, Login, Cardio, Strength, Achievements, WeeklyStats, TotalStats, SharedCalendar, SplashPage, ClaudeSetup). Routing in `App.jsx`.
 - `components/` — shared UI. Modals build on `Modal.jsx` (focus-trap + Esc + scroll-lock; `form` prop gives a Cancel · title · Save sheet with `SheetField` rows). Notables: `WorkoutBuilderModal`, `EditExerciseModal`, `WeightModal`, `StepsModal`, `DayInfoModal`, `SwipeRow` (tap to edit, swipe or long-press to delete) + `MoreMenu` (••• actions) with `hooks/useDeleteWithUndo` (delete now, Undo bar), `StatusRow`/`AddRow` (check-mark log rows; `.status-rows` list + `.status-add-chip`), `ExerciseRow` (exercise name, weight and a pill per set), `MealCards` (Breakfast/Lunch/Dinner + extra meal rows that open `MealSheet`, used by Today and `DayDetail`).
 - `hooks/` — data hooks (`useWorkouts`, `useNutrition`, `useWeightLog`, `useSteps`, `usePRs`, `useUserProfile`), all fetching through `useFetch.js` (returns `{ data, loading, error, refetch }`; one shared in-memory cache per endpoint, shown instantly then revalidated, cleared on logout; also saved per user via `utils/offlineCache` so the app opens offline). Also `useDayActions` (Today's mutations), `useTheme`, `useToday`, `useWeightUnit`.
 - `store/` — Zustand stores: `authStore`, `unitStore`, `networkStore` (`offline`, set by the axios interceptor and online/offline events; drives `OfflineBanner`).
 - `api/index.js` — axios instance (`baseURL` `/api`, cookies, auto-logout on 401, offline tracking). Save errors go through `utils/errors.errorMessage` (offline wording, server message, fallback).
-- `utils/` — pure helpers: `date`, `stats`, `history` (History page summaries/trends), `workout`, `constants`.
+- `utils/` — pure helpers: `date`, `stats`, `history` (History page summaries/trends), `workout`, `constants`, `achievements` (badges and weight milestones, worked out from loaded data).
+- Achievements: `components/achievements/` (medal, milestone drawing, Progress card, celebration sheet), milestones in `config/volumeMilestones.json`, drawings in `public/achievements/` (one swappable SVG per milestone).
 - `styles/` — `variables.css` (design tokens) + `global.css` (buttons, section-box, notice, responsive).
 - `test/` — Vitest + React Testing Library, mirrors the source tree.
 

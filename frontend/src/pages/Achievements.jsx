@@ -9,7 +9,6 @@ import { Medal, MilestoneArt } from "../components/achievements/Achievement";
 import { monthDay } from "../utils/achievements";
 import "../components/achievements/achievements.css";
 
-
 const fullDate = (iso) =>
 	new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", {
 		month: "short",

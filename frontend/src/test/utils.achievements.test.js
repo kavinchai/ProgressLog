@@ -47,10 +47,7 @@ describe("workoutVolume", () => {
 	it("skips sets with no weight or reps", () => {
 		expect(
 			workoutVolume(
-				workout("2026-11-18", [
-					set("Squat", null, 5),
-					set("Squat", 225, null),
-				]),
+				workout("2026-11-18", [set("Squat", null, 5), set("Squat", 225, null)]),
 			),
 		).toBe(0);
 	});
