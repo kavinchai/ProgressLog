@@ -59,17 +59,17 @@ public class MealCards {
         saveSheet();
     }
 
-    /** Taps "+ Add {slot}", ticks "Skipped {slot}" and saves the sheet. */
+    /** Taps "+ Add {slot}", turns on "Skipped {slot}" and saves the sheet. */
     public void skipMeal(String slot) {
         button("+ Add " + slot).click();
-        sheet().getByRole(AriaRole.CHECKBOX, new Locator.GetByRoleOptions()
-                .setName("Skipped " + slot.toLowerCase()).setExact(true)).check();
+        sheet().getByRole(AriaRole.SWITCH, new Locator.GetByRoleOptions()
+                .setName("Skipped " + slot.toLowerCase()).setExact(true)).click();
         saveSheet();
     }
 
-    /** "+ Add meal": names the meal, fills it and saves it. */
+    /** "Add meal": names the meal, fills it and saves it. */
     public void addExtraMeal(String label, String name, String calories, String protein) {
-        button("+ Add meal").click();
+        button("Add meal").click();
         field("Meal name").fill(label);
         fillFields(name, calories, protein);
         saveSheet();

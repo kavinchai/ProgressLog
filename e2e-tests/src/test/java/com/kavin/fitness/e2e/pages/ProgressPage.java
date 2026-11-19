@@ -9,9 +9,8 @@ import com.microsoft.playwright.options.WaitForSelectorState;
 public class ProgressPage {
     private final Page page;
 
-    private static final String STRENGTH_HEADER = ".strength-header h1";
     private static final String PAGE_TABS = "nav.page-tabs";
-    private static final String RANGE_BTNS = "[aria-label='Time range'] .strength-range-btn";
+    private static final String RANGE_BTNS = "[role='group'][aria-label='Time range'] button";
     private static final String SESSION_TABLE = "[data-testid='session-history-table']";
     private static final String LOADING = ".loading-state";
 
@@ -56,14 +55,19 @@ public class ProgressPage {
         return java.net.URI.create(page.url()).getPath();
     }
 
+    /** The large "Progress" title of the lift list. */
     public boolean isStrengthHeaderVisible() {
-        return awaitVisible(STRENGTH_HEADER);
+        return awaitVisible(page.getByRole(AriaRole.HEADING,
+                new Page.GetByRoleOptions().setName("Progress").setExact(true)));
     }
 
-    /** The lift view (not the empty state) rendered: the Choose lifts button is there. */
+    /** The lift list (not the empty state) rendered: the Edit button is there. */
     public boolean isLiftViewVisible() {
-        return awaitVisible(page.getByRole(AriaRole.BUTTON,
-                new Page.GetByRoleOptions().setName("Choose lifts")));
+        return awaitVisible(editButton());
+    }
+
+    private Locator editButton() {
+        return page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Edit").setExact(true));
     }
 
     /** True when the old Strength / Cardio sub-tabs are on the page. */
@@ -79,8 +83,9 @@ public class ProgressPage {
         return page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("Choose lifts"));
     }
 
+    /** "Edit" in the nav bar opens Choose lifts. */
     public void openChooser() {
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Choose lifts")).click();
+        editButton().click();
         chooser().waitFor();
     }
 
@@ -99,10 +104,10 @@ public class ProgressPage {
         chooser().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
     }
 
-    // ── Lift cards ───────────────────────────────────────────────────────────
+    // ── Lift rows ────────────────────────────────────────────────────────────
 
     private Locator liftCard(String name) {
-        return page.locator("[data-testid='lift-grid'] .lift-card[aria-label='" + name + "']");
+        return page.locator("[data-testid='lift-grid'] .lift-row[aria-label='" + name + "']");
     }
 
     public boolean isLiftCardVisible(String name) {
@@ -113,12 +118,10 @@ public class ProgressPage {
         liftCard(name).click();
     }
 
-    /** Waits for the lift's card to be the selected one (detail shows that lift). */
-    public boolean isLiftCardActive(String name) {
-        return awaitVisible(page.locator(
-                "[data-testid='lift-grid'] .lift-card[aria-label='" + name + "'][aria-pressed='true']"))
-                && awaitVisible(page.locator(".strength-detail-head h2",
-                        new Page.LocatorOptions().setHasText(name)));
+    /** Tapping a row opens that lift's screen, titled with its name. */
+    public boolean isLiftDetailOpen(String name) {
+        return awaitVisible(page.locator(".strength-detail-title",
+                new Page.LocatorOptions().setHasText(name)));
     }
 
     // ── Detail ───────────────────────────────────────────────────────────────
@@ -128,11 +131,11 @@ public class ProgressPage {
     }
 
     public int getSessionRowCount() {
-        return page.locator(SESSION_TABLE + " tbody tr").count();
+        return page.locator(SESSION_TABLE + " .ios-row").count();
     }
 
     public String getCurrentMaxValue() {
-        Locator el = page.locator("[data-testid='stat-current-max'] .strength-stat-value");
+        Locator el = page.locator("[data-testid='stat-current-max']");
         return el.count() == 0 ? "" : el.first().innerText();
     }
 
@@ -141,7 +144,7 @@ public class ProgressPage {
     }
 
     public boolean hasPRBadge() {
-        return awaitVisible(".strength-cell-weight .strength-pr-tag");
+        return awaitVisible(SESSION_TABLE + " .strength-pr-tag");
     }
 
     public void clickStrengthRange(String label) {

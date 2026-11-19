@@ -13,9 +13,9 @@ import java.util.Locale;
 
 /**
  * The History pages at phone width (390×844): Weekly shows compact day
- * buttons and one chart at a time; Total picks its heatmap metric from a
- * dropdown, opens the selected day in a bottom sheet (dragged down to close),
- * and stacks its trend charts in one column.
+ * buttons and one chart at a time, picked from the stat tiles; Total picks its
+ * heatmap metric from the tiles too, opens the selected day in a bottom sheet
+ * (dragged down to close), and stacks its trend charts in one column.
  */
 public class HistoryMobileTest extends BaseTest {
     private HistoryPage history;
@@ -57,22 +57,17 @@ public class HistoryMobileTest extends BaseTest {
     }
 
     @Test(priority = 0)
-    public void weeklyHeaderShowsWeekOfTitle() {
+    public void weeklyHeaderShowsDateRangeTitle() {
         step("open /history/weekly at phone width");
         history.openWeekly(baseUrl);
 
-        step("the full 'Week of …' title is shown");
+        step("the week's full date range is shown as the title");
         String heading = history.getWeeklyHeading();
-        if (!heading.startsWith("Week of ")) {
-            throw new AssertionError("Expected a 'Week of …' title, got: '" + heading + "'");
+        if (!heading.matches("[A-Z][a-z]{2} \\d{1,2} – .+")) {
+            throw new AssertionError("Expected a date range title like 'Nov 15 – 21', got: '" + heading + "'");
         }
         if (!history.isWeeklyHeadingUntruncated()) {
-            throw new AssertionError("Expected the 'Week of …' title to fit without an ellipsis");
-        }
-
-        step("the nav keeps only its arrows (the title already names the week)");
-        if (history.isWeeklyRangeLabelVisible()) {
-            throw new AssertionError("Did not expect the week range label at phone width");
+            throw new AssertionError("Expected the date range title to fit without an ellipsis");
         }
     }
 
@@ -85,7 +80,7 @@ public class HistoryMobileTest extends BaseTest {
         history.waitForChartShown("Calories per day");
         history.waitForChartHidden("Steps per day");
 
-        step("switch to Steps");
+        step("tap the Steps tile");
         history.selectWeeklyChart("Steps");
         history.waitForChartShown("Steps per day");
         history.waitForChartHidden("Calories per day");
@@ -108,8 +103,8 @@ public class HistoryMobileTest extends BaseTest {
         step("open /history/total at phone width");
         history.openTotal(baseUrl);
 
-        step("color days by Steps using the dropdown");
-        history.selectHeatmapMetricOnPhone("steps");
+        step("color days by Steps using its tile");
+        history.selectHeatmapMetric("Steps");
         history.waitForCalendarDayLabel(todayDate, "Steps 8,500");
 
         step("tap today: it opens in a bottom sheet");

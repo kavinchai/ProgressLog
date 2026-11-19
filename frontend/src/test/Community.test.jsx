@@ -364,7 +364,7 @@ describe("Community — choose lifts", () => {
 		expect(screen.queryByRole("table")).not.toBeInTheDocument();
 	});
 
-	it("signed in starts on the featured lifts, for chips and standing cards", async () => {
+	it("signed in starts on the featured lifts, for the Lift menu and standing cards", async () => {
 		signIn();
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
 		renderCommunity();
@@ -378,7 +378,7 @@ describe("Community — choose lifts", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("adding a lift in Choose lifts shows its chip and standing, and remembers it", async () => {
+	it("adding a lift in Choose lifts adds it to the Lift menu and standing, and remembers it", async () => {
 		const user = userEvent.setup();
 		signIn();
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });

@@ -66,8 +66,8 @@ function rankLabel(standings, name) {
 function noChoiceMessage(signedIn, chosen) {
 	if (!signedIn) return "No featured lifts have been logged this period yet.";
 	if (chosen.size === 0)
-		return "No lifts chosen. Use Choose lifts to pick the exercises to compare.";
-	return "None of your chosen lifts have been logged this period. Try All time or Choose lifts.";
+		return "No lifts chosen. Tap Edit lifts to pick the exercises to compare.";
+	return "None of your chosen lifts have been logged this period. Try All time or Edit lifts.";
 }
 
 // ── Small controls ──────────────────────────────────────────────────────────

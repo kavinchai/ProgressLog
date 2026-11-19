@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Covers the /history routes (Weekly and Total tabs). These pages had zero
+ * Covers the /history routes (Week and Month views). These pages had zero
  * E2E coverage. Seeds known data via the API before driving the UI so the
  * page shows something to assert against — otherwise a freshly created test
  * user shows only empty states.
@@ -98,13 +98,13 @@ public class HistoryPageTest extends BaseTest {
         step("open /history/weekly");
         history.openWeekly(baseUrl);
 
-        step("verify tabs 'Weekly' and 'Total' present, 'Weekly' active");
+        step("verify the 'Week' and 'Month' segments are present, 'Week' selected");
         List<String> tabs = history.getTabLabels();
-        if (!tabs.contains("Weekly") || !tabs.contains("Total")) {
-            throw new AssertionError("Expected Weekly/Total tabs, got: " + tabs);
+        if (!tabs.contains("Week") || !tabs.contains("Month")) {
+            throw new AssertionError("Expected Week/Month segments, got: " + tabs);
         }
-        if (!"Weekly".equals(history.getActiveTabLabel())) {
-            throw new AssertionError("Expected Weekly tab active");
+        if (!"Week".equals(history.getActiveTabLabel())) {
+            throw new AssertionError("Expected Week selected");
         }
     }
 
@@ -146,13 +146,19 @@ public class HistoryPageTest extends BaseTest {
 
     @Test(priority = 5, dependsOnMethods = "weeklyShowsOneCardPerDayOfTheWeek")
     public void weeklyShowsCaloriesAndStepsCharts() {
-        step("verify the daily charts render below the day panel");
+        step("verify the calories chart shows by default");
         if (!history.isChartVisible("Calories per day")) {
             throw new AssertionError("Expected 'Calories per day' chart");
         }
+
+        step("tap the Steps tile: the steps chart replaces it");
+        history.selectWeeklyChart("Steps");
         if (!history.isChartVisible("Steps per day")) {
             throw new AssertionError("Expected 'Steps per day' chart");
         }
+
+        step("back to Calories for the tests that follow");
+        history.selectWeeklyChart("Calories");
     }
 
     @Test(priority = 6, dependsOnMethods = "weeklyShowsOneCardPerDayOfTheWeek")
@@ -209,9 +215,9 @@ public class HistoryPageTest extends BaseTest {
         step("open /history/total");
         history.openTotal(baseUrl);
 
-        step("verify 'Total' tab is active");
-        if (!"Total".equals(history.getActiveTabLabel())) {
-            throw new AssertionError("Expected Total tab to be active");
+        step("verify 'Month' is selected");
+        if (!"Month".equals(history.getActiveTabLabel())) {
+            throw new AssertionError("Expected Month to be selected");
         }
 
         step("verify the heatmap calendar is visible");
@@ -262,7 +268,7 @@ public class HistoryPageTest extends BaseTest {
     public void workoutMetricShowsTheSessionAndAWorkoutOnlyPanel() {
         step("open /history/total and color days by Workout");
         history.openTotal(baseUrl);
-        history.selectHeatmapMetric("Workout");
+        history.selectHeatmapMetric("Workouts");
 
         step("today's cell is labelled with the seeded session name");
         history.waitForCalendarDayLabel(todayDate, "Workout History E2E Today");

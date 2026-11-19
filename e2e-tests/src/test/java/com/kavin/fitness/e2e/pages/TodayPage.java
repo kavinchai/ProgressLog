@@ -156,7 +156,7 @@ public class TodayPage {
     }
 
     private Locator workoutAddExerciseBtn() {
-        return button("+ Add exercise");
+        return button("Add exercise");
     }
 
     /** Wait until the workout section has rendered its initial state. */
@@ -189,7 +189,7 @@ public class TodayPage {
         } else if (workoutAddExerciseBtn().count() > 0) {
             workoutAddExerciseBtn().first().click();
         } else {
-            throw new AssertionError("Neither Start workout nor + Add exercise visible in workout section");
+            throw new AssertionError("Neither Start workout nor Add exercise visible in workout section");
         }
     }
 

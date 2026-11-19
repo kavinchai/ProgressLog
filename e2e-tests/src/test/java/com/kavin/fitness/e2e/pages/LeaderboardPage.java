@@ -9,9 +9,12 @@ public class LeaderboardPage {
     private final Page page;
 
     private static final String PAGE = ".lb-page";
-    private static final String TITLE = ".lb-title";
+    // The public hero title, or the large "Community" title when signed in.
+    private static final String TITLE = ".lb-title, .lb-page .ios-large-title";
     private static final String LOADED = ".lb-table, .lb-empty";
-    private static final String LIFT_CHOICES = "[role='group'][aria-label='Lift'] button";
+    // The board's title: a "Lift: …" menu when there's more than one lift.
+    private static final String LIFT_CHOICES = ".lb-card-title";
+    private static final String LIFT_MENU_BUTTON = "button.lb-lift-menu";
     private static final String PERIOD = "[role='group'][aria-label='Period']";
     private static final String EMPTY = ".lb-empty";
 
@@ -42,12 +45,22 @@ public class LeaderboardPage {
 
     /** Shows the given lift's board when it has one; no-op when it doesn't. */
     public void chooseLift(String name) {
-        Locator chip = page.locator("[role='group'][aria-label='Lift']").getByRole(AriaRole.BUTTON,
+        Locator trigger = page.locator(LIFT_MENU_BUTTON);
+        if (trigger.count() == 0) return;
+        if (("Lift: " + name).equals(trigger.getAttribute("aria-label"))) return;
+        trigger.click();
+        Locator item = liftMenu().getByRole(AriaRole.MENUITEMRADIO,
                 new Locator.GetByRoleOptions().setName(name).setExact(true));
-        if (chip.count() == 0) return;
-        chip.click();
-        page.locator("[role='group'][aria-label='Lift'] button[aria-pressed='true']:has-text(\"" + name + "\")")
-                .waitFor();
+        if (item.count() == 0) {
+            page.keyboard().press("Escape");
+            return;
+        }
+        item.click();
+        page.locator(LIFT_MENU_BUTTON + "[aria-label='Lift: " + name + "']").waitFor();
+    }
+
+    private Locator liftMenu() {
+        return page.getByRole(AriaRole.MENU, new Page.GetByRoleOptions().setName("Lift"));
     }
 
     public boolean isTitleVisible() {
@@ -111,7 +124,7 @@ public class LeaderboardPage {
     }
 
     public void openChooser() {
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Choose lifts")).click();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Edit lifts")).click();
         chooser().waitFor();
     }
 
@@ -145,24 +158,31 @@ public class LeaderboardPage {
         chooser().waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
     }
 
-    private Locator liftChip(String name) {
-        return page.locator("[role='group'][aria-label='Lift']").getByRole(AriaRole.BUTTON,
-                new Locator.GetByRoleOptions().setName(name).setExact(true));
-    }
-
-    /** Waits up to 5s for the lift to be one of the board's lift chips. */
-    public boolean awaitLiftChip(String name) {
-        try {
-            liftChip(name).waitFor(new Locator.WaitForOptions().setTimeout(5000));
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /** True if the lift is a chip right now (call after waitForLoaded). */
+    /**
+     * True if the lift is one of the board's lifts right now: an item in the
+     * "Lift" menu, or the board's title when only one lift is chosen.
+     */
     public boolean hasLiftChip(String name) {
-        return liftChip(name).count() > 0;
+        Locator trigger = page.locator(LIFT_MENU_BUTTON);
+        if (trigger.count() == 0) {
+            Locator title = page.locator(LIFT_CHOICES);
+            return title.count() > 0 && name.equals(title.first().innerText().trim());
+        }
+        trigger.click();
+        boolean listed = liftMenu().getByRole(AriaRole.MENUITEMRADIO,
+                new Locator.GetByRoleOptions().setName(name).setExact(true)).count() > 0;
+        page.keyboard().press("Escape");
+        return listed;
+    }
+
+    /** Waits up to 5s for the lift to be one of the board's lifts. */
+    public boolean awaitLiftChip(String name) {
+        long deadline = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < deadline) {
+            if (hasLiftChip(name)) return true;
+            page.waitForTimeout(250);
+        }
+        return false;
     }
 
     /** Returns the total lifter count shown in the stats banner, or 0 if not present. */

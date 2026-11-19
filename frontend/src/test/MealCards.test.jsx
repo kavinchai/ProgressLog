@@ -326,15 +326,15 @@ describe("MealCards — skipping a meal", () => {
 		expect(api.put).not.toHaveBeenCalled();
 	});
 
-	it("extra meals have no Skipped box", async () => {
+	it("extra meals have no Skipped switch", async () => {
 		setup(logWith([SNACK]));
 		await userEvent.click(button("Edit Snack"));
-		expect(sheet().queryByRole("checkbox")).not.toBeInTheDocument();
+		expect(sheet().queryByRole("switch")).not.toBeInTheDocument();
 	});
 });
 
 describe("MealCards — extra meals", () => {
-	it("+ Add meal opens a sheet with a name field", async () => {
+	it("Add meal opens a sheet with a name field", async () => {
 		setup(logWith([]));
 		await userEvent.click(button("Add meal"));
 		expect(

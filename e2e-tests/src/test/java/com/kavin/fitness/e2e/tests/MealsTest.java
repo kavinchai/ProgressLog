@@ -57,7 +57,7 @@ public class MealsTest extends BaseTest {
 
     @Test(priority = 3, dependsOnMethods = "loggingBreakfastInTheSheetSavesIt")
     public void markingLunchSkippedRecordsASkippedMeal() {
-        step("+ Add Lunch, tick Skipped lunch, Save");
+        step("+ Add Lunch, turn on Skipped lunch, Save");
         meals.skipMeal("Lunch");
         meals.assertRowDetail("Lunch", "Skipped");
 
@@ -69,7 +69,7 @@ public class MealsTest extends BaseTest {
 
     @Test(priority = 4, dependsOnMethods = "loggingBreakfastInTheSheetSavesIt")
     public void extraMealGetsItsOwnName() {
-        step("+ Add meal, name it Snack, enter Protein bar 300 kcal 23 g, Save");
+        step("Add meal, name it Snack, enter Protein bar 300 kcal 23 g, Save");
         meals.addExtraMeal("Snack", "Protein bar", "300", "23");
 
         step("totals include the snack: 920 kcal / 65 g eaten");
