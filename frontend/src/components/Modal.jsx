@@ -4,10 +4,11 @@ import "./Modal.css";
 const DRAG_CLOSE_PX = 80; // drag the sheet down this far to close it
 
 /**
+ * Pass `grouped` for a sheet of iOS grouped lists (gray behind the rows).
  * Pass `form` ({ id, saving, disabled? }) for an iOS-style form sheet: Cancel, the title
  * and Save across the top, where Save submits the form with that id.
  */
-export default function Modal({ title, onClose, children, form }) {
+export default function Modal({ title, onClose, children, form, grouped }) {
 	const modalRef = useRef(null);
 	const closeButtonRef = useRef(null);
 	const previousActiveElement = useRef(null);
@@ -106,7 +107,7 @@ export default function Modal({ title, onClose, children, form }) {
 		<div className="modal-overlay" onClick={onClose}>
 			<dialog
 				open
-				className={"modal-box" + (form ? " modal-box--sheet" : "")}
+				className={"modal-box" + (form || grouped ? " modal-box--sheet" : "")}
 				onClick={(e) => e.stopPropagation()}
 				ref={modalRef}
 				aria-modal="true"

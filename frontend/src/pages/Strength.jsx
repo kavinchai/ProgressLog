@@ -16,6 +16,7 @@ import {
 	SegmentedControl,
 } from "../components/ios/Ios";
 import ChooseLiftsModal from "../components/ChooseLiftsModal";
+import AchievementsEntry from "../components/achievements/AchievementsEntry";
 import { loadChosen, saveChosen, sortLifts } from "../utils/chosenLifts";
 import featuredConfig from "../config/featuredExercises.json";
 import "./Strength.css";
@@ -482,6 +483,8 @@ export default function Strength() {
 				}
 			/>
 
+			<AchievementsEntry />
+
 			{cards.length === 0 ? (
 				<div className="strength-empty">
 					<p>No lifts chosen.</p>
@@ -491,6 +494,7 @@ export default function Strength() {
 				</div>
 			) : (
 				<ListGroup
+					header="Lifts"
 					footer={`${cards.length} of ${lifts.length} lifts shown. Tap Edit to choose which appear.`}
 				>
 					<div className="lift-list" data-testid="lift-grid">
