@@ -162,7 +162,7 @@
 }
 
 .login-btn:hover:not(:disabled) {
-	background: var(--color-primary-dark);
+	background: var(--accent-deep);
 }
 
 .login-btn:active:not(:disabled) {

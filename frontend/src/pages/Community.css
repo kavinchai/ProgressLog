@@ -803,6 +803,12 @@
 	background: var(--bg);
 }
 
+/* The signed-out page starts with a white top bar: match the strip behind
+   the status bar to it. */
+body:has(.lb-public)::before {
+	background: var(--bg-card);
+}
+
 .lb-topbar {
 	display: flex;
 	align-items: center;
