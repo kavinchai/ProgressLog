@@ -30,7 +30,9 @@
 	overflow: hidden;
 }
 
-.day-detail-section > :not(.day-detail-section-head) + :not(.day-detail-section-head) {
+.day-detail-section
+	> :not(.day-detail-section-head)
+	+ :not(.day-detail-section-head) {
 	border-top: 0.5px solid var(--border);
 }
 

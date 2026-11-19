@@ -425,8 +425,6 @@
 
 /* ── Tablet ── */
 @media (max-width: 960px) {
-	
-
 	.history-charts {
 		grid-template-columns: minmax(0, 1fr);
 	}
@@ -444,22 +442,8 @@
 	/* Weekly and Total headers stay on one line for every period: the
 	   title already names the week or month, so the nav drops its label
 	   and keeps just the arrows. */
-	
-
-	
-
-	
-
-	
 
 	/* Summary: four stats 2×2, Workouts (with its day dots) full width */
-	
-
-	
-
-	
-
-	
 
 	/* Week strip: 7 compact day buttons (day, date, workout dot) across the width */
 	.week-strip {
@@ -523,9 +507,6 @@
 	}
 
 	/* One chart at a time, picked with the Calories / Steps switch */
-	
-
-	
 
 	.history-charts[data-show="calories"] [data-chart="steps"],
 	.history-charts[data-show="steps"] [data-chart="calories"] {
@@ -555,8 +536,6 @@
 	.heatmap-sub {
 		display: none;
 	}
-
-	
 
 	/* Day sheet: prev / next day controls */
 	.history-sheet-nav {

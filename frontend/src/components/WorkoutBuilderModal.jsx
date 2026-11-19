@@ -215,7 +215,6 @@ export default function WorkoutBuilderModal({
 						</div>
 					</dialog>
 				)}
-
 			</form>
 		</Modal>
 	);

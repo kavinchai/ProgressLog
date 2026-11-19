@@ -6,16 +6,16 @@ shows them on the Achievements screens and on the sheet after a workout.
 To use your own drawing, replace a file here with yours under the same name.
 No code changes are needed.
 
-| File | Milestone | Weight |
-| --- | --- | --- |
-| piano.svg | Grand piano | 1,000 lbs |
-| car.svg | Car | 4,000 lbs |
-| elephant.svg | Elephant | 13,000 lbs |
-| t-rex.svg | T. rex | 18,000 lbs |
-| school-bus.svg | School bus | 25,000 lbs |
-| boeing-737.svg | Boeing 737 | 90,000 lbs |
+| File              | Milestone     | Weight      |
+| ----------------- | ------------- | ----------- |
+| piano.svg         | Grand piano   | 1,000 lbs   |
+| car.svg           | Car           | 4,000 lbs   |
+| elephant.svg      | Elephant      | 13,000 lbs  |
+| t-rex.svg         | T. rex        | 18,000 lbs  |
+| school-bus.svg    | School bus    | 25,000 lbs  |
+| boeing-737.svg    | Boeing 737    | 90,000 lbs  |
 | space-shuttle.svg | Space shuttle | 165,000 lbs |
-| blue-whale.svg | Blue whale | 300,000 lbs |
+| blue-whale.svg    | Blue whale    | 300,000 lbs |
 
 Tips:
 

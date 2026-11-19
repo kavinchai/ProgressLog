@@ -3,11 +3,7 @@ import useFetch from "../hooks/useFetch";
 import useWeightUnit from "../hooks/useWeightUnit";
 import { formatDate } from "../utils/date";
 import { ChevronLeft, ListFilter } from "lucide-react";
-import {
-	rangeDaysFor,
-	filterByRange,
-	RANGE_OPTIONS,
-} from "../utils/dateRange";
+import { rangeDaysFor, filterByRange, RANGE_OPTIONS } from "../utils/dateRange";
 import {
 	ListGroup,
 	ListRow,

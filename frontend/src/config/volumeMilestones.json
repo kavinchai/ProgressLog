@@ -1,10 +1,58 @@
 [
-	{ "id": "piano", "name": "Grand piano", "article": "a grand piano", "lbs": 1000, "art": "piano.svg" },
-	{ "id": "car", "name": "Car", "article": "a car", "lbs": 4000, "art": "car.svg" },
-	{ "id": "elephant", "name": "Elephant", "article": "an elephant", "lbs": 13000, "art": "elephant.svg" },
-	{ "id": "t-rex", "name": "T. rex", "article": "a T. rex", "lbs": 18000, "art": "t-rex.svg" },
-	{ "id": "school-bus", "name": "School bus", "article": "a school bus", "lbs": 25000, "art": "school-bus.svg" },
-	{ "id": "boeing-737", "name": "Boeing 737", "article": "a Boeing 737", "lbs": 90000, "art": "boeing-737.svg" },
-	{ "id": "space-shuttle", "name": "Space shuttle", "article": "a space shuttle", "lbs": 165000, "art": "space-shuttle.svg" },
-	{ "id": "blue-whale", "name": "Blue whale", "article": "a blue whale", "lbs": 300000, "art": "blue-whale.svg" }
+	{
+		"id": "piano",
+		"name": "Grand piano",
+		"article": "a grand piano",
+		"lbs": 1000,
+		"art": "piano.svg"
+	},
+	{
+		"id": "car",
+		"name": "Car",
+		"article": "a car",
+		"lbs": 4000,
+		"art": "car.svg"
+	},
+	{
+		"id": "elephant",
+		"name": "Elephant",
+		"article": "an elephant",
+		"lbs": 13000,
+		"art": "elephant.svg"
+	},
+	{
+		"id": "t-rex",
+		"name": "T. rex",
+		"article": "a T. rex",
+		"lbs": 18000,
+		"art": "t-rex.svg"
+	},
+	{
+		"id": "school-bus",
+		"name": "School bus",
+		"article": "a school bus",
+		"lbs": 25000,
+		"art": "school-bus.svg"
+	},
+	{
+		"id": "boeing-737",
+		"name": "Boeing 737",
+		"article": "a Boeing 737",
+		"lbs": 90000,
+		"art": "boeing-737.svg"
+	},
+	{
+		"id": "space-shuttle",
+		"name": "Space shuttle",
+		"article": "a space shuttle",
+		"lbs": 165000,
+		"art": "space-shuttle.svg"
+	},
+	{
+		"id": "blue-whale",
+		"name": "Blue whale",
+		"article": "a blue whale",
+		"lbs": 300000,
+		"art": "blue-whale.svg"
+	}
 ]

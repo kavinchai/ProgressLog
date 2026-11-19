@@ -508,15 +508,9 @@
 
 /* ── Phone ── */
 @media (max-width: 640px) {
-	
-
 	.lb-title {
 		font-size: var(--fs-xl);
 	}
-
-	
-
-	
 
 	/* Standing cards: compact, scrolling sideways instead of stacking. */
 	.lb-standing {
@@ -566,14 +560,6 @@
 		font-size: 11px;
 		white-space: nowrap;
 	}
-
-	
-
-	
-
-	
-
-	
 
 	.lb-col-date {
 		display: none;
@@ -633,8 +619,6 @@
 		padding: 0 12px;
 		gap: var(--space-xs);
 	}
-
-	
 
 	.lb-topbar .btn-ghost {
 		padding: 10px 12px;

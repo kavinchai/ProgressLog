@@ -305,7 +305,13 @@ export default function WeeklyStats() {
 									: stepsGoal
 						}
 						color={CHART_COLORS[chartShow]}
-						unit={chartShow === "protein" ? "g" : chartShow === "steps" ? "steps" : "kcal"}
+						unit={
+							chartShow === "protein"
+								? "g"
+								: chartShow === "steps"
+									? "steps"
+									: "kcal"
+						}
 					/>
 				)}
 			</div>

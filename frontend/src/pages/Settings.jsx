@@ -221,7 +221,11 @@ function Group({ title, children }) {
 function RowIcon({ icon: Icon, color }) {
 	if (!Icon) return null;
 	return (
-		<span className="settings-icon" style={{ background: color }} aria-hidden="true">
+		<span
+			className="settings-icon"
+			style={{ background: color }}
+			aria-hidden="true"
+		>
 			<Icon size={17} strokeWidth={2.2} />
 		</span>
 	);
