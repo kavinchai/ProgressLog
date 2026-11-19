@@ -1,3 +1,4 @@
+import { CirclePlus } from "lucide-react";
 import { useState } from "react";
 import api from "../api";
 import useDeleteWithUndo from "../hooks/useDeleteWithUndo";
@@ -119,7 +120,8 @@ export default function MealCards({
 					className="status-add-chip"
 					onClick={() => setEditing({ slot: null, meal: null })}
 				>
-					+ Add meal
+					<CirclePlus size={20} aria-hidden="true" />
+					Add meal
 				</button>
 			</div>
 			{editing && (

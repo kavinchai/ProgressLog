@@ -139,8 +139,12 @@ export default function WorkoutBuilderModal({
 	}
 
 	return (
-		<Modal title={isEditing ? "Edit Workout" : "Log Workout"} onClose={onClose}>
-			<form className="wbm-form" onSubmit={submit}>
+		<Modal
+			title={isEditing ? "Edit Workout" : "Log Workout"}
+			onClose={onClose}
+			form={{ id: "workout-form", saving, disabled: Boolean(similar) }}
+		>
+			<form id="workout-form" className="wbm-form" onSubmit={submit}>
 				{err && <div className="modal-error">{err}</div>}
 
 				<div className="modal-field">
@@ -212,18 +216,6 @@ export default function WorkoutBuilderModal({
 					</dialog>
 				)}
 
-				<div className="modal-actions">
-					<button type="button" className="btn-ghost" onClick={onClose}>
-						Cancel
-					</button>
-					<button
-						type="submit"
-						className="btn-primary"
-						disabled={saving || Boolean(similar)}
-					>
-						{saving ? "Saving..." : "Save"}
-					</button>
-				</div>
 			</form>
 		</Modal>
 	);

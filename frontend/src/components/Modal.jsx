@@ -4,7 +4,7 @@ import "./Modal.css";
 const DRAG_CLOSE_PX = 80; // drag the sheet down this far to close it
 
 /**
- * Pass `form` ({ id, saving }) for an iOS-style form sheet: Cancel, the title
+ * Pass `form` ({ id, saving, disabled? }) for an iOS-style form sheet: Cancel, the title
  * and Save across the top, where Save submits the form with that id.
  */
 export default function Modal({ title, onClose, children, form }) {
@@ -106,7 +106,7 @@ export default function Modal({ title, onClose, children, form }) {
 		<div className="modal-overlay" onClick={onClose}>
 			<dialog
 				open
-				className="modal-box"
+				className={"modal-box" + (form ? " modal-box--sheet" : "")}
 				onClick={(e) => e.stopPropagation()}
 				ref={modalRef}
 				aria-modal="true"
@@ -144,7 +144,7 @@ export default function Modal({ title, onClose, children, form }) {
 							type="submit"
 							form={form.id}
 							className="modal-header-btn modal-header-save"
-							disabled={form.saving}
+							disabled={form.saving || form.disabled}
 						>
 							{form.saving ? "Saving…" : "Save"}
 						</button>

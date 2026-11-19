@@ -33,8 +33,12 @@ export default function DayInfoModal({
 	}
 
 	return (
-		<Modal title="Day Info" onClose={onClose}>
-			<form className="modal-form" onSubmit={submit}>
+		<Modal
+			title="Day Info"
+			onClose={onClose}
+			form={{ id: "day-info-form", saving }}
+		>
+			<form id="day-info-form" className="modal-form" onSubmit={submit}>
 				{err && <div className="modal-error">{err}</div>}
 				<div className="modal-field">
 					<label className="modal-label" htmlFor="day-info-type">
@@ -49,14 +53,6 @@ export default function DayInfoModal({
 						<option value="training">Training</option>
 						<option value="rest">Rest</option>
 					</select>
-				</div>
-				<div className="modal-actions">
-					<button type="button" className="btn-ghost" onClick={onClose}>
-						Cancel
-					</button>
-					<button type="submit" className="btn-primary" disabled={saving}>
-						{saving ? "Saving..." : "Save"}
-					</button>
 				</div>
 			</form>
 		</Modal>

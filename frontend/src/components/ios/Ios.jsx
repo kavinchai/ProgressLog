@@ -1,0 +1,205 @@
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Check, ChevronDown, ChevronRight } from "lucide-react";
+import "./ios.css";
+
+/** Large-title page header, like iOS: an optional nav row, then the title. */
+export function PageHeader({ title, subtitle, leading, trailing }) {
+	return (
+		<header className="ios-header">
+			{(leading || trailing) && (
+				<div className="ios-nav">
+					<span className="ios-nav-side">{leading}</span>
+					<span className="ios-nav-side ios-nav-trailing">{trailing}</span>
+				</div>
+			)}
+			<h1 className="ios-large-title">{title}</h1>
+			{subtitle && <p className="ios-subtitle">{subtitle}</p>}
+		</header>
+	);
+}
+
+/** iOS segmented control: a gray track with a white selected segment. */
+export function SegmentedControl({ label, options, value, onChange, className = "" }) {
+	return (
+		<div className={"ios-seg " + className} role="group" aria-label={label}>
+			{options.map((o) => (
+				<button
+					key={o.value}
+					type="button"
+					aria-pressed={value === o.value}
+					className={value === o.value ? "on" : ""}
+					onClick={() => onChange(o.value)}
+				>
+					{o.label}
+				</button>
+			))}
+		</div>
+	);
+}
+
+/** Inset grouped list section with an optional header and footer. */
+export function ListGroup({ header, footer, children, className = "", label }) {
+	return (
+		<section className={"ios-section " + className} aria-label={label}>
+			{header && <div className="ios-section-header">{header}</div>}
+			<div className="ios-group">{children}</div>
+			{footer && <p className="ios-section-footer">{footer}</p>}
+		</section>
+	);
+}
+
+/**
+ * One row in a ListGroup. With `onClick` it's a button (and gets a chevron
+ * when `chevron` is set); otherwise a plain row.
+ */
+export function ListRow({
+	icon,
+	iconColor,
+	label,
+	detail,
+	value,
+	chevron,
+	onClick,
+	destructive,
+	accent,
+	children,
+	ariaLabel,
+}) {
+	const body = (
+		<>
+			{icon && (
+				<span className="ios-row-icon" style={{ background: iconColor }} aria-hidden="true">
+					{icon}
+				</span>
+			)}
+			{label != null && (
+				<span className="ios-row-text">
+					<span className="ios-row-label">{label}</span>
+					{detail && <span className="ios-row-detail">{detail}</span>}
+				</span>
+			)}
+			{children}
+			{value != null && <span className="ios-row-value">{value}</span>}
+			{chevron && <ChevronRight size={16} className="ios-row-chevron" aria-hidden="true" />}
+		</>
+	);
+	const cls =
+		"ios-row" +
+		(destructive ? " ios-row--destructive" : "") +
+		(accent ? " ios-row--accent" : "");
+	return onClick ? (
+		<button type="button" className={cls + " ios-row--button"} onClick={onClick} aria-label={ariaLabel}>
+			{body}
+		</button>
+	) : (
+		<div className={cls}>{body}</div>
+	);
+}
+
+/** iOS switch. */
+export function Switch({ checked, onChange, label, disabled }) {
+	return (
+		<button
+			type="button"
+			role="switch"
+			aria-checked={checked}
+			aria-label={label}
+			disabled={disabled}
+			className={"ios-switch" + (checked ? " on" : "")}
+			onClick={() => onChange(!checked)}
+		/>
+	);
+}
+
+/**
+ * A pull-down menu like iOS: a button that opens a list of choices.
+ * `sections` is [{ title?, options: [{ value, label }], value, onChange }].
+ * Shows a check next to each section's chosen option.
+ */
+export function PullDownMenu({ label, buttonLabel, icon, sections, className = "" }) {
+	const [open, setOpen] = useState(false);
+	const [position, setPosition] = useState(null);
+	const triggerRef = useRef(null);
+	const listRef = useRef(null);
+
+	useEffect(() => {
+		if (!open) return;
+		const rect = triggerRef.current?.getBoundingClientRect();
+		if (rect) {
+			setPosition({
+				top: rect.bottom + 6,
+				right: Math.max(window.innerWidth - rect.right, 8),
+			});
+		}
+		function onPointerDown(e) {
+			if (
+				!triggerRef.current?.contains(e.target) &&
+				!listRef.current?.contains(e.target)
+			) {
+				setOpen(false);
+			}
+		}
+		function onKeyDown(e) {
+			if (e.key === "Escape") setOpen(false);
+		}
+		document.addEventListener("pointerdown", onPointerDown);
+		document.addEventListener("keydown", onKeyDown);
+		return () => {
+			document.removeEventListener("pointerdown", onPointerDown);
+			document.removeEventListener("keydown", onKeyDown);
+		};
+	}, [open]);
+
+	return (
+		<>
+			<button
+				ref={triggerRef}
+				type="button"
+				className={"ios-pulldown " + className}
+				aria-label={label}
+				aria-haspopup="menu"
+				aria-expanded={open}
+				onClick={() => setOpen(!open)}
+			>
+				{buttonLabel}
+				{icon ?? <ChevronDown size={15} aria-hidden="true" />}
+			</button>
+			{open &&
+				createPortal(
+					<div
+						ref={listRef}
+						className="ios-menu"
+						role="menu"
+						aria-label={label}
+						style={position ?? undefined}
+					>
+						{sections.map((s, i) => (
+							<div key={s.title ?? i} className="ios-menu-section">
+								{s.title && <div className="ios-menu-title">{s.title}</div>}
+								{s.options.map((o) => (
+									<button
+										key={o.value}
+										type="button"
+										role="menuitemradio"
+										aria-checked={s.value === o.value}
+										className="ios-menu-item"
+										onClick={() => {
+											setOpen(false);
+											s.onChange(o.value);
+										}}
+									>
+										<span className="ios-menu-check">
+											{s.value === o.value && <Check size={16} aria-hidden="true" />}
+										</span>
+										{o.label}
+									</button>
+								))}
+							</div>
+						))}
+					</div>,
+					document.body,
+				)}
+		</>
+	);
+}

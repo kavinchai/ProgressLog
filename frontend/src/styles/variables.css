@@ -1,6 +1,6 @@
 :root {
 	/* ── Core palette ── */
-	--bg: #f7f7f8;
+	--bg: #f2f2f7;
 	--bg-card: #ffffff;
 	--bg-elevated: #ffffff;
 	--fg: #111318;
@@ -32,7 +32,6 @@
 
 	/* ── Layout ── */
 	--sidebar-width: 240px;
-	--navbar-height: 56px;
 	--bottom-tab-height: 60px;
 
 	/* ── Typography — Inter, monospace only for --font-mono ── */

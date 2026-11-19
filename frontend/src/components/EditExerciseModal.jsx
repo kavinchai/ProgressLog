@@ -1,3 +1,4 @@
+import { CircleMinus, CirclePlus } from "lucide-react";
 import { useState } from "react";
 import api from "../api";
 import { errorMessage } from "../utils/errors";
@@ -111,143 +112,124 @@ export default function EditExerciseModal({
 	}
 
 	return (
-		<Modal title={"Edit: " + exerciseName} onClose={onClose}>
-			<form className="wbm-form" onSubmit={submit}>
+		<Modal
+			title={exerciseName}
+			onClose={onClose}
+			form={{ id: "edit-exercise-form", saving }}
+		>
+			<form id="edit-exercise-form" className="modal-form" onSubmit={submit}>
 				{err && <div className="modal-error">{err}</div>}
 
-				<div className="wbm-sets">
-					<div className="wbm-sets-head">
-						<span>Set</span>
-						<span>Weight ({unit})</span>
-						<span>Reps</span>
-						<span></span>
-					</div>
+				<div className="sheet-section-header">Sets · {unit} × reps</div>
+				<div className="sheet-group">
 					{sets.map((s, setIndex) => (
-						<div key={setIndex} className="wbm-set-row">
-							<span className="wbm-set-num">{s.setNumber}</span>
+						<div key={setIndex} className="sheet-set-row">
+							<span className="sheet-set-label">Set {s.setNumber}</span>
 							<input
-								className="modal-input wbm-set-input"
+								className="sheet-set-input"
 								type="number"
+								inputMode="decimal"
 								step="0.5"
 								min="0"
+								aria-label={`Set ${s.setNumber} weight`}
 								value={s.weightLbs}
 								onChange={(e) =>
 									updateSet(setIndex, "weightLbs", e.target.value)
 								}
 							/>
+							<span className="sheet-field-unit" aria-hidden="true">
+								×
+							</span>
 							<input
-								className="modal-input wbm-set-input"
+								className="sheet-set-input sheet-set-input--reps"
 								type="number"
+								inputMode="numeric"
 								min="0"
+								aria-label={`Set ${s.setNumber} reps`}
 								value={s.reps}
 								onChange={(e) => updateSet(setIndex, "reps", e.target.value)}
 							/>
 							<button
 								type="button"
-								className="btn btn-sm"
+								className="sheet-set-remove"
+								aria-label={`Remove set ${s.setNumber}`}
 								onClick={() => removeSet(setIndex)}
 							>
-								&times;
+								<CircleMinus size={20} aria-hidden="true" />
 							</button>
 						</div>
 					))}
-					<button type="button" className="btn btn-sm" onClick={addSet}>
-						+ Set
+					<button type="button" className="sheet-add-row" onClick={addSet}>
+						<CirclePlus size={20} aria-hidden="true" />
+						Add set
 					</button>
 				</div>
 
-				{!deletePhase && (
-					<div
-						className="modal-actions"
-						style={{ justifyContent: "space-between" }}
-					>
+				<div className="sheet-group sheet-group--spaced">
+					{!deletePhase && (
 						<button
 							type="button"
-							className="btn btn-sm btn-danger"
+							className="sheet-row-button sheet-row-button--danger"
 							onClick={() => setDeletePhase("confirm")}
 							disabled={saving}
 						>
-							Delete Exercise
+							Delete exercise
 						</button>
-						<div style={{ display: "flex", gap: 8 }}>
-							<button type="button" className="btn-ghost" onClick={onClose}>
-								Cancel
-							</button>
-							<button type="submit" className="btn-primary" disabled={saving}>
-								{saving ? "Saving..." : "Save"}
-							</button>
-						</div>
-					</div>
-				)}
-				{deletePhase === "confirm" && (
-					<div
-						className="modal-actions"
-						style={{ justifyContent: "space-between" }}
-					>
-						<span style={{ fontSize: "var(--fs-sm)", color: "var(--danger)" }}>
-							Delete this exercise?
-						</span>
-						<div style={{ display: "flex", gap: 8 }}>
+					)}
+					{deletePhase === "confirm" && (
+						<>
 							<button
 								type="button"
-								className="btn-ghost"
-								onClick={() => setDeletePhase(null)}
-							>
-								Cancel
-							</button>
-							<button
-								type="button"
-								className="btn btn-sm btn-danger"
+								className="sheet-row-button sheet-row-button--danger"
 								onClick={deleteExercise}
 								disabled={saving}
 							>
-								Confirm Delete
-							</button>
-						</div>
-					</div>
-				)}
-				{deletePhase === "deleted" && (
-					<div
-						className="modal-actions"
-						style={{ justifyContent: "space-between" }}
-					>
-						<span style={{ fontSize: "var(--fs-sm)" }}>Exercise deleted.</span>
-						<div style={{ display: "flex", gap: 8 }}>
-							<button type="button" className="btn-ghost" onClick={onClose}>
-								Done
+								Confirm delete
 							</button>
 							<button
 								type="button"
-								className="btn btn-sm btn-primary"
+								className="sheet-row-button"
+								onClick={() => setDeletePhase(null)}
+							>
+								Keep exercise
+							</button>
+						</>
+					)}
+					{deletePhase === "deleted" && (
+						<>
+							<div className="sheet-row-note">Exercise deleted.</div>
+							<button
+								type="button"
+								className="sheet-row-button"
 								onClick={handleUndo}
 							>
 								Undo
 							</button>
-						</div>
-					</div>
-				)}
-				{deletePhase === "undoing" && (
-					<div className="modal-actions">
-						<span style={{ fontSize: "var(--fs-sm)" }}>Restoring...</span>
-					</div>
-				)}
-				{deletePhase === "undone" && (
-					<div
-						className="modal-actions"
-						style={{ justifyContent: "space-between" }}
-					>
-						<span style={{ fontSize: "var(--fs-sm)", color: "var(--success)" }}>
-							Restored!
-						</span>
-						<button
-							type="button"
-							className="btn btn-sm btn-primary"
-							onClick={onClose}
-						>
-							OK
-						</button>
-					</div>
-				)}
+							<button
+								type="button"
+								className="sheet-row-button"
+								onClick={onClose}
+							>
+								Done
+							</button>
+						</>
+					)}
+					{deletePhase === "undoing" && (
+						<div className="sheet-row-note">Restoring…</div>
+					)}
+					{deletePhase === "undone" && (
+						<>
+							<div className="sheet-row-note">Restored.</div>
+							<button
+								type="button"
+								className="sheet-row-button"
+								onClick={onClose}
+							>
+								OK
+							</button>
+						</>
+					)}
+				</div>
 			</form>
 		</Modal>
 	);

@@ -199,8 +199,8 @@
 
 /* Grouped fields, like iOS Settings: label left, value right */
 .sheet-group {
-	border: 1px solid var(--border);
-	border-radius: var(--radius-md);
+	border: 0;
+	border-radius: 12px;
 	background: var(--bg-card);
 	overflow: hidden;
 }
@@ -262,58 +262,21 @@ fieldset.sheet-group:disabled {
 }
 
 /* A tick-box row, e.g. "Skipped breakfast" */
-.sheet-check {
+.sheet-switch-row {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 12px;
 	min-height: 48px;
-	padding: 0 14px;
-	font-size: var(--fs);
-	color: var(--text);
-	cursor: pointer;
-	-webkit-tap-highlight-color: transparent;
+	padding: 6px 16px;
+	font-size: 1rem;
 }
 
-.sheet-check-box {
-	appearance: none;
-	flex-shrink: 0;
-	display: grid;
-	place-content: center;
-	width: 22px;
-	height: 22px;
+.sheet-footnote {
+	font-size: 0.8125rem;
+	color: var(--text-muted);
+	padding: 6px 16px 0;
 	margin: 0;
-	border: 1.5px solid var(--border-strong);
-	border-radius: var(--radius-sm);
-	background: transparent;
-	cursor: pointer;
-	transition:
-		background 0.15s,
-		border-color 0.15s;
-}
-
-.sheet-check-box::after {
-	content: "";
-	width: 6px;
-	height: 11px;
-	margin-top: -2px;
-	border: solid var(--accent-fg);
-	border-width: 0 2px 2px 0;
-	transform: rotate(45deg) scale(0);
-	transition: transform 0.15s;
-}
-
-.sheet-check-box:checked {
-	background: var(--accent);
-	border-color: var(--accent);
-}
-
-.sheet-check-box:checked::after {
-	transform: rotate(45deg) scale(1);
-}
-
-.sheet-check-box:focus-visible {
-	outline: 2px solid var(--accent);
-	outline-offset: 2px;
 }
 
 @keyframes modalSheetUp {
@@ -385,4 +348,91 @@ fieldset.sheet-group:disabled {
 	.modal-box {
 		animation: none;
 	}
+}
+
+/* Sheet lists: section headers, set rows, add and action rows. */
+.sheet-section-header {
+	font-size: 0.8125rem;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: var(--text-muted);
+	padding: 0 16px 6px;
+}
+.sheet-group--spaced {
+	margin-top: 22px;
+}
+.sheet-set-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 48px;
+	padding: 6px 12px 6px 16px;
+}
+.sheet-set-row + .sheet-set-row,
+.sheet-group > * + .sheet-add-row,
+.sheet-group > * + .sheet-row-button,
+.sheet-group > * + .sheet-row-note {
+	border-top: 0.5px solid var(--border);
+}
+.sheet-set-label {
+	flex: 1;
+	font-size: 1rem;
+	color: var(--fg);
+}
+.sheet-set-input {
+	width: 72px;
+	text-align: right;
+	border: 0;
+	border-radius: 8px;
+	background: var(--bg);
+	padding: 7px 8px;
+	font: inherit;
+	font-size: 1.0625rem;
+	color: var(--fg);
+}
+.sheet-set-input--reps {
+	width: 52px;
+}
+.sheet-set-remove {
+	border: 0;
+	background: none;
+	color: var(--danger);
+	padding: 6px;
+	display: flex;
+	cursor: pointer;
+}
+.sheet-add-row,
+.sheet-row-button {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	min-height: 44px;
+	padding: 10px 16px;
+	border: 0;
+	background: none;
+	font: inherit;
+	font-size: 1rem;
+	color: var(--accent);
+	text-align: left;
+	cursor: pointer;
+}
+.sheet-row-button {
+	justify-content: center;
+}
+.sheet-row-button--danger {
+	color: var(--danger);
+}
+.sheet-row-button:disabled {
+	opacity: 0.5;
+}
+.sheet-row-note {
+	padding: 12px 16px;
+	text-align: center;
+	color: var(--text-muted);
+}
+
+/* Form sheets sit on the grouped gray, so their white rows stand out. */
+.modal-box--sheet {
+	background: var(--bg);
 }

@@ -17,7 +17,6 @@ import {
 	syncHealth,
 } from "./native/health";
 import Sidebar from "./components/layout/Sidebar";
-import Navbar from "./components/layout/Navbar";
 import BottomTabBar from "./components/layout/BottomTabBar";
 import PullToRefresh from "./components/PullToRefresh";
 import AppLock from "./components/AppLock";
@@ -77,7 +76,6 @@ function AppLayout({ children }) {
 	return (
 		<div className="app-layout">
 			<Sidebar />
-			<Navbar />
 			<div className="main-content">
 				<OfflineBanner />
 				<PullToRefresh onRefresh={refreshScreen}>{children}</PullToRefresh>
