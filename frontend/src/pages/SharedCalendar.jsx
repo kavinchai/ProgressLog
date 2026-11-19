@@ -1,33 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import api from "../api";
-import Modal from "../components/Modal";
+import Avatar from "../components/Avatar";
+import { PeriodNav } from "../components/ios/Ios";
 import useAuthStore from "../store/authStore";
-import useMediaQuery, { MOBILE_QUERY } from "../hooks/useMediaQuery";
-import { getWeek, localDateStr } from "../utils/date";
+import useSwipe from "../hooks/useSwipe";
+import useWeightUnit from "../hooks/useWeightUnit";
+import { localDateStr } from "../utils/date";
 import { groupByExercise } from "../utils/workout";
+import "../components/ExerciseRow.css";
 import "./SharedCalendar.css";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const AVATARS_SHOWN = 3;
-
-// Avatar colours, picked per username so a lifter keeps theirs everywhere.
-const USER_COLORS = [
-	"#1e40af",
-	"#166534",
-	"#9d174d",
-	"#854d0e",
-	"#5b21b6",
-	"#991b1b",
-	"#0f766e",
-	"#9a3412",
-];
-
-function userColor(username) {
-	let h = 0;
-	for (let i = 0; i < username.length; i++)
-		h = (h * 31 + username.charCodeAt(i)) >>> 0;
-	return USER_COLORS[h % USER_COLORS.length];
-}
 
 const parseDay = (iso) => {
 	const [y, m, d] = iso.split("-").map(Number);
@@ -65,17 +50,6 @@ function monthCells(offset) {
 	};
 }
 
-function weekCells(offset) {
-	const days = getWeek(offset);
-	const end = parseDay(days[6]);
-	const sameMonth = parseDay(days[0]).getMonth() === end.getMonth();
-	const label = `${fmt(days[0], { month: "short", day: "numeric" })} – ${fmt(
-		days[6],
-		sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" },
-	)}`;
-	return { cells: days, label };
-}
-
 /** One row per lifter for a day: several sessions are merged into one. */
 function mergeByUser(entries) {
 	const order = [];
@@ -100,49 +74,43 @@ function mergeByUser(entries) {
 	});
 }
 
-function SetLine({ set }) {
-	const reps = set.reps ?? "--";
-	return (
-		<span>
-			{reps} reps{set.weightLbs != null ? ` @ ${set.weightLbs} lbs` : ""}
-		</span>
+/** Everyone who shared a workout: you first (as "You"), then A to Z. */
+function peopleIn(entries, me) {
+	const names = [...new Set(entries.map((e) => e.username))];
+	return names.sort((a, b) =>
+		a === me ? -1 : b === me ? 1 : a.localeCompare(b),
 	);
 }
 
+/** Each exercise on its own line: name and weight, then a pill per set. */
 function WorkoutDetails({ sets }) {
+	const { unit, toDisplay } = useWeightUnit();
 	const groups = groupByExercise(sets);
 	if (groups.length === 0) {
-		return <div className="muted">No exercises recorded.</div>;
+		return <div className="sc-detail-list muted">No exercises recorded.</div>;
 	}
 	return (
-		<div className="sc-detail-list">
-			{groups.map((g) => {
-				return (
-					<div key={`${g.name}-${g.weight}`} className="sc-detail-exercise">
-						<div className="sc-detail-name">{g.name}</div>
-						<ul className="sc-detail-sets">
-							{g.sets.map((s, i) => (
-								<li key={i}>
-									<SetLine set={s} />
-								</li>
-							))}
-						</ul>
-					</div>
-				);
-			})}
-		</div>
-	);
-}
-
-function Avatar({ username, small }) {
-	return (
-		<span
-			className={`sc-av${small ? " sc-av-sm" : ""}`}
-			style={{ background: userColor(username) }}
-			aria-hidden="true"
-		>
-			{username[0].toUpperCase()}
-		</span>
+		<ul className="sc-detail-list">
+			{groups.map((g) => (
+				<li key={`${g.name}-${g.weight}`} className="sc-detail-exercise">
+					<span className="sc-detail-head">
+						<span className="sc-detail-name">{g.name}</span>
+						{g.weight > 0 && (
+							<span className="sc-detail-weight">
+								{toDisplay(g.weight)} {unit}
+							</span>
+						)}
+					</span>
+					<span className="set-pills">
+						{g.sets.map((s, i) => (
+							<span key={i} className="set-pill" data-testid="set-pill">
+								{s.reps ?? "--"}
+							</span>
+						))}
+					</span>
+				</li>
+			))}
+		</ul>
 	);
 }
 
@@ -158,92 +126,75 @@ function DayCell({ date, names, isToday, selected, mine, onSelect }) {
 			className={
 				"sc-cell" +
 				(isToday ? " sc-cell-today" : "") +
-				(selected ? " sc-cell-on" : "") +
-				(mine ? " sc-cell-mine" : "")
+				(selected ? " sc-cell-on" : "")
 			}
 			aria-pressed={selected}
 			aria-label={`${fmt(date, { month: "long", day: "numeric" })}: ${summary}${mine ? ", including you" : ""}`}
 			onClick={() => onSelect(date)}
 		>
 			<span className="sc-cell-date">{parseDay(date).getDate()}</span>
-			{count > 0 && (
-				<>
-					<span className="sc-stack">
-						{names.slice(0, AVATARS_SHOWN).map((n) => (
-							<Avatar key={n} username={n} small />
-						))}
-						{count > AVATARS_SHOWN && (
-							<span className="sc-more">+{count - AVATARS_SHOWN}</span>
-						)}
-					</span>
-					<span className="sc-cell-count">{count} trained</span>
-				</>
-			)}
+			<span className="sc-stack">
+				{names.slice(0, AVATARS_SHOWN).map((n) => (
+					<Avatar key={n} username={n} className="sc-av-sm" />
+				))}
+				{count > AVATARS_SHOWN && (
+					<span className="sc-more">+{count - AVATARS_SHOWN}</span>
+				)}
+			</span>
+			{count > 0 && <span className="sc-cell-count">{count} trained</span>}
 		</button>
 	);
 }
 
-function DayPanel({ date, rows, me, showDate }) {
+function DayPanel({ date, rows, me }) {
 	const [open, setOpen] = useState(null);
 	return (
 		<div className="sc-panel">
 			<div className="sc-panel-head">
-				{showDate && (
-					<h3>
-						{fmt(date, { weekday: "long", month: "long", day: "numeric" })}
-					</h3>
-				)}
-				<span className="muted">
+				<h3>{fmt(date, { weekday: "long", month: "long", day: "numeric" })}</h3>
+				<span>
 					{rows.length ? `${lifters(rows.length)} trained` : "No one trained"}
 				</span>
 			</div>
-			{rows.map((r) => {
-				const isOpen = open === r.username;
-				return (
-					<div
-						key={r.username}
-						className={"sc-row" + (r.username === me ? " sc-row-me" : "")}
-					>
-						<button
-							type="button"
-							className="sc-row-button"
-							aria-expanded={isOpen}
-							onClick={() => setOpen(isOpen ? null : r.username)}
-						>
-							<Avatar username={r.username} />
-							<span className="sc-row-text">
-								<span className="sc-row-name">
-									{r.username}
-									{r.username === me && <span className="sc-you">You</span>}
-								</span>
-								{r.label && <span className="sc-row-label">{r.label}</span>}
-							</span>
-							<span className="sc-chev" aria-hidden="true">
-								{isOpen ? "⌃" : "⌄"}
-							</span>
-						</button>
-						{isOpen && <WorkoutDetails sets={r.sets} />}
-					</div>
-				);
-			})}
-		</div>
-	);
-}
-
-function Segmented({ label, options, value, onChange }) {
-	return (
-		<div className="sc-seg" role="group" aria-label={label}>
-			{options.map(([key, text]) => (
-				<button
-					key={key}
-					type="button"
-					className={key === value ? "on" : ""}
-					aria-pressed={key === value}
-					onClick={() => onChange(key)}
-				>
-					{text}
-				</button>
-			))}
+			{rows.length > 0 && (
+				<div className="sc-rows">
+					{rows.map((r) => {
+						const isOpen = open === r.username;
+						return (
+							<div
+								key={r.username}
+								className={
+									"sc-row" +
+									(r.username === me ? " sc-row-me" : "") +
+									(isOpen ? " sc-row-open" : "")
+								}
+							>
+								<button
+									type="button"
+									className="sc-row-button"
+									aria-expanded={isOpen}
+									onClick={() => setOpen(isOpen ? null : r.username)}
+								>
+									<Avatar username={r.username} className="sc-row-av" />
+									<span className="sc-row-text">
+										<span className="sc-row-name">
+											{r.username}
+											{r.username === me && <span className="sc-you">You</span>}
+										</span>
+										{r.label && <span className="sc-row-label">{r.label}</span>}
+									</span>
+									<ChevronDown
+										size={18}
+										className="sc-chev"
+										aria-hidden="true"
+									/>
+								</button>
+								{isOpen && <WorkoutDetails sets={r.sets} />}
+							</div>
+						);
+					})}
+				</div>
+			)}
 		</div>
 	);
 }
@@ -275,24 +226,26 @@ export default function SharedCalendar() {
 	const { data, error } = useSharedCalendar();
 	const authenticated = useAuthStore((s) => s.authenticated);
 	const username = useAuthStore((s) => s.username);
-	const isPhone = useMediaQuery(MOBILE_QUERY);
 
 	const today = localDateStr(new Date());
-	const [view, setView] = useState("month");
 	const [offset, setOffset] = useState(0);
 	const [selected, setSelected] = useState(today);
-	const [who, setWho] = useState("everyone");
-	const [sheetOpen, setSheetOpen] = useState(false);
+	const [who, setWho] = useState(null); // null: everyone
 
 	const me = authenticated ? username : null;
-	const justMe = me && who === "me";
 	const entriesByDate = useMemo(
 		() =>
 			groupEntriesByDate(
-				(data?.entries ?? []).filter((e) => !justMe || e.username === me),
+				(data?.entries ?? []).filter((e) => !who || e.username === who),
 			),
-		[data, justMe, me],
+		[data, who],
 	);
+	// Swipe the days to change month, as in History.
+	const swipe = useSwipe({
+		onLeft: () => offset < 0 && setOffset((o) => o + 1),
+		onRight: () => setOffset((o) => o - 1),
+		canLeft: offset < 0,
+	});
 
 	if (error) return <div className="sc-error">{error}</div>;
 	if (!data) return <div className="sc-loading">Loading shared calendar…</div>;
@@ -305,125 +258,93 @@ export default function SharedCalendar() {
 		);
 	}
 
-	const { cells, label } =
-		view === "month" ? monthCells(offset) : weekCells(offset);
+	const { cells, label } = monthCells(offset);
 	const rowsFor = (date) => mergeByUser(entriesByDate.get(date) ?? []);
-	const changeView = (next) => {
-		setView(next);
-		setOffset(0);
-	};
+	const trainedDays = cells.filter((d) => d && entriesByDate.has(d)).length;
+	const people = peopleIn(data.entries ?? [], me);
 	const goToday = () => {
 		setOffset(0);
 		setSelected(today);
 	};
-	const select = (date) => {
-		setSelected(date);
-		if (isPhone) setSheetOpen(true);
-	};
-	const unit = view === "month" ? "month" : "week";
-	const panel = (
-		<DayPanel
-			key={selected}
-			date={selected}
-			rows={rowsFor(selected)}
-			me={me}
-			showDate={!isPhone}
-		/>
-	);
 
 	return (
 		<div className="sc-wrap">
-			<div className="sc-toolbar">
-				<div className="sc-nav">
-					<button
-						type="button"
-						aria-label={`Previous ${unit}`}
-						onClick={() => setOffset((o) => o - 1)}
-					>
-						‹
-					</button>
-					<span className="sc-range">{label}</span>
-					<button
-						type="button"
-						aria-label={`Next ${unit}`}
-						onClick={() => setOffset((o) => o + 1)}
-					>
-						›
-					</button>
-				</div>
-				<button type="button" className="btn btn-sm" onClick={goToday}>
-					Today
+			<PeriodNav
+				title={label}
+				sub={`${trainedDays} ${trainedDays === 1 ? "day" : "days"} with workouts`}
+				prevLabel="Previous month"
+				nextLabel="Next month"
+				onPrev={() => setOffset((o) => o - 1)}
+				onNext={() => setOffset((o) => o + 1)}
+				nextDisabled={offset >= 0}
+				action={
+					(offset !== 0 || selected !== today) && (
+						<button type="button" className="ios-link" onClick={goToday}>
+							Today
+						</button>
+					)
+				}
+			/>
+
+			<div className="sc-people" role="group" aria-label="Whose workouts">
+				<button
+					type="button"
+					className={"sc-chip" + (who ? "" : " on")}
+					aria-pressed={!who}
+					onClick={() => setWho(null)}
+				>
+					Everyone
 				</button>
-				<span className="sc-spacer" />
-				{me && (
-					<Segmented
-						label="Whose workouts"
-						options={[
-							["everyone", "Everyone"],
-							["me", "Just me"],
-						]}
-						value={who}
-						onChange={setWho}
-					/>
-				)}
-				<Segmented
-					label="Calendar range"
-					options={[
-						["week", "Week"],
-						["month", "Month"],
-					]}
-					value={view}
-					onChange={changeView}
-				/>
+				{people.map((name) => (
+					<button
+						key={name}
+						type="button"
+						className={"sc-chip sc-chip-person" + (who === name ? " on" : "")}
+						aria-pressed={who === name}
+						onClick={() => setWho(name)}
+					>
+						<Avatar username={name} className="sc-chip-av" />
+						{name === me ? "You" : name}
+					</button>
+				))}
 			</div>
 
 			<div className="sc-layout">
 				<div className="sc-grid" role="group" aria-label="Days">
-					{WEEKDAYS.map((d) => (
-						<div key={d} className="sc-weekday" aria-hidden="true">
-							{d}
-						</div>
-					))}
-					{cells.map((date, i) =>
-						date === null ? (
-							<div key={`pad-${i}`} className="sc-cell sc-cell-pad" />
-						) : (
-							<DayCell
-								key={date}
-								date={date}
-								names={rowsFor(date).map((r) => r.username)}
-								isToday={date === today}
-								selected={date === selected}
-								mine={!!me && rowsFor(date).some((r) => r.username === me)}
-								onSelect={select}
-							/>
-						),
-					)}
+					<div className="sc-weekdays" aria-hidden="true">
+						{WEEKDAYS.map((d) => (
+							<span key={d} className="sc-weekday">
+								{d}
+							</span>
+						))}
+					</div>
+					<div className="sc-days ios-swipe" {...swipe}>
+						{cells.map((date, i) =>
+							date === null ? (
+								<span key={`pad-${i}`} className="sc-cell sc-cell-pad" />
+							) : (
+								<DayCell
+									key={date}
+									date={date}
+									names={rowsFor(date).map((r) => r.username)}
+									isToday={date === today}
+									selected={date === selected}
+									mine={!!me && rowsFor(date).some((r) => r.username === me)}
+									onSelect={setSelected}
+								/>
+							),
+						)}
+					</div>
 				</div>
-				{!isPhone && (
-					<section className="sc-side" aria-label="Day details">
-						{panel}
-					</section>
-				)}
+				<section className="sc-side" aria-label="Day details">
+					<DayPanel
+						key={selected}
+						date={selected}
+						rows={rowsFor(selected)}
+						me={me}
+					/>
+				</section>
 			</div>
-			{me && !justMe && (
-				<p className="sc-legend muted">
-					<span className="sc-legend-dot" /> days you trained
-				</p>
-			)}
-
-			{isPhone && sheetOpen && (
-				<Modal
-					title={fmt(selected, {
-						weekday: "short",
-						month: "short",
-						day: "numeric",
-					})}
-					onClose={() => setSheetOpen(false)}
-				>
-					{panel}
-				</Modal>
-			)}
 		</div>
 	);
 }

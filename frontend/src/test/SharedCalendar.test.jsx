@@ -4,10 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import SharedCalendar from "../pages/SharedCalendar";
 import useAuthStore from "../store/authStore";
-import { getCurrentWeek, localDateStr } from "../utils/date";
+import { localDateStr } from "../utils/date";
 
 vi.mock("../pages/SharedCalendar.css", () => ({}));
-vi.mock("../components/Modal.css", () => ({}));
 
 const mockApiGet = vi.fn();
 vi.mock("../api", () => ({
@@ -24,7 +23,6 @@ function renderCalendar() {
 
 const NOW = new Date();
 const TODAY = localDateStr(NOW);
-const WEEK = getCurrentWeek();
 const MONTH = NOW.toLocaleDateString("en-US", { month: "long" });
 const DAYS_IN_MONTH = new Date(
 	NOW.getFullYear(),
@@ -120,10 +118,9 @@ describe("SharedCalendar — month grid", () => {
 		expect(
 			await screen.findByText(`${MONTH} ${NOW.getFullYear()}`),
 		).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Month" })).toHaveAttribute(
-			"aria-pressed",
-			"true",
-		);
+		expect(
+			screen.getByRole("button", { name: "Previous month" }),
+		).toBeInTheDocument();
 		const grid = screen.getByRole("group", { name: /days/i });
 		expect(
 			within(grid)
@@ -219,14 +216,17 @@ describe("SharedCalendar — day panel", () => {
 		const panel = screen.getByRole("region", { name: /day details/i });
 		const row = within(panel).getByRole("button", { name: /alice/ });
 		expect(row).toHaveAttribute("aria-expanded", "false");
-		expect(
-			within(panel).queryByText(/4 reps @ 185 lbs/),
-		).not.toBeInTheDocument();
+		expect(within(panel).queryAllByTestId("set-pill")).toHaveLength(0);
 
 		await user.click(row);
 		expect(row).toHaveAttribute("aria-expanded", "true");
-		expect(within(panel).getAllByText(/5 reps @ 185 lbs/)).toHaveLength(2);
-		expect(within(panel).getByText(/4 reps @ 185 lbs/)).toBeInTheDocument();
+		// Bench Press 185 lbs: 5, 5, 4 · Squats 225 lbs: 5
+		expect(
+			within(panel)
+				.getAllByTestId("set-pill")
+				.map((p) => p.textContent),
+		).toEqual(["5", "5", "4", "5"]);
+		expect(within(panel).getByText("225 lbs")).toBeInTheDocument();
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 	});
 
@@ -292,21 +292,6 @@ describe("SharedCalendar — navigation and views", () => {
 		).toBeInTheDocument();
 		expect(dayButton(TODAY)).toHaveAttribute("aria-pressed", "true");
 	});
-
-	it("Week shows the seven days of this week", async () => {
-		const user = userEvent.setup();
-		mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
-		renderCalendar();
-		await screen.findByRole("group", { name: /days/i });
-		await user.click(screen.getByRole("button", { name: "Week" }));
-		const grid = screen.getByRole("group", { name: /days/i });
-		const days = within(grid)
-			.getAllByRole("button")
-			.filter((b) => /:/.test(b.getAttribute("aria-label")));
-		expect(days).toHaveLength(7);
-		expect(days[0]).toHaveAccessibleName(new RegExp(`^${dayName(WEEK[0])}:`));
-		expect(days[6]).toHaveAccessibleName(new RegExp(`^${dayName(WEEK[6])}:`));
-	});
 });
 
 describe("SharedCalendar — signed in", () => {
@@ -319,13 +304,13 @@ describe("SharedCalendar — signed in", () => {
 		expect(dayButton(TODAY)).not.toHaveAccessibleName(/including you/);
 	});
 
-	it("Just me hides everyone else", async () => {
+	it("the You chip hides everyone else", async () => {
 		const user = userEvent.setup();
 		useAuthStore.setState({ authenticated: true, username: "alice" });
 		mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
 		renderCalendar();
 		await screen.findByRole("group", { name: /days/i });
-		await user.click(screen.getByRole("button", { name: "Just me" }));
+		await user.click(screen.getByRole("button", { name: "You" }));
 		expect(dayButton(TODAY)).toHaveAccessibleName(/no workouts/);
 		expect(dayButton(OTHER_DAY)).toHaveAccessibleName(/1 lifter trained/);
 	});
@@ -340,17 +325,74 @@ describe("SharedCalendar — signed in", () => {
 		).toBeInTheDocument();
 	});
 
-	it("signed out has no Just me filter", async () => {
+	it("signed out has no You chip", async () => {
 		mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
 		renderCalendar();
 		await screen.findByRole("group", { name: /days/i });
 		expect(
-			screen.queryByRole("button", { name: "Just me" }),
+			screen.queryByRole("button", { name: "You" }),
 		).not.toBeInTheDocument();
 	});
 });
 
-describe("SharedCalendar — phone", () => {
+// ── Redesign: people chips, month header, inline day list, set pills ─────────
+
+describe("SharedCalendar — redesign", () => {
+	it("people chips filter the calendar to one lifter", async () => {
+		const user = userEvent.setup();
+		mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
+		renderCalendar();
+		const people = await screen.findByRole("group", { name: "Whose workouts" });
+		expect(
+			within(people).getByRole("button", { name: "Everyone" }),
+		).toHaveAttribute("aria-pressed", "true");
+		await user.click(within(people).getByRole("button", { name: "alice" }));
+		expect(dayButton(TODAY)).toHaveAccessibleName(/no workouts/);
+		expect(dayButton(OTHER_DAY)).toHaveAccessibleName(/1 lifter trained/);
+	});
+
+	it("signed in, your chip comes first and says You", async () => {
+		const user = userEvent.setup();
+		useAuthStore.setState({ authenticated: true, username: "bob" });
+		mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
+		renderCalendar();
+		const people = await screen.findByRole("group", { name: "Whose workouts" });
+		const chips = within(people).getAllByRole("button");
+		expect(chips.map((c) => c.textContent)).toEqual([
+			"Everyone",
+			"BYou",
+			"Aalice",
+		]);
+		await user.click(chips[1]);
+		expect(dayButton(OTHER_DAY)).toHaveAccessibleName(/no workouts/);
+	});
+
+	it("the month header counts the days with workouts", async () => {
+		mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
+		renderCalendar();
+		expect(await screen.findByText("2 days with workouts")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Next month" })).toBeDisabled();
+	});
+
+	it("shows each exercise with its weight and a pill per set", async () => {
+		const user = userEvent.setup();
+		mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
+		renderCalendar();
+		await screen.findByRole("group", { name: /days/i });
+		await user.click(dayButton(OTHER_DAY));
+		const panel = screen.getByRole("region", { name: /day details/i });
+		await user.click(within(panel).getByRole("button", { name: /alice/ }));
+		const bench = within(panel).getByText("Bench Press").closest("li");
+		expect(within(bench).getByText("185 lbs")).toBeInTheDocument();
+		expect(
+			within(bench)
+				.getAllByTestId("set-pill")
+				.map((p) => p.textContent),
+		).toEqual(["5", "5", "4"]);
+	});
+});
+
+describe("SharedCalendar — phone, redesigned", () => {
 	beforeEach(() => {
 		window.matchMedia = vi.fn().mockImplementation((query) => ({
 			matches: query === "(max-width: 640px)",
@@ -363,19 +405,14 @@ describe("SharedCalendar — phone", () => {
 		delete window.matchMedia;
 	});
 
-	it("opens the day's list in a bottom sheet when a day is tapped", async () => {
+	it("keeps the day's list under the calendar instead of a sheet", async () => {
 		const user = userEvent.setup();
 		mockApiGet.mockResolvedValue({ data: CALENDAR_DATA });
 		renderCalendar();
 		await screen.findByRole("group", { name: /days/i });
-		expect(
-			screen.queryByRole("region", { name: /day details/i }),
-		).not.toBeInTheDocument();
-
-		await user.click(dayButton(TODAY));
-		const sheet = screen.getByRole("dialog");
-		expect(within(sheet).getByText("bob")).toBeInTheDocument();
-		await user.click(within(sheet).getByRole("button", { name: /close/i }));
+		await user.click(dayButton(OTHER_DAY));
+		const panel = screen.getByRole("region", { name: /day details/i });
+		expect(within(panel).getByText("alice")).toBeInTheDocument();
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 	});
 });

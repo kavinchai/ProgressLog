@@ -93,14 +93,14 @@ public class SharedCalendarTest extends BaseTest {
 
         step("open the user's row and verify the seeded set is listed");
         calendar.expandRow(testUsername);
-        if (!calendar.isSetLineVisible("5 reps @ 95 lbs")) {
+        if (!calendar.isSetVisible("95 lbs", "5")) {
             throw new AssertionError("Expected the seeded Overhead Press set '5 reps @ 95 lbs' in the open row");
         }
     }
 
     @Test(priority = 4, dependsOnMethods = "enablingToggleShowsUserOnCalendar")
-    public void weekAndMonthViewsBothShowUser() {
-        step("with shareCalendar already ON, verify default month view shows user");
+    public void peopleFilterKeepsUser() {
+        step("with shareCalendar already ON, verify the calendar shows user");
         calendar.open(baseUrl);
         calendar.clickSharedCalendarTab();
         calendar.awaitCalendarVisible();
@@ -108,22 +108,20 @@ public class SharedCalendarTest extends BaseTest {
             throw new AssertionError("Expected user on default (month) view");
         }
 
-        step("switch to week view and verify user still visible");
-        calendar.clickWeekView();
-        calendar.awaitCalendarVisible();
+        step("show only your own days and verify user still visible");
+        calendar.choosePerson("You");
         if (!calendar.isUsernameOnCalendar(testUsername)) {
-            throw new AssertionError("Expected user on week view");
+            throw new AssertionError("Expected user with the You filter on");
         }
 
-        step("switch back to month view");
-        calendar.clickMonthView();
-        calendar.awaitCalendarVisible();
+        step("back to everyone");
+        calendar.choosePerson("Everyone");
         if (!calendar.isUsernameOnCalendar(testUsername)) {
-            throw new AssertionError("Expected user on month view after switching back");
+            throw new AssertionError("Expected user after switching back to Everyone");
         }
     }
 
-    @Test(priority = 5, dependsOnMethods = "weekAndMonthViewsBothShowUser")
+    @Test(priority = 5, dependsOnMethods = "peopleFilterKeepsUser")
     public void disablingToggleRemovesUserFromCalendar() {
         step("toggle Share on Community Calendar OFF via Settings");
         settings.open(baseUrl);

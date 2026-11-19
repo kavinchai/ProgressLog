@@ -380,6 +380,7 @@
 }
 .ios-period-nav {
 	display: flex;
+	align-items: center;
 	gap: 4px;
 }
 .ios-icon-btn {
@@ -487,7 +488,9 @@
 .ios-menu-item,
 .status-add-row,
 .status-add-chip,
-.swipe-row-main {
+.swipe-row-main,
+.sc-row-button,
+.sc-cell {
 	transition: background-color 280ms ease;
 }
 .ios-row--button:active,
@@ -496,7 +499,9 @@
 .ios-menu-item:active,
 .status-add-row:active,
 .status-add-chip:active,
-.swipe-row-main:active {
+.swipe-row-main:active,
+.sc-row-button:active,
+.sc-cell:active {
 	background-color: var(--active-bg);
 	transition: none;
 }
@@ -506,10 +511,14 @@
 .ios-back,
 .ios-pulldown,
 .ios-period-nav button,
-.modal-header-btn {
+.modal-header-btn,
+.lb-chip,
+.sc-chip {
 	transition:
 		opacity 160ms ease,
-		transform 160ms var(--ios-spring);
+		transform 160ms var(--ios-spring),
+		background-color 200ms ease,
+		color 200ms ease;
 }
 .ios-title-trailing button:active:not(:disabled),
 .ios-header-below button:active:not(:disabled),
@@ -517,19 +526,25 @@
 .ios-back:active,
 .ios-pulldown:active,
 .ios-period-nav button:active:not(:disabled),
-.modal-header-btn:active:not(:disabled) {
+.modal-header-btn:active:not(:disabled),
+.lb-chip:active,
+.sc-chip:active {
 	opacity: 0.5;
 	transform: scale(0.96);
 	transition: none;
 }
 .ios-tile,
 .achievements-entry,
-.volume-card {
-	transition: transform 240ms var(--ios-spring);
+.volume-card,
+.lb-stand {
+	transition:
+		transform 240ms var(--ios-spring),
+		box-shadow 200ms ease;
 }
 .ios-tile:active,
 .achievements-entry:active,
-.volume-card:active {
+.volume-card:active,
+.lb-stand:active {
 	transform: scale(0.97);
 	transition: transform 120ms var(--ios-spring);
 }
@@ -538,12 +553,16 @@
 	.ios-seg-thumb,
 	.ios-tile,
 	.achievements-entry,
-	.volume-card {
+	.volume-card,
+	.lb-stand {
 		transition: none;
 	}
 	.ios-tile:active,
 	.achievements-entry:active,
 	.volume-card:active,
+	.lb-stand:active,
+	.lb-chip:active,
+	.sc-chip:active,
 	.ios-title-trailing button:active,
 	.ios-header-below button:active,
 	.ios-link:active,

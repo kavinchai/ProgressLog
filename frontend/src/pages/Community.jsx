@@ -1,5 +1,6 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { SlidersHorizontal } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import useWeightUnit from "../hooks/useWeightUnit";
 import api from "../api";
@@ -10,18 +11,16 @@ import {
 	PullDownMenu,
 	SegmentedControl,
 } from "../components/ios/Ios";
+import Avatar from "../components/Avatar";
 import ChooseLiftsModal from "../components/ChooseLiftsModal";
 import { loadChosen, saveChosen } from "../utils/chosenLifts";
 import "./Community.css";
-
-const SessionsBarChart = lazy(
-	() => import("../components/charts/SessionsBarChart"),
-);
 
 const FEATURED_NAMES = featuredConfig.strength ?? [];
 const FEATURED = FEATURED_NAMES.map((n) => n.toLowerCase());
 const CHOSEN_KEY = "community.chosenLifts";
 const PREVIEW_ROWS = 5;
+const NEW_BESTS = 5;
 
 function formatDate(iso) {
 	if (!iso) return "—";
@@ -100,77 +99,140 @@ function Move({ change }) {
 
 // ── Board ───────────────────────────────────────────────────────────────────
 
-function BoardTable({ board, rows, me, myStanding, setLabel }) {
-	const showMine = myStanding && myStanding.rank > rows.length;
+const PERIOD_LABELS = { month: "This month", all: "All time" };
+const FOOTNOTE =
+	"Heaviest set wins, then reps. Arrows show the change since last week.";
+
+function YouTag() {
+	return <span className="lb-you">You</span>;
+}
+
+/** Lift chips; the sliders button opens Choose lifts. */
+function LiftChips({ choices, value, onChange, onChoose }) {
+	const ref = useRef(null);
+
+	// Keep the picked chip in view, e.g. after tapping a standing card.
+	useEffect(() => {
+		const row = ref.current;
+		const chip = row?.querySelector('[aria-pressed="true"]');
+		if (!chip || !row.scrollTo) return;
+		const left = chip.offsetLeft - 16;
+		const right = chip.offsetLeft + chip.offsetWidth + 16 - row.clientWidth;
+		if (row.scrollLeft > left) row.scrollTo({ left, behavior: "smooth" });
+		else if (row.scrollLeft < right)
+			row.scrollTo({ left: right, behavior: "smooth" });
+	}, [value]);
+
+	if (!choices.length && !onChoose) return null;
 	return (
-		<table className="lb-table">
-			<thead>
-				<tr>
-					<th scope="col">#</th>
-					<th scope="col">Lifter</th>
-					<th scope="col">Best set</th>
-					<th scope="col" className="lb-col-date">
-						Date
-					</th>
-					<th scope="col" className="lb-col-move">
-						Week
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				{rows.map((e) => (
-					<BoardRow
-						key={e.username}
-						entry={e}
-						mine={e.username === me}
-						setLabel={setLabel}
-					/>
-				))}
-				{showMine && (
-					<>
-						<tr className="lb-row-gap" aria-hidden="true">
-							<td colSpan={5}>
-								· · · {myStanding.rank - rows.length - 1 || ""}
-							</td>
-						</tr>
-						<BoardRow
-							entry={{
-								rank: myStanding.rank,
-								username: me,
-								bestWeight: myStanding.bestWeight,
-								bestReps: myStanding.bestReps,
-								achievedDate: myStanding.achievedDate,
-								change: myStanding.change,
-							}}
-							mine
-							setLabel={setLabel}
-						/>
-					</>
-				)}
-			</tbody>
-			<caption className="lb-sr">{board.exerciseName} leaderboard</caption>
-		</table>
+		<div className="lb-chips" role="group" aria-label="Lift" ref={ref}>
+			{onChoose && (
+				<button
+					type="button"
+					className="lb-chip lb-chip-edit"
+					aria-label="Edit lifts"
+					onClick={onChoose}
+				>
+					<SlidersHorizontal size={18} aria-hidden="true" />
+				</button>
+			)}
+			{choices.map((name) => (
+				<button
+					key={name}
+					type="button"
+					className={"lb-chip" + (name === value ? " on" : "")}
+					aria-pressed={name === value}
+					onClick={() => onChange(name)}
+				>
+					{name}
+				</button>
+			))}
+		</div>
+	);
+}
+
+/** First, second and third, with first raised in the middle. */
+function Podium({ entries, me, setLabel }) {
+	return (
+		<ol className="lb-podium" aria-label="Top three">
+			{entries.map((e) => (
+				<li
+					key={e.username}
+					className={`lb-spot lb-spot-${e.rank}${e.username === me ? " lb-spot-me" : ""}`}
+				>
+					<Avatar username={e.username} className="lb-spot-av" />
+					<span className="lb-spot-who">
+						<span className="lb-name">{e.username}</span>
+						{e.username === me && <YouTag />}
+					</span>
+					<span className="lb-spot-set">
+						{setLabel(e.bestWeight, e.bestReps)}
+					</span>
+					{e.change ? <Move change={e.change} /> : null}
+					<span className="lb-spot-base" aria-hidden="true">
+						{e.rank}
+					</span>
+				</li>
+			))}
+		</ol>
 	);
 }
 
 function BoardRow({ entry, mine, setLabel }) {
 	return (
-		<tr className={mine ? "lb-row-me" : undefined}>
-			<td>
-				<Rank n={entry.rank} />
-			</td>
-			<td>
-				<span className="lb-who">
+		<li className={"lb-row" + (mine ? " lb-row-me" : "")}>
+			<span className="lb-row-rank">{entry.rank}</span>
+			<Avatar username={entry.username} />
+			<span className="lb-row-who">
+				<span className="lb-row-name">
 					<span className="lb-name">{entry.username}</span>
-					{mine && <span className="lb-you">You</span>}
+					{mine && <YouTag />}
 				</span>
-			</td>
-			<td>{setLabel(entry.bestWeight, entry.bestReps)}</td>
-			<td className="lb-col-date lb-muted">{formatDate(entry.achievedDate)}</td>
-			<td className="lb-col-move">
-				<Move change={entry.change} />
-			</td>
-		</tr>
+				<span className="lb-row-date">{formatDate(entry.achievedDate)}</span>
+			</span>
+			<span className="lb-row-set">
+				{setLabel(entry.bestWeight, entry.bestReps)}
+			</span>
+			<Move change={entry.change} />
+		</li>
+	);
+}
+
+/** Fourth place down, plus your own row when you're below the top ten. */
+function BoardList({ board, me, myStanding, setLabel }) {
+	const rows = board.entries.slice(3);
+	const showMine = myStanding && myStanding.rank > board.entries.length;
+	if (!rows.length && !showMine) return null;
+	return (
+		<ol className="lb-list" aria-label={`${board.exerciseName} leaderboard`}>
+			{rows.map((e) => (
+				<BoardRow
+					key={e.username}
+					entry={e}
+					mine={e.username === me}
+					setLabel={setLabel}
+				/>
+			))}
+			{showMine && (
+				<>
+					<li className="lb-row-gap" aria-hidden="true">
+						· · ·
+					</li>
+					<BoardRow
+						entry={{
+							rank: myStanding.rank,
+							username: me,
+							bestWeight: myStanding.bestWeight,
+							bestReps: myStanding.bestReps,
+							achievedDate: myStanding.achievedDate,
+							change: myStanding.change,
+						}}
+						mine
+						setLabel={setLabel}
+					/>
+				</>
+			)}
+		</ol>
 	);
 }
 
@@ -191,64 +253,49 @@ function BoardCard({
 	const myStanding = standings.find(
 		(s) => s.exerciseName === current?.exerciseName,
 	);
+	const count = current?.participantCount ?? 0;
 
 	return (
-		<section className="lb-card lb-board">
-			<div className="lb-card-head">
-				<div>
-					<h2 className="lb-card-title">
-						{current && choices.length > 1 ? (
-							<PullDownMenu
-								label="Lift"
-								className="lb-lift-menu"
-								buttonLabel={current.exerciseName}
-								sections={[
-									{
-										options: choices.map((name) => ({
-											value: name,
-											label: name,
-										})),
-										value: current.exerciseName,
-										onChange: onLift,
-									},
-								]}
-							/>
-						) : (
-							(current?.exerciseName ?? "Lifts")
-						)}
-					</h2>
-					{current && (
-						<span className="lb-muted">
-							{current.participantCount} lifter
-							{current.participantCount === 1 ? "" : "s"} · best set (weight,
-							then reps)
-						</span>
-					)}
-				</div>
-				<div className="lb-board-actions">
-					<SegmentedControl
-						label="Period"
-						options={PERIOD_OPTIONS}
-						value={period}
-						onChange={onPeriod}
-					/>
-					{onChoose && (
-						<button type="button" className="ios-link" onClick={onChoose}>
-							Edit lifts
-						</button>
-					)}
-				</div>
+		<section className="lb-board" aria-label="Leaderboard">
+			<LiftChips
+				choices={choices}
+				value={current?.exerciseName}
+				onChange={onLift}
+				onChoose={onChoose}
+			/>
+			<div className="lb-board-head">
+				<span className="lb-section-title">
+					{current
+						? `${count} ${count === 1 ? "lifter" : "lifters"} · best set`
+						: "Best set"}
+				</span>
+				<PullDownMenu
+					label="Period"
+					buttonLabel={PERIOD_LABELS[period]}
+					className="lb-period"
+					sections={[
+						{ options: PERIOD_OPTIONS, value: period, onChange: onPeriod },
+					]}
+				/>
 			</div>
 			{current ? (
-				<>
-					<BoardTable
+				<div
+					className="lb-board-body"
+					key={`${current.exerciseName}-${period}`}
+				>
+					<Podium
+						entries={current.entries.slice(0, 3)}
+						me={me}
+						setLabel={setLabel}
+					/>
+					<BoardList
 						board={current}
-						rows={current.entries}
 						me={me}
 						myStanding={myStanding}
 						setLabel={setLabel}
 					/>
-				</>
+					<p className="lb-foot">{FOOTNOTE}</p>
+				</div>
 			) : (
 				<p className="lb-empty">
 					{boards.length
@@ -282,7 +329,19 @@ function progress(s) {
 	return Math.round((s.bestReps / (s.ahead.bestReps + 1)) * 100);
 }
 
+/** "▲ 1 this week" on a standing card; nothing when the rank didn't move. */
+function WeekChange({ change }) {
+	if (!change) return null;
+	const up = change > 0;
+	return (
+		<span className={`lb-week ${up ? "up" : "down"}`}>
+			{up ? "▲" : "▼"} {Math.abs(change)} this week
+		</span>
+	);
+}
+
 function Standing({ me, chosen, onPick, selected, unit, toDisplay, setLabel }) {
+	const [page, setPage] = useState(0);
 	if (!me.sharing) {
 		return (
 			<div className="lb-notice">
@@ -310,71 +369,165 @@ function Standing({ me, chosen, onPick, selected, unit, toDisplay, setLabel }) {
 			</div>
 		);
 	}
+	const lbs = (w) => toDisplay(Number(w)).toLocaleString();
+
+	// Phones swipe between cards; the dots follow.
+	function onScroll(e) {
+		const row = e.currentTarget;
+		const card = row.firstElementChild;
+		if (!card) return;
+		setPage(Math.round(row.scrollLeft / (card.offsetWidth + 10)));
+	}
+
 	return (
-		<div className="lb-standing">
-			{standings.map((s) => (
-				<button
-					key={s.exerciseName}
-					type="button"
-					className={`lb-stand${s.exerciseName === selected ? " on" : ""}`}
-					onClick={() => onPick(s.exerciseName)}
-				>
-					<span className="lb-stand-lift">{s.exerciseName}</span>
-					<span className="lb-stand-rank">
-						#{s.rank} <small>of {s.participantCount}</small>{" "}
-						<Move change={s.change} />
-					</span>
-					<span className="lb-muted">{setLabel(s.bestWeight, s.bestReps)}</span>
-					<span className="lb-bar" aria-hidden="true">
-						<i style={{ width: `${progress(s)}%` }} />
-					</span>
-					<span className="lb-muted">{gapText(s, unit, toDisplay)}</span>
-				</button>
-			))}
-		</div>
+		<>
+			<div className="lb-standing" onScroll={onScroll}>
+				{standings.map((s) => (
+					<button
+						key={s.exerciseName}
+						type="button"
+						className={`lb-stand${s.exerciseName === selected ? " on" : ""}`}
+						onClick={() => onPick(s.exerciseName)}
+					>
+						<span className="lb-stand-head">
+							<span className="lb-stand-lift">{s.exerciseName}</span>
+							<WeekChange change={s.change} />
+						</span>
+						<span className="lb-stand-main">
+							<span className="lb-stand-rank">
+								#{s.rank} <small>of {s.participantCount}</small>
+							</span>
+							<span className="lb-stand-best">
+								<small>Best set</small>
+								{setLabel(s.bestWeight, s.bestReps)}
+							</span>
+						</span>
+						<span className="lb-stand-gap">{gapText(s, unit, toDisplay)}</span>
+						<span className="lb-bar" aria-hidden="true">
+							<i style={{ width: `${progress(s)}%` }} />
+						</span>
+						{s.ahead && (
+							<span className="lb-bar-ends">
+								<span>You {lbs(s.bestWeight)}</span>
+								<span>
+									{s.ahead.username} {lbs(s.ahead.bestWeight)}
+								</span>
+							</span>
+						)}
+					</button>
+				))}
+			</div>
+			{standings.length > 1 && (
+				<div className="lb-dots" aria-hidden="true">
+					{standings.map((s, i) => (
+						<i key={s.exerciseName} className={i === page ? "on" : undefined} />
+					))}
+				</div>
+			)}
+		</>
 	);
 }
 
-function MostActive({ users, me }) {
+/** The newest top-ten bests across every board, most recent first. */
+function NewBests({ boards, me, period, setLabel }) {
+	const items = boards
+		.flatMap((b) => b.entries.map((e) => ({ ...e, lift: b.exerciseName })))
+		.filter((e) => e.achievedDate)
+		.sort((a, b) => b.achievedDate.localeCompare(a.achievedDate))
+		.slice(0, NEW_BESTS);
+	if (!items.length) return null;
 	return (
-		<section className="lb-card">
-			<div className="lb-card-head">
-				<h2 className="lb-card-title">Most active</h2>
+		<section className="lb-section" aria-labelledby="lb-new-bests">
+			<h2 id="lb-new-bests" className="lb-section-title">
+				{period === "month" ? "New bests" : "Latest bests"}
+			</h2>
+			<ol className="lb-feed">
+				{items.map((e) => (
+					<li key={`${e.lift}-${e.username}`}>
+						<Avatar username={e.username} className="lb-feed-av" />
+						<span className="lb-feed-main">
+							<span>
+								<b>{e.username === me ? "You" : e.username}</b> hit{" "}
+								{setLabel(e.bestWeight, e.bestReps)}
+							</span>
+							<span className="lb-feed-sub">
+								{e.lift} · #{e.rank}
+							</span>
+						</span>
+						<span className="lb-feed-date">{formatDate(e.achievedDate)}</span>
+					</li>
+				))}
+			</ol>
+		</section>
+	);
+}
+
+function MostActive({ users, activity, me }) {
+	const total = activity.reduce((n, p) => n + p.sessionCount, 0);
+	const peak = Math.max(1, ...activity.map((p) => p.sessionCount));
+	const busiest = activity.find((p) => p.sessionCount === peak);
+	const mine = users.find((u) => u.username === me);
+	const top = users[0]?.sessionCount || 1;
+	return (
+		<section className="lb-section" aria-labelledby="lb-most-active">
+			<h2 id="lb-most-active" className="lb-section-title">
+				Most active
+			</h2>
+			<div className={"lb-tiles" + (mine ? "" : " lb-tiles--one")}>
+				<div className="lb-tile">
+					<span className="lb-tile-label">Community sessions</span>
+					<span className="lb-tile-value">{total}</span>
+					<span className="lb-spark" aria-hidden="true">
+						{activity.map((p) => (
+							<i
+								key={p.date}
+								className={p === busiest ? "peak" : undefined}
+								style={{
+									height: `${Math.max(8, (p.sessionCount / peak) * 100)}%`,
+								}}
+							/>
+						))}
+					</span>
+					<span className="lb-tile-sub">
+						Last 30 days
+						{busiest ? ` · busiest ${formatDate(busiest.date)}` : ""}
+					</span>
+				</div>
+				{mine && (
+					<div className="lb-tile">
+						<span className="lb-tile-label">You</span>
+						<span className="lb-tile-value">
+							{mine.sessionCount}{" "}
+							<small>{mine.sessionCount === 1 ? "session" : "sessions"}</small>
+						</span>
+						<span className="lb-tile-accent">#{mine.rank} most active</span>
+					</div>
+				)}
 			</div>
 			{users.length ? (
-				<ol className="lb-active">
+				<ol className="lb-active-list">
 					{users.map((u) => (
 						<li
 							key={u.username}
 							className={u.username === me ? "me" : undefined}
 						>
-							<Rank n={u.rank} />
-							<span className="lb-name">{u.username}</span>
-							<span className="lb-muted">{u.sessionCount} sessions</span>
+							<Avatar username={u.username} />
+							<span className="lb-active-main">
+								<span className="lb-row-name">
+									<span className="lb-name">{u.username}</span>
+									{u.username === me && <YouTag />}
+								</span>
+								<span className="lb-bar lb-bar--thin" aria-hidden="true">
+									<i style={{ width: `${(u.sessionCount / top) * 100}%` }} />
+								</span>
+							</span>
+							<span className="lb-active-count">{u.sessionCount} sessions</span>
 						</li>
 					))}
 				</ol>
 			) : (
 				<p className="lb-empty">No sessions yet.</p>
 			)}
-		</section>
-	);
-}
-
-function SessionsChart({ activity }) {
-	const data = activity.map((p) => ({
-		date: formatDate(p.date),
-		sessions: p.sessionCount,
-	}));
-	return (
-		<section className="lb-card">
-			<div className="lb-card-head">
-				<h2 className="lb-card-title">Community sessions</h2>
-				<span className="lb-muted">Last 30 days</span>
-			</div>
-			<Suspense fallback={<div style={{ height: 140 }} />}>
-				<SessionsBarChart data={data} />
-			</Suspense>
 		</section>
 	);
 }
@@ -699,8 +852,17 @@ export default function Community() {
 						<div className="lb-grid">
 							{board}
 							<aside className="lb-side">
-								<MostActive users={data.mostActive} me={username} />
-								<SessionsChart activity={data.activity} />
+								<NewBests
+									boards={boards}
+									me={username}
+									period={period}
+									setLabel={setLabel}
+								/>
+								<MostActive
+									users={data.mostActive}
+									activity={data.activity}
+									me={username}
+								/>
 							</aside>
 						</div>
 					</>

@@ -2,16 +2,17 @@ package com.kavin.fitness.e2e.pages;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.AriaRole;
 
 public class SharedCalendarPage {
     private final Page page;
 
     private static final String SUBNAV_LEADERBOARD = "[role='group'][aria-label='View'] button:has-text(\"Leaderboard\")";
     private static final String SUBNAV_CALENDAR    = "[role='group'][aria-label='View'] button:has-text(\"Calendar\")";
-    private static final String VIEW_TAB_WEEK      = "[role='group'][aria-label='Calendar range'] button:has-text(\"Week\")";
-    private static final String VIEW_TAB_MONTH     = "[role='group'][aria-label='Calendar range'] button:has-text(\"Month\")";
+    // Everyone / You / each lifter: filters the calendar to one person.
+    private static final String PEOPLE             = "[role='group'][aria-label='Whose workouts']";
     private static final String GRID               = ".sc-grid";
-    // The day panel (open on today by default on desktop) lists one row per lifter.
+    // The day list (today by default, under the calendar on phones) has one row per lifter.
     private static final String DAY_ROW            = ".sc-side .sc-row";
     private static final String DAY_USER           = ".sc-side .sc-row-name";
     private static final String EMPTY              = ".sc-empty";
@@ -47,12 +48,13 @@ public class SharedCalendarPage {
         page.locator(SUBNAV_LEADERBOARD).click();
     }
 
-    public void clickWeekView() {
-        page.locator(VIEW_TAB_WEEK).click();
-    }
-
-    public void clickMonthView() {
-        page.locator(VIEW_TAB_MONTH).click();
+    /** Picks a people chip: "Everyone", "You" or a username. */
+    public void choosePerson(String label) {
+        Locator chip = page.locator(PEOPLE).getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName(label).setExact(true));
+        chip.click();
+        page.locator(PEOPLE + " button[aria-pressed='true']").filter(
+                new Locator.FilterOptions().setHasText(label)).waitFor();
     }
 
     /** True once either the calendar grid or the empty-state is visible. */
@@ -100,10 +102,15 @@ public class SharedCalendarPage {
                 .locator(".sc-row-button").click();
     }
 
-    /** Waits up to 5s for a set line, e.g. "5 reps @ 95 lbs", in the day panel. */
-    public boolean isSetLineVisible(String text) {
+    /**
+     * Waits up to 5s for an exercise in the open row showing its weight (e.g.
+     * "95 lbs") and a pill with the set's reps (e.g. "5").
+     */
+    public boolean isSetVisible(String weight, String reps) {
         try {
-            page.locator(".sc-side .sc-detail-sets li:has-text(\"" + text + "\")").first()
+            page.locator(".sc-side .sc-detail-exercise")
+                    .filter(new Locator.FilterOptions().setHasText(weight))
+                    .locator(".set-pill:text-is(\"" + reps + "\")").first()
                     .waitFor(new Locator.WaitForOptions().setTimeout(5000));
             return true;
         } catch (Exception e) {

@@ -1,11 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import {
-	fireEvent,
-	render,
-	screen,
-	waitFor,
-	within,
-} from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import Community from "../pages/Community";
@@ -178,24 +172,23 @@ describe("Community — period", () => {
 			}),
 		);
 		expect(
-			await screen.findByRole("button", { name: "This month" }),
-		).toHaveAttribute("aria-pressed", "true");
+			await screen.findByRole("button", { name: "Period: This month" }),
+		).toBeInTheDocument();
 	});
 
 	it("switching to All time refetches with period=all", async () => {
 		const user = userEvent.setup();
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		await user.click(await screen.findByRole("button", { name: "All time" }));
+		await choosePeriod(user, "All time");
 		await waitFor(() =>
 			expect(mockApiGet).toHaveBeenCalledWith("/leaderboard", {
 				params: { period: "all" },
 			}),
 		);
-		expect(screen.getByRole("button", { name: "All time" })).toHaveAttribute(
-			"aria-pressed",
-			"true",
-		);
+		expect(
+			screen.getByRole("button", { name: "Period: All time" }),
+		).toBeInTheDocument();
 	});
 });
 
@@ -205,20 +198,24 @@ describe("Community — lift board", () => {
 	it("shows featured lifts as choices, in featured order, and opens on the first", async () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		await screen.findByRole("table");
+		await boardLoaded();
 		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
-		expect(
-			screen.getByRole("button", { name: "Lift: Bench Press" }),
-		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Bench Press" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
 	});
 
 	it("lists the ranked lifters with their best set", async () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		const table = await screen.findByRole("table");
-		expect(within(table).getByText("lifter1")).toBeInTheDocument();
-		expect(within(table).getByText("300 lbs × 5")).toBeInTheDocument();
-		expect(within(table).getAllByRole("row")).toHaveLength(11); // header + 10
+		const podium = await boardLoaded();
+		expect(within(podium).getByText("lifter1")).toBeInTheDocument();
+		expect(within(podium).getByText("300 lbs × 5")).toBeInTheDocument();
+		const rest = screen.getByRole("list", { name: "Bench Press leaderboard" });
+		// top three on the podium + seven below
+		expect(within(podium).getAllByRole("listitem")).toHaveLength(3);
+		expect(within(rest).getAllByRole("listitem")).toHaveLength(7);
 	});
 
 	it("choosing another lift shows its board with week movement", async () => {
@@ -226,10 +223,10 @@ describe("Community — lift board", () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
 		await pickLift(user, "Squats");
-		const table = screen.getByRole("table");
-		expect(within(table).getByText("405 lbs × 2")).toBeInTheDocument();
-		expect(within(table).getByLabelText("Up 1")).toBeInTheDocument();
-		expect(within(table).getByLabelText("Down 1")).toBeInTheDocument();
+		const podium = screen.getByRole("list", { name: "Top three" });
+		expect(within(podium).getByText("405 lbs × 2")).toBeInTheDocument();
+		expect(within(podium).getByLabelText("Up 1")).toBeInTheDocument();
+		expect(within(podium).getByLabelText("Down 1")).toBeInTheDocument();
 	});
 
 	it("shows Most active by sessions", async () => {
@@ -285,18 +282,19 @@ describe("Community — lift board", () => {
 			}),
 		);
 		renderCommunity();
-		await user.click(await screen.findByRole("button", { name: "All time" }));
+		await choosePeriod(user, "All time");
 		await user.click(
 			await screen.findByRole("button", { name: /overhead press.*#1/i }),
 		);
 		expect(screen.getByText("You're #1")).toBeInTheDocument();
-		await user.click(screen.getByRole("button", { name: "This month" }));
+		await choosePeriod(user, "This month");
 		await waitFor(async () =>
 			expect(await liftChips()).not.toContain("Overhead Press"),
 		);
-		expect(
-			screen.getByRole("button", { name: "Lift: Bench Press" }),
-		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Bench Press" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
 	});
 });
 
@@ -318,26 +316,31 @@ const ME_WITH_ZERCHER = {
 	],
 };
 
-// The board's title is a menu of the chosen lifts (just a title for one).
+// The board has loaded once its podium shows.
+function boardLoaded() {
+	return screen.findByRole("list", { name: "Top three" });
+}
+
+// Names of the lift chips (the Edit lifts button isn't one).
 async function liftChips() {
-	const trigger = screen.queryByRole("button", { name: /^Lift: / });
-	if (!trigger) {
-		return [document.querySelector(".lb-card-title").textContent];
-	}
-	fireEvent.click(trigger);
-	const names = within(screen.getByRole("menu", { name: "Lift" }))
-		.getAllByRole("menuitemradio")
+	const group = await screen.findByRole("group", { name: "Lift" });
+	return within(group)
+		.getAllByRole("button")
+		.filter((b) => b.hasAttribute("aria-pressed"))
 		.map((b) => b.textContent);
-	fireEvent.click(trigger);
-	return names;
 }
 
 async function pickLift(user, name) {
-	await user.click(await screen.findByRole("button", { name: /^Lift: / }));
+	const group = await screen.findByRole("group", { name: "Lift" });
+	await user.click(within(group).getByRole("button", { name }));
+}
+
+async function choosePeriod(user, label) {
+	await user.click(await screen.findByRole("button", { name: /^Period: / }));
 	await user.click(
-		within(screen.getByRole("menu", { name: "Lift" })).getByRole(
+		within(screen.getByRole("menu", { name: "Period" })).getByRole(
 			"menuitemradio",
-			{ name },
+			{ name: label },
 		),
 	);
 }
@@ -346,7 +349,7 @@ describe("Community — choose lifts", () => {
 	it("signed out shows only featured lifts and no chooser", async () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		await screen.findByRole("table");
+		await boardLoaded();
 		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
 		expect(
 			screen.queryByRole("button", { name: "Edit lifts" }),
@@ -361,14 +364,16 @@ describe("Community — choose lifts", () => {
 		expect(
 			await screen.findByText(/no featured lifts have been logged/i),
 		).toBeInTheDocument();
-		expect(screen.queryByRole("table")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("list", { name: "Top three" }),
+		).not.toBeInTheDocument();
 	});
 
 	it("signed in starts on the featured lifts, for the Lift menu and standing cards", async () => {
 		signIn();
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
 		renderCommunity();
-		await screen.findByRole("table");
+		await boardLoaded();
 		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
 		expect(
 			screen.getByRole("button", { name: "Edit lifts" }),
@@ -417,7 +422,7 @@ describe("Community — choose lifts", () => {
 		);
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME_WITH_ZERCHER } });
 		renderCommunity();
-		await screen.findByRole("table");
+		await boardLoaded();
 		expect(await liftChips()).toEqual(["Zercher Squats"]);
 		expect(
 			screen.queryByRole("button", { name: /bench press.*#12/i }),
@@ -431,7 +436,7 @@ describe("Community — choose lifts", () => {
 		);
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		await screen.findByRole("table");
+		await boardLoaded();
 		expect(await liftChips()).toEqual(["Bench Press", "Squats"]);
 	});
 
@@ -482,7 +487,9 @@ describe("Community — choose lifts", () => {
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
 		renderCommunity();
 		expect(await screen.findByText(/no lifts chosen/i)).toBeInTheDocument();
-		expect(screen.queryByRole("table")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("list", { name: "Top three" }),
+		).not.toBeInTheDocument();
 	});
 });
 
@@ -492,7 +499,7 @@ describe("Community — signed out", () => {
 	it("has sign-in and sign-up links", async () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		await screen.findByRole("table");
+		await boardLoaded();
 		for (const link of screen.getAllByRole("link", { name: /^sign in$/i }))
 			expect(link).toHaveAttribute("href", "/login");
 		const signups = screen.getAllByRole("link", {
@@ -528,7 +535,7 @@ describe("Community — signed out", () => {
 	it("does not show a personal standing", async () => {
 		mockApiGet.mockResolvedValue({ data: DATA });
 		renderCommunity();
-		await screen.findByRole("table");
+		await boardLoaded();
 		expect(screen.queryByText("Your standing")).not.toBeInTheDocument();
 	});
 });
@@ -556,8 +563,9 @@ describe("Community — signed in", () => {
 		signIn();
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
 		renderCommunity();
-		const table = await screen.findByRole("table");
-		const mine = within(table).getByText("kavin").closest("tr");
+		await boardLoaded();
+		const rest = screen.getByRole("list", { name: "Bench Press leaderboard" });
+		const mine = within(rest).getByText("kavin").closest("li");
 		expect(mine).toHaveClass("lb-row-me");
 		expect(within(mine).getByText("12")).toBeInTheDocument();
 		expect(within(mine).getByText("185 lbs × 5")).toBeInTheDocument();
@@ -572,13 +580,15 @@ describe("Community — signed in", () => {
 		await user.click(
 			await screen.findByRole("button", { name: /squats.*#2/i }),
 		);
-		const table = screen.getByRole("table");
-		expect(within(table).getByText("kavin").closest("tr")).toHaveClass(
-			"lb-row-me",
+		// Second place: you're on the podium.
+		const podium = screen.getByRole("list", { name: "Top three" });
+		expect(within(podium).getByText("kavin").closest("li")).toHaveClass(
+			"lb-spot-me",
 		);
-		expect(
-			screen.getByRole("button", { name: "Lift: Squats" }),
-		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Squats" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
 	});
 
 	it("asks you to turn on sharing when you're not on the boards", async () => {
@@ -638,7 +648,7 @@ describe("Community — signed in", () => {
 		signIn();
 		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
 		renderCommunity();
-		await screen.findByRole("table");
+		await boardLoaded();
 		expect(
 			screen.queryByRole("link", { name: /create free account/i }),
 		).not.toBeInTheDocument();
@@ -705,11 +715,129 @@ describe("Community — calendar view", () => {
 
 		await waitFor(() => {
 			expect(mockApiGet).toHaveBeenCalledWith("/shared-calendar");
-			expect(screen.getByText("dana")).toBeInTheDocument();
-			expect(screen.getByText(/pull-ups/i)).toBeInTheDocument();
+			const day = screen.getByRole("region", { name: /day details/i });
+			expect(within(day).getByText("dana")).toBeInTheDocument();
+			expect(within(day).getByText(/pull-ups/i)).toBeInTheDocument();
 		});
 		expect(
 			within(view).getByRole("button", { name: "Calendar" }),
 		).toHaveAttribute("aria-pressed", "true");
+	});
+});
+
+// ── Redesign: chips, podium, period menu, new bests, activity ───────────────
+
+describe("Community — redesigned board", () => {
+	it("lift chips pick the board", async () => {
+		const user = userEvent.setup();
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		const chips = await screen.findByRole("group", { name: "Lift" });
+		const names = within(chips)
+			.getAllByRole("button", { pressed: false })
+			.concat(within(chips).getAllByRole("button", { pressed: true }))
+			.map((b) => b.textContent);
+		expect(names).toEqual(expect.arrayContaining(["Bench Press", "Squats"]));
+		expect(
+			within(chips).getByRole("button", { name: "Bench Press" }),
+		).toHaveAttribute("aria-pressed", "true");
+
+		await user.click(within(chips).getByRole("button", { name: "Squats" }));
+		expect(
+			within(chips).getByRole("button", { name: "Squats" }),
+		).toHaveAttribute("aria-pressed", "true");
+		const podium = screen.getByRole("list", { name: "Top three" });
+		expect(within(podium).getByText("alice")).toBeInTheDocument();
+		expect(within(podium).getByText("405 lbs × 2")).toBeInTheDocument();
+	});
+
+	it("puts the top three on a podium and lists the rest below", async () => {
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		const podium = await screen.findByRole("list", { name: "Top three" });
+		expect(within(podium).getAllByRole("listitem")).toHaveLength(3);
+		expect(within(podium).getByText("lifter1")).toBeInTheDocument();
+		const rest = screen.getByRole("list", { name: "Bench Press leaderboard" });
+		expect(within(rest).getAllByRole("listitem")).toHaveLength(7);
+		expect(within(rest).getByText("lifter4")).toBeInTheDocument();
+		expect(within(rest).queryByText("lifter1")).not.toBeInTheDocument();
+	});
+
+	it("the period menu switches to All time", async () => {
+		const user = userEvent.setup();
+		mockApiGet.mockResolvedValue({ data: DATA });
+		renderCommunity();
+		await user.click(
+			await screen.findByRole("button", { name: "Period: This month" }),
+		);
+		await user.click(
+			within(screen.getByRole("menu", { name: "Period" })).getByRole(
+				"menuitemradio",
+				{ name: "All time" },
+			),
+		);
+		await waitFor(() =>
+			expect(mockApiGet).toHaveBeenLastCalledWith("/leaderboard", {
+				params: { period: "all" },
+			}),
+		);
+		expect(
+			screen.getByRole("button", { name: "Period: All time" }),
+		).toBeInTheDocument();
+	});
+
+	it("lists the newest bests across lifts, yours as You", async () => {
+		signIn();
+		const dated = (e, achievedDate) => ({ ...e, achievedDate });
+		mockApiGet.mockResolvedValue({
+			data: {
+				...DATA,
+				me: ME,
+				exercises: [
+					{
+						...DATA.exercises[0],
+						entries: [
+							dated(entry(1, "alice", 405, 2), "2026-10-05"),
+							dated(entry(2, "kavin", 275, 5), "2026-10-25"),
+						],
+					},
+					{
+						...DATA.exercises[1],
+						entries: [dated(entry(1, "dana", 300, 5), "2026-10-15")],
+					},
+				],
+			},
+		});
+		renderCommunity();
+		const feed = await screen.findByRole("region", { name: "New bests" });
+		const items = within(feed).getAllByRole("listitem");
+		expect(items[0]).toHaveTextContent("You hit 275 lbs × 5");
+		expect(items[0]).toHaveTextContent("Squats · #2");
+		expect(items[1]).toHaveTextContent("dana hit 300 lbs × 5");
+		expect(items[2]).toHaveTextContent("alice hit 405 lbs × 2");
+	});
+
+	it("shows the community's sessions and how active you've been", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		const active = await screen.findByRole("region", { name: "Most active" });
+		expect(within(active).getByText("Community sessions")).toBeInTheDocument();
+		expect(within(active).getByText("3")).toBeInTheDocument();
+		expect(within(active).getByText("#2 most active")).toBeInTheDocument();
+		expect(within(active).getByText("19 sessions")).toBeInTheDocument();
+	});
+
+	it("labels your standing bar with you and the lifter ahead", async () => {
+		signIn();
+		mockApiGet.mockResolvedValue({ data: { ...DATA, me: ME } });
+		renderCommunity();
+		const bench = await screen.findByRole("button", {
+			name: /bench press.*#12/i,
+		});
+		expect(within(bench).getByText("You 185")).toBeInTheDocument();
+		expect(within(bench).getByText("dana 195")).toBeInTheDocument();
+		expect(within(bench).getByText("▲ 1 this week")).toBeInTheDocument();
 	});
 });

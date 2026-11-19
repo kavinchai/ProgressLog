@@ -97,13 +97,6 @@
 	min-width: 0;
 }
 
-.lb-board-actions {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 8px;
-}
-
 /* ── Your standing ── */
 .lb-section {
 	margin-bottom: var(--space-lg);
@@ -118,59 +111,121 @@
 	margin: 0 0 6px 16px;
 }
 
+/* Standing: one card per lift (phones swipe between them). */
 .lb-standing {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 	gap: 12px;
 }
 
 .lb-stand {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
-	padding: 12px 14px;
+	gap: 12px;
+	padding: 16px;
 	text-align: left;
 	font-family: var(--font);
+	line-height: 1.3;
 	color: var(--fg);
 	background: var(--bg-card);
-	border: 1px solid var(--border);
+	border: 0;
 	border-radius: var(--radius-lg);
+	box-shadow: inset 0 0 0 1.5px transparent;
 	cursor: pointer;
-	transition: border-color var(--transition-fast);
-}
-
-.lb-stand:hover {
-	border-color: var(--border-strong);
 }
 
 .lb-stand.on {
-	border-color: var(--accent);
-	box-shadow: 0 0 0 3px var(--accent-light);
+	box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.lb-stand-head,
+.lb-stand-main,
+.lb-bar-ends {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.lb-stand-head {
+	align-items: center;
 }
 
 .lb-stand-lift {
-	font-size: var(--fs-xs);
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.9375rem;
 	font-weight: var(--fw-semibold);
-	color: var(--muted);
+}
+
+.lb-week {
+	flex: none;
+	padding: 3px 8px;
+	border-radius: var(--radius-full);
+	font-size: 0.75rem;
+	font-weight: var(--fw-semibold);
+}
+
+.lb-week.up {
+	color: var(--success);
+	background: var(--success-light);
+}
+
+.lb-week.down {
+	color: var(--danger);
+	background: var(--danger-light);
+}
+
+.lb-stand-main {
+	align-items: flex-end;
 }
 
 .lb-stand-rank {
-	font-size: var(--fs-xl);
-	font-weight: var(--fw-bold);
+	font-size: 2.5rem;
+	font-weight: 800;
+	line-height: 1;
 	letter-spacing: -0.02em;
 }
 
 .lb-stand-rank small {
-	font-size: var(--fs-xs);
+	font-size: 1.0625rem;
 	font-weight: var(--fw-medium);
+	letter-spacing: 0;
 	color: var(--muted);
 }
 
+.lb-stand-best {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 2px;
+	font-size: 1.0625rem;
+	font-weight: var(--fw-semibold);
+	text-align: right;
+}
+
+.lb-stand-best small,
+.lb-bar-ends {
+	font-size: 0.75rem;
+	font-weight: var(--fw-normal);
+	color: var(--muted);
+}
+
+.lb-stand-gap {
+	font-size: 0.875rem;
+}
+
+.lb-bar-ends {
+	margin-top: -6px;
+}
+
+/* Bars grow in, like Today's progress bars. */
 .lb-bar {
 	display: block;
 	height: 6px;
 	border-radius: 3px;
-	background: var(--border-dim);
+	background: var(--accent-light);
 	overflow: hidden;
 }
 
@@ -179,67 +234,332 @@
 	height: 100%;
 	border-radius: 3px;
 	background: var(--accent);
+	transform-origin: left;
+	animation: lb-grow 600ms var(--ios-spring) both;
 }
 
-/* ── Lift chips ── */
-
-/* ── Ranked table ── */
-.lb-table {
-	width: 100%;
-	border-collapse: separate;
-	border-spacing: 0;
-	font-size: var(--fs-sm);
+.lb-bar--thin {
+	height: 5px;
+	background: var(--border-dim);
 }
 
-.lb-table th {
-	text-align: left;
-	font-size: 10px;
-	font-weight: var(--fw-bold);
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	color: var(--muted);
-	padding: 6px 8px;
-	border-bottom: 1px solid var(--border-dim);
+.lb-bar--thin i {
+	background: var(--border-strong);
 }
 
-.lb-table td {
-	padding: 10px 8px;
-	border-bottom: 0.5px solid var(--border);
+.me .lb-bar--thin i {
+	background: var(--accent);
+}
+
+.lb-dots {
+	display: none;
+}
+
+/* ── Board ── */
+.lb-board {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-width: 0;
+}
+
+.lb-chips {
+	display: flex;
+	gap: 8px;
+	padding: 2px 0;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	scroll-snap-type: x proximity;
+	scrollbar-width: none;
+}
+
+.lb-chips::-webkit-scrollbar,
+.lb-standing::-webkit-scrollbar {
+	display: none;
+}
+
+.lb-chip {
+	flex: none;
+	height: 36px;
+	padding: 0 16px;
+	border: 0;
+	border-radius: var(--radius-full);
+	background: var(--bg-card);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: 0.9375rem;
+	font-weight: var(--fw-medium);
+	white-space: nowrap;
+	cursor: pointer;
+	scroll-snap-align: start;
+}
+
+.lb-chip.on {
+	background: var(--fg);
+	color: var(--bg-card);
+	font-weight: var(--fw-semibold);
+}
+
+.lb-chip-edit {
+	display: grid;
+	place-items: center;
+	width: 36px;
+	padding: 0;
+	color: var(--accent);
+}
+
+.lb-board-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding-top: 4px;
+}
+
+.lb-board-head .lb-section-title {
+	margin-bottom: 0;
+}
+
+.lb-period {
+	font-size: 0.9375rem;
+}
+
+/* A new lift or period eases in. */
+.lb-board-body {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	animation: lb-in 280ms var(--ios-spring) both;
+}
+
+.lb-podium {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	align-items: end;
+	gap: 8px;
+	margin: 0;
+	padding: 20px 12px 0;
+	list-style: none;
+	background: var(--bg-card);
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+}
+
+.lb-spot {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	text-align: center;
+	line-height: 1.3;
+}
+
+.lb-spot-1 {
+	order: 2;
+	--ring: var(--lb-gold);
+	--base: 84px;
+}
+
+.lb-spot-2 {
+	order: 1;
+	--ring: var(--lb-silver);
+	--base: 58px;
+}
+
+.lb-spot-3 {
+	order: 3;
+	--ring: var(--lb-bronze);
+	--base: 40px;
+}
+
+.lb-spot-av {
+	width: 48px;
+	height: 48px;
+	margin-bottom: 6px;
+	font-size: 1.1875rem;
+	box-shadow:
+		0 0 0 3px var(--bg-card),
+		0 0 0 5px var(--ring);
+}
+
+.lb-spot-1 .lb-spot-av {
+	width: 58px;
+	height: 58px;
+	font-size: 1.375rem;
+}
+
+.lb-spot-who {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	max-width: 100%;
+	font-size: 0.875rem;
+	font-weight: var(--fw-semibold);
+}
+
+.lb-spot-who .lb-name,
+.lb-row-name .lb-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
-.lb-table tbody tr:last-child td {
-	border-bottom: none;
+.lb-spot-set {
+	font-size: 0.8125rem;
+	color: var(--muted);
 }
 
-.lb-table th:first-child,
-.lb-table td:first-child {
-	width: 36px;
+.lb-spot-base {
+	align-self: stretch;
+	display: grid;
+	place-items: center;
+	height: var(--base);
+	margin-top: 8px;
+	border-radius: 10px 10px 0 0;
+	background: var(--bg);
+	color: var(--muted);
+	font-size: 1.375rem;
+	font-weight: 800;
+	transform-origin: bottom;
+	animation: lb-rise 520ms var(--ios-spring) both;
 }
 
-.lb-table .lb-col-move {
+.lb-spot-2 .lb-spot-base {
+	animation-delay: 60ms;
+}
+
+.lb-spot-3 .lb-spot-base {
+	animation-delay: 120ms;
+}
+
+.lb-spot-me .lb-spot-base {
+	background: var(--accent-light);
+	color: var(--accent);
+}
+
+/* Fourth place down, and the other lists: iOS inset lists. */
+.lb-list,
+.lb-feed,
+.lb-active-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	background: var(--bg-card);
+	border-radius: var(--radius-lg);
+}
+
+.lb-row,
+.lb-feed li,
+.lb-active-list li {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 56px;
+	padding: 8px 16px;
+	line-height: 1.3;
+}
+
+.lb-row + .lb-row::before,
+.lb-feed li + li::before,
+.lb-active-list li + li::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: var(--inset, 60px);
+	border-top: 0.5px solid var(--border);
+}
+
+.lb-row {
+	--inset: 78px;
+}
+
+.lb-list > :first-child {
+	border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.lb-list > :last-child {
+	border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.lb-list > :only-child {
+	border-radius: var(--radius-lg);
+}
+
+.lb-row-rank {
+	flex: none;
+	width: 18px;
+	text-align: center;
+	font-size: 0.9375rem;
+	font-weight: var(--fw-semibold);
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.lb-row-who,
+.lb-feed-main,
+.lb-active-main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.lb-row-name {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	font-size: 0.9375rem;
+	font-weight: var(--fw-medium);
+}
+
+.lb-row-date,
+.lb-feed-date {
+	font-size: 0.75rem;
+	color: var(--muted);
+}
+
+.lb-row-set {
+	flex: none;
+	font-size: 0.9375rem;
+	font-weight: var(--fw-medium);
+	font-variant-numeric: tabular-nums;
+}
+
+.lb-row .lb-move {
+	flex: none;
+	width: 28px;
 	text-align: right;
 }
 
-.lb-row-me td {
+.lb-row-me {
 	background: var(--accent-light);
+}
+
+.lb-row-me .lb-row-name {
 	font-weight: var(--fw-semibold);
-	border-bottom-color: transparent;
 }
 
-.lb-row-me td:first-child {
-	border-radius: var(--radius-md) 0 0 var(--radius-md);
-}
-
-.lb-row-me td:last-child {
-	border-radius: 0 var(--radius-md) var(--radius-md) 0;
-}
-
-.lb-row-gap td {
+.lb-row-gap {
+	padding: 2px 0;
 	text-align: center;
+	letter-spacing: 0.2em;
+	font-size: 0.75rem;
 	color: var(--muted);
-	font-size: var(--fs-xs);
-	padding: 2px;
+}
+
+.lb-foot {
+	margin: 0;
+	padding: 0 16px;
+	font-size: 0.75rem;
+	line-height: 1.4;
+	color: var(--muted);
 }
 
 .lb-rank {
@@ -268,13 +588,8 @@
 	color: #fff;
 }
 
-.lb-who {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-}
-
 .lb-you {
+	flex: none;
 	font-size: 9px;
 	font-weight: var(--fw-bold);
 	text-transform: uppercase;
@@ -286,7 +601,7 @@
 }
 
 .lb-move {
-	font-size: 11px;
+	font-size: 0.75rem;
 	font-weight: var(--fw-bold);
 	color: var(--muted);
 }
@@ -297,6 +612,156 @@
 
 .lb-move.down {
 	color: var(--danger);
+}
+
+/* ── New bests ── */
+.lb-feed {
+	--inset: 64px;
+}
+
+.lb-feed li {
+	min-height: 60px;
+}
+
+.lb-feed-av {
+	width: 36px;
+	height: 36px;
+	font-size: 0.9375rem;
+}
+
+.lb-feed-main {
+	font-size: 0.9375rem;
+}
+
+.lb-feed-main b {
+	font-weight: var(--fw-semibold);
+}
+
+.lb-feed-sub {
+	font-size: 0.8125rem;
+	color: var(--muted);
+}
+
+.lb-feed-date {
+	flex: none;
+	align-self: flex-start;
+	margin-top: 4px;
+}
+
+/* ── Most active ── */
+.lb-tiles {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.lb-tiles--one {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.lb-tile {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+	padding: 12px 14px;
+	background: var(--bg-card);
+	border-radius: var(--radius-lg);
+	line-height: 1.3;
+}
+
+.lb-tile-label,
+.lb-active-count {
+	font-size: 0.8125rem;
+	color: var(--muted);
+}
+
+.lb-tile-value {
+	font-size: 1.5rem;
+	font-weight: var(--fw-bold);
+	font-variant-numeric: tabular-nums;
+}
+
+.lb-tile-value small {
+	font-size: 0.875rem;
+	font-weight: var(--fw-medium);
+	color: var(--muted);
+}
+
+.lb-tile-sub {
+	font-size: 0.75rem;
+	color: var(--muted);
+}
+
+.lb-tile-accent {
+	font-size: 0.875rem;
+	font-weight: var(--fw-semibold);
+	color: var(--accent);
+}
+
+.lb-spark {
+	display: flex;
+	align-items: flex-end;
+	gap: 2px;
+	height: 28px;
+	margin: 2px 0;
+}
+
+.lb-spark i {
+	flex: 1;
+	min-width: 2px;
+	border-radius: 1px;
+	background: color-mix(in srgb, var(--accent) 30%, transparent);
+	transform-origin: bottom;
+	animation: lb-rise 520ms var(--ios-spring) both;
+}
+
+.lb-spark i.peak {
+	background: var(--accent);
+}
+
+.lb-active-main {
+	gap: 6px;
+}
+
+.lb-active-count {
+	flex: none;
+	font-variant-numeric: tabular-nums;
+}
+
+.lb-active-list li.me .lb-active-count {
+	color: var(--fg);
+	font-weight: var(--fw-semibold);
+}
+
+@keyframes lb-grow {
+	from {
+		transform: scaleX(0);
+	}
+}
+
+@keyframes lb-rise {
+	from {
+		transform: scaleY(0.2);
+		opacity: 0;
+	}
+}
+
+@keyframes lb-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.lb-bar i,
+	.lb-spot-base,
+	.lb-spark i,
+	.lb-board-body {
+		animation: none;
+	}
 }
 
 /* ── Compact ranked list (most active, preview) ── */
@@ -512,70 +977,61 @@
 		font-size: var(--fs-xl);
 	}
 
-	/* Standing cards: compact, scrolling sideways instead of stacking. */
+	/* Standing cards and lift chips run edge to edge and scroll sideways,
+	   snapping card by card. */
+	.lb-standing,
+	.lb-chips {
+		margin: 0 -16px;
+		padding-left: 16px;
+		padding-right: 16px;
+		scroll-padding: 0 16px;
+	}
+
 	.lb-standing {
 		display: flex;
-		gap: 8px;
+		gap: 10px;
 		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scroll-snap-type: x mandatory;
 		scrollbar-width: none;
-		margin: 0 -16px;
-		padding: 0 16px 4px;
 	}
 
 	.lb-stand {
-		flex: 0 0 136px;
-		gap: 2px;
-		padding: 8px 10px;
-		border-radius: var(--radius-md);
+		flex: 0 0 calc(100% - 40px);
+		scroll-snap-align: start;
 	}
 
-	.lb-stand-rank {
-		font-size: var(--fs-lg);
+	.lb-stand:only-child {
+		flex-basis: 100%;
 	}
 
-	.lb-bar {
-		height: 4px;
-		margin: 2px 0;
+	.lb-dots {
+		display: flex;
+		justify-content: center;
+		gap: 6px;
+		margin-top: 10px;
 	}
 
-	.lb-card {
-		padding: 14px 12px;
+	.lb-dots i {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--border-strong);
+		transition: background-color 200ms ease;
 	}
 
-	/* Period switch and Choose lifts share one row under the title. */
-	.lb-card-head {
-		gap: 8px;
-		margin-bottom: 10px;
-	}
-
-	.lb-board-actions {
-		width: 100%;
-		justify-content: space-between;
-	}
-
-	.lb-board-actions .btn {
-		margin: 0;
-		min-height: 34px;
-		padding: 0 10px;
-		font-size: 11px;
-		white-space: nowrap;
-	}
-
-	.lb-col-date {
-		display: none;
-	}
-
-	.lb-table td {
-		padding: 8px 6px;
+	.lb-dots i.on {
+		background: var(--fg);
 	}
 
 	/* Your row stays pinned above the tab bar while it's off-screen. */
-	.lb-row-me td {
+	.lb-row-me {
 		position: sticky;
 		bottom: calc(
 			var(--bottom-tab-height) + env(safe-area-inset-bottom, 0px) + 8px
 		);
-		box-shadow: 0 -1px 0 var(--accent);
+		z-index: 1;
+		box-shadow: 0 -0.5px 0 var(--accent);
 	}
 
 	.lb-topbar {
@@ -628,12 +1084,4 @@
 /* Full-width Leaderboard | Calendar switch under the large title. */
 .lb-view {
 	margin-bottom: var(--space-md);
-}
-
-/* The board's title is the lift picker. */
-.lb-lift-menu {
-	font-size: var(--fs-lg);
-	font-weight: var(--fw-bold);
-	padding: 0;
-	min-height: 0;
 }

@@ -260,6 +260,7 @@ export function PeriodNav({
 	onNext,
 	prevDisabled,
 	nextDisabled,
+	action,
 }) {
 	return (
 		<div className="ios-period">
@@ -268,6 +269,7 @@ export function PeriodNav({
 				{sub && <div className="ios-period-sub">{sub}</div>}
 			</div>
 			<div className="ios-period-nav">
+				{action}
 				<button
 					type="button"
 					className="ios-icon-btn"
