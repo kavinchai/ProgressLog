@@ -30,6 +30,7 @@ import Settings from "./pages/Settings";
 import ClaudeSetup from "./pages/ClaudeSetup";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import OfflineBanner from "./components/OfflineBanner";
+import AchievementCelebration from "./components/achievements/AchievementCelebration";
 
 function ScrollToTop() {
 	const { pathname } = useLocation();
@@ -81,6 +82,7 @@ function AppLayout({ children }) {
 				<PullToRefresh onRefresh={refreshScreen}>{children}</PullToRefresh>
 			</div>
 			<BottomTabBar />
+			<AchievementCelebration />
 		</div>
 	);
 }

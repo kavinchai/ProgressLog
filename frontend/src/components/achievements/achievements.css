@@ -1,0 +1,306 @@
+/* Achievements: medals, milestone drawings and their screens. */
+
+.medal {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	color: var(--text-subtle);
+}
+.medal-rings {
+	position: absolute;
+	inset: 0;
+}
+.medal-face {
+	fill: var(--hover-bg);
+}
+.medal-track {
+	fill: none;
+	stroke: var(--active-bg);
+	stroke-width: 4;
+}
+.medal-ring {
+	fill: none;
+	stroke: #8a83e6;
+	stroke-width: 4;
+	stroke-linecap: round;
+}
+.medal-icon {
+	position: relative;
+}
+.medal--earned {
+	color: var(--accent);
+}
+.medal--earned .medal-face {
+	fill: var(--accent-soft);
+}
+.medal--earned .medal-track {
+	stroke: #c7c3f7;
+}
+.medal--earned .medal-ring {
+	stroke: var(--accent);
+}
+
+.milestone-art {
+	display: block;
+	flex: none;
+	object-fit: contain;
+}
+.milestone-art--locked {
+	opacity: 0.35;
+	filter: grayscale(1);
+}
+
+.achievement-bar {
+	display: block;
+	height: 6px;
+	border-radius: 3px;
+	background: var(--active-bg);
+	overflow: hidden;
+}
+.achievement-bar > span {
+	display: block;
+	height: 100%;
+	border-radius: 3px;
+	background: var(--accent);
+}
+.achievement-bar--small {
+	width: 64px;
+	height: 5px;
+}
+
+/* ── Achievements screen ── */
+.achievements-page {
+	max-width: 760px;
+	width: 100%;
+}
+
+.volume-card {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	padding: 14px 16px;
+	border: 0;
+	background: none;
+	font: inherit;
+	color: var(--fg);
+	text-align: left;
+	cursor: pointer;
+}
+.volume-card-top {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.volume-card-text {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+}
+.volume-card-total {
+	font-size: 1.5rem;
+	font-weight: var(--fw-bold);
+}
+.volume-card-sub,
+.volume-card-foot {
+	font-size: 0.8125rem;
+	color: var(--text-muted);
+}
+.volume-card-foot {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.badge-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 14px 8px;
+	padding: 16px 10px;
+}
+@media (min-width: 640px) {
+	.badge-grid {
+		grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+	}
+}
+.badge-cell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 4px;
+	border: 0;
+	border-radius: 12px;
+	background: none;
+	font: inherit;
+	color: var(--fg);
+	text-align: center;
+	cursor: pointer;
+}
+.badge-cell:active {
+	background: var(--hover-bg);
+}
+.badge-cell-name {
+	font-size: 0.8125rem;
+	font-weight: var(--fw-semibold);
+	line-height: 1.2;
+}
+.badge-cell-sub {
+	font-size: 0.75rem;
+	color: var(--text-muted);
+}
+
+/* ── Badge sheet ── */
+.badge-sheet {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	text-align: center;
+	padding: 4px 8px 22px;
+}
+.badge-sheet-title {
+	font-size: 1.5rem;
+	font-weight: var(--fw-bold);
+	margin: 8px 0 0;
+}
+.badge-sheet-status {
+	margin: 0;
+	color: var(--text-muted);
+}
+.badge-sheet-detail {
+	margin: 4px 0 0;
+	color: var(--fg);
+}
+
+/* ── Lifetime weight lifted ── */
+.weight-nav {
+	margin-left: -8px;
+}
+.weight-hero {
+	text-align: center;
+	padding: 18px 0 20px;
+}
+.weight-hero-total {
+	font-size: 2.5rem;
+	font-weight: var(--fw-bold);
+	letter-spacing: -0.02em;
+	margin: 0;
+}
+.weight-hero-sub {
+	margin: 2px 0 0;
+	color: var(--text-muted);
+}
+.weight-stats {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	background: var(--bg-card);
+	border-radius: 12px;
+	margin-bottom: 22px;
+}
+.weight-stats > div {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 12px 16px;
+}
+.weight-stats > div + div {
+	border-left: 0.5px solid var(--border);
+}
+.weight-stat-label,
+.weight-stat-sub {
+	font-size: 0.8125rem;
+	color: var(--text-muted);
+}
+.weight-stat-value {
+	font-size: 1.25rem;
+	font-weight: var(--fw-bold);
+}
+.milestone-row {
+	gap: 14px;
+}
+.milestone-earned {
+	color: var(--success);
+	font-weight: var(--fw-semibold);
+	font-size: 0.875rem;
+}
+.milestone-progress {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+	font-size: 0.8125rem;
+	color: var(--text-muted);
+}
+
+/* ── Progress: the way in ── */
+.achievements-entry {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	padding: 14px 16px;
+	border: 0;
+	background: none;
+	font: inherit;
+	color: var(--fg);
+	text-align: left;
+	cursor: pointer;
+}
+.achievements-entry-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.achievements-entry-title {
+	flex: 1;
+	font-size: 1.0625rem;
+	font-weight: var(--fw-semibold);
+}
+.achievements-entry-count {
+	color: var(--text-muted);
+}
+.achievements-entry-medals {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.achievements-entry-latest {
+	flex: 1;
+	font-size: 0.8125rem;
+	color: var(--text-muted);
+}
+.achievements-entry-foot {
+	font-size: 0.8125rem;
+	color: var(--text-muted);
+}
+
+/* ── Celebration sheet ── */
+.celebration-card {
+	background: #1f1b4d;
+	border-radius: 18px;
+	padding: 22px 18px 18px;
+	text-align: center;
+	color: #fff;
+	margin-bottom: 22px;
+}
+.celebration-kicker,
+.celebration-equal {
+	font-size: 0.9375rem;
+	color: #d9d7fb;
+}
+.celebration-total {
+	font-size: 2.5rem;
+	font-weight: var(--fw-bold);
+	letter-spacing: -0.02em;
+	margin: 4px 0;
+}
+.celebration-card .milestone-art {
+	margin: 16px auto 4px;
+	width: 190px;
+	height: auto;
+}

@@ -346,7 +346,11 @@ export default function TotalStats() {
 				</div>
 			)}
 
-			<div className="ios-tiles ios-tiles--five" role="group" aria-label="Color days by">
+			<div
+				className="ios-tiles ios-tiles--five"
+				role="group"
+				aria-label="Color days by"
+			>
 				<StatTile
 					label="Weight"
 					value={
@@ -394,7 +398,9 @@ export default function TotalStats() {
 
 			<div className="history-day-panel">
 				<div className="history-day-panel-head">
-					<span className="history-day-panel-title">{active.label} per day</span>
+					<span className="history-day-panel-title">
+						{active.label} per day
+					</span>
 					<span className="heatmap-legend">
 						<span>less</span>
 						{[0.12, 0.35, 0.6, 0.9].map((a) => (

@@ -37,6 +37,9 @@ public abstract class BaseTest {
         context = browser.newContext(new Browser.NewContextOptions()
                 .setViewportSize(1920, 1080)
                 .setLocale("en-US"));
+        // The achievement celebration sheet would cover the page after a save;
+        // AchievementsTest checks the screens, the unit tests check the sheet.
+        context.addInitScript("try { localStorage.setItem('achievements.celebrate', 'off'); } catch (e) {}");
         page = context.newPage();
         page.setDefaultTimeout(10_000);
 

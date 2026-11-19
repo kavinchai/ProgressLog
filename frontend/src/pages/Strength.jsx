@@ -3,11 +3,7 @@ import useFetch from "../hooks/useFetch";
 import useWeightUnit from "../hooks/useWeightUnit";
 import { formatDate } from "../utils/date";
 import { ChevronLeft, ListFilter } from "lucide-react";
-import {
-	rangeDaysFor,
-	filterByRange,
-	RANGE_OPTIONS,
-} from "../utils/dateRange";
+import { rangeDaysFor, filterByRange, RANGE_OPTIONS } from "../utils/dateRange";
 import {
 	ListGroup,
 	ListRow,
@@ -362,7 +358,8 @@ function LiftDetail({ exercise, rangeKey, onRange, unit, toDisplay, onBack }) {
 
 // ── page ──────────────────────────────────────────────────────────────────────
 
-export default function Strength() {
+// `above` goes between the title and the lift list (the Achievements card).
+export default function Strength({ above = null }) {
 	// Cached, so reopening the page shows the last data while it refreshes.
 	const { data: progressData, loading, error } = useFetch("/progress/strength");
 	const [openName, setOpenName] = useState(null);
@@ -482,6 +479,8 @@ export default function Strength() {
 				}
 			/>
 
+			{above}
+
 			{cards.length === 0 ? (
 				<div className="strength-empty">
 					<p>No lifts chosen.</p>
@@ -491,6 +490,7 @@ export default function Strength() {
 				</div>
 			) : (
 				<ListGroup
+					header="Lifts"
 					footer={`${cards.length} of ${lifts.length} lifts shown. Tap Edit to choose which appear.`}
 				>
 					<div className="lift-list" data-testid="lift-grid">
