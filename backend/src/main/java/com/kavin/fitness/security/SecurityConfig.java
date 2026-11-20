@@ -68,7 +68,9 @@ public class SecurityConfig {
                                                 "/api/auth/register",
                                                 "/api/auth/apple",
                                                 "/api/auth/apple/register",
-                                                "/api/auth/logout")
+                                                "/api/auth/logout",
+                                                "/api/auth/forgot-password",
+                                                "/api/auth/reset-password")
                                         .permitAll()
                                         .requestMatchers("/api/leaderboard")
                                         .permitAll()

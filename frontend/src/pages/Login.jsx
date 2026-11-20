@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import api from "../api";
 import useAuthStore from "../store/authStore";
 import { isAppleSignInAvailable, signInWithApple } from "../native/appleSignIn";
@@ -16,10 +16,12 @@ function suggestUsername(givenName) {
 export default function Login() {
 	const login = useAuthStore((state) => state.login);
 	const [searchParams] = useSearchParams();
+	// After a password reset: a notice and the username to sign in with.
+	const resetState = useLocation().state;
 	const [mode, setMode] = useState(
 		searchParams.get("mode") === "signup" ? "signup" : "login",
 	);
-	const [username, setUsername] = useState("");
+	const [username, setUsername] = useState(resetState?.username ?? "");
 	const [password, setPassword] = useState("");
 	const [email, setEmail] = useState("");
 	const [rememberMe, setRememberMe] = useState(true);
@@ -190,6 +192,11 @@ export default function Login() {
 						</>
 					)}
 					<form className="login-form" onSubmit={handleSubmit}>
+						{resetState?.notice && !isSignup && (
+							<div className="login-notice" role="status">
+								{resetState.notice}
+							</div>
+						)}
 						{error && <div className="login-error">{error}</div>}
 
 						<div className="login-group">
@@ -241,6 +248,11 @@ export default function Login() {
 							</div>
 						</div>
 
+						{!isSignup && (
+							<Link to="/forgot-password" className="login-forgot">
+								Forgot password?
+							</Link>
+						)}
 						<label className="login-remember login-group" htmlFor="remember-me">
 							Keep me signed in
 							<input

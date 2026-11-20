@@ -39,6 +39,13 @@ public class LoginPage {
                 .count() > 0;
     }
 
+    /** Follows "Forgot password?" under the password field to the reset page. */
+    public ForgotPasswordPage openForgotPassword() {
+        page.locator("a.login-forgot").click();
+        page.locator("#identifier").waitFor();
+        return new ForgotPasswordPage(page);
+    }
+
     public void login(String username, String password) {
         page.locator("#username").fill(username);
         page.locator("#password").fill(password);

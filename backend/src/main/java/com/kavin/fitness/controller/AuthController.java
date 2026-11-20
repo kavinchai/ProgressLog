@@ -1,13 +1,16 @@
 package com.kavin.fitness.controller;
 
 import com.kavin.fitness.dto.ApiKeyResponse;
+import com.kavin.fitness.dto.ForgotPasswordRequest;
 import com.kavin.fitness.dto.LoginRequest;
 import com.kavin.fitness.dto.LoginResponse;
 import com.kavin.fitness.dto.RegisterRequest;
+import com.kavin.fitness.dto.ResetPasswordRequest;
 import com.kavin.fitness.model.User;
 import com.kavin.fitness.repository.UserRepository;
 import com.kavin.fitness.security.CookieUtil;
 import com.kavin.fitness.security.JwtUtil;
+import com.kavin.fitness.service.PasswordResetService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.security.SecureRandom;
@@ -36,6 +39,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CookieUtil cookieUtil;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
@@ -84,6 +88,20 @@ public class AuthController {
     public ResponseEntity<Void> logout(HttpServletResponse response) {
         cookieUtil.clearJwtCookie(response);
         return ResponseEntity.ok().build();
+    }
+
+    /** Emails a 6-digit code. Always 204, so it never reveals whether an account exists. */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestCode(request.getIdentifier());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(
+                request.getIdentifier(), request.getCode(), request.getNewPassword());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/api-key")

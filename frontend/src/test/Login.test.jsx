@@ -57,6 +57,40 @@ describe("Login — login mode", () => {
 		).toHaveAttribute("href", "/privacy");
 	});
 
+	it("links to Forgot password when signing in, not when signing up", async () => {
+		renderLogin();
+		expect(
+			screen.getByRole("link", { name: /forgot password/i }),
+		).toHaveAttribute("href", "/forgot-password");
+
+		await userEvent.click(screen.getByRole("button", { name: /sign up/i }));
+		expect(
+			screen.queryByRole("link", { name: /forgot password/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("after a password reset, shows a notice and fills in the username", () => {
+		render(
+			<MemoryRouter
+				initialEntries={[
+					{
+						pathname: "/login",
+						state: {
+							notice: "Password reset. Sign in with your new password.",
+							username: "alex",
+						},
+					},
+				]}
+			>
+				<Login />
+			</MemoryRouter>,
+		);
+		expect(screen.getByRole("status")).toHaveTextContent(
+			"Password reset. Sign in with your new password.",
+		);
+		expect(screen.getByLabelText(/username/i)).toHaveValue("alex");
+	});
+
 	it("does NOT render an email field in login mode", () => {
 		renderLogin();
 		expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();

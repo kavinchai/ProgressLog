@@ -183,6 +183,49 @@
 	background: var(--danger-light);
 }
 
+/* Confirmation after a password reset or a resent code. */
+.login-notice {
+	font-size: var(--fs-sm);
+	border: 1px solid var(--success);
+	border-radius: var(--radius-md);
+	padding: 8px 12px;
+	color: var(--success);
+	background: var(--success-light);
+}
+
+.login-forgot {
+	align-self: flex-end;
+	margin: -2px 4px 0;
+	font-size: var(--fs-sm);
+	font-weight: var(--fw-medium);
+	color: var(--accent);
+}
+
+/* ── Forgot password ── */
+.login-back {
+	display: inline-block;
+	margin-bottom: 16px;
+	padding: 0;
+	font-family: var(--font);
+	font-size: var(--fs);
+	color: var(--accent);
+	background: none;
+	border: none;
+	cursor: pointer;
+}
+
+/* Longer labels ("Confirm password") on one line, inputs lined up. */
+.login-group--wide .login-field label {
+	width: auto;
+	min-width: 140px;
+	white-space: nowrap;
+}
+
+.login-code-input {
+	letter-spacing: 0.3em;
+	font-variant-numeric: tabular-nums;
+}
+
 .login-switch-btn {
 	margin-top: 16px;
 	font-family: var(--font);

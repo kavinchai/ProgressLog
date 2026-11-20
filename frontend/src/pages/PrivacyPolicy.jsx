@@ -116,8 +116,9 @@ export default function PrivacyPolicy() {
 			<p>
 				Progress Logger&apos;s server and database are hosted by Railway, and
 				the website by Vercel. The website and app load the Inter font from
-				Google Fonts, which receives your IP address. All traffic is encrypted
-				with HTTPS.
+				Google Fonts, which receives your IP address. If you reset your
+				password, the code is emailed through Resend, which receives your email
+				address. All traffic is encrypted with HTTPS.
 			</p>
 
 			<h2>Keeping and deleting your data</h2>

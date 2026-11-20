@@ -23,6 +23,7 @@ import AppLock from "./components/AppLock";
 import SplashPage from "./pages/SplashPage";
 import Community from "./pages/Community";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
 import Today from "./pages/Today";
 import History from "./pages/History";
 import Progress from "./pages/Progress";
@@ -97,6 +98,7 @@ export default function App() {
 					<Route path="/" element={<Community />} />
 					<Route path="/splash" element={<SplashPage />} />
 					<Route path="/login" element={<Login />} />
+					<Route path="/forgot-password" element={<ForgotPassword />} />
 					<Route path="/privacy" element={<PrivacyPolicy />} />
 					<Route path="/leaderboard" element={<Navigate to="/" replace />} />
 					<Route path="*" element={<Navigate to="/" replace />} />
