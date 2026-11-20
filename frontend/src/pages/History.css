@@ -526,10 +526,23 @@
 		font-size: var(--fs-xs);
 	}
 
+	.heatmap-cell {
+		position: relative;
+	}
+
 	.heatmap-cell-top {
 		flex-direction: column;
 		justify-content: center;
 		gap: 2px;
+	}
+
+	/* The dot sits under the date without taking up space, so the date stays
+	   centered whether or not the day has a workout. */
+	.heatmap-cell-top .heatmap-dot {
+		position: absolute;
+		top: calc(50% + 9px);
+		left: 50%;
+		transform: translateX(-50%);
 	}
 
 	.heatmap-value,

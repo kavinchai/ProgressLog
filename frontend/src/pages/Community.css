@@ -829,6 +829,14 @@ body:has(.lb-public)::before {
 	flex: 1;
 }
 
+/* In the top bar the view tabs sit level with the brand, and both tabs take
+   the wider one's width so the sliding highlight fits each label. */
+.lb-topbar .lb-view {
+	margin-bottom: 0;
+	display: grid;
+	grid-template-columns: repeat(var(--seg-n), 1fr);
+}
+
 .lb-wrap {
 	max-width: 1200px;
 	margin: 0 auto;
