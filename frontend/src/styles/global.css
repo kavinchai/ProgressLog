@@ -25,6 +25,14 @@ body {
 	padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* Scroll bars never show; everything still scrolls. */
+* {
+	scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+	display: none;
+}
+
 /* Opaque strip behind the status bar so scrolled content can't show through. */
 body::before {
 	content: "";
@@ -48,7 +56,9 @@ a:hover {
 /* ── App layout ── */
 .app-layout {
 	display: flex;
-	min-height: 100vh;
+	/* body's top padding clears the status bar, so take it off the full
+	   height: an empty page then fits the screen without scrolling. */
+	min-height: calc(100vh - env(safe-area-inset-top, 0px));
 	width: 100%;
 	/* clip, not hidden: hidden makes this a scroll container and breaks
 	   position: sticky for everything inside the page. */
@@ -58,7 +68,7 @@ a:hover {
 .main-content {
 	margin-left: var(--sidebar-width);
 	flex: 1;
-	min-height: 100vh;
+	min-height: calc(100vh - env(safe-area-inset-top, 0px));
 	padding: var(--space-xl) var(--space-xl) var(--space-2xl);
 	min-width: 0;
 }

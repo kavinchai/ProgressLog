@@ -8,5 +8,8 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(WidgetBridgePlugin())
         bridge?.registerPluginInstance(AppleSignInPlugin())
         bridge?.registerPluginInstance(BiometricLockPlugin())
+        // The page's scroll bar never shows (CSS hides the ones inside the page).
+        webView?.scrollView.showsVerticalScrollIndicator = false
+        webView?.scrollView.showsHorizontalScrollIndicator = false
     }
 }
