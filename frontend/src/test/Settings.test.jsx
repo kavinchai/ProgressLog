@@ -712,6 +712,40 @@ describe("Settings — account rows", () => {
 		expect(await screen.findByText(/incorrect password/i)).toBeInTheDocument();
 		expect(useAuthStore.getState().authenticated).toBe(true);
 	});
+
+	it("Delete account opens a sheet that asks for the password", async () => {
+		setupProfile();
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /^delete account/i }),
+		);
+
+		const sheet = screen.getByRole("dialog", { name: "Delete account" });
+		expect(within(sheet).getByText(/can't be undone/i)).toBeInTheDocument();
+		expect(
+			within(sheet).getByLabelText(/current password/i),
+		).toBeInTheDocument();
+		expect(
+			within(sheet).getByRole("button", { name: /^permanently delete$/i }),
+		).toBeInTheDocument();
+	});
+
+	it("closing the delete sheet keeps the account", async () => {
+		setupProfile();
+		renderSettings();
+		await userEvent.click(
+			screen.getByRole("button", { name: /^delete account/i }),
+		);
+		const sheet = screen.getByRole("dialog", { name: "Delete account" });
+		await userEvent.click(within(sheet).getByRole("button", { name: "Close" }));
+
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		expect(api.post).not.toHaveBeenCalledWith(
+			"/profile/delete-account",
+			expect.anything(),
+		);
+		expect(useAuthStore.getState().authenticated).toBe(true);
+	});
 });
 
 describe("Settings — phone layout", () => {

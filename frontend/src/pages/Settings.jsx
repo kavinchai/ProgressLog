@@ -703,7 +703,7 @@ function PasswordForm({ hasPassword, onDone, onCancel }) {
 	);
 }
 
-function DeleteAccountForm({ hasPassword, onDeleted, onCancel }) {
+function DeleteAccountForm({ hasPassword, onDeleted }) {
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState(null);
@@ -737,8 +737,11 @@ function DeleteAccountForm({ hasPassword, onDeleted, onCancel }) {
 	}
 
 	return (
-		<form className="settings-form" onSubmit={handleSubmit}>
-			<p className="settings-row-hint">
+		<form className="settings-form settings-delete" onSubmit={handleSubmit}>
+			<span className="settings-delete-icon" aria-hidden="true">
+				<Trash2 size={22} strokeWidth={2.2} />
+			</span>
+			<p className="settings-delete-text">
 				This permanently deletes your account and all your workouts, meals,
 				weight and steps. It can't be undone.
 			</p>
@@ -750,19 +753,18 @@ function DeleteAccountForm({ hasPassword, onDeleted, onCancel }) {
 					/>
 				</div>
 			) : (
-				<p className="settings-row-hint">
+				<p className="settings-delete-text">
 					You'll confirm with Apple before it's deleted.
 				</p>
 			)}
 			{error && <p className="settings-error">{error}</p>}
-			<div className="settings-actions">
-				<button className="btn btn-danger" type="submit" disabled={busy}>
-					{busy ? "Deleting..." : "Permanently delete"}
-				</button>
-				<button className="btn" type="button" onClick={onCancel}>
-					Cancel
-				</button>
-			</div>
+			<button
+				className="btn btn-danger settings-delete-btn"
+				type="submit"
+				disabled={busy}
+			>
+				{busy ? "Deleting..." : "Permanently delete"}
+			</button>
 		</form>
 	);
 }
@@ -1422,19 +1424,30 @@ export default function Settings() {
 						onCancel={() => toggleRow("password")}
 					/>
 				</EditRow>
-				<EditRow
-					label="Delete account"
-					icon={Trash2}
-					iconColor="#c4361c"
-					open={openRow === "delete"}
-					onToggle={() => toggleRow("delete")}
-				>
-					<DeleteAccountForm
-						hasPassword={signIn.passwordSet}
-						onDeleted={clearAuth}
-						onCancel={() => toggleRow("delete")}
-					/>
-				</EditRow>
+				<div className="settings-edit">
+					<button
+						type="button"
+						className="settings-row settings-row-button"
+						aria-haspopup="dialog"
+						onClick={() => toggleRow("delete")}
+					>
+						<RowIcon icon={Trash2} color="#c4361c" />
+						<span className="settings-row-main">
+							<span className="settings-row-label">Delete account</span>
+						</span>
+						<span className="settings-chevron" aria-hidden="true">
+							›
+						</span>
+					</button>
+					{openRow === "delete" && (
+						<Modal title="Delete account" onClose={() => toggleRow("delete")}>
+							<DeleteAccountForm
+								hasPassword={signIn.passwordSet}
+								onDeleted={clearAuth}
+							/>
+						</Modal>
+					)}
+				</div>
 			</Group>
 
 			<SecurityGroup />

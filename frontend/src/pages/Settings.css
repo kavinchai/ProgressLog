@@ -166,6 +166,45 @@
 	gap: 10px;
 }
 
+/* Delete account sheet */
+.settings-delete {
+	gap: 12px;
+}
+
+.settings-delete-icon {
+	align-self: center;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	background: var(--danger-light);
+	color: var(--danger);
+}
+
+.settings-delete-text {
+	margin: 0;
+	text-align: center;
+	font-size: var(--fs-sm);
+	line-height: 1.5;
+	color: var(--muted);
+}
+
+.settings-delete .settings-fields {
+	grid-template-columns: 1fr;
+}
+
+.settings-delete .settings-delete-btn,
+.settings-delete .settings-delete-btn:hover:not(:disabled) {
+	width: 100%;
+	min-height: 44px;
+	justify-content: center;
+	background: var(--danger);
+	border-color: var(--danger);
+	color: white;
+}
+
 .settings-fields {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
